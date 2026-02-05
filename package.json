@@ -1,0 +1,21 @@
+{
+  "name": "khora",
+  "workspaces": [
+    "internal/*"
+  ],
+  "devDependencies": {
+    "oxfmt": "^0.28.0"
+  },
+  "dependenciesMeta": {
+    "oxfmt": {
+      "unplugged": true
+    },
+    "oxlint": {
+      "unplugged": true
+    }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "yarn@4.12.0"
+}
