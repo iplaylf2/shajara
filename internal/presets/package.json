@@ -1,0 +1,6 @@
+{
+  "name": "@khora/presets",
+  "exports": {
+    "./*": "./exports/*"
+  }
+}

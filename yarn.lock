@@ -5,13 +5,9 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@khora/spec@workspace:internal/spec":
+"@khora/presets@workspace:internal/presets":
   version: 0.0.0-use.local
-  resolution: "@khora/spec@workspace:internal/spec"
-  dependencies:
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260206.1"
-    oxlint: "npm:^1.43.0"
-    oxlint-tsgolint: "npm:^0.11.4"
+  resolution: "@khora/presets@workspace:internal/presets"
   languageName: unknown
   linkType: soft
 
@@ -254,7 +250,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "khora@workspace:."
   dependencies:
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260206.1"
     oxfmt: "npm:^0.28.0"
+    oxlint: "npm:^1.43.0"
+    oxlint-tsgolint: "npm:^0.11.4"
   dependenciesMeta:
     oxfmt:
       unplugged: true
