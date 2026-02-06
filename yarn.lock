@@ -9,8 +9,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@khora/spec@workspace:internal/spec"
   dependencies:
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260206.1"
     oxlint: "npm:^1.43.0"
-    typescript: "npm:^5.9.3"
+    oxlint-tsgolint: "npm:^0.11.4"
   languageName: unknown
   linkType: soft
 
@@ -66,6 +67,48 @@ __metadata:
 "@oxfmt/win32-x64@npm:0.28.0":
   version: 0.28.0
   resolution: "@oxfmt/win32-x64@npm:0.28.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxlint-tsgolint/darwin-arm64@npm:0.11.4":
+  version: 0.11.4
+  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.11.4"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxlint-tsgolint/darwin-x64@npm:0.11.4":
+  version: 0.11.4
+  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.11.4"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxlint-tsgolint/linux-arm64@npm:0.11.4":
+  version: 0.11.4
+  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.11.4"
+  conditions: os=linux & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxlint-tsgolint/linux-x64@npm:0.11.4":
+  version: 0.11.4
+  resolution: "@oxlint-tsgolint/linux-x64@npm:0.11.4"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxlint-tsgolint/win32-arm64@npm:0.11.4":
+  version: 0.11.4
+  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.11.4"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxlint-tsgolint/win32-x64@npm:0.11.4":
+  version: 0.11.4
+  resolution: "@oxlint-tsgolint/win32-x64@npm:0.11.4"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -126,6 +169,87 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260206.1"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260206.1"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260206.1"
+  conditions: os=linux & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260206.1"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260206.1"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260206.1"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260206.1"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@typescript/native-preview@npm:^7.0.0-dev.20260206.1":
+  version: 7.0.0-dev.20260206.1
+  resolution: "@typescript/native-preview@npm:7.0.0-dev.20260206.1"
+  dependencies:
+    "@typescript/native-preview-darwin-arm64": "npm:7.0.0-dev.20260206.1"
+    "@typescript/native-preview-darwin-x64": "npm:7.0.0-dev.20260206.1"
+    "@typescript/native-preview-linux-arm": "npm:7.0.0-dev.20260206.1"
+    "@typescript/native-preview-linux-arm64": "npm:7.0.0-dev.20260206.1"
+    "@typescript/native-preview-linux-x64": "npm:7.0.0-dev.20260206.1"
+    "@typescript/native-preview-win32-arm64": "npm:7.0.0-dev.20260206.1"
+    "@typescript/native-preview-win32-x64": "npm:7.0.0-dev.20260206.1"
+  dependenciesMeta:
+    "@typescript/native-preview-darwin-arm64":
+      optional: true
+    "@typescript/native-preview-darwin-x64":
+      optional: true
+    "@typescript/native-preview-linux-arm":
+      optional: true
+    "@typescript/native-preview-linux-arm64":
+      optional: true
+    "@typescript/native-preview-linux-x64":
+      optional: true
+    "@typescript/native-preview-win32-arm64":
+      optional: true
+    "@typescript/native-preview-win32-x64":
+      optional: true
+  bin:
+    tsgo: bin/tsgo.js
+  checksum: 10c0/1575e916e04b9357bacea68b83f53e48370d1e1f228d57ef0ede7a9ff9484cb07a0cedfa117ca577de76e950a715de8d36784ac2c52ab0e2ad15d385a2c433e2
+  languageName: node
+  linkType: hard
+
 "khora@workspace:.":
   version: 0.0.0-use.local
   resolution: "khora@workspace:."
@@ -175,6 +299,35 @@ __metadata:
   languageName: node
   linkType: hard
 
+"oxlint-tsgolint@npm:^0.11.4":
+  version: 0.11.4
+  resolution: "oxlint-tsgolint@npm:0.11.4"
+  dependencies:
+    "@oxlint-tsgolint/darwin-arm64": "npm:0.11.4"
+    "@oxlint-tsgolint/darwin-x64": "npm:0.11.4"
+    "@oxlint-tsgolint/linux-arm64": "npm:0.11.4"
+    "@oxlint-tsgolint/linux-x64": "npm:0.11.4"
+    "@oxlint-tsgolint/win32-arm64": "npm:0.11.4"
+    "@oxlint-tsgolint/win32-x64": "npm:0.11.4"
+  dependenciesMeta:
+    "@oxlint-tsgolint/darwin-arm64":
+      optional: true
+    "@oxlint-tsgolint/darwin-x64":
+      optional: true
+    "@oxlint-tsgolint/linux-arm64":
+      optional: true
+    "@oxlint-tsgolint/linux-x64":
+      optional: true
+    "@oxlint-tsgolint/win32-arm64":
+      optional: true
+    "@oxlint-tsgolint/win32-x64":
+      optional: true
+  bin:
+    tsgolint: bin/tsgolint.js
+  checksum: 10c0/dac058bbcc5cd3999480c8663ac43cdb764ff510f7f87714941a1422d612927ec55203de482c2185f97e150dc7a3f67debe0fa7473859ce852304a7d5dd995ce
+  languageName: node
+  linkType: hard
+
 "oxlint@npm:^1.43.0":
   version: 1.43.0
   resolution: "oxlint@npm:1.43.0"
@@ -219,25 +372,5 @@ __metadata:
   version: 2.1.0
   resolution: "tinypool@npm:2.1.0"
   checksum: 10c0/9fb1c760558c6264e0f4cfde96a63b12450b43f1730fbe6274aa24ddbdf488745c08924d0dea7a1303b47d555416a6415f2113898c69b6ecf731e75ac95238a5
-  languageName: node
-  linkType: hard
-
-"typescript@npm:^5.9.3":
-  version: 5.9.3
-  resolution: "typescript@npm:5.9.3"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
-  version: 5.9.3
-  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
   languageName: node
   linkType: hard
