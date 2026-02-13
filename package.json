@@ -16,6 +16,9 @@
     },
     "oxlint": {
       "unplugged": true
+    },
+    "tinypool": {
+      "unplugged": true
     }
   },
   "engines": {

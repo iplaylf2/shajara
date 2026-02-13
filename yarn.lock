@@ -416,6 +416,8 @@ __metadata:
       unplugged: true
     oxlint:
       unplugged: true
+    tinypool:
+      unplugged: true
   languageName: unknown
   linkType: soft
 
