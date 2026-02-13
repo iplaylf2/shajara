@@ -1,6 +1,10 @@
 {
   "name": "@khora/presets",
+  "type": "module",
   "exports": {
     "./*": "./exports/*"
+  },
+  "devDependencies": {
+    "oxlint": "catalog:"
   }
 }

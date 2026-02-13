@@ -4,10 +4,11 @@
     "internal/*"
   ],
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260206.1",
-    "oxfmt": "^0.28.0",
-    "oxlint": "^1.43.0",
-    "oxlint-tsgolint": "^0.11.4"
+    "@typescript/native-preview": "^7.0.0-dev.20260213.1",
+    "oxfmt": "^0.32.0",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "^5.9.3"
   },
   "dependenciesMeta": {
     "oxfmt": {

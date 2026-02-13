@@ -1,0 +1,8 @@
+{
+  "extends": "./exports/tsconfig.shared.json",
+  "compilerOptions": {
+    "moduleResolution": "nodenext",
+    "noEmit": true
+  },
+  "include": ["exports/**/*.ts"]
+}
