@@ -3,11 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#src/*": "./dist/*"
+  },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./primitives": {
+      "types": "./dist/primitives/index.d.ts",
+      "import": "./dist/primitives.js",
+      "require": "./dist/primitives.cjs"
     }
   },
   "scripts": {
@@ -21,6 +29,8 @@
   "devDependencies": {
     "@khora/presets": "workspace:*",
     "oxlint": "catalog:",
-    "vite": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:"
   }
 }

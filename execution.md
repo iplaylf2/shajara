@@ -7,85 +7,74 @@
 
 ## 2. 阶段看板
 
-- Build: 当前阶段。主路径已形成最小可运行闭环，当前重点是稳定导出面、推进语义覆盖与行为细化。
-- Prove: 仅保留方向，待补齐行为矩阵后再系统化收敛验证。
-- Operate: 仅保留方向，待运行时行为稳定后推进端到端联调脚本。
-- Ship: 仅保留方向，待 API 与行为稳定后再收敛交付文档。
+- Build: 当前阶段。API 主路径在 example 原型中已可用，当前重点从“能跑”转向“类型与职责边界收敛”。
+- Prove: 仅保留方向，待 `Blueprint/Plan` 边界稳定后补齐语义一致性验证。
+- Operate: 仅保留方向，待 kernel/runtime 契约稳定后推进跨包联调脚本。
+- Ship: 仅保留方向，待 API 与语义术语冻结后收敛文档与迁移说明。
 
 ## 3. 当前现实与证据
 
-- 仓库当前处于开发中，接口与实现仍会继续迭代。Evidence: `README.md:5`
-- 根工作区已包含 `internal/*`、`packages/*` 与 `apps/*`，工程边界已扩展为“内建支撑/核心包/示例应用”。Evidence: `package.json:3`, `package.json:6`
-- 根脚本已形成统一工程入口：`build`/`typecheck`/`lint`/`format`。Evidence: `package.json:8`, `package.json:12`
-- `@khora/kernel` 当前仅保留显式 `stub` 导出与构建脚本，避免伪实现干扰迭代判断。Evidence: `packages/kernel/src/index.ts:1`, `packages/kernel/package.json:17`
-- `@khora/runtime` 已落地最小宿主 API 主路径（`createRuntime`、`post`、`yieldNow`），并拆分为清晰的边界入口与执行角色文件。Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/runtime-api.ts:14`, `packages/runtime/src/flow.ts:9`
-- `@khora/example` 已作为 `apps` 下示例应用包初始化，使用 Node 目标 Vite 单入口产物验证最小调用路径。Evidence: `apps/example/package.json:2`, `apps/example/vite.config.ts:6`, `apps/example/src/main.ts:1`
-- 构建工具已统一为 Vite，且通过子包脚本执行。Evidence: `packages/kernel/package.json:17`, `packages/runtime/package.json:17`
-- 代码质量闸门已接入子包级 lint，且由根脚本并行编排。Evidence: `package.json:11`, `packages/kernel/package.json:18`, `packages/runtime/package.json:18`
+- `@khora/runtime` 已对外导出 `Blueprint`、`Plan` 相关类型与 `run/post` 主入口，当前 API 形态可被示例直接消费。Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/index.ts:4`, `packages/runtime/src/index.ts:15`
+- `Blueprint` 当前是 generator 形式（`Generator<RuntimeInstruction, ReturnValue, ...>`），并内置最小 `cede` 指令。Evidence: `packages/runtime/src/blueprint.ts:5`, `packages/runtime/src/blueprint.ts:11`
+- `Plan` 当前是 `pure/impure` 联合类型，`impure` 分支承载 syscall 与 continuation（`then/terminate`）。Evidence: `packages/runtime/src/plan-contract.ts:24`, `packages/runtime/src/plan-contract.ts:29`, `packages/runtime/src/plan-contract.ts:36`
+- `@khora/kernel` 仍处于 stub 占位状态，尚未承载声明性协议类型。Evidence: `packages/kernel/src/index.ts:1`, `packages/kernel/src/index.ts:5`
+- example 已验证 runtime 最小调用闭环（`Blueprint + cede + run`）。Evidence: `apps/example/src/main.ts:1`, `apps/example/src/main.ts:4`, `apps/example/src/main.ts:11`
 
 ## 4. 相对设计基线的增量
 
 > 仅记录相对设计基线的新事实与影响，不复述基线内容。
 
-### 4.1 增量一：双包边界已实际落地
+### 4.1 增量一：API 主路径已满足原型验证，问题收敛到“定义放置位置”
 
-- Impact: B1 已完成，后续实现可在 `runtime -> kernel` 方向上继续细化而无需再做结构迁移。
-- Evidence: `package.json:5`, `packages/runtime/package.json:21`, `packages/kernel/package.json:2`
+- Impact: 当前迭代不再优先扩 API 面，而是优先收敛 `Blueprint/Plan` 的声明归属与命名语义。
+- Evidence: `apps/example/src/main.ts:1`, `packages/runtime/src/index.ts:1`
 
-### 4.2 增量二：API 主路径已具备可运行最小实现
+### 4.2 增量二：`Blueprint` 与 `Plan` 已有可用最小定义，但仍放在 runtime
 
-- Impact: B2 从“建壳”进入“补行为”阶段，下一步应围绕协议语义补充非 happy-path 与调度一致性。
-- Evidence: `packages/runtime/src/runtime-api.ts:14`, `packages/runtime/src/runtime-runner.ts:5`, `packages/runtime/src/flow.ts:9`
+- Impact: 现状支撑快速试验；但从职责分离看，声明层与执行层仍耦合在一个包内，后续迁移成本会上升。
+- Evidence: `packages/runtime/src/blueprint.ts:5`, `packages/runtime/src/plan-contract.ts:36`
 
-### 4.3 增量三：质量与构建闸门前置到根脚本
+### 4.3 增量三：kernel/runtime 的目标职责边界已明确为“声明在 kernel，执行在 runtime”
 
-- Impact: Build 阶段已具备稳定的工程回归入口，可在每次语义迭代中快速验证构建、类型与风格。
-- Evidence: `package.json:8`, `package.json:11`, `package.json:12`
+- Impact: 后续切片应将 GADT/协议声明提升到 kernel；runtime 保持 generator 驱动与调度执行，不复制声明语义。
+- Evidence: `packages/kernel/src/index.ts:1`, `packages/runtime/src/blueprint.ts:5`
 
-### 4.4 增量四：当前实现仍是最小闭环，尚未覆盖终止/收敛核心语义
+### 4.4 增量四：当前仍处于 Build 语义建模阶段，尚未进入行为正确性收敛
 
-- Impact: 进入 Prove 前需补齐 `Halt`、`AwaitScope`、未处理 `Fault` 等关键路径与用例。
-- Evidence: `packages/runtime/src/runtime-runner.ts:18`, `docs/semantics.md:108`, `docs/semantics.md:120`, `docs/semantics.md:156`
-
-### 4.5 增量五：kernel 进入冻结占位状态，runtime 作为当前主迭代面
-
-- Impact: Build 阶段当前切片聚焦 runtime 语义补齐；kernel 暂不承载行为实现，仅维持包边界与导出契约。
-- Evidence: `packages/kernel/src/index.ts:1`, `packages/runtime/src/runtime-api.ts:14`
-
-### 4.6 增量六：示例应用包已落位，当前用于验证最小 run/yield 主路径
-
-- Impact: 示例验证路径已从“文档叙述”转为“真实代码调用”，但当前仅覆盖 `run + yieldNow`，尚未验证 `post` 与更复杂协议路径。
-- Evidence: `apps/example/src/main.ts:8`, `packages/runtime/src/runtime-api.ts:10`
+- Impact: 在完成声明迁移与边界固定前，不进入系统化 Prove 阶段。
+- Evidence: `execution.md:5`, `packages/kernel/src/index.ts:1`
 
 ## 5. Build 阶段执行切片
 
-### 5.1 Slice B1：建立双工作区边界
+### 5.1 Slice B1：维持可运行原型主路径
 
 - Status: **Done**
-- Output: `packages/runtime` 与 `packages/kernel` 已建立并纳入根工作区。
-- Evidence: `package.json:5`, `packages/kernel/package.json:2`, `packages/runtime/package.json:2`
+- Output: example 已稳定验证 `Blueprint -> run` 最小主路径。
+- Evidence: `apps/example/src/main.ts:4`, `apps/example/src/main.ts:11`
 
-### 5.2 Slice B2：runtime 先行落 API 主路径
+### 5.2 Slice B2：明确 `Blueprint` 定义意图（执行形态 vs 声明形态）
 
 - Status: **In Progress**
-- Output: 已有 `createRuntime`/`post`/`yieldNow` 最小路径，可驱动 `yield-now` 指令推进。
-- Evidence: `packages/runtime/src/runtime-api.ts:14`, `packages/runtime/src/runtime-api.ts:18`, `packages/runtime/src/flow.ts:9`
-- Next: 补充异常路径与更多 syscall 语义对齐，并收敛宿主 API 设计分歧。
+- Output: 已确认 runtime 侧保留 generator 形态作为执行承载。
+- Evidence: `packages/runtime/src/blueprint.ts:5`
+- Next: 抽离声明性类型（可包含 GADT 约束）到 kernel，并由 runtime 消费该声明。
 
-### 5.3 Slice B3：kernel 占位并保持边界
+### 5.3 Slice B3：明确 `Plan` 契约归属与 continuation 语义
 
-- Status: **Parked**
-- Output: `@khora/kernel` 已收敛为显式 `stub` 占位导出，不再提供近似真实实现。
+- Status: **In Progress**
+- Output: `Plan` 最小结构已存在并可表达 `pure/impure + continuation`。
+- Evidence: `packages/runtime/src/plan-contract.ts:24`, `packages/runtime/src/plan-contract.ts:29`, `packages/runtime/src/plan-contract.ts:36`
+- Next: 评估 `Plan` 声明迁移到 kernel 的最小切面，runtime 仅保留解释与推进逻辑。
+
+### 5.4 Slice B4：kernel 从 stub 过渡到“声明容器”
+
+- Status: **Planned**
+- Output: 当前仍是 stub，占位完成但未承载协议声明。
 - Evidence: `packages/kernel/src/index.ts:1`
-
-### 5.4 Slice B4：example 应用包落位并联通 runtime 最小调用
-
-- Status: **Done**
-- Output: `apps/example` 已建立并通过 `main.ts` 打通 `createRuntime + yieldNow` 的最小调用闭环。
-- Evidence: `apps/example/package.json:2`, `apps/example/src/main.ts:1`, `apps/example/vite.config.ts:6`
+- Next: 先引入协议/GADT 声明导出，再由 runtime 改为依赖 kernel 契约。
 
 ## 6. 后续阶段方向
 
-- Prove: 建立语义对齐用例矩阵，优先覆盖 `Halt`、`AwaitScope`、未处理 `Fault`。
-- Operate: 增加宿主事件注入与调度推进的端到端回放脚本。
-- Ship: 收敛稳定 API 文档与迁移说明。
+- Prove: 在声明迁移完成后，建立 kernel 契约与 runtime 执行一致性用例。
+- Operate: 增加跨包回归脚本，验证 example 对 kernel/runtime 拆分的兼容性。
+- Ship: 固化对外术语（Blueprint/Plan/Instruction）并更新 API 文档。

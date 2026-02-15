@@ -1,20 +1,9 @@
-type RuntimeInstruction = {
-  readonly kind: "cede";
-};
+import type { RuntimeInstruction } from "#src/runtime-instruction";
 
-type Blueprint<ReturnValue> = () => Generator<
+type Blueprint<ReturnValue, ResumeValue = unknown> = () => Generator<
   RuntimeInstruction,
   ReturnValue,
-  null | unknown
+  ResumeValue
 >;
 
-function* cede(): Generator<
-  RuntimeInstruction,
-  void,
-  null | unknown
-> {
-  yield { kind: "cede" };
-}
-
 export type { Blueprint, RuntimeInstruction };
-export { cede };

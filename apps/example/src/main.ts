@@ -1,5 +1,6 @@
-import { cede, run } from "@khora/runtime";
 import type { Blueprint } from "@khora/runtime";
+import { cede } from "@khora/runtime/primitives";
+import { run } from "@khora/runtime";
 
 function* exampleBlueprint(): ReturnType<Blueprint<string>> {
   yield* cede();

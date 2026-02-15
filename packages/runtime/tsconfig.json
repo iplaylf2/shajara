@@ -1,9 +1,13 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "module": "esnext",
     "moduleResolution": "bundler",
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "#src/*": ["src/*"]
+    }
   },
   "extends": "@khora/presets/tsconfig.shared.json",
-  "include": ["src/**/*.ts", "vite.config.ts"]
+  "include": ["src/**/*.ts"]
 }

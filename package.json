@@ -14,7 +14,7 @@
   "devDependencies": {
     "oxfmt": "^0.32.0",
     "oxlint": "catalog:",
-    "typescript": "^5.9.3"
+    "typescript": "catalog:"
   },
   "dependenciesMeta": {
     "oxfmt": {

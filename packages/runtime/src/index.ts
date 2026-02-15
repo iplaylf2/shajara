@@ -1,5 +1,4 @@
 export type { Blueprint, RuntimeInstruction } from "./blueprint";
-export { cede } from "./blueprint";
 
 export type {
   ImpurePlan,
