@@ -1,6 +1,4 @@
 oxfmt
 oxlint
 oxlintrc
-tsgo
-tsgolint
 vite
