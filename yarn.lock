@@ -146,44 +146,44 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/darwin-arm64@npm:0.12.1":
-  version: 0.12.1
-  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.12.1"
+"@oxlint-tsgolint/darwin-arm64@npm:0.12.2":
+  version: 0.12.2
+  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.12.2"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/darwin-x64@npm:0.12.1":
-  version: 0.12.1
-  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.12.1"
+"@oxlint-tsgolint/darwin-x64@npm:0.12.2":
+  version: 0.12.2
+  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.12.2"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/linux-arm64@npm:0.12.1":
-  version: 0.12.1
-  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.12.1"
+"@oxlint-tsgolint/linux-arm64@npm:0.12.2":
+  version: 0.12.2
+  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.12.2"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/linux-x64@npm:0.12.1":
-  version: 0.12.1
-  resolution: "@oxlint-tsgolint/linux-x64@npm:0.12.1"
+"@oxlint-tsgolint/linux-x64@npm:0.12.2":
+  version: 0.12.2
+  resolution: "@oxlint-tsgolint/linux-x64@npm:0.12.2"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/win32-arm64@npm:0.12.1":
-  version: 0.12.1
-  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.12.1"
+"@oxlint-tsgolint/win32-arm64@npm:0.12.2":
+  version: 0.12.2
+  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.12.2"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/win32-x64@npm:0.12.1":
-  version: 0.12.1
-  resolution: "@oxlint-tsgolint/win32-x64@npm:0.12.1"
+"@oxlint-tsgolint/win32-x64@npm:0.12.2":
+  version: 0.12.2
+  resolution: "@oxlint-tsgolint/win32-x64@npm:0.12.2"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -321,66 +321,66 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260214.1"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260214.1"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260214.1"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260214.1"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260214.1"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260214.1"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260214.1"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview@npm:^7.0.0-dev.20260213.1":
-  version: 7.0.0-dev.20260213.1
-  resolution: "@typescript/native-preview@npm:7.0.0-dev.20260213.1"
+"@typescript/native-preview@npm:^7.0.0-dev.20260214.1":
+  version: 7.0.0-dev.20260214.1
+  resolution: "@typescript/native-preview@npm:7.0.0-dev.20260214.1"
   dependencies:
-    "@typescript/native-preview-darwin-arm64": "npm:7.0.0-dev.20260213.1"
-    "@typescript/native-preview-darwin-x64": "npm:7.0.0-dev.20260213.1"
-    "@typescript/native-preview-linux-arm": "npm:7.0.0-dev.20260213.1"
-    "@typescript/native-preview-linux-arm64": "npm:7.0.0-dev.20260213.1"
-    "@typescript/native-preview-linux-x64": "npm:7.0.0-dev.20260213.1"
-    "@typescript/native-preview-win32-arm64": "npm:7.0.0-dev.20260213.1"
-    "@typescript/native-preview-win32-x64": "npm:7.0.0-dev.20260213.1"
+    "@typescript/native-preview-darwin-arm64": "npm:7.0.0-dev.20260214.1"
+    "@typescript/native-preview-darwin-x64": "npm:7.0.0-dev.20260214.1"
+    "@typescript/native-preview-linux-arm": "npm:7.0.0-dev.20260214.1"
+    "@typescript/native-preview-linux-arm64": "npm:7.0.0-dev.20260214.1"
+    "@typescript/native-preview-linux-x64": "npm:7.0.0-dev.20260214.1"
+    "@typescript/native-preview-win32-arm64": "npm:7.0.0-dev.20260214.1"
+    "@typescript/native-preview-win32-x64": "npm:7.0.0-dev.20260214.1"
   dependenciesMeta:
     "@typescript/native-preview-darwin-arm64":
       optional: true
@@ -398,7 +398,7 @@ __metadata:
       optional: true
   bin:
     tsgo: bin/tsgo.js
-  checksum: 10c0/4d488ba5dd88e01d675cdf8792f2ab077080ecb7d1d5119e431c2b62d60fd41cf35fc662771351c9309b68337500514840eac4e1d80598f7a80774e6bdb12469
+  checksum: 10c0/2f8dcf518b9e17acb23bc4179f160669b90241bf3a90bb584dfbf004f3e35bf39aa1ee788db18467dfa265658482cc0789566b0ef4101ba1d15c26322d45e166
   languageName: node
   linkType: hard
 
@@ -406,7 +406,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "khora@workspace:."
   dependencies:
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260213.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260214.1"
     oxfmt: "npm:^0.32.0"
     oxlint: "catalog:"
     oxlint-tsgolint: "catalog:"
@@ -490,16 +490,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxlint-tsgolint@npm:^0.12.1":
-  version: 0.12.1
-  resolution: "oxlint-tsgolint@npm:0.12.1"
+"oxlint-tsgolint@npm:^0.12.2":
+  version: 0.12.2
+  resolution: "oxlint-tsgolint@npm:0.12.2"
   dependencies:
-    "@oxlint-tsgolint/darwin-arm64": "npm:0.12.1"
-    "@oxlint-tsgolint/darwin-x64": "npm:0.12.1"
-    "@oxlint-tsgolint/linux-arm64": "npm:0.12.1"
-    "@oxlint-tsgolint/linux-x64": "npm:0.12.1"
-    "@oxlint-tsgolint/win32-arm64": "npm:0.12.1"
-    "@oxlint-tsgolint/win32-x64": "npm:0.12.1"
+    "@oxlint-tsgolint/darwin-arm64": "npm:0.12.2"
+    "@oxlint-tsgolint/darwin-x64": "npm:0.12.2"
+    "@oxlint-tsgolint/linux-arm64": "npm:0.12.2"
+    "@oxlint-tsgolint/linux-x64": "npm:0.12.2"
+    "@oxlint-tsgolint/win32-arm64": "npm:0.12.2"
+    "@oxlint-tsgolint/win32-x64": "npm:0.12.2"
   dependenciesMeta:
     "@oxlint-tsgolint/darwin-arm64":
       optional: true
@@ -515,7 +515,7 @@ __metadata:
       optional: true
   bin:
     tsgolint: bin/tsgolint.js
-  checksum: 10c0/270054ca62254573bac8efa50ccbd8d95e5b8b9a0424b1a5a2ceda27f3fe6e099d9e660071e907bcd450cec217f79dec756161fe0efb4d4015639b30d6683abf
+  checksum: 10c0/34c016f4c55420858abb3adce5bcb645ab543f1b7ef107ea324d7851166c9d40e506e4396522d00c9ce5cca5ce459dbcd378c2de087e53dea77188bee4629a9c
   languageName: node
   linkType: hard
 
