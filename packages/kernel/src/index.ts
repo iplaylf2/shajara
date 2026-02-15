@@ -1,7 +1,8 @@
-interface KernelBoundary {
-  readonly kind: "kernel-boundary";
+interface KernelStub {
+  readonly phase: "stub";
 }
 
-const createKernelBoundary = (): KernelBoundary => ({ kind: "kernel-boundary" });
+const KERNEL_STUB: KernelStub = { phase: "stub" };
 
-export { createKernelBoundary };
+export type { KernelStub };
+export { KERNEL_STUB };

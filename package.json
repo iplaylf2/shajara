@@ -2,7 +2,8 @@
   "name": "khora",
   "workspaces": [
     "internal/*",
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "build": "yarn workspaces foreach -At --topological run build",

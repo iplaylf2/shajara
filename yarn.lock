@@ -203,6 +203,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@khora/example@workspace:apps/example":
+  version: 0.0.0-use.local
+  resolution: "@khora/example@workspace:apps/example"
+  dependencies:
+    "@khora/presets": "workspace:*"
+    "@khora/runtime": "workspace:*"
+    oxlint: "catalog:"
+    vite: "catalog:"
+  languageName: unknown
+  linkType: soft
+
 "@khora/kernel@workspace:*, @khora/kernel@workspace:packages/kernel":
   version: 0.0.0-use.local
   resolution: "@khora/kernel@workspace:packages/kernel"
@@ -221,7 +232,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@khora/runtime@workspace:packages/runtime":
+"@khora/runtime@workspace:*, @khora/runtime@workspace:packages/runtime":
   version: 0.0.0-use.local
   resolution: "@khora/runtime@workspace:packages/runtime"
   dependencies:

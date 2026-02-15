@@ -1,0 +1,21 @@
+{
+  "name": "@khora/example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev",
+    "lint": "oxlint",
+    "typecheck": "yarn run -T tsc"
+  },
+  "dependencies": {
+    "@khora/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@khora/presets": "workspace:*",
+    "oxlint": "catalog:",
+    "vite": "catalog:"
+  }
+}
