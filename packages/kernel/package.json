@@ -1,0 +1,22 @@
+{
+  "name": "@khora/kernel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "lint": "oxlint",
+    "typecheck": "yarn run -T tsc"
+  },
+  "devDependencies": {
+    "@khora/presets": "workspace:*",
+    "oxlint": "catalog:",
+    "vite": "catalog:"
+  }
+}

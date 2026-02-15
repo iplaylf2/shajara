@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true
+  },
+  "extends": "@khora/presets/tsconfig.shared.json",
+  "include": ["src/**/*.ts", "vite.config.ts"]
+}

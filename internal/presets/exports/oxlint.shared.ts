@@ -11,4 +11,10 @@ export default defineConfig({
     suspicious: "error",
   },
   plugins: ["import"],
+  rules: {
+    "eslint/no-ternary": "off",
+    "import/no-default-export": "off",
+    "import/no-named-export": "off",
+    "import/prefer-default-export": "off",
+  },
 });

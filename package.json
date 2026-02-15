@@ -1,13 +1,18 @@
 {
   "name": "khora",
   "workspaces": [
-    "internal/*"
+    "internal/*",
+    "packages/*"
   ],
+  "scripts": {
+    "build": "yarn workspaces foreach -At --topological run build",
+    "format": "yarn run oxfmt --write .",
+    "lint": "yarn workspaces foreach -Ap run lint",
+    "typecheck": "yarn workspaces foreach -Ap run typecheck"
+  },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260214.1",
     "oxfmt": "^0.32.0",
     "oxlint": "catalog:",
-    "oxlint-tsgolint": "catalog:",
     "typescript": "^5.9.3"
   },
   "dependenciesMeta": {

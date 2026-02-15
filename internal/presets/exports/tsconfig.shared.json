@@ -3,7 +3,6 @@
   "compilerOptions": {
     "exactOptionalPropertyTypes": true,
     "isolatedModules": true,
-    "module": "nodenext",
     "moduleDetection": "force",
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
