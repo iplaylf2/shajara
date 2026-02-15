@@ -1,28 +1,16 @@
-import { createRuntime, yieldNow } from "@khora/runtime";
+import { cede, run } from "@khora/runtime";
+import type { Blueprint } from "@khora/runtime";
 
-const EXPECTED_STEPS = 1;
+function* exampleBlueprint(): ReturnType<Blueprint<string>> {
+  yield* cede();
 
-const main = async (): Promise<void> => {
-  const runtime = createRuntime();
+  return "flow resumed after cede";
+}
 
-  const result = await runtime.run(function* exampleFlow(): Generator<
-    { readonly kind: "yield-now" },
-    { readonly message: string; readonly steps: number },
-    null | unknown
-  > {
-    yield* yieldNow();
+async function main(): Promise<void> {
+  await run(exampleBlueprint);
+}
 
-    return {
-      message: "flow resumed after yieldNow",
-      steps: EXPECTED_STEPS,
-    };
-  });
-
-  if (result.steps !== EXPECTED_STEPS) {
-    throw new Error("Unexpected runtime example result");
-  }
-};
-
-main().catch((error: unknown) => {
+main().catch(function rethrow(error: unknown) {
   throw error;
 });

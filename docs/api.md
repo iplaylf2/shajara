@@ -88,7 +88,7 @@
 - `terminate` 触发分支收敛
 - `halt` 触发当前 `Scope` 的终止级联
 - `receive` 从 `Sink` 获取输入
-- `yieldNow` 协作式让权
+- `cede` 协作式让权
 
 ### 4.3 上下文原语
 

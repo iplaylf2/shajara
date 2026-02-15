@@ -3,44 +3,35 @@ interface ScopeHandle {
 }
 
 interface RuntimeState {
-  nextScopeId: number;
+  readonly rootScopeHandle: ScopeHandle;
   readonly queuedInputsByScope: Map<number, unknown[]>;
 }
 
-const createRuntimeState = (): RuntimeState => ({
-  nextScopeId: 1,
-  queuedInputsByScope: new Map<number, unknown[]>(),
-});
+const ROOT_SCOPE_HANDLE: ScopeHandle = { id: 1 };
 
-const allocateScope = (runtimeState: RuntimeState): ScopeHandle => {
-  const scopeHandle: ScopeHandle = { id: runtimeState.nextScopeId };
-  runtimeState.nextScopeId += 1;
-  runtimeState.queuedInputsByScope.set(scopeHandle.id, []);
-  return scopeHandle;
+const RUNTIME_STATE: RuntimeState = {
+  queuedInputsByScope: new Map<number, unknown[]>([[ROOT_SCOPE_HANDLE.id, []]]),
+  rootScopeHandle: ROOT_SCOPE_HANDLE,
 };
 
-const enqueueScopeInput = (
-  runtimeState: RuntimeState,
-  scopeHandle: ScopeHandle,
-  inputValue: unknown,
-): void => {
-  const queue = runtimeState.queuedInputsByScope.get(scopeHandle.id);
+function postScopeInput(scopeHandle: ScopeHandle, inputValue: unknown): void {
+  const queue = RUNTIME_STATE.queuedInputsByScope.get(scopeHandle.id);
   if (!queue) {
-    runtimeState.queuedInputsByScope.set(scopeHandle.id, [inputValue]);
+    RUNTIME_STATE.queuedInputsByScope.set(scopeHandle.id, [inputValue]);
     return;
   }
 
   queue.push(inputValue);
-};
+}
 
-const drainScopeInputs = (runtimeState: RuntimeState, scopeHandle: ScopeHandle): void => {
-  const queue = runtimeState.queuedInputsByScope.get(scopeHandle.id);
+function clearScopeInputs(scopeHandle: ScopeHandle): void {
+  const queue = RUNTIME_STATE.queuedInputsByScope.get(scopeHandle.id);
   if (!queue) {
     return;
   }
 
   queue.length = 0;
-};
+}
 
 export type { RuntimeState, ScopeHandle };
-export { allocateScope, createRuntimeState, drainScopeInputs, enqueueScopeInput };
+export { clearScopeInputs, ROOT_SCOPE_HANDLE, postScopeInput };
