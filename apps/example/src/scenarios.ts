@@ -6,13 +6,16 @@ import {
   halt,
   join,
   race,
+  resource,
   resolve,
   resumable,
   scoped,
   self,
   spawn,
+  suspend,
   terminate,
 } from "@khora/runtime/primitives";
+import type { RuntimeResourceProvide } from "@khora/runtime/primitives";
 
 function consume<Value>(value: Value): Value {
   return value;
@@ -81,6 +84,29 @@ function* haltBlueprint(): RuntimePlan<never> {
   throw new Error("Not implemented: halt() never returns.");
 }
 
+function* suspendBlueprint(): RuntimePlan<never> {
+  yield* suspend();
+  throw new Error("Not implemented: suspend() only resumes as failure.");
+}
+
+function* resourceBodyBlueprint(
+  provide: RuntimeResourceProvide<string>,
+): RuntimePlan<void> {
+  const resourceValue = "resource-ready";
+
+  try {
+    yield* provide(resourceValue);
+  } finally {
+    // cleanup path: should run when parent scope reclaims this resource scope.
+    yield* cede();
+  }
+}
+
+function* resourceBlueprint(): RuntimePlan<void> {
+  const providedValue = yield* resource(resourceBodyBlueprint);
+  consume(providedValue);
+}
+
 const EXAMPLE_SCENARIOS = {
   all: allBlueprint,
   bindResolve: bindResolveBlueprint,
@@ -88,10 +114,12 @@ const EXAMPLE_SCENARIOS = {
   halt: haltBlueprint,
   join: spawnBlueprint,
   race: raceBlueprint,
+  resource: resourceBlueprint,
   run: runBlueprint,
   scoped: scopedBlueprint,
   self: selfBlueprint,
   spawn: spawnBlueprint,
+  suspend: suspendBlueprint,
   terminate: terminateBlueprint,
 } satisfies Record<string, RuntimeBlueprint<unknown>>;
 

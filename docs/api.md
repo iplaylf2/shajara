@@ -50,6 +50,7 @@
 并发构造原语以“结构”为单位封装内核交互序列，产出可组合的句柄或结果。
 
 - `spawn` 创建子 `Scope` 并在其中引入并行分支
+- `resource` 创建资源作用域；调用方等待 `provide(value)` 的首个值作为返回，资源作用域在 `provide` 后继续挂起等待父 scope 回收
 - `all` 聚合等待多个分支
 - `race` 选择最先完成者，并触发其余分支的收敛
 - `scoped` 创建子 `Scope` 并立即等待其收敛；第二参数 `onResumableError` 是捕获 handler，不是 `scoped` 自身异常兜底
@@ -63,6 +64,7 @@
 - `terminate` 触发一个 `spawn` 句柄对应作用域的收敛
 - `halt` 触发当前 `Scope` 的终止级联
 - `cede` 协作式让权
+- `suspend` 使当前执行体持续挂起，直到父 scope 在回收清理阶段以失败路径唤醒
 
 ### 4.3 上下文原语
 

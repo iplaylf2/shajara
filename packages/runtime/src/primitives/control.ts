@@ -16,4 +16,8 @@ function halt(): RuntimePlan<never> {
   return notImplementedRuntimePrimitive("halt");
 }
 
-export { halt, join, terminate };
+function suspend(): RuntimePlan<never> {
+  return notImplementedRuntimePrimitive("suspend");
+}
+
+export { halt, join, suspend, terminate };

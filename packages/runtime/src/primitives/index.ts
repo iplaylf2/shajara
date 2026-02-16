@@ -1,6 +1,11 @@
-export { all, race, resumable, scoped, spawn } from "./concurrency";
-export type { RuntimeRaceResult, RuntimeResumableErrorHandler } from "./concurrency";
-export { halt, join, terminate } from "./control";
+export { all, race, resource, resumable, scoped, spawn } from "./concurrency";
+export type {
+  RuntimeRaceResult,
+  RuntimeResourceBody,
+  RuntimeResourceProvide,
+  RuntimeResumableErrorHandler,
+} from "./concurrency";
+export { halt, join, suspend, terminate } from "./control";
 export { bind, resolve } from "./context";
 export { cede } from "./cede";
 export { self } from "./self";

@@ -56,6 +56,16 @@
 - Impact: 提交后可直接进入桥接执行实现与验证，不需要再做接口与结构层返工。
 - Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:31`, `packages/runtime/src/runtime-runner.ts:4`
 
+### 4.4 控制原语语义存在新增设计增量（`suspend`）
+
+- Impact: 除 `cede` 的“主动让出一次调度”外，需要补一个“持续挂起直到父 scope 清理阶段失败唤醒”的控制原语，用于表达被动中止与结构化清理联动。
+- Evidence: `execution.md:59`
+
+### 4.5 资源原语语义存在新增设计增量（`resource + provide`）
+
+- Impact: 需要新增 `resource` 作用域构造原语：调用方等待 `provide(value)` 的首个值作为返回；资源作用域在 `provide` 处继续挂起，直到父 scope 回收时按失败路径唤醒，以支持 `try...provide...finally...` 的资源释放模型。
+- Evidence: `execution.md:64`
+
 ## 5. Build 阶段执行切片
 
 ### 5.1 Slice B1：收敛文档职责边界
@@ -135,9 +145,23 @@
 - Evidence: `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
 - Next: 后续若恢复输入读取入口，先定义编排层场景与作用域语义，再决定 API 形态。
 
+### 5.12 Slice B12：新增 `suspend` 原语语义（区别于 `cede`）
+
+- Status: **In Progress**
+- Output: 定义 `suspend` 为“当前执行体进入持续挂起，不再主动恢复；仅在父 scope 退出清理阶段由 runtime 以失败结果唤醒”。
+- Evidence: `execution.md:143`
+- Next: 在 `packages/runtime/src/primitives/control.ts` 增补签名，并在 bridge 执行层定义父 scope cleanup -> 子执行体失败唤醒的映射规则。
+
+### 5.13 Slice B13：新增 `resource` 原语语义（`provide` 驱动返回）
+
+- Status: **In Progress**
+- Output: 新增 `resource(body)` 与 `provide(value)` 契约：`resource` 返回 `provide` 提交的值，`provide` 返回后不完成资源作用域，而是在资源作用域内持续挂起并等待父 scope 回收。
+- Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `apps/example/src/scenarios.ts:1`
+- Next: 在 bridge 执行层实现 `resource` 的双阶段语义（提供值返回给父作用域 + 资源作用域延后回收），并验证 `try...provide...finally...` 清理路径。
+
 ## 6. 后续阶段方向
 
-- Prove: 增加 runtime bridge 的类型与行为一致性测试。
+- Prove: 增加 runtime bridge 的类型与行为一致性测试，覆盖 `suspend` cleanup 唤醒路径及 `resource` 的 provide/回收双阶段路径。
 - Operate: 把 `run + 内部输入投递适配` 与原语联动纳入回归脚本。
 - Ship: 在实现稳定后更新示例说明与对外 API 细节。
 

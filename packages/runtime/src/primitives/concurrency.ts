@@ -8,6 +8,14 @@ interface RuntimeRaceResult<ReturnValue> {
   readonly value: ReturnValue;
 }
 
+type RuntimeResourceProvide<ProvidedValue> = (
+  value: ProvidedValue,
+) => RuntimePlan<never>;
+
+type RuntimeResourceBody<ProvidedValue> = (
+  provide: RuntimeResourceProvide<ProvidedValue>,
+) => RuntimePlan<unknown>;
+
 type RuntimeResumableErrorHandler<CaughtValue> = (
   error: Error,
 ) => RuntimePlan<CaughtValue>;
@@ -47,5 +55,16 @@ function resumable<ReturnValue>(
   return notImplementedRuntimePrimitive("resumable");
 }
 
-export { all, race, resumable, scoped, spawn };
-export type { RuntimeRaceResult, RuntimeResumableErrorHandler };
+function resource<ProvidedValue>(
+  _body: RuntimeResourceBody<ProvidedValue>,
+): RuntimePlan<ProvidedValue> {
+  return notImplementedRuntimePrimitive("resource");
+}
+
+export { all, race, resource, resumable, scoped, spawn };
+export type {
+  RuntimeRaceResult,
+  RuntimeResourceBody,
+  RuntimeResourceProvide,
+  RuntimeResumableErrorHandler,
+};
