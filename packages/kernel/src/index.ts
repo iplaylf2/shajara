@@ -1,4 +1,5 @@
 export type {
+  Blueprint,
   ImpurePlan,
   Plan,
   PurePlan,
@@ -7,3 +8,6 @@ export type {
   RuntimeErrorCode,
   Syscall,
 } from "./plan-contract";
+
+export type { CedeSyscall } from "./cede";
+export { createCedeSyscall } from "./cede";

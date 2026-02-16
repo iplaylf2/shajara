@@ -1,7 +1,4 @@
-import type { RuntimeInstruction } from "#src/runtime-instruction";
+import { createCedeSyscall } from "@khora/kernel";
+import { liftSyscall } from "#src/primitives-kit/runtime-protocol";
 
-function* cede(): Generator<RuntimeInstruction, void, unknown> {
-  yield { kind: "cede" };
-}
-
-export { cede };
+export const cede = () => liftSyscall(createCedeSyscall());

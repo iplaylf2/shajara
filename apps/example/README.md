@@ -1,10 +1,9 @@
 # @khora/example
 
-Node runtime usage example for `@khora/runtime` with a fixed entrypoint output.
+Type-shape example for `@khora/runtime` and `@khora/kernel` contracts.
 
-## Run
+## Check
 
 ```bash
-yarn dev
-yarn build
+yarn typecheck
 ```

@@ -1,4 +1,5 @@
 export type {
+  Blueprint,
   ImpurePlan,
   Plan,
   PurePlan,

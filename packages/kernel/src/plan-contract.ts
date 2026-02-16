@@ -37,7 +37,10 @@ type Plan<ReturnValue> =
   | PurePlan<ReturnValue>
   | ImpurePlan<unknown, ReturnValue>;
 
+type Blueprint<ReturnValue> = () => Plan<ReturnValue>;
+
 export type {
+  Blueprint,
   ImpurePlan,
   Plan,
   PurePlan,

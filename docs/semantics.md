@@ -7,7 +7,7 @@
 `Plan<T>` 为二者之一：
 
 - `Pure(value: T)`
-- `Impure(syscall: Syscall<A>, k: (result: Result<A>) => Plan<T>)`
+- `Impure(syscall: Syscall<A>, then: (result: Result<A>) => Plan<T>, terminate: () => Plan<T>)`
 
 `Blueprint<T>` 为 `() => Plan<T>`。
 

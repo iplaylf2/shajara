@@ -1,8 +1,7 @@
 import { ROOT_SCOPE_HANDLE, postScopeInput } from "./runtime-state";
-import type { Blueprint } from "./blueprint";
+import type { RuntimeBlueprint } from "./blueprint";
+import type { ScopeHandle } from "./runtime-state";
 import { runBlueprint } from "./runtime-runner";
-
-type ScopeHandle = import("./runtime-state").ScopeHandle;
 
 const ROOT_SCOPE: ScopeHandle = ROOT_SCOPE_HANDLE;
 
@@ -10,8 +9,10 @@ function post(scopeHandle: ScopeHandle, inputValue: unknown): void {
   postScopeInput(scopeHandle, inputValue);
 }
 
-function run<ReturnValue>(blueprint: Blueprint<ReturnValue>): Promise<ReturnValue> {
-  return runBlueprint(blueprint);
+function run<ReturnValue>(
+  runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
+): Promise<ReturnValue> {
+  return runBlueprint(runtimeBlueprint);
 }
 
 export type { ScopeHandle };
