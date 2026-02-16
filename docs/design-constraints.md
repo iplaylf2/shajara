@@ -28,8 +28,15 @@
 
 ## 5. runtime 对外表面
 
-- runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimePrimitive`）与宿主 API（`run`/`post`）。
+- runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimePrimitive`）与公开启动入口（`run`）。
 - runtime 对外不引导用户直接构造 kernel 层细节。
+- 输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
+- kernel 中 `Fork` 属于 syscall 语义；编排层不直接暴露 `fork` 原语，创建并发流程统一经 `spawn` 进入可控 `Scope`。
+- 用户侧生命周期控制粒度固定为 `Scope`；process 级句柄与 `awaitProcess` 不进入编排层公开表面。
+- `spawn` 返回值作为编排层唯一的作用域控制句柄；不在公开 API 暴露其内部结构字段（如 `scope`）。
+- 结构性监督语义通过 `scoped + resumable` 建模；不再以 `supervise` 作为公开编排原语。
+- `scoped` 的第二参数是 `resumable` 路径异常的捕获 handler，不表示 `scoped` 对任意异常的本地兜底。
+- 编排层公开原语暂不包含输入读取能力（`receive` 不在公开 primitives 表面）。
 
 ## 6. example 约束
 

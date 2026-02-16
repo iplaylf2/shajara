@@ -1,0 +1,105 @@
+import type { RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
+import {
+  all,
+  awaitScope,
+  bind,
+  cede,
+  halt,
+  race,
+  resolve,
+  resumable,
+  scoped,
+  self,
+  spawn,
+  terminate,
+} from "@khora/runtime/primitives";
+
+function consume<Value>(value: Value): Value {
+  return value;
+}
+
+function* childBlueprint(): RuntimePlan<string> {
+  yield* cede();
+  return "child done";
+}
+
+function* runBlueprint(): RuntimePlan<string> {
+  yield* cede();
+  return "run done";
+}
+
+function* spawnBlueprint(): RuntimePlan<void> {
+  const spawned = yield* spawn(childBlueprint);
+  const scopeExit = yield* awaitScope(spawned);
+  consume(scopeExit);
+}
+
+function* allBlueprint(): RuntimePlan<void> {
+  const bothDone = yield* all([cede, cede] as const);
+  consume(bothDone);
+}
+
+function* raceBlueprint(): RuntimePlan<void> {
+  const winner = yield* race([cede, cede] as const);
+  consume(winner);
+}
+
+function* onResumableError(error: Error): RuntimePlan<string> {
+  consume(error);
+  yield* cede();
+  return "scoped fallback";
+}
+
+function* scopedBodyBlueprint(): RuntimePlan<string> {
+  const bodyResult = yield* resumable(childBlueprint);
+  return bodyResult;
+}
+
+function* scopedBlueprint(): RuntimePlan<void> {
+  const scopedResult = yield* scoped(scopedBodyBlueprint, onResumableError);
+  consume(scopedResult);
+}
+
+function* terminateBlueprint(): RuntimePlan<void> {
+  const spawned = yield* spawn(childBlueprint);
+  yield* terminate(spawned);
+}
+
+function* bindResolveBlueprint(): RuntimePlan<void> {
+  yield* bind("traceId", "request-1");
+  const traceId = yield* resolve<string>("traceId");
+  consume(traceId);
+}
+
+function* selfBlueprint(): RuntimePlan<void> {
+  const descriptor = yield* self();
+  consume(descriptor);
+}
+
+function* haltBlueprint(): RuntimePlan<never> {
+  yield* halt();
+  throw new Error("Not implemented: halt() never returns.");
+}
+
+const EXAMPLE_SCENARIOS = {
+  all: allBlueprint,
+  awaitScope: spawnBlueprint,
+  bindResolve: bindResolveBlueprint,
+  cede: childBlueprint,
+  halt: haltBlueprint,
+  race: raceBlueprint,
+  run: runBlueprint,
+  scoped: scopedBlueprint,
+  self: selfBlueprint,
+  spawn: spawnBlueprint,
+  terminate: terminateBlueprint,
+} satisfies Record<string, RuntimeBlueprint<unknown>>;
+
+type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
+
+function getExampleScenario(name: ExampleScenarioName): RuntimeBlueprint<unknown> {
+  return EXAMPLE_SCENARIOS[name];
+}
+
+export { EXAMPLE_SCENARIOS, getExampleScenario };
+export type { ExampleScenarioName };

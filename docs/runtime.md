@@ -59,7 +59,11 @@
 边界层承接宿主 API 与用户侧编排表达：
 
 - 用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，并通过 `yield*` 组合原语。
-- 宿主侧通过 `run` 启动流程，通过 `post` 向 `ScopeHandle` 指向的作用域投递输入。
+- 用户侧并发创建以 `spawn` 为结构入口，不直接暴露 process 级创建原语。
+- 用户侧观察与控制以 `Scope` 为粒度，不暴露 process 级句柄。
+- 用户侧通过 `spawn` 句柄进行等待与终止，不透出底层 scope 结构字段。
+- 用户侧结构性监督以 `scoped + resumable` 组合表达：`scoped` 提供收敛与捕获边界，`resumable` 声明可恢复传播点；`scoped` 的捕获 handler 只接收 `resumable` 子孙路径的异常。
+- 宿主侧通过 `run` 启动流程；输入投递通过 runtime 内部宿主适配层完成。
 
 该层负责把边界入口的调用协议映射到核心层推进协议。
 

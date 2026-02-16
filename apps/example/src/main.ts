@@ -1,12 +1,7 @@
-import type { RuntimeBlueprint } from "@khora/runtime";
-import { cede } from "@khora/runtime/primitives";
-import { run } from "@khora/runtime";
+import { DEFAULT_EXAMPLE_APP_OPTIONS, startExampleApp } from "./example-app";
 
-function* exampleBlueprint(): ReturnType<RuntimeBlueprint<string>> {
-  yield* cede();
-  return "flow resumed after cede";
+function rethrow(error: unknown): never {
+  throw error;
 }
 
-run(exampleBlueprint).catch(function rethrow(error: unknown) {
-  throw error;
-});
+startExampleApp(DEFAULT_EXAMPLE_APP_OPTIONS).catch(rethrow);
