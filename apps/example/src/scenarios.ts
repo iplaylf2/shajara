@@ -1,5 +1,5 @@
 import type { RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
-import { action, run } from "@khora/runtime";
+import { action, sleep, until } from "@khora/runtime";
 import {
   all,
   bind,
@@ -106,26 +106,26 @@ function* resourceBlueprint(): RuntimePlan<void> {
   consume(providedValue);
 }
 
-async function actionResolveExample(): Promise<void> {
+function* actionResolveBlueprint(): RuntimePlan<void> {
   const pending = action<string>();
-  const waiting = run(function* actionWaiter(): RuntimePlan<string> {
-    return yield* join(pending.scope);
-  });
   pending.resolve("action done");
-  const value = await waiting;
+  const value = yield* join(pending.scope);
   consume(value);
 }
 
-async function actionRejectExample(): Promise<void> {
-  const pending = action<string>();
-  const waiting = run(function* actionWaiter(): RuntimePlan<string> {
-    return yield* join(pending.scope);
-  });
-  pending.reject(new Error("action failed"));
-  await waiting.catch(consume);
+function* sleepBlueprint(): RuntimePlan<void> {
+  yield* sleep(10);
+}
+
+function* untilBlueprint(): RuntimePlan<void> {
+  const scope = until(() => Promise.resolve("until done"));
+
+  const value = yield* join(scope);
+  consume(value);
 }
 
 const EXAMPLE_SCENARIOS = {
+  actionResolve: actionResolveBlueprint,
   all: allBlueprint,
   bindLookup: bindLookupBlueprint,
   cede: childBlueprint,
@@ -136,9 +136,11 @@ const EXAMPLE_SCENARIOS = {
   run: runBlueprint,
   scoped: scopedBlueprint,
   self: selfBlueprint,
+  sleep: sleepBlueprint,
   spawn: spawnBlueprint,
   suspend: suspendBlueprint,
   terminate: terminateBlueprint,
+  until: untilBlueprint,
 } satisfies Record<string, RuntimeBlueprint<unknown>>;
 
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
@@ -147,5 +149,5 @@ function getExampleScenario(name: ExampleScenarioName): RuntimeBlueprint<unknown
   return EXAMPLE_SCENARIOS[name];
 }
 
-export { EXAMPLE_SCENARIOS, actionRejectExample, actionResolveExample, getExampleScenario };
+export { EXAMPLE_SCENARIOS, getExampleScenario };
 export type { ExampleScenarioName };

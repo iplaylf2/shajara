@@ -46,6 +46,14 @@
 - 与 `run` 同层，属于用户编排入口 API，不属于 primitives。
 - 底层可借助 runtime 内部宿主适配能力（例如输入投递）完成结算推进。
 
+### 3.4 sleep
+
+以毫秒为单位等待一段宿主时间：`sleep(milliseconds): RuntimePlan<void>`。
+
+### 3.5 until
+
+接受一个 promise thunk：`until(thunk)`，返回一个可被 `join` 的 `scope` 句柄。
+
 ---
 
 ## 4. 编排原语 API
