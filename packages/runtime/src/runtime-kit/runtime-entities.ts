@@ -5,12 +5,9 @@ interface RuntimeScopeHandle {
   readonly [RUNTIME_SCOPE_HANDLE_TOKEN]: "runtime-scope-handle";
 }
 
-type RuntimeScopeExit =
-  | { readonly kind: "exited" }
-  | { readonly kind: "in-limbo" };
-
-interface RuntimeSpawnRef {
+interface RuntimeSpawnRef<ReturnValue = unknown> {
   readonly [RUNTIME_SPAWN_REF_TOKEN]: "runtime-spawn-ref";
+  readonly _return?: ReturnValue;
 }
 
 interface RuntimeSelfDescriptor {
@@ -21,7 +18,6 @@ interface RuntimeSelfDescriptor {
 }
 
 export type {
-  RuntimeScopeExit,
   RuntimeScopeHandle,
   RuntimeSelfDescriptor,
   RuntimeSpawnRef,

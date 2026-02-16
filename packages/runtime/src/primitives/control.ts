@@ -1,9 +1,11 @@
-import type { RuntimeScopeExit, RuntimeSpawnRef } from "#src/runtime-kit/runtime-entities";
 import type { RuntimePlan } from "#src/runtime-kit/runtime-protocol";
+import type { RuntimeSpawnRef } from "#src/runtime-kit/runtime-entities";
 import { notImplementedRuntimePrimitive } from "#src/runtime-kit/not-implemented";
 
-function awaitScope(_spawned: RuntimeSpawnRef): RuntimePlan<RuntimeScopeExit> {
-  return notImplementedRuntimePrimitive("awaitScope");
+function join<ReturnValue>(
+  _spawned: RuntimeSpawnRef<ReturnValue>,
+): RuntimePlan<ReturnValue> {
+  return notImplementedRuntimePrimitive("join");
 }
 
 function terminate(_spawned: RuntimeSpawnRef): RuntimePlan<void> {
@@ -14,4 +16,4 @@ function halt(): RuntimePlan<never> {
   return notImplementedRuntimePrimitive("halt");
 }
 
-export { awaitScope, halt, terminate };
+export { halt, join, terminate };

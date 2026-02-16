@@ -1,10 +1,10 @@
 import type { RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
 import {
   all,
-  awaitScope,
   bind,
   cede,
   halt,
+  join,
   race,
   resolve,
   resumable,
@@ -30,8 +30,8 @@ function* runBlueprint(): RuntimePlan<string> {
 
 function* spawnBlueprint(): RuntimePlan<void> {
   const spawned = yield* spawn(childBlueprint);
-  const scopeExit = yield* awaitScope(spawned);
-  consume(scopeExit);
+  const joinedValue = yield* join(spawned);
+  consume(joinedValue);
 }
 
 function* allBlueprint(): RuntimePlan<void> {
@@ -83,10 +83,10 @@ function* haltBlueprint(): RuntimePlan<never> {
 
 const EXAMPLE_SCENARIOS = {
   all: allBlueprint,
-  awaitScope: spawnBlueprint,
   bindResolve: bindResolveBlueprint,
   cede: childBlueprint,
   halt: haltBlueprint,
+  join: spawnBlueprint,
   race: raceBlueprint,
   run: runBlueprint,
   scoped: scopedBlueprint,

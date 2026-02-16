@@ -23,7 +23,8 @@
 - 根据顶层编排边界约束，公开 `fork` 原语已移除；并发创建入口收敛为 `spawn`。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/concurrency.ts:1`
 - 用户侧 process 粒度 API 已收敛出公开表面；观察与控制统一为 `Scope` 粒度。Evidence: `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `apps/example/src/scenarios.ts:1`
 - 编排层原语调用形态已收敛为 `yield* primitive(...)`；去除二次调用 `yield* primitive(...)()`。Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`
-- `spawn` 句柄已收敛为不透明引用；`awaitScope/terminate` 直接接收 `spawned`，不再经 `spawned.scope` 暴露结构字段。Evidence: `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`
+- `spawn` 句柄已收敛为不透明引用；`join/terminate` 直接接收 `spawned`，不再经 `spawned.scope` 暴露结构字段。Evidence: `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`
+- generator 边界语义已收敛为“成功值返回、失败异常抛出”；`join` 只返回成功值，失败由 runtime 以异常传播。Evidence: `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
 - 结构性监督原语已从 `supervise` 收敛为 `scoped + resumable` 组合：`scoped` 提供 `caught` 兜底，`resumable` 声明可恢复传播点。Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
 - `scoped` 第二参数语义已澄清为 `onResumableError` 捕获 handler：仅处理 `resumable` 子孙路径异常，不表示 `scoped` 自身任意异常兜底。Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `docs/api.md:1`, `docs/design-constraints.md:1`
 - 公开编排原语已移除 `receive`；输入读取能力暂不在 runtime 对外 primitives 表面。Evidence: `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
@@ -97,7 +98,7 @@
 - Status: **Completed**
 - Output: `fork` 保留在 syscall 语义层，不再作为编排层原语；公开并发创建统一经 `spawn` 暴露。
 - Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
-- Next: 在执行桥接实现阶段确认 `spawn` 与 `awaitScope/terminate` 的 Scope 级映射保持一致。
+- Next: 在执行桥接实现阶段确认 `spawn` 与 `join/terminate` 的 Scope 级映射保持一致。
 
 ### 5.7 Slice B7：收敛原语调用形态（移除二次调用）
 
@@ -109,9 +110,9 @@
 ### 5.8 Slice B8：收敛 spawn 句柄语义（移除结构字段访问）
 
 - Status: **Completed**
-- Output: 用户侧等待/终止改为 `awaitScope(spawned)` 与 `terminate(spawned)`；不再使用 `spawned.scope`。
+- Output: 用户侧等待/终止改为 `join(spawned)` 与 `terminate(spawned)`；不再使用 `spawned.scope`。
 - Evidence: `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
-- Next: 在桥接执行实现阶段将 spawn 句柄与内部 scope 标识映射闭合到控制 syscall 路径。
+- Next: 在桥接执行实现阶段将 spawn 句柄与内部 scope 标识映射闭合到 `join/terminate` 控制路径。
 
 ### 5.9 Slice B9：重构监督原语（supervise -> scoped + resumable）
 

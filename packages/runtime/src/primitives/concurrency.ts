@@ -18,7 +18,7 @@ type RuntimePrimitiveTuple<ReturnValues extends readonly unknown[]> = {
 
 function spawn<ReturnValue>(
   _blueprint: RuntimeBlueprint<ReturnValue>,
-): RuntimePlan<RuntimeSpawnRef> {
+): RuntimePlan<RuntimeSpawnRef<ReturnValue>> {
   return notImplementedRuntimePrimitive("spawn");
 }
 
