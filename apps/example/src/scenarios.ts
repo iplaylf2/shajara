@@ -22,6 +22,8 @@ function consume<Value>(value: Value): Value {
   return value;
 }
 
+const EXAMPLE_SLEEP_MILLISECONDS = 10;
+
 function* childBlueprint(): RuntimePlan<string> {
   yield* cede();
   return "child done";
@@ -107,14 +109,14 @@ function* resourceBlueprint(): RuntimePlan<void> {
 }
 
 function* actionResolveBlueprint(): RuntimePlan<void> {
-  const pending = action<string>();
+  const pending = yield* action<string>();
   pending.resolve("action done");
   const value = yield* join(pending.scope);
   consume(value);
 }
 
 function* sleepBlueprint(): RuntimePlan<void> {
-  yield* sleep(10);
+  yield* sleep(EXAMPLE_SLEEP_MILLISECONDS);
 }
 
 function* untilBlueprint(): RuntimePlan<void> {

@@ -28,9 +28,11 @@
 
 ## 5. runtime 对外表面
 
-- runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimePrimitive`）与公开启动入口（`run`）。
+- runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimePrimitive`）与公开宿主入口（`run`、`createScope`）。
 - runtime 对外不引导用户直接构造 kernel 层细节。
 - 输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
+- 宿主入口 `run/createScope` 的作用域挂载在全局 root 锚点下；`yield*` 语境中的上下文敏感入口沿当前执行上下文作用域分支绑定。
+- `action` 作为上下文敏感宿主入口，以 `yield* action<T>()` 返回 `RuntimeAction<T>`，不作为顶级直接调用能力。
 - kernel 中 `Fork` 属于 syscall 语义；编排层不直接暴露 `fork` 原语，创建并发流程统一经 `spawn` 进入可控 `Scope`。
 - `resource` 属于编排层资源作用域构造原语：`resource` 调用方等待 `provide(value)` 返回首个值，资源作用域在 `provide` 后继续挂起并在父 scope 回收时清理。
 - 用户侧生命周期控制粒度固定为 `Scope`；process 级句柄与 `awaitProcess` 不进入编排层公开表面。

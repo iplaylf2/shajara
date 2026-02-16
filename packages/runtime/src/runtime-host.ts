@@ -10,16 +10,25 @@ interface RuntimeAction<ReturnValue> {
   reject(reason: unknown): void;
 }
 
+interface RuntimeScope {
+  run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue>;
+  halt(): Promise<void>;
+}
+
 type RuntimeUntilThunk<ReturnValue> = () => PromiseLike<ReturnValue>;
 
 function run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue> {
   return runBlueprint(runtimeBlueprint);
 }
 
-function action<ReturnValue>(): RuntimeAction<ReturnValue> {
+function createScope(): RuntimeScope {
   throw new Error(
-    "Not implemented: creating a host-level runtime action capability with scope/resolve/reject.",
+    "Not implemented: creating a host-managed scope with run()/halt() lifecycle controls.",
   );
+}
+
+function action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> {
+  return notImplementedRuntimePrimitive("action");
 }
 
 function sleep(_milliseconds: number): RuntimePlan<void> {
@@ -33,4 +42,5 @@ function until<ReturnValue>(_thunk: RuntimeUntilThunk<ReturnValue>): RuntimeSpaw
 }
 
 export { action, run, sleep, until };
-export type { RuntimeAction, RuntimeUntilThunk };
+export { createScope };
+export type { RuntimeAction, RuntimeScope, RuntimeUntilThunk };

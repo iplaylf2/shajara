@@ -10,4 +10,5 @@ khora 是一个并发计算内核，目标是把并发计算的生命周期管�
 - `docs/runtime.md`：TypeScript 运行时落地要点
 - `docs/api.md`：对外 API 轮廓
 - `docs/design-constraints.md`：已确认设计约束（长期稳定）
+- `execution.md`：当前迭代状态、阶段与证据（动态快照）
 - `apps/example`：`@khora/runtime` 最小调用子包示例

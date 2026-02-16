@@ -17,6 +17,12 @@
 - 负责把宿主输入映射到运行时作用域输入通道
 - 不作为应用侧直接调用入口
 
+### 1.3 宿主 API 的作用域绑定方式
+
+- `run`、`createScope` 这类宿主入口属于 root 锚定入口，其运行作用域挂在全局 `root scope` 下。
+- 在 `blueprint/plan` 中通过 `yield*` 使用的 API 属于上下文敏感入口，作用域归属由当前执行上下文决定。
+- 上下文敏感入口创建的作用域附着在当前执行上下文所在分支。
+
 ---
 
 ## 2. 用户侧计算单元
@@ -39,12 +45,15 @@
 
 启动一段 `RuntimeBlueprint` 并在宿主侧等待其结果。
 
+- `run` 的运行作用域挂载在全局 `root scope` 下。
+- `run` 失败以当前调用的失败结果返回调用方，`root scope` 继续作为生命周期锚点。
+
 ### 3.3 action
 
-创建一个宿主侧可结算能力记录，返回 `{ scope, resolve, reject }`。
+在 `blueprint/plan` 上下文中通过 `yield* action<T>()` 获取宿主侧可结算能力记录 `{ scope, resolve, reject }`。
 
-- 与 `run` 同层，属于用户编排入口 API，不属于 primitives。
-- 底层可借助 runtime 内部宿主适配能力（例如输入投递）完成结算推进。
+- `action` 属于上下文敏感入口，作用域归属当前执行上下文分支。
+- 底层通过 runtime 内部宿主适配能力（例如输入投递）完成结算推进。
 
 ### 3.4 sleep
 
@@ -53,6 +62,15 @@
 ### 3.5 until
 
 接受一个 promise thunk：`until(thunk)`，返回一个可被 `join` 的 `scope` 句柄。
+
+### 3.6 createScope
+
+创建一个宿主侧托管作用域句柄，返回 `{ run, halt }`。
+
+- 托管作用域本身挂载在全局 `root scope` 下。
+- `scope.run(blueprint)`：在该托管作用域下启动一次 `RuntimeBlueprint` 并等待其结果。
+- `scope.halt()`：触发该托管作用域的关闭流程并等待收敛。
+- `scope.run(...)` 失败返回该次运行失败；托管作用域生命周期由 `scope.halt()` 显式治理。
 
 ---
 
@@ -110,3 +128,4 @@
 - 用户侧通过 `spawn` 返回句柄承接作用域观察与控制，不透出底层 scope 结构字段
 - 编排层暂不暴露输入读取原语（如 `receive`）
 - generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播（不通过返回值编码失败态）
+- `createScope` 属于用户编排 API（非 primitives）；`scope.run` 与 `scope.halt` 负责宿主侧生命周期治理

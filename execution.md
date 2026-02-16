@@ -16,7 +16,11 @@
 
 - `kernel` 承载 `Blueprint<T> = () => Plan<T>` 契约，`runtime` 直接依赖该契约类型。Evidence: `packages/kernel/src/plan-contract.ts:40`, `packages/runtime/src/blueprint.ts:1`
 - `runtime` 内部桥接对象 `BLUEPRINT_BRIDGE` 仍是唯一互转入口；`run` 通过桥接推进且执行仍为 `Not implemented`。Evidence: `packages/runtime/src/blueprint.ts:31`, `packages/runtime/src/runtime-runner.ts:7`
-- runtime 对外仍是 generator 入口：`run(RuntimeBlueprint<T>)`。Evidence: `packages/runtime/src/blueprint.ts:4`, `packages/runtime/src/runtime-host.ts:12`
+- runtime 对外用户编排入口已扩展为 `run(RuntimeBlueprint<T>) + createScope()`，其中 `createScope` 当前为声明层占位实现。Evidence: `packages/runtime/src/runtime-host.ts:20`, `packages/runtime/src/runtime-host.ts:24`, `packages/runtime/src/index.ts:5`
+- runtime 的宿主入口语义已补充“全局 root scope + limbo scope 锚点”；`run` 与 `createScope` 均在 root 下创建作用域。Evidence: `docs/semantics.md:42`, `docs/semantics.md:111`, `docs/runtime.md:57`, `docs/api.md:40`
+- 宿主 API 的作用域绑定语义已区分：`run/createScope` 为 root 锚定入口；`yield*` 使用的上下文敏感入口作用域归属当前执行上下文分支。Evidence: `docs/api.md:21`, `docs/runtime.md:77`
+- `action` 签名已收敛为上下文敏感入口：通过 `yield* action<T>()` 返回 `RuntimeAction<T>`。Evidence: `packages/runtime/src/runtime-host.ts:30`, `apps/example/src/scenarios.ts:112`, `docs/api.md:51`
+- `run` 与 `scope.run` 的失败语义已明确为“返回当前调用失败”，生命周期治理分别由 root 锚点与 `scope.halt` 承接。Evidence: `docs/api.md:42`, `docs/api.md:68`, `docs/runtime.md:76`, `apps/example/src/example-app.ts:32`
 - `post` 已从公开入口下沉为内部宿主适配语义：由 `withRuntimeResolvers` 承接 `resolve/reject/post` 协议。Evidence: `packages/runtime/src/runtime-host-adapter.ts:1`, `packages/runtime/src/index.ts:6`
 - primitive 协议已收敛为“thunk + plan”并支持多步步骤序列：`RuntimePrimitive<T> = () => RuntimePlan<T>`。Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:13`, `packages/runtime/src/runtime-kit/runtime-protocol.ts:19`
 - primitives API 已补齐声明层签名（并发构造、基础控制、上下文、自省），当前保持 `Not implemented` 占位。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/control.ts:1`
@@ -35,6 +39,7 @@
 - example 保持 generator 形态且仅依赖 runtime 公共入口。Evidence: `apps/example/src/main.ts:1`, `apps/example/src/main.ts:10`
 - docs 已回收到静态设计口径，进度态信息集中在 `execution.md`。Evidence: `docs/runtime.md:1`, `docs/api.md:1`
 - 已固化“反复纠偏项”为仓库约束文档，后续以文档为准执行。Evidence: `docs/design-constraints.md:1`
+- example 已补充托管作用域使用姿势（`scope.run + scope.halt`）并明确 `scope.run` 失败不自动终结托管作用域。Evidence: `apps/example/src/example-app.ts:26`, `apps/example/src/example-app.ts:32`, `apps/example/README.md:5`
 - 工作区校验通过。Evidence: `yarn build && yarn lint && yarn typecheck` (2026-02-16)
 
 ## 4. 执行阻力诊断（相对设计基线的增量）
@@ -65,6 +70,16 @@
 
 - Impact: 需要新增 `resource` 作用域构造原语：调用方等待 `provide(value)` 的首个值作为返回；资源作用域在 `provide` 处继续挂起，直到父 scope 回收时按失败路径唤醒，以支持 `try...provide...finally...` 的资源释放模型。
 - Evidence: `execution.md:64`
+
+### 4.6 宿主生命周期治理入口存在新增设计增量（`createScope`）
+
+- Impact: 在 `run` 之外新增托管作用域句柄（`scope.run/scope.halt`）后，宿主可显式治理作用域关闭与拒绝新运行；当前仍缺执行桥接实现。
+- Evidence: `packages/runtime/src/runtime-host.ts:13`, `packages/runtime/src/runtime-host.ts:24`, `apps/example/src/example-app.ts:26`
+
+### 4.7 入口失败边界语义已落盘（`run`/`scope.run`）
+
+- Impact: 宿主侧失败处理与关闭治理职责边界更清晰；失败结果与关闭信号不再混淆为同一路径。
+- Evidence: `docs/api.md:42`, `docs/api.md:68`, `docs/runtime.md:76`, `apps/example/src/example-app.ts:32`
 
 ## 5. Build 阶段执行切片
 
@@ -159,13 +174,21 @@
 - Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `apps/example/src/scenarios.ts:1`
 - Next: 在 bridge 执行层实现 `resource` 的双阶段语义（提供值返回给父作用域 + 资源作用域延后回收），并验证 `try...provide...finally...` 清理路径。
 
+### 5.14 Slice B14：新增宿主托管作用域 API（`createScope`）
+
+- Status: **In Progress**
+- Output: 公开 `createScope(): { run, halt }` 契约并在 example 提供调用姿势；`scope.run` 失败语义已明确为“单次运行失败，不自动终结托管作用域”。
+- Evidence: `packages/runtime/src/runtime-host.ts:13`, `packages/runtime/src/index.ts:5`, `apps/example/src/example-app.ts:26`, `docs/api.md:58`
+- Next: 在 runtime bridge 中补 `scope.run/scope.halt` 的执行语义与关闭后拒绝新运行的行为验证。
+
 ## 6. 后续阶段方向
 
 - Prove: 增加 runtime bridge 的类型与行为一致性测试，覆盖 `suspend` cleanup 唤醒路径及 `resource` 的 provide/回收双阶段路径。
 - Operate: 把 `run + 内部输入投递适配` 与原语联动纳入回归脚本。
+- Operate: 把 `scope.run/scope.halt` 与运行时关闭传播、拒绝新运行路径纳入回归脚本。
 - Ship: 在实现稳定后更新示例说明与对外 API 细节。
 
-## 7. API 顶层分层提案（本轮新增）
+## 7. API 顶层分层提案
 
 ### 7.1 分层结论
 
@@ -175,9 +198,10 @@
 ### 7.2 A 类 API：用户编排入口（Public Composition API）
 
 - 目标：给应用侧提供稳定、最小、可组合的入口。
-- 边界：只暴露 `run(RuntimeBlueprint<T>)` 与 primitives；不暴露 `ScopeHandle -> post` 这种内部路由细节。
+- 边界：暴露 `run(RuntimeBlueprint<T>)`、`createScope()` 与 primitives；不暴露 `ScopeHandle -> post` 这种内部路由细节。
 - 责任：
   - 启动蓝图并等待结果。
+  - 在宿主侧显式治理托管作用域生命周期（`scope.run/scope.halt`）。
   - 在蓝图内部通过 primitives 表达并发与交互。
   - 维持“用户只写 generator + yield\*”的一致心智模型。
 
