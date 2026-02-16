@@ -1,15 +1,11 @@
-import type { Blueprint } from "#src/plan-contract";
-import type { RuntimePlan } from "./primitives-kit/runtime-protocol";
+import type { Blueprint } from "@khora/kernel";
+import type { RuntimePlan } from "./runtime-kit/runtime-protocol";
 
 type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
 
 interface BlueprintBridge {
-  lower<ReturnValue>(
-    blueprint: Blueprint<ReturnValue>,
-  ): RuntimeBlueprint<ReturnValue>;
-  raise<ReturnValue>(
-    runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
-  ): Blueprint<ReturnValue>;
+  lower<ReturnValue>(blueprint: Blueprint<ReturnValue>): RuntimeBlueprint<ReturnValue>;
+  raise<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Blueprint<ReturnValue>;
 }
 
 function lowerBlueprint<ReturnValue>(
@@ -33,8 +29,5 @@ const BLUEPRINT_BRIDGE: BlueprintBridge = {
   raise: raiseBlueprint,
 };
 
-export { BLUEPRINT_BRIDGE, lowerBlueprint, raiseBlueprint };
-export type {
-  BlueprintBridge,
-  RuntimeBlueprint,
-};
+export { BLUEPRINT_BRIDGE };
+export type { RuntimeBlueprint };

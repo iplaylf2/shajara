@@ -13,7 +13,7 @@ export default defineConfig({
   plugins: ["import"],
   rules: {
     "eslint/func-style": ["error", "declaration", { allowArrowFunctions: true }],
-    "eslint/no-duplicate-imports": "off",
+    "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
     "eslint/no-ternary": "off",
     "import/no-default-export": "off",
     "import/no-named-export": "off",

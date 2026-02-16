@@ -14,12 +14,12 @@
 
 ## 3. 当前现实与证据
 
-- `kernel` 承载 `Blueprint<T> = () => Plan<T>` 契约，`runtime` 对该契约做类型透传。Evidence: `packages/kernel/src/plan-contract.ts:40`, `packages/runtime/src/plan-contract.ts:1`
+- `kernel` 承载 `Blueprint<T> = () => Plan<T>` 契约，`runtime` 直接依赖该契约类型。Evidence: `packages/kernel/src/plan-contract.ts:40`, `packages/runtime/src/blueprint.ts:1`
 - `runtime` 内部桥接对象 `BLUEPRINT_BRIDGE` 仍是唯一互转入口；`run` 通过桥接推进且执行仍为 `Not implemented`。Evidence: `packages/runtime/src/blueprint.ts:31`, `packages/runtime/src/runtime-runner.ts:7`
 - runtime 对外仍是 generator 入口：`run(RuntimeBlueprint<T>)`。Evidence: `packages/runtime/src/blueprint.ts:4`, `packages/runtime/src/runtime-host.ts:12`
-- primitive 协议已收敛为“thunk + plan”并支持多步步骤序列：`RuntimePrimitive<T> = () => RuntimePlan<T>`。Evidence: `packages/runtime/src/primitives-kit/runtime-protocol.ts:13`, `packages/runtime/src/primitives-kit/runtime-protocol.ts:19`
+- primitive 协议已收敛为“thunk + plan”并支持多步步骤序列：`RuntimePrimitive<T> = () => RuntimePlan<T>`。Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:13`, `packages/runtime/src/runtime-kit/runtime-protocol.ts:19`
 - `cede` 已收敛为简洁 thunk 形式，并通过 kernel syscall + runtime 协议转换表达 `yield*` 语义。Evidence: `packages/runtime/src/primitives/cede.ts:1`, `packages/runtime/src/primitives/cede.ts:4`
-- `primitives` 目录已收敛为纯原语集合；共享协议支撑迁移到 `primitives-kit`。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/cede.ts:1`, `packages/runtime/src/primitives-kit/runtime-protocol.ts:1`
+- `primitives` 目录已收敛为纯原语集合；runtime 共享协议支撑位于 `runtime-kit`。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/cede.ts:1`, `packages/runtime/src/runtime-kit/runtime-protocol.ts:1`
 - runtime 顶层导出已收紧为 runtime 语义类型与宿主 API，不再透出 kernel 契约类型。Evidence: `packages/runtime/src/index.ts:1`
 - 包内 alias 已统一为 `#src/* -> ./src/*`，与源码路径一致。Evidence: `packages/runtime/package.json:6`
 - example 保持 generator 形态且仅依赖 runtime 公共入口。Evidence: `apps/example/src/main.ts:1`, `apps/example/src/main.ts:10`
@@ -44,7 +44,7 @@
 ### 4.3 当前切片的直接后果
 
 - Impact: 提交后可直接进入桥接执行实现与验证，不需要再做接口与结构层返工。
-- Evidence: `packages/runtime/src/primitives-kit/runtime-protocol.ts:31`, `packages/runtime/src/runtime-runner.ts:4`
+- Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:31`, `packages/runtime/src/runtime-runner.ts:4`
 
 ## 5. Build 阶段执行切片
 
@@ -72,9 +72,9 @@
 ### 5.4 Slice B4：收敛 primitive 协议与目录边界
 
 - Status: **Completed**
-- Output: primitive 统一为 thunk 语义；`primitives` 仅保留原语集合，协议支撑迁移到 `primitives-kit`。
-- Evidence: `packages/runtime/src/primitives-kit/runtime-protocol.ts:19`, `packages/runtime/src/primitives/cede.ts:4`, `docs/design-constraints.md:25`
-- Next: 新增原语时复用 `primitives-kit` 协议工具，避免在原语目录引入非原语支撑文件。
+- Output: primitive 统一为 thunk 语义；`primitives` 仅保留原语集合，协议支撑迁移到 `runtime-kit`。
+- Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:19`, `packages/runtime/src/primitives/cede.ts:4`, `docs/design-constraints.md:25`
+- Next: 新增原语时复用 `runtime-kit` 协议工具，避免在原语目录引入非原语支撑文件。
 
 ## 6. 后续阶段方向
 

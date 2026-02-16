@@ -1,17 +1,19 @@
-import { ROOT_SCOPE_HANDLE, postScopeInput } from "./runtime-state";
 import type { RuntimeBlueprint } from "./blueprint";
-import type { ScopeHandle } from "./runtime-state";
 import { runBlueprint } from "./runtime-runner";
 
-const ROOT_SCOPE: ScopeHandle = ROOT_SCOPE_HANDLE;
+const SCOPE_HANDLE_TOKEN: unique symbol = Symbol("scope-handle");
 
-function post(scopeHandle: ScopeHandle, inputValue: unknown): void {
-  postScopeInput(scopeHandle, inputValue);
+interface ScopeHandle {
+  readonly [SCOPE_HANDLE_TOKEN]: "scope-handle";
 }
 
-function run<ReturnValue>(
-  runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
-): Promise<ReturnValue> {
+const ROOT_SCOPE = {} as ScopeHandle;
+
+function post(_scopeHandle: ScopeHandle, _inputValue: unknown): void {
+  throw new Error("Not implemented: posting host input to runtime scope.");
+}
+
+function run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue> {
   return runBlueprint(runtimeBlueprint);
 }
 
