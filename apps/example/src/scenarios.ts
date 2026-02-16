@@ -1,13 +1,14 @@
 import type { RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
+import { action, run } from "@khora/runtime";
 import {
   all,
   bind,
   cede,
   halt,
   join,
+  lookup,
   race,
   resource,
-  resolve,
   resumable,
   scoped,
   self,
@@ -68,9 +69,9 @@ function* terminateBlueprint(): RuntimePlan<void> {
   yield* terminate(spawned);
 }
 
-function* bindResolveBlueprint(): RuntimePlan<void> {
+function* bindLookupBlueprint(): RuntimePlan<void> {
   yield* bind("traceId", "request-1");
-  const traceId = yield* resolve<string>("traceId");
+  const traceId = yield* lookup<string>("traceId");
   consume(traceId);
 }
 
@@ -89,15 +90,13 @@ function* suspendBlueprint(): RuntimePlan<never> {
   throw new Error("Not implemented: suspend() only resumes as failure.");
 }
 
-function* resourceBodyBlueprint(
-  provide: RuntimeResourceProvide<string>,
-): RuntimePlan<void> {
+function* resourceBodyBlueprint(provide: RuntimeResourceProvide<string>): RuntimePlan<void> {
   const resourceValue = "resource-ready";
 
   try {
     yield* provide(resourceValue);
   } finally {
-    // cleanup path: should run when parent scope reclaims this resource scope.
+    // Cleanup path: should run when parent scope reclaims this resource scope.
     yield* cede();
   }
 }
@@ -107,9 +106,28 @@ function* resourceBlueprint(): RuntimePlan<void> {
   consume(providedValue);
 }
 
+async function actionResolveExample(): Promise<void> {
+  const pending = action<string>();
+  const waiting = run(function* actionWaiter(): RuntimePlan<string> {
+    return yield* join(pending.scope);
+  });
+  pending.resolve("action done");
+  const value = await waiting;
+  consume(value);
+}
+
+async function actionRejectExample(): Promise<void> {
+  const pending = action<string>();
+  const waiting = run(function* actionWaiter(): RuntimePlan<string> {
+    return yield* join(pending.scope);
+  });
+  pending.reject(new Error("action failed"));
+  await waiting.catch(consume);
+}
+
 const EXAMPLE_SCENARIOS = {
   all: allBlueprint,
-  bindResolve: bindResolveBlueprint,
+  bindLookup: bindLookupBlueprint,
   cede: childBlueprint,
   halt: haltBlueprint,
   join: spawnBlueprint,
@@ -129,5 +147,5 @@ function getExampleScenario(name: ExampleScenarioName): RuntimeBlueprint<unknown
   return EXAMPLE_SCENARIOS[name];
 }
 
-export { EXAMPLE_SCENARIOS, getExampleScenario };
+export { EXAMPLE_SCENARIOS, actionRejectExample, actionResolveExample, getExampleScenario };
 export type { ExampleScenarioName };

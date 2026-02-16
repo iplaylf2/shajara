@@ -6,7 +6,7 @@ export type {
   RuntimeResumableErrorHandler,
 } from "./concurrency";
 export { halt, join, suspend, terminate } from "./control";
-export { bind, resolve } from "./context";
+export { bind, lookup } from "./context";
 export { cede } from "./cede";
 export { self } from "./self";
 

@@ -39,7 +39,7 @@
 - `Scope` 构成严格树；除根以外的每个 `Scope` 恰有一个父 `Scope`
 - 每个 `Scope` 持有：
   - 该范围内的 `Process` 集合
-  - 作用域上下文存储（供 `Bind/Resolve`）
+  - 作用域上下文存储（供 `Bind/Lookup`）
   - 作用域输入缓冲 `Sink`
   - 服务入口 `Portal`
   - 调度器 `Scheduler`（蓝图）
@@ -306,7 +306,7 @@
 
 - 效果：`context[key] = value`
 
-#### Resolve(key) -> Result<value> [Non-Blocking]
+#### Lookup(key) -> Result<value> [Non-Blocking]
 
 沿调用方 `Scope` 到其祖先链查找上下文绑定。
 

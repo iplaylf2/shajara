@@ -39,6 +39,13 @@
 
 启动一段 `RuntimeBlueprint` 并在宿主侧等待其结果。
 
+### 3.3 action
+
+创建一个宿主侧可结算能力记录，返回 `{ scope, resolve, reject }`。
+
+- 与 `run` 同层，属于用户编排入口 API，不属于 primitives。
+- 底层可借助 runtime 内部宿主适配能力（例如输入投递）完成结算推进。
+
 ---
 
 ## 4. 编排原语 API
@@ -69,7 +76,7 @@
 ### 4.3 上下文原语
 
 - `bind` 在当前 `Scope` 绑定值
-- `resolve` 沿祖先链解析值
+- `lookup` 沿祖先链解析值
 
 ### 4.4 自省原语
 

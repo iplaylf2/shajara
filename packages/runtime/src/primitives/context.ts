@@ -8,8 +8,8 @@ function bind<Key extends string, Value>(
   return notImplementedRuntimePrimitive("bind");
 }
 
-function resolve<Value>(_key: string): RuntimePlan<Value> {
-  return notImplementedRuntimePrimitive("resolve");
+function lookup<Value>(_key: string): RuntimePlan<Value> {
+  return notImplementedRuntimePrimitive("lookup");
 }
 
-export { bind, resolve };
+export { bind, lookup };
