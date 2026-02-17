@@ -26,14 +26,8 @@ function startExampleApp(
 async function runInManagedScope(
   selectedScenario: ReturnType<typeof getExampleScenario>,
 ): Promise<unknown> {
-  const scope = createScope();
-
-  try {
-    // Run() 失败只表示该次运行失败，不会自动终结这个托管 scope。
-    return await scope.run(selectedScenario);
-  } finally {
-    await scope.halt();
-  }
+  await using scope = createScope();
+  return await scope.run(selectedScenario);
 }
 
 function startExampleAppWithManagedScope(

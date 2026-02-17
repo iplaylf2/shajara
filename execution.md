@@ -20,7 +20,7 @@
 - runtime 的宿主入口语义已补充“全局 root scope + limbo scope 锚点”；`run` 与 `createScope` 均在 root 下创建作用域。Evidence: `docs/semantics.md:42`, `docs/semantics.md:111`, `docs/runtime.md:57`, `docs/api.md:40`
 - 宿主 API 的作用域绑定语义已区分：`run/createScope` 为 root 锚定入口；`yield*` 使用的上下文敏感入口作用域归属当前执行上下文分支。Evidence: `docs/api.md:21`, `docs/runtime.md:77`
 - `action` 签名已收敛为上下文敏感入口：通过 `yield* action<T>()` 返回 `RuntimeAction<T>`。Evidence: `packages/runtime/src/runtime-host.ts:30`, `apps/example/src/scenarios.ts:112`, `docs/api.md:51`
-- `run` 与 `scope.run` 的失败语义已明确为“返回当前调用失败”，生命周期治理分别由 root 锚点与 `scope.halt` 承接。Evidence: `docs/api.md:42`, `docs/api.md:68`, `docs/runtime.md:76`, `apps/example/src/example-app.ts:32`
+- `run` 与 `scope.run` 的失败语义已明确为“返回当前调用失败”，生命周期治理分别由 root 锚点与 `scope.halt`/`scope[Symbol.asyncDispose]` 承接；托管作用域当前阶段通过 `scope.state` 观察，关闭完成状态通过 `scope.closed` 观察。Evidence: `docs/api.md:42`, `docs/api.md:68`, `docs/runtime.md:76`, `apps/example/src/example-app.ts:32`
 - `post` 已从公开入口下沉为内部宿主适配语义：由 `withRuntimeResolvers` 承接 `resolve/reject/post` 协议。Evidence: `packages/runtime/src/runtime-host-adapter.ts:1`, `packages/runtime/src/index.ts:6`
 - primitive 协议已收敛为“thunk + plan”并支持多步步骤序列：`RuntimePrimitive<T> = () => RuntimePlan<T>`。Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:13`, `packages/runtime/src/runtime-kit/runtime-protocol.ts:19`
 - primitives API 已补齐声明层签名（并发构造、基础控制、上下文、自省），当前保持 `Not implemented` 占位。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/control.ts:1`
@@ -73,7 +73,7 @@
 
 ### 4.6 宿主生命周期治理入口存在新增设计增量（`createScope`）
 
-- Impact: 在 `run` 之外新增托管作用域句柄（`scope.run/scope.halt`）后，宿主可显式治理作用域关闭与拒绝新运行；当前仍缺执行桥接实现。
+- Impact: 在 `run` 之外新增托管作用域句柄（`scope.run/scope.halt/scope.state/scope.closed`）后，宿主可显式治理作用域关闭并观察生命周期阶段与关闭完成；当前仍缺执行桥接实现。
 - Evidence: `packages/runtime/src/runtime-host.ts:13`, `packages/runtime/src/runtime-host.ts:24`, `apps/example/src/example-app.ts:26`
 
 ### 4.7 入口失败边界语义已落盘（`run`/`scope.run`）
@@ -177,15 +177,15 @@
 ### 5.14 Slice B14：新增宿主托管作用域 API（`createScope`）
 
 - Status: **In Progress**
-- Output: 公开 `createScope(): { run, halt }` 契约并在 example 提供调用姿势；`scope.run` 失败语义已明确为“单次运行失败，不自动终结托管作用域”。
+- Output: 公开 `createScope(): { run, halt, state, closed, [Symbol.asyncDispose] }` 契约并在 example 提供调用姿势；`scope.run` 失败语义已明确为“单次运行失败，不自动终结托管作用域”。
 - Evidence: `packages/runtime/src/runtime-host.ts:13`, `packages/runtime/src/index.ts:5`, `apps/example/src/example-app.ts:26`, `docs/api.md:58`
-- Next: 在 runtime bridge 中补 `scope.run/scope.halt` 的执行语义与关闭后拒绝新运行的行为验证。
+- Next: 在 runtime bridge 中补 `scope.run/scope.halt/scope.state/scope.closed` 的执行语义与关闭后拒绝新运行的行为验证。
 
 ## 6. 后续阶段方向
 
 - Prove: 增加 runtime bridge 的类型与行为一致性测试，覆盖 `suspend` cleanup 唤醒路径及 `resource` 的 provide/回收双阶段路径。
 - Operate: 把 `run + 内部输入投递适配` 与原语联动纳入回归脚本。
-- Operate: 把 `scope.run/scope.halt` 与运行时关闭传播、拒绝新运行路径纳入回归脚本。
+- Operate: 把 `scope.run/scope.halt/scope.state/scope.closed` 与运行时关闭传播、拒绝新运行路径纳入回归脚本。
 - Ship: 在实现稳定后更新示例说明与对外 API 细节。
 
 ## 7. API 顶层分层提案
@@ -201,7 +201,7 @@
 - 边界：暴露 `run(RuntimeBlueprint<T>)`、`createScope()` 与 primitives；不暴露 `ScopeHandle -> post` 这种内部路由细节。
 - 责任：
   - 启动蓝图并等待结果。
-  - 在宿主侧显式治理托管作用域生命周期（`scope.run/scope.halt`）。
+  - 在宿主侧显式治理托管作用域生命周期（`scope.run/scope.halt` 或 async dispose 约定），并可通过 `scope.state` 与 `scope.closed` 观察阶段与关闭完成。
   - 在蓝图内部通过 primitives 表达并发与交互。
   - 维持“用户只写 generator + yield\*”的一致心智模型。
 

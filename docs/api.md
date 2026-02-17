@@ -65,12 +65,15 @@
 
 ### 3.6 createScope
 
-创建一个宿主侧托管作用域句柄，返回 `{ run, halt }`。
+创建一个宿主侧托管作用域句柄，返回 `{ run, halt, state, closed, [Symbol.asyncDispose] }`。
 
 - 托管作用域本身挂载在全局 `root scope` 下。
 - `scope.run(blueprint)`：在该托管作用域下启动一次 `RuntimeBlueprint` 并等待其结果。
 - `scope.halt()`：触发该托管作用域的关闭流程并等待收敛。
-- `scope.run(...)` 失败返回该次运行失败；托管作用域生命周期由 `scope.halt()` 显式治理。
+- `scope.state`：同步状态快照，表达当前生命周期阶段（`open | closing | closed`）。
+- `scope.closed`：在托管作用域真正完成清理后完成；以状态值表达关闭结果（成功或失败）。
+- `scope[Symbol.asyncDispose]()`：等价于 `scope.halt()`，用于遵循 async dispose 约定。
+- `scope.run(...)` 失败返回该次运行失败；托管作用域生命周期由 `scope.halt()` 或 async dispose 约定治理。
 
 ---
 
@@ -128,4 +131,4 @@
 - 用户侧通过 `spawn` 返回句柄承接作用域观察与控制，不透出底层 scope 结构字段
 - 编排层暂不暴露输入读取原语（如 `receive`）
 - generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播（不通过返回值编码失败态）
-- `createScope` 属于用户编排 API（非 primitives）；`scope.run` 与 `scope.halt` 负责宿主侧生命周期治理
+- `createScope` 属于用户编排 API（非 primitives）；`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理

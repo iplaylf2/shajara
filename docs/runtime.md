@@ -73,12 +73,12 @@
 - 用户侧结构性监督以 `scoped + resumable` 组合表达：`scoped` 提供收敛与捕获边界，`resumable` 声明可恢复传播点；`scoped` 的捕获 handler 只接收 `resumable` 子孙路径的异常。
 - generator 边界只返回成功值；失败路径由运行时映射为异常抛出并沿 `yield*` 传播。
 - 宿主侧 `run` 在全局 `root scope` 下创建并启动一次运行作用域，并等待其结果。
-- 宿主侧可通过 `createScope` 创建托管作用域；该托管作用域同样挂在全局 `root scope` 下，并通过 `scope.run/scope.halt` 进行生命周期治理。
+- 宿主侧可通过 `createScope` 创建托管作用域；该托管作用域同样挂在全局 `root scope` 下，并通过 `scope.run/scope.halt`（或 `scope[Symbol.asyncDispose]`）进行生命周期治理。
 - 在 `blueprint/plan` 中通过 `yield*` 使用的入口属于上下文敏感 API，其作用域归属由当前执行上下文决定。
 - 上下文敏感 API 若创建作用域，该作用域附着在当前上下文作用域树分支。
 - `action` 以 `yield* action<T>()` 的形式在上下文内产出 `{ scope, resolve, reject }`，用于宿主侧结算回填。
 - `run` 的失败作为当前调用失败返回调用方，`root scope` 继续作为生命周期锚点。
-- `scope.run` 失败返回当前运行失败；托管作用域关闭由 `scope.halt` 承接。
+- `scope.run` 失败返回当前运行失败；托管作用域关闭由 `scope.halt`（或 `scope[Symbol.asyncDispose]`）承接，当前阶段通过 `scope.state` 观察，关闭完成结果通过 `scope.closed` 观察。
 - 输入投递通过 runtime 内部宿主适配层完成。
 
 该层负责把边界入口的调用协议映射到核心层推进协议。

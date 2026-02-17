@@ -13,9 +13,16 @@ interface RuntimeAction<ReturnValue> {
 interface RuntimeScope {
   run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue>;
   halt(): Promise<void>;
+  readonly state: RuntimeScopeState;
+  readonly closed: Promise<RuntimeScopeCloseResult>;
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 type RuntimeUntilThunk<ReturnValue> = () => PromiseLike<ReturnValue>;
+type RuntimeScopeState = "open" | "closing" | "closed";
+type RuntimeScopeCloseResult =
+  | { readonly status: "completed" }
+  | { readonly status: "failed"; readonly reason: unknown };
 
 function run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue> {
   return runBlueprint(runtimeBlueprint);
@@ -41,6 +48,11 @@ function until<ReturnValue>(_thunk: RuntimeUntilThunk<ReturnValue>): RuntimeSpaw
   );
 }
 
-export { action, run, sleep, until };
-export { createScope };
-export type { RuntimeAction, RuntimeScope, RuntimeUntilThunk };
+export { action, run, sleep, until, createScope };
+export type {
+  RuntimeAction,
+  RuntimeScope,
+  RuntimeScopeCloseResult,
+  RuntimeScopeState,
+  RuntimeUntilThunk,
+};
