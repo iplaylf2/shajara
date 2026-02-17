@@ -17,8 +17,4 @@ export type { RuntimeRaceResult } from "./race";
 export type { RuntimeResourceBody, RuntimeResourceProvide } from "./resource";
 export type { RuntimeResumableErrorHandler } from "./scoped";
 
-export type {
-  RuntimeScopeHandle,
-  RuntimeSelfDescriptor,
-  RuntimeSpawnRef,
-} from "#src/contracts/entities";
+export type { RuntimeScopeHandle, RuntimeSelfDescriptor, RuntimeSpawnRef } from "#src/contracts";

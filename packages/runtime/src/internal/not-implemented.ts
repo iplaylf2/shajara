@@ -1,4 +1,4 @@
-import type { RuntimePlan } from "#src/contracts/plan";
+import type { RuntimePlan } from "#src/contracts";
 
 function notImplementedRuntimePrimitive<ReturnValue>(
   primitiveName: string,

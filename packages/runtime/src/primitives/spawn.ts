@@ -1,6 +1,4 @@
-import type { RuntimeBlueprint } from "#src/bridge/blueprint";
-import type { RuntimePlan } from "#src/contracts/plan";
-import type { RuntimeSpawnRef } from "#src/contracts/entities";
+import type { RuntimeBlueprint, RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
 import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
 
 export const spawn = <ReturnValue>(

@@ -24,7 +24,8 @@
 
 - `packages/runtime/src/primitives` 是原语集合目录。
 - 该目录仅放 `index.ts` 与具体原语文件。
-- runtime 共享支撑代码按职责放入 `contracts / host / bridge / internal`，不挂在 `primitives` 集合目录下。
+- runtime 契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录。
+- runtime 行为支撑代码按职责拆分为独立文件（如 `blueprint-bridge.ts`、`plan-runtime.ts`、`runtime-step.ts`），不挂在 `primitives` 集合目录下。
 
 ## 5. runtime 对外表面
 

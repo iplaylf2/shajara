@@ -1,5 +1,4 @@
-import type { RuntimePlan } from "#src/contracts/plan";
-import type { RuntimePrimitiveTuple } from "#src/contracts/primitive-tuple";
+import type { RuntimePlan, RuntimePrimitiveTuple } from "#src/contracts";
 import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
 
 export const all = <ReturnValues extends readonly unknown[]>(

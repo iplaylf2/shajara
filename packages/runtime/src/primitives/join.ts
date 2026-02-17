@@ -1,5 +1,4 @@
-import type { RuntimePlan } from "#src/contracts/plan";
-import type { RuntimeSpawnRef } from "#src/contracts/entities";
+import type { RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
 import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
 
 export const join = <ReturnValue>(

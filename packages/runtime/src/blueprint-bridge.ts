@@ -1,7 +1,5 @@
 import type { Blueprint } from "@khora/kernel";
-import type { RuntimePlan } from "#src/contracts/plan";
-
-export type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
+import type { RuntimeBlueprint } from "#src/contracts";
 
 interface BlueprintBridge {
   lower<ReturnValue>(blueprint: Blueprint<ReturnValue>): RuntimeBlueprint<ReturnValue>;
