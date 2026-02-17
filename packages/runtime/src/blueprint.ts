@@ -1,7 +1,7 @@
 import type { Blueprint } from "@khora/kernel";
 import type { RuntimePlan } from "./runtime-kit/runtime-protocol";
 
-type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
+export type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
 
 interface BlueprintBridge {
   lower<ReturnValue>(blueprint: Blueprint<ReturnValue>): RuntimeBlueprint<ReturnValue>;
@@ -30,4 +30,3 @@ const BLUEPRINT_BRIDGE: BlueprintBridge = {
 };
 
 export { BLUEPRINT_BRIDGE };
-export type { RuntimeBlueprint };

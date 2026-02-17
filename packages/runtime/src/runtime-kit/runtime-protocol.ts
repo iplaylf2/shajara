@@ -10,17 +10,15 @@ interface RuntimeStep<ReturnValue> {
 
 type RuntimeResumeValue<ReturnValue> = Result<ReturnValue>;
 
-type RuntimePlan<ReturnValue> = Generator<
+export type RuntimePlan<ReturnValue> = Generator<
   RuntimeStep<unknown>,
   ReturnValue,
   RuntimeResumeValue<unknown>
 >;
 
-type RuntimePrimitive<ReturnValue> = () => RuntimePlan<ReturnValue>;
+export type RuntimePrimitive<ReturnValue> = () => RuntimePlan<ReturnValue>;
 
-function createRuntimeStep<ReturnValue>(
-  syscall: Syscall<ReturnValue>,
-): RuntimeStep<ReturnValue> {
+function createRuntimeStep<ReturnValue>(syscall: Syscall<ReturnValue>): RuntimeStep<ReturnValue> {
   return {
     kind: "syscall",
     [RUNTIME_STEP_TOKEN]: "runtime-step",
@@ -28,9 +26,7 @@ function createRuntimeStep<ReturnValue>(
   };
 }
 
-function* liftSyscall<ReturnValue>(
-  syscall: Syscall<ReturnValue>,
-): RuntimePlan<ReturnValue> {
+function* liftSyscall<ReturnValue>(syscall: Syscall<ReturnValue>): RuntimePlan<ReturnValue> {
   const result: RuntimeResumeValue<unknown> = yield createRuntimeStep(syscall);
   if (result.kind === "err") {
     throw new Error(
@@ -42,4 +38,3 @@ function* liftSyscall<ReturnValue>(
 }
 
 export { liftSyscall };
-export type { RuntimePlan, RuntimePrimitive };

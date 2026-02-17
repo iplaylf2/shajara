@@ -12,13 +12,7 @@ interface RuntimeSpawnRef<ReturnValue = unknown> {
 
 interface RuntimeSelfDescriptor {
   readonly scope: RuntimeScopeHandle;
-  readonly call:
-    | { readonly method: string; readonly args: readonly unknown[] }
-    | undefined;
+  readonly call: { readonly method: string; readonly args: readonly unknown[] } | undefined;
 }
 
-export type {
-  RuntimeScopeHandle,
-  RuntimeSelfDescriptor,
-  RuntimeSpawnRef,
-};
+export type { RuntimeScopeHandle, RuntimeSelfDescriptor, RuntimeSpawnRef };

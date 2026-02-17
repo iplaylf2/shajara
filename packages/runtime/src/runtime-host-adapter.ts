@@ -23,9 +23,4 @@ function withRuntimeResolvers<ReturnValue>(): RuntimeHostSession<ReturnValue> {
 }
 
 export { withRuntimeResolvers };
-export type {
-  RuntimeHostAdapter,
-  RuntimeHostInputPort,
-  RuntimeHostResolvers,
-  RuntimeHostSession,
-};
+export type { RuntimeHostAdapter, RuntimeHostInputPort, RuntimeHostResolvers, RuntimeHostSession };

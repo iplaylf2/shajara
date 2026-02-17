@@ -33,9 +33,7 @@ interface ImpurePlan<SyscallReturnValue, ReturnValue> {
   readonly terminate: () => Plan<ReturnValue>;
 }
 
-type Plan<ReturnValue> =
-  | PurePlan<ReturnValue>
-  | ImpurePlan<unknown, ReturnValue>;
+type Plan<ReturnValue> = PurePlan<ReturnValue> | ImpurePlan<unknown, ReturnValue>;
 
 type Blueprint<ReturnValue> = () => Plan<ReturnValue>;
 

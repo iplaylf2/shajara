@@ -15,6 +15,8 @@ export default defineConfig({
     "eslint/func-style": ["error", "declaration", { allowArrowFunctions: true }],
     "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
     "eslint/no-ternary": "off",
+    "import/exports-last": "off",
+    "import/group-exports": "off",
     "import/no-default-export": "off",
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",

@@ -1,0 +1,5 @@
+import type { RuntimePlan } from "#src/runtime-kit/runtime-protocol";
+import { notImplementedRuntimePrimitive } from "#src/runtime-kit/not-implemented";
+
+export const bind = <Key extends string, Value>(_key: Key, _value: Value): RuntimePlan<void> =>
+  notImplementedRuntimePrimitive("bind");

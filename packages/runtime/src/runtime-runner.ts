@@ -8,9 +8,7 @@ function runBlueprint<ReturnValue>(
   withRuntimeResolvers<ReturnValue>();
 
   BLUEPRINT_BRIDGE.raise(runtimeBlueprint);
-  throw new Error(
-    "Not implemented: runtime execution bridge for RuntimeBlueprint<ReturnValue>.",
-  );
+  throw new Error("Not implemented: runtime execution bridge for RuntimeBlueprint<ReturnValue>.");
 }
 
 export { runBlueprint };
