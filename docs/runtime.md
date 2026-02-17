@@ -67,6 +67,7 @@
 边界层承接宿主 API 与用户侧编排表达：
 
 - 用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，并通过 `yield*` 组合原语。
+- 原语在 kernel 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 将其提升为 `RuntimePlan<T>` 供 `yield*` 消费。
 - 用户侧并发创建以 `spawn` 为结构入口，不直接暴露 process 级创建原语。
 - 用户侧观察与控制以 `Scope` 为粒度，不暴露 process 级句柄。
 - 用户侧通过 `spawn` 句柄进行 `join/terminate`，不透出底层 scope 结构字段。
@@ -91,4 +92,5 @@
 
 - syscall 返回类型参数 `A` 表达对外表面可见的响应类型。
 - 内部用于表达与组合的结构不进入 `Plan` 与 `Syscall<A>` 的类型参数。
+- 编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。
 - 边界层与核心层通过 `then` 与 `terminate` 两条路径闭合推进。

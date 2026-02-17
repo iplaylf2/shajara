@@ -1,6 +1,12 @@
 import type { RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
-import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
+import type { Plan } from "@khora/kernel";
+import { join as kernelJoin } from "@khora/kernel";
+import { liftPlan } from "#src/plan-lift";
+
+const joinKernelPrimitive = <ReturnValue>(
+  spawned: RuntimeSpawnRef<ReturnValue>,
+): Plan<ReturnValue> => kernelJoin<ReturnValue, RuntimeSpawnRef<ReturnValue>>(spawned);
 
 export const join = <ReturnValue>(
-  _spawned: RuntimeSpawnRef<ReturnValue>,
-): RuntimePlan<ReturnValue> => notImplementedRuntimePrimitive("join");
+  spawned: RuntimeSpawnRef<ReturnValue>,
+): RuntimePlan<ReturnValue> => liftPlan(joinKernelPrimitive(spawned));

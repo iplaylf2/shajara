@@ -1,5 +1,6 @@
 import type { RuntimePlan } from "#src/contracts";
-import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
+import { lookup as kernelLookup } from "@khora/kernel";
+import { liftPlan } from "#src/plan-lift";
 
-export const lookup = <Value>(_key: string): RuntimePlan<Value> =>
-  notImplementedRuntimePrimitive("lookup");
+export const lookup = <Value>(key: string): RuntimePlan<Value> =>
+  liftPlan(kernelLookup<Value>(key));

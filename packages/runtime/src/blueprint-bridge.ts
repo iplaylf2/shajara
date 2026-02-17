@@ -1,5 +1,6 @@
 import type { Blueprint } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
+import { liftPlan } from "#src/plan-lift";
 
 interface BlueprintBridge {
   lower<ReturnValue>(blueprint: Blueprint<ReturnValue>): RuntimeBlueprint<ReturnValue>;
@@ -7,11 +8,9 @@ interface BlueprintBridge {
 }
 
 function lowerBlueprint<ReturnValue>(
-  _blueprint: Blueprint<ReturnValue>,
+  blueprint: Blueprint<ReturnValue>,
 ): RuntimeBlueprint<ReturnValue> {
-  throw new Error(
-    "Not implemented: lowering kernel Blueprint<ReturnValue> to RuntimeBlueprint<ReturnValue>.",
-  );
+  return () => liftPlan(blueprint());
 }
 
 function raiseBlueprint<ReturnValue>(

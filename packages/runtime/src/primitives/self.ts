@@ -1,5 +1,5 @@
 import type { RuntimePlan, RuntimeSelfDescriptor } from "#src/contracts";
-import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
+import { self as kernelSelf } from "@khora/kernel";
+import { liftPlan } from "#src/plan-lift";
 
-export const self = (): RuntimePlan<RuntimeSelfDescriptor> =>
-  notImplementedRuntimePrimitive("self");
+export const self = (): RuntimePlan<RuntimeSelfDescriptor> => liftPlan(kernelSelf<RuntimeSelfDescriptor>());

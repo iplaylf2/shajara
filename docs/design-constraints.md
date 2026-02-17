@@ -16,7 +16,7 @@
 
 ## 3. primitive 约束
 
-- primitive 是 thunk 语义（蓝图语义），不是已执行的实例。
+- kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段，不默认承载可重放模板语义。
 - `yield*` 消费的是 `RuntimePlan<T>`。
 - primitive 可由一条或多条底层步骤组成；不假设“一原语 = 一指令”。
 
@@ -25,7 +25,7 @@
 - `packages/runtime/src/primitives` 是原语集合目录。
 - 该目录仅放 `index.ts` 与具体原语文件。
 - runtime 契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录。
-- runtime 行为支撑代码按职责拆分为独立文件（如 `blueprint-bridge.ts`、`plan-runtime.ts`、`runtime-step.ts`），不挂在 `primitives` 集合目录下。
+- runtime 行为支撑代码按职责拆分为独立文件（如 `blueprint-bridge.ts`、`plan-lift.ts`、`runtime-step.ts`），不挂在 `primitives` 集合目录下。
 
 ## 5. runtime 对外表面
 

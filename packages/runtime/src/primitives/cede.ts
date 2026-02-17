@@ -1,4 +1,5 @@
-import { createCedeSyscall } from "@khora/kernel";
-import { liftSyscall } from "#src/plan-runtime";
+import type { RuntimePlan } from "#src/contracts";
+import { cede as kernelCede } from "@khora/kernel";
+import { liftPlan } from "#src/plan-lift";
 
-export const cede = () => liftSyscall(createCedeSyscall());
+export const cede = (): RuntimePlan<void> => liftPlan(kernelCede());

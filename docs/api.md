@@ -84,6 +84,7 @@
 ### 4.1 并发构造原语
 
 并发构造原语以“结构”为单位封装内核交互序列，产出可组合的句柄或结果。
+kernel primitive 构造 `Plan<T>`，runtime primitive 通过 `liftPlan` 暴露为 `RuntimePlan<T>`。
 
 - `spawn` 创建子 `Scope` 并在其中引入并行分支
 - `resource` 创建资源作用域；调用方等待 `provide(value)` 的首个值作为返回，资源作用域在 `provide` 后继续挂起等待父 scope 回收

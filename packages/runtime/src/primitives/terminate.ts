@@ -1,5 +1,10 @@
 import type { RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
-import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
+import type { Plan } from "@khora/kernel";
+import { terminate as kernelTerminate } from "@khora/kernel";
+import { liftPlan } from "#src/plan-lift";
 
-export const terminate = (_spawned: RuntimeSpawnRef): RuntimePlan<void> =>
-  notImplementedRuntimePrimitive("terminate");
+const terminateKernelPrimitive = (spawned: RuntimeSpawnRef): Plan<void> =>
+  kernelTerminate<RuntimeSpawnRef>(spawned);
+
+export const terminate = (spawned: RuntimeSpawnRef): RuntimePlan<void> =>
+  liftPlan(terminateKernelPrimitive(spawned));
