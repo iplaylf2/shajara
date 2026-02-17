@@ -24,7 +24,7 @@
 
 - `packages/runtime/src/primitives` 是原语集合目录。
 - 该目录仅放 `index.ts` 与具体原语文件。
-- runtime 共享支撑代码放在边界内的 `...kit` 目录（当前为 `runtime-kit`），不挂在 `primitives` 集合目录下。
+- runtime 共享支撑代码按职责放入 `contracts / host / bridge / internal`，不挂在 `primitives` 集合目录下。
 
 ## 5. runtime 对外表面
 

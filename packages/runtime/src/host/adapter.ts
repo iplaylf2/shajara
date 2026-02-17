@@ -1,4 +1,4 @@
-import type { RuntimeScopeHandle } from "./runtime-kit/runtime-entities";
+import type { RuntimeScopeHandle } from "#src/contracts/entities";
 
 interface RuntimeHostInputPort {
   post(scope: RuntimeScopeHandle, input: unknown): void;

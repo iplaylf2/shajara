@@ -21,4 +21,4 @@ export type {
   RuntimeScopeHandle,
   RuntimeSelfDescriptor,
   RuntimeSpawnRef,
-} from "#src/runtime-kit/runtime-entities";
+} from "#src/contracts/entities";

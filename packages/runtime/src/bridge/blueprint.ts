@@ -1,5 +1,5 @@
 import type { Blueprint } from "@khora/kernel";
-import type { RuntimePlan } from "./runtime-kit/runtime-protocol";
+import type { RuntimePlan } from "#src/contracts/plan";
 
 export type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
 

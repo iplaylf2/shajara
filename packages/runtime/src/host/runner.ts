@@ -1,6 +1,6 @@
-import { BLUEPRINT_BRIDGE } from "./blueprint";
-import type { RuntimeBlueprint } from "./blueprint";
-import { withRuntimeResolvers } from "./runtime-host-adapter";
+import { BLUEPRINT_BRIDGE } from "#src/bridge/blueprint";
+import type { RuntimeBlueprint } from "#src/bridge/blueprint";
+import { withRuntimeResolvers } from "./adapter";
 
 function runBlueprint<ReturnValue>(
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,

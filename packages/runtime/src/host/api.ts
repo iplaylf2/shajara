@@ -1,8 +1,8 @@
-import type { RuntimeBlueprint } from "./blueprint";
-import type { RuntimePlan } from "./runtime-kit/runtime-protocol";
-import type { RuntimeSpawnRef } from "./runtime-kit/runtime-entities";
-import { notImplementedRuntimePrimitive } from "./runtime-kit/not-implemented";
-import { runBlueprint } from "./runtime-runner";
+import type { RuntimeBlueprint } from "#src/bridge/blueprint";
+import type { RuntimePlan } from "#src/contracts/plan";
+import type { RuntimeSpawnRef } from "#src/contracts/entities";
+import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
+import { runBlueprint } from "./runner";
 
 interface RuntimeAction<ReturnValue> {
   readonly scope: RuntimeSpawnRef<ReturnValue>;

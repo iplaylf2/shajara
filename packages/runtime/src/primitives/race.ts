@@ -1,6 +1,6 @@
-import type { RuntimePlan } from "#src/runtime-kit/runtime-protocol";
-import type { RuntimePrimitiveTuple } from "#src/primitives-kit/runtime-primitive-tuple";
-import { notImplementedRuntimePrimitive } from "#src/runtime-kit/not-implemented";
+import type { RuntimePlan } from "#src/contracts/plan";
+import type { RuntimePrimitiveTuple } from "#src/contracts/primitive-tuple";
+import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
 
 export interface RuntimeRaceResult<ReturnValue> {
   readonly winnerIndex: number;

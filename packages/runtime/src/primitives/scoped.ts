@@ -1,6 +1,6 @@
-import type { RuntimeBlueprint } from "#src/blueprint";
-import type { RuntimePlan } from "#src/runtime-kit/runtime-protocol";
-import { notImplementedRuntimePrimitive } from "#src/runtime-kit/not-implemented";
+import type { RuntimeBlueprint } from "#src/bridge/blueprint";
+import type { RuntimePlan } from "#src/contracts/plan";
+import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
 
 export type RuntimeResumableErrorHandler<CaughtValue> = (error: Error) => RuntimePlan<CaughtValue>;
 

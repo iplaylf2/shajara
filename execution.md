@@ -7,222 +7,65 @@
 
 ## 2. 阶段看板
 
-- Build: 当前阶段。聚焦 runtime 协议转换边界与类型表面收敛，保证 primitive 形态、目录边界、公开导出一致。
-- Prove: 在桥接落地后补“then/terminate 路径与返回值映射”验证矩阵。
-- Operate: 在 runtime 可执行后推进宿主输入投递与调度联动回归。
-- Ship: 在对外面稳定后收敛示例与外部文档。
+- Build: 当前阶段。聚焦 runtime 结构边界收敛与桥接执行闭环。
+- Prove: 在桥接实现后补执行语义验证与回归。
+- Operate: 在可执行后推进宿主输入投递与调度联动验证。
+- Ship: 在行为稳定后收敛示例与对外文档。
 
 ## 3. 当前现实与证据
 
-- `kernel` 承载 `Blueprint<T> = () => Plan<T>` 契约，`runtime` 直接依赖该契约类型。Evidence: `packages/kernel/src/plan-contract.ts:40`, `packages/runtime/src/blueprint.ts:1`
-- `runtime` 内部桥接对象 `BLUEPRINT_BRIDGE` 仍是唯一互转入口；`run` 通过桥接推进且执行仍为 `Not implemented`。Evidence: `packages/runtime/src/blueprint.ts:31`, `packages/runtime/src/runtime-runner.ts:7`
-- runtime 对外用户编排入口已扩展为 `run(RuntimeBlueprint<T>) + createScope()`，其中 `createScope` 当前为声明层占位实现。Evidence: `packages/runtime/src/runtime-host.ts:20`, `packages/runtime/src/runtime-host.ts:24`, `packages/runtime/src/index.ts:5`
-- runtime 的宿主入口语义已补充“全局 root scope + limbo scope 锚点”；`run` 与 `createScope` 均在 root 下创建作用域。Evidence: `docs/semantics.md:42`, `docs/semantics.md:111`, `docs/runtime.md:57`, `docs/api.md:40`
-- 宿主 API 的作用域绑定语义已区分：`run/createScope` 为 root 锚定入口；`yield*` 使用的上下文敏感入口作用域归属当前执行上下文分支。Evidence: `docs/api.md:21`, `docs/runtime.md:77`
-- `action` 签名已收敛为上下文敏感入口：通过 `yield* action<T>()` 返回 `RuntimeAction<T>`。Evidence: `packages/runtime/src/runtime-host.ts:30`, `apps/example/src/scenarios.ts:112`, `docs/api.md:51`
-- `run` 与 `scope.run` 的失败语义已明确为“返回当前调用失败”，生命周期治理分别由 root 锚点与 `scope.halt`/`scope[Symbol.asyncDispose]` 承接；托管作用域当前阶段通过 `scope.state` 观察，关闭完成状态通过 `scope.closed` 观察。Evidence: `docs/api.md:42`, `docs/api.md:68`, `docs/runtime.md:76`, `apps/example/src/example-app.ts:32`
-- `post` 已从公开入口下沉为内部宿主适配语义：由 `withRuntimeResolvers` 承接 `resolve/reject/post` 协议。Evidence: `packages/runtime/src/runtime-host-adapter.ts:1`, `packages/runtime/src/index.ts:6`
-- primitive 协议已收敛为“thunk + plan”并支持多步步骤序列：`RuntimePrimitive<T> = () => RuntimePlan<T>`。Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:13`, `packages/runtime/src/runtime-kit/runtime-protocol.ts:19`
-- primitives API 已补齐声明层签名（并发构造、基础控制、上下文、自省），当前保持 `Not implemented` 占位。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/control.ts:1`
-- 根据顶层编排边界约束，公开 `fork` 原语已移除；并发创建入口收敛为 `spawn`。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/concurrency.ts:1`
-- 用户侧 process 粒度 API 已收敛出公开表面；观察与控制统一为 `Scope` 粒度。Evidence: `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `apps/example/src/scenarios.ts:1`
-- 编排层原语调用形态已收敛为 `yield* primitive(...)`；去除二次调用 `yield* primitive(...)()`。Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`
-- `spawn` 句柄已收敛为不透明引用；`join/terminate` 直接接收 `spawned`，不再经 `spawned.scope` 暴露结构字段。Evidence: `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`
-- generator 边界语义已收敛为“成功值返回、失败异常抛出”；`join` 只返回成功值，失败由 runtime 以异常传播。Evidence: `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
-- 结构性监督原语已从 `supervise` 收敛为 `scoped + resumable` 组合：`scoped` 提供 `caught` 兜底，`resumable` 声明可恢复传播点。Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
-- `scoped` 第二参数语义已澄清为 `onResumableError` 捕获 handler：仅处理 `resumable` 子孙路径异常，不表示 `scoped` 自身任意异常兜底。Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `docs/api.md:1`, `docs/design-constraints.md:1`
-- 公开编排原语已移除 `receive`；输入读取能力暂不在 runtime 对外 primitives 表面。Evidence: `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
-- `cede` 已收敛为简洁 thunk 形式，并通过 kernel syscall + runtime 协议转换表达 `yield*` 语义。Evidence: `packages/runtime/src/primitives/cede.ts:1`, `packages/runtime/src/primitives/cede.ts:4`
-- `primitives` 目录已收敛为纯原语集合；runtime 共享协议支撑位于 `runtime-kit`。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/primitives/cede.ts:1`, `packages/runtime/src/runtime-kit/runtime-protocol.ts:1`
-- runtime 顶层导出已收紧为 runtime 语义类型与宿主 API，不再透出 kernel 契约类型。Evidence: `packages/runtime/src/index.ts:1`
-- 包内 alias 已统一为 `#src/* -> ./src/*`，与源码路径一致。Evidence: `packages/runtime/package.json:6`
-- example 保持 generator 形态且仅依赖 runtime 公共入口。Evidence: `apps/example/src/main.ts:1`, `apps/example/src/main.ts:10`
-- docs 已回收到静态设计口径，进度态信息集中在 `execution.md`。Evidence: `docs/runtime.md:1`, `docs/api.md:1`
-- 已固化“反复纠偏项”为仓库约束文档，后续以文档为准执行。Evidence: `docs/design-constraints.md:1`
-- example 已补充托管作用域使用姿势（`scope.run + scope.halt`）并明确 `scope.run` 失败不自动终结托管作用域。Evidence: `apps/example/src/example-app.ts:26`, `apps/example/src/example-app.ts:32`, `apps/example/README.md:5`
-- 工作区校验通过。Evidence: `yarn build && yarn lint && yarn typecheck` (2026-02-16)
+- runtime 源码目录已按职责分层为 `bridge / contracts / host / internal / primitives`，并移除旧 `runtime-*` 与 `runtime-kit` 命名。Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/bridge/blueprint.ts:1`, `packages/runtime/src/contracts/plan.ts:1`, `packages/runtime/src/host/api.ts:1`, `packages/runtime/src/internal/not-implemented.ts:1`
+- `primitives` 目录当前只保留原语集合与索引，不再承载支撑目录。Evidence: `packages/runtime/src/primitives/index.ts:1`, `packages/runtime/src/contracts/primitive-tuple.ts:1`
+- runtime 顶层公开表面仍聚焦 `run/createScope/action/sleep/until` 与 runtime 语义类型。Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/host/api.ts:1`
+- 内部宿主适配职责由 `host/adapter.ts` 承接，未从公共入口导出。Evidence: `packages/runtime/src/host/adapter.ts:1`, `packages/runtime/src/index.ts:1`
+- 桥接执行主路径仍是占位实现，当前尚未进入可执行状态。Evidence: `packages/runtime/src/bridge/blueprint.ts:12`, `packages/runtime/src/bridge/blueprint.ts:20`, `packages/runtime/src/host/runner.ts:11`, `packages/runtime/src/host/api.ts:31`, `packages/runtime/src/host/api.ts:45`
+- 原语声明层仍以占位实现为主，`cede` 走 syscall 提升路径。Evidence: `packages/runtime/src/primitives/cede.ts:1`, `packages/runtime/src/primitives/spawn.ts:1`, `packages/runtime/src/internal/not-implemented.ts:1`
+- 包内引用约束已收敛：同级/子级优先相对路径，跨边界引用使用 `#src/*`。Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/host/runner.ts:1`, `packages/runtime/src/primitives/join.ts:1`
 
-## 4. 执行阻力诊断（相对设计基线的增量）
+## 4. 执行阻力诊断（相对设计基线增量）
 
 > 仅记录相对设计基线的新事实与影响，不复述基线内容。
 
-### 4.1 结论：主阻力收敛为单点“桥接执行未实现”
+### 4.1 目录边界已重排为职责分层
 
-- Impact: 类型边界与结构边界已稳定，当前阻力集中在执行语义闭环。
-- Evidence: `packages/runtime/src/runtime-runner.ts:8`
+- Impact: 边界跨越路径更可见，定位“公开入口/内部支撑/桥接职责”成本下降。
+- Evidence: `packages/runtime/src/bridge/blueprint.ts:1`, `packages/runtime/src/contracts/entities.ts:1`, `packages/runtime/src/host/api.ts:1`, `packages/runtime/src/internal/not-implemented.ts:1`
 
-### 4.2 文档职责边界已收敛
+### 4.2 导入规范已从“别名泛用”收敛为“就近相对 + 跨边界别名”
 
-- Impact: 设计文档可保持稳定，后续状态更新有单一落点，减少跨文档耦合。
-- Evidence: `docs/runtime.md:1`, `docs/api.md:1`, `execution.md:1`
+- Impact: 同层阅读噪音降低，跨边界依赖仍可一眼识别。
+- Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/host/api.ts:5`, `packages/runtime/src/primitives/race.ts:1`
 
-### 4.3 当前切片的直接后果
+### 4.3 主阻力仍是桥接执行未实现
 
-- Impact: 提交后可直接进入桥接执行实现与验证，不需要再做接口与结构层返工。
-- Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:31`, `packages/runtime/src/runtime-runner.ts:4`
-
-### 4.4 控制原语语义存在新增设计增量（`suspend`）
-
-- Impact: 除 `cede` 的“主动让出一次调度”外，需要补一个“持续挂起直到父 scope 清理阶段失败唤醒”的控制原语，用于表达被动中止与结构化清理联动。
-- Evidence: `execution.md:59`
-
-### 4.5 资源原语语义存在新增设计增量（`resource + provide`）
-
-- Impact: 需要新增 `resource` 作用域构造原语：调用方等待 `provide(value)` 的首个值作为返回；资源作用域在 `provide` 处继续挂起，直到父 scope 回收时按失败路径唤醒，以支持 `try...provide...finally...` 的资源释放模型。
-- Evidence: `execution.md:64`
-
-### 4.6 宿主生命周期治理入口存在新增设计增量（`createScope`）
-
-- Impact: 在 `run` 之外新增托管作用域句柄（`scope.run/scope.halt/scope.state/scope.closed`）后，宿主可显式治理作用域关闭并观察生命周期阶段与关闭完成；当前仍缺执行桥接实现。
-- Evidence: `packages/runtime/src/runtime-host.ts:13`, `packages/runtime/src/runtime-host.ts:24`, `apps/example/src/example-app.ts:26`
-
-### 4.7 入口失败边界语义已落盘（`run`/`scope.run`）
-
-- Impact: 宿主侧失败处理与关闭治理职责边界更清晰；失败结果与关闭信号不再混淆为同一路径。
-- Evidence: `docs/api.md:42`, `docs/api.md:68`, `docs/runtime.md:76`, `apps/example/src/example-app.ts:32`
+- Impact: 结构治理完成后，下一步工作应集中在行为闭环而非继续目录重排。
+- Evidence: `packages/runtime/src/host/runner.ts:11`, `packages/runtime/src/host/api.ts:31`, `packages/runtime/src/host/api.ts:45`
 
 ## 5. Build 阶段执行切片
 
-### 5.1 Slice B1：收敛文档职责边界
+### 5.1 Slice B1：runtime 结构边界治理
 
 - Status: **Completed**
-- Output: `docs/` 保持稳定设计叙述，进度态集中到 `execution.md`。
-- Evidence: `docs/runtime.md:1`, `docs/api.md:1`, `execution.md:1`
-- Next: 后续执行状态只更新 `execution.md`，不在设计文档写“当前阶段”表述。
+- Output: 代码按职责落位到 `bridge/contracts/host/internal/primitives`。
+- Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/bridge/blueprint.ts:1`, `packages/runtime/src/contracts/plan.ts:1`, `packages/runtime/src/host/api.ts:1`
+- Next: 后续新增文件遵循“目录即职责”落位，不回退到语义模糊目录。
 
-### 5.2 Slice B2：固定 runtime 对外边界并内聚桥接实现点
-
-- Status: **Completed**
-- Output: example 仅通过 `run` 与原语接入；桥接细节停留在 runtime 包内部。
-- Evidence: `apps/example/src/main.ts:10`, `packages/runtime/src/runtime-runner.ts:7`, `packages/runtime/src/index.ts:1`
-- Next: 在 runtime 内补桥接执行语义，不外泄桥接对象。
-
-### 5.3 Slice B3：保持 generator 侧示例入口
+### 5.2 Slice B2：导入约束治理
 
 - Status: **Completed**
-- Output: example 继续以 generator blueprint + `yield*` primitive 作为用户侧表达入口。
-- Evidence: `apps/example/src/main.ts:5`, `apps/example/src/main.ts:6`
-- Next: 待桥接可执行后再补运行结果断言。
+- Output: 同级/子级改为相对路径；跨边界导入保留 `#src/*`。
+- Evidence: `packages/runtime/src/index.ts:1`, `packages/runtime/src/host/runner.ts:3`, `packages/runtime/src/contracts/primitive-tuple.ts:1`, `packages/runtime/src/primitives/all.ts:1`
+- Next: 新增导入按同一规则执行，避免 `#src` 在局部目录被滥用。
 
-### 5.4 Slice B4：收敛 primitive 协议与目录边界
-
-- Status: **Completed**
-- Output: primitive 统一为 thunk 语义；`primitives` 仅保留原语集合，协议支撑迁移到 `runtime-kit`。
-- Evidence: `packages/runtime/src/runtime-kit/runtime-protocol.ts:19`, `packages/runtime/src/primitives/cede.ts:4`, `docs/design-constraints.md:25`
-- Next: 新增原语时复用 `runtime-kit` 协议工具，避免在原语目录引入非原语支撑文件。
-
-### 5.5 Slice B5：按职责拆分 API 并补示例
-
-- Status: **Completed**
-- Output: API 分为“公开编排层（run + primitives）”与“内部宿主适配层（withRuntimeResolvers/post 语义）”；example 已逐项展示 API 调用姿势。
-- Evidence: `packages/runtime/src/runtime-host.ts:1`, `packages/runtime/src/runtime-host-adapter.ts:1`, `apps/example/src/main.ts:1`, `docs/api.md:1`
-- Next: 在 B 类 API 上补执行桥接实现，并为 example 增加可执行断言版本。
-
-### 5.6 Slice B6：收敛并发创建边界（移除公开 fork primitive）
-
-- Status: **Completed**
-- Output: `fork` 保留在 syscall 语义层，不再作为编排层原语；公开并发创建统一经 `spawn` 暴露。
-- Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
-- Next: 在执行桥接实现阶段确认 `spawn` 与 `join/terminate` 的 Scope 级映射保持一致。
-
-### 5.7 Slice B7：收敛原语调用形态（移除二次调用）
-
-- Status: **Completed**
-- Output: 公开原语函数直接返回 `RuntimePlan`，example 调用统一为 `yield* primitive(...)`。
-- Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/primitives/context.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
-- Next: 在桥接执行实现中保持该调用形态与 generator 驱动协议一致。
-
-### 5.8 Slice B8：收敛 spawn 句柄语义（移除结构字段访问）
-
-- Status: **Completed**
-- Output: 用户侧等待/终止改为 `join(spawned)` 与 `terminate(spawned)`；不再使用 `spawned.scope`。
-- Evidence: `packages/runtime/src/runtime-kit/runtime-entities.ts:1`, `packages/runtime/src/primitives/control.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
-- Next: 在桥接执行实现阶段将 spawn 句柄与内部 scope 标识映射闭合到 `join/terminate` 控制路径。
-
-### 5.9 Slice B9：重构监督原语（supervise -> scoped + resumable）
-
-- Status: **Completed**
-- Output: `supervise` 从公开表面移除，新增 `scoped(blueprint, caught?)` 与 `resumable(body)`；example 已覆盖 caught 兜底路径。
-- Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
-- Next: 在桥接执行实现中明确 `caught` 的触发条件与祖先作用域传播规则。
-
-### 5.10 Slice B10：澄清 scoped 捕获参数语义
-
-- Status: **Completed**
-- Output: `scoped` 第二参数命名收敛为 `onResumableError`，文档明确其只捕获 `resumable` 标记子孙异常。
-- Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/api.md:1`
-- Next: 在执行实现中把该触发条件映射到具体异常传播机制。
-
-### 5.11 Slice B11：移除公开 receive 原语
-
-- Status: **Completed**
-- Output: `receive` 从公开 primitives 与 example 场景中移除，编排层输入读取能力暂不暴露。
-- Evidence: `packages/runtime/src/primitives/control.ts:1`, `packages/runtime/src/primitives/index.ts:1`, `apps/example/src/scenarios.ts:1`, `docs/design-constraints.md:1`
-- Next: 后续若恢复输入读取入口，先定义编排层场景与作用域语义，再决定 API 形态。
-
-### 5.12 Slice B12：新增 `suspend` 原语语义（区别于 `cede`）
+### 5.3 Slice B3：桥接执行闭环
 
 - Status: **In Progress**
-- Output: 定义 `suspend` 为“当前执行体进入持续挂起，不再主动恢复；仅在父 scope 退出清理阶段由 runtime 以失败结果唤醒”。
-- Evidence: `execution.md:143`
-- Next: 在 `packages/runtime/src/primitives/control.ts` 增补签名，并在 bridge 执行层定义父 scope cleanup -> 子执行体失败唤醒的映射规则。
-
-### 5.13 Slice B13：新增 `resource` 原语语义（`provide` 驱动返回）
-
-- Status: **In Progress**
-- Output: 新增 `resource(body)` 与 `provide(value)` 契约：`resource` 返回 `provide` 提交的值，`provide` 返回后不完成资源作用域，而是在资源作用域内持续挂起并等待父 scope 回收。
-- Evidence: `packages/runtime/src/primitives/concurrency.ts:1`, `apps/example/src/scenarios.ts:1`
-- Next: 在 bridge 执行层实现 `resource` 的双阶段语义（提供值返回给父作用域 + 资源作用域延后回收），并验证 `try...provide...finally...` 清理路径。
-
-### 5.14 Slice B14：新增宿主托管作用域 API（`createScope`）
-
-- Status: **In Progress**
-- Output: 公开 `createScope(): { run, halt, state, closed, [Symbol.asyncDispose] }` 契约并在 example 提供调用姿势；`scope.run` 失败语义已明确为“单次运行失败，不自动终结托管作用域”。
-- Evidence: `packages/runtime/src/runtime-host.ts:13`, `packages/runtime/src/index.ts:5`, `apps/example/src/example-app.ts:26`, `docs/api.md:58`
-- Next: 在 runtime bridge 中补 `scope.run/scope.halt/scope.state/scope.closed` 的执行语义与关闭后拒绝新运行的行为验证。
+- Output: `run/createScope/until` 与 blueprint bridge 仍为占位实现，尚未形成执行闭环。
+- Evidence: `packages/runtime/src/host/runner.ts:11`, `packages/runtime/src/host/api.ts:31`, `packages/runtime/src/host/api.ts:45`, `packages/runtime/src/bridge/blueprint.ts:12`
+- Next: 在 `host/runner` 与 `bridge/blueprint` 落地执行映射，并补失败传播路径。
 
 ## 6. 后续阶段方向
 
-- Prove: 增加 runtime bridge 的类型与行为一致性测试，覆盖 `suspend` cleanup 唤醒路径及 `resource` 的 provide/回收双阶段路径。
-- Operate: 把 `run + 内部输入投递适配` 与原语联动纳入回归脚本。
-- Operate: 把 `scope.run/scope.halt/scope.state/scope.closed` 与运行时关闭传播、拒绝新运行路径纳入回归脚本。
-- Ship: 在实现稳定后更新示例说明与对外 API 细节。
-
-## 7. API 顶层分层提案
-
-### 7.1 分层结论
-
-- 结论：API 按职责分成两类，分别服务“用户编排入口”和“runtime 内部宿主适配”。
-- 约束：`post` 不再作为用户直接调用的顶层 API；其语义改为内部输入投递能力（由 runtime 在 `run` 过程中组装并持有）。
-
-### 7.2 A 类 API：用户编排入口（Public Composition API）
-
-- 目标：给应用侧提供稳定、最小、可组合的入口。
-- 边界：暴露 `run(RuntimeBlueprint<T>)`、`createScope()` 与 primitives；不暴露 `ScopeHandle -> post` 这种内部路由细节。
-- 责任：
-  - 启动蓝图并等待结果。
-  - 在宿主侧显式治理托管作用域生命周期（`scope.run/scope.halt` 或 async dispose 约定），并可通过 `scope.state` 与 `scope.closed` 观察阶段与关闭完成。
-  - 在蓝图内部通过 primitives 表达并发与交互。
-  - 维持“用户只写 generator + yield\*”的一致心智模型。
-
-### 7.3 B 类 API：运行时宿主适配（Internal Host Adapter API）
-
-- 目标：承接 runtime 与宿主事件循环/回调桥接的内部机制。
-- 边界：不从 `@khora/runtime` 公共入口直接导出，不要求应用侧感知。
-- 责任：
-  - 在 `run` 内部构造并管理 resolver（例如 `withResolvers` 语义下的完成/失败/投递回调）。
-  - 将宿主输入投递映射到目标 scope sink（当前 `post` 占位能力迁移到此层）。
-  - 维持桥接层对 `then/terminate` 推进协议的闭环。
-
-### 7.4 迁移顺序（Top-down）
-
-1. 先在类型与文档层确定 A/B 两类 API 的导出边界。
-2. 再把 `post` 从公开宿主入口迁入 B 类内部适配层（由 `run` 组装 resolver）。
-3. 最后补 `run` 执行桥接实现与回归验证，确认用户侧不需要直接持有 `ScopeHandle`。
-
-- 当前进度：第 1、2 步已完成；第 3 步待实现。
-
-### 7.5 对当前代码的直接指向
-
-- 已改造的公开面：`packages/runtime/src/runtime-host.ts:1`, `packages/runtime/src/index.ts:1`
-- 已承接的内部适配点：`packages/runtime/src/runtime-host-adapter.ts:1`, `packages/runtime/src/runtime-runner.ts:1`
+- Prove: 补 bridge 行为验证，覆盖正常返回、异常传播、终止路径。
+- Operate: 把宿主输入投递与调度联动纳入回归。
+- Ship: 收敛示例与对外文档说明，移除与实现状态不一致描述。
