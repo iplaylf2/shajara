@@ -11,10 +11,10 @@
     "typecheck": "yarn run -T tsc"
   },
   "dependencies": {
-    "@khora/runtime": "workspace:*"
+    "@khora/runtime": "workspace:^"
   },
   "devDependencies": {
-    "@khora/presets": "workspace:*",
+    "@khora/presets": "workspace:^",
     "oxlint": "catalog:",
     "vite": "catalog:"
   }

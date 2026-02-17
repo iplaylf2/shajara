@@ -24,10 +24,10 @@
     "typecheck": "yarn run -T tsc"
   },
   "dependencies": {
-    "@khora/kernel": "workspace:*"
+    "@khora/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@khora/presets": "workspace:*",
+    "@khora/presets": "workspace:^",
     "oxlint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
