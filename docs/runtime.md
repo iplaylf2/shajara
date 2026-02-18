@@ -4,7 +4,7 @@
 
 ## 1. 分层与职责
 
-runtime 由核心层与边界层构成。核心层负责解释 `Plan`、执行 syscall、维护运行期索引并推进可运行队列；边界层负责把用户侧 generator 表达映射为核心层可推进的 `Plan`。
+runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源，负责解释 `Plan`、执行 syscall、维护 Scope 树索引并推进可运行队列；runtime 负责把用户侧 generator 表达映射为 `kernel` 可执行 `Plan`，并在宿主边界承载 `run/createScope/action/sleep/until` 等 API。
 
 ## 2. 运行时承载面
 
@@ -16,11 +16,11 @@ runtime 由核心层与边界层构成。核心层负责解释 `Plan`、执行 s
 
 ## 4. 推进与调度
 
-核心层围绕可运行队列推进：`EventQueue` 存放待执行 `Process`，`drive()` 从队列取出一个 `Process` 并解释其 `Plan`，直到遇到阻塞型 syscall 或退出；当队列为空时，运行一次 `Scheduler`，由 `Scheduler` 通过 `Arm` 将目标 `Process` 放入队列。推进由宿主提供的 `enqueue(drive)` 触发，产生新可运行实体或唤醒等待者的路径会安排一次推进。
+执行推进由 `kernel` 完成：`EventQueue` 存放待执行 `Process`，`drive()` 从队列取出一个 `Process` 并解释其 `Plan`，直到遇到阻塞型 syscall 或退出；当队列为空时，运行一次 `Scheduler`，由 `Scheduler` 通过 `Arm` 将目标 `Process` 放入队列。runtime 不引入第二执行循环，仅通过执行入口把降解后的 `Blueprint` 提交给 `kernel`。
 
 ## 5. 运行期索引
 
-核心层维护 Scope 树索引（父子关系与状态）、Process 表（当前 `Plan`、退出信息与等待者）、等待登记（`Receive`、`AwaitProcess`、`AwaitScope`）、输入缓冲 `Sink` 与其等待队列，以及 Capability 到目标 Scope Portal 的解析索引。
+运行期索引由 `kernel` 维护：Scope 树索引（父子关系与状态）、Process 表（当前 `Plan`、退出信息与等待者）、等待登记（`Receive`、`AwaitProcess`、`AwaitScope`）、输入缓冲 `Sink` 与其等待队列，以及 Capability 到目标 Scope Portal 的解析索引。runtime 仅消费这些语义能力，不复制维护同构状态机。
 
 ## 6. Scope 树锚点
 
@@ -28,7 +28,7 @@ runtime 由核心层与边界层构成。核心层负责解释 `Plan`、执行 s
 
 ## 7. 边界适配协议
 
-边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到核心推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 kernel 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费。runtime 侧跨包适配以 `lowerPlan` 为主入口，`lowerBlueprint` 作为蓝图入口薄包装。边界层与核心层通过 `then` 与 `terminate` 两条路径闭合推进，输入投递通过 runtime 内部宿主适配层完成。
+边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口，`lowerBlueprint` 作为蓝图入口薄包装。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；响应推进走 `then`，关闭推进走 `terminate`，输入投递通过 runtime 内部宿主适配层完成。
 
 ## 8. 术语与方向约束
 
