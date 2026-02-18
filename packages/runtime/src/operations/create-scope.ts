@@ -1,4 +1,5 @@
 import type { RuntimeBlueprint } from "#src/contracts";
+import { notImplemented } from "#src/internal/not-implemented";
 
 export interface RuntimeScope {
   run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue>;
@@ -14,7 +15,5 @@ export type RuntimeScopeCloseResult =
   | { readonly status: "failed"; readonly reason: unknown };
 
 export function createScope(): RuntimeScope {
-  throw new Error(
-    "Not implemented: creating a host-managed scope with run()/halt() lifecycle controls.",
-  );
+  return notImplemented("creating a host-managed scope with run()/halt() lifecycle controls");
 }

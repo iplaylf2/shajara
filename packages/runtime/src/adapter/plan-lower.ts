@@ -5,11 +5,10 @@ import type {
   RuntimePrimitive,
   RuntimePrimitiveTuple,
 } from "#src/contracts";
+import { notImplemented } from "#src/internal/not-implemented";
 
 export function lowerPlan<ReturnValue>(_runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
-  throw new Error(
-    "Not implemented: lowering RuntimePlan<ReturnValue> to kernel Plan<ReturnValue>.",
-  );
+  return notImplemented("lowering RuntimePlan<ReturnValue> to kernel Plan<ReturnValue>");
 }
 
 export function lowerBlueprint<ReturnValue>(

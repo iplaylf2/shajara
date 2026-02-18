@@ -1,5 +1,5 @@
 import type { RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
-import { notImplementedRuntimePrimitive } from "#src/internal/not-implemented";
+import { notImplemented } from "#src/internal/not-implemented";
 
 export interface RuntimeAction<ReturnValue> {
   readonly scope: RuntimeSpawnRef<ReturnValue>;
@@ -8,5 +8,5 @@ export interface RuntimeAction<ReturnValue> {
 }
 
 export function action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> {
-  return notImplementedRuntimePrimitive("action");
+  return notImplemented("runtime operation 'action'");
 }

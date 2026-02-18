@@ -1,9 +1,5 @@
-import type { RuntimePlan } from "#src/contracts";
-
-function notImplementedRuntimePrimitive<ReturnValue>(
-  primitiveName: string,
-): RuntimePlan<ReturnValue> {
-  throw new Error(`Not implemented: runtime primitive '${primitiveName}'.`);
+function notImplemented<ReturnValue>(subject: string): ReturnValue {
+  throw new Error(`Not implemented: ${subject}.`);
 }
 
-export { notImplementedRuntimePrimitive };
+export { notImplemented };
