@@ -1,8 +1,8 @@
 import type { KernelResourceBody, KernelResourceProvide, Plan } from "@khora/kernel";
-import { BLUEPRINT_BRIDGE } from "#src/blueprint-bridge";
 import type { RuntimePlan } from "#src/contracts";
 import { resource as kernelResource } from "@khora/kernel";
-import { liftPlan } from "#src/plan-lift";
+import { liftPlan } from "#src/adapter/plan-lift";
+import { lowerPlan } from "#src/adapter/plan-lower";
 
 export type RuntimeResourceProvide<ProvidedValue> = (value: ProvidedValue) => RuntimePlan<never>;
 
@@ -19,7 +19,7 @@ function resourceKernelPrimitive<ProvidedValue>(
     const runtimeProvide: RuntimeResourceProvide<ProvidedValue> = (value: ProvidedValue) =>
       liftPlan(kernelProvide(value));
 
-    return BLUEPRINT_BRIDGE.raise(() => runtimeBody(runtimeProvide))();
+    return lowerPlan(runtimeBody(runtimeProvide));
   };
 
   return kernelResource(kernelBody);

@@ -1,8 +1,8 @@
 import type { KernelResumableErrorHandler, Plan } from "@khora/kernel";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { BLUEPRINT_BRIDGE } from "#src/blueprint-bridge";
 import { scoped as kernelScoped } from "@khora/kernel";
-import { liftPlan } from "#src/plan-lift";
+import { liftPlan } from "#src/adapter/plan-lift";
+import { lowerPlan } from "#src/adapter/plan-lower";
 
 export type RuntimeResumableErrorHandler<CaughtValue> = (error: Error) => RuntimePlan<CaughtValue>;
 
@@ -11,14 +11,14 @@ function scopedKernelPrimitive<ReturnValue, CaughtValue = never>(
   onResumableError?: RuntimeResumableErrorHandler<CaughtValue> | undefined,
 ): Plan<ReturnValue | CaughtValue> {
   if (!onResumableError) {
-    return kernelScoped<ReturnValue, CaughtValue>(BLUEPRINT_BRIDGE.raise(runtimeBlueprint)());
+    return kernelScoped<ReturnValue, CaughtValue>(lowerPlan(runtimeBlueprint()));
   }
 
   const kernelOnResumableError: KernelResumableErrorHandler<CaughtValue> = (error: Error) =>
-    BLUEPRINT_BRIDGE.raise(() => onResumableError(error))();
+    lowerPlan(onResumableError(error));
 
   return kernelScoped<ReturnValue, CaughtValue>(
-    BLUEPRINT_BRIDGE.raise(runtimeBlueprint)(),
+    lowerPlan(runtimeBlueprint()),
     kernelOnResumableError,
   );
 }

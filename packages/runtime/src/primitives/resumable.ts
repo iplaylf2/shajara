@@ -1,10 +1,10 @@
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { BLUEPRINT_BRIDGE } from "#src/blueprint-bridge";
 import { resumable as kernelResumable } from "@khora/kernel";
-import { liftPlan } from "#src/plan-lift";
+import { liftPlan } from "#src/adapter/plan-lift";
+import { lowerPlan } from "#src/adapter/plan-lower";
 
 const resumableKernelPrimitive = <ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>) =>
-  kernelResumable(BLUEPRINT_BRIDGE.raise(runtimeBlueprint)());
+  kernelResumable(lowerPlan(runtimeBlueprint()));
 
 export const resumable = <ReturnValue>(
   blueprint: RuntimeBlueprint<ReturnValue>,

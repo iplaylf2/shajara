@@ -13,9 +13,7 @@ type KernelResourceBody<ProvidedValue> = (
   provide: KernelResourceProvide<ProvidedValue>,
 ) => Plan<unknown>;
 
-function notImplementedKernelPrimitivePlan<ReturnValue>(
-  primitiveName: string,
-): Plan<ReturnValue> {
+function notImplementedKernelPrimitivePlan<ReturnValue>(primitiveName: string): Plan<ReturnValue> {
   throw new Error(`Not implemented: kernel primitive '${primitiveName}'.`);
 }
 
@@ -51,9 +49,7 @@ function race<ReturnValues extends readonly unknown[]>(_primitives: {
   return notImplementedKernelPrimitivePlan("race");
 }
 
-function resource<ProvidedValue>(
-  _body: KernelResourceBody<ProvidedValue>,
-): Plan<ProvidedValue> {
+function resource<ProvidedValue>(_body: KernelResourceBody<ProvidedValue>): Plan<ProvidedValue> {
   return notImplementedKernelPrimitivePlan("resource");
 }
 
@@ -72,9 +68,7 @@ function self<SelfDescriptor = unknown>(): Plan<SelfDescriptor> {
   return notImplementedKernelPrimitivePlan("self");
 }
 
-function spawn<ReturnValue, SpawnRef = unknown>(
-  _plan: Plan<ReturnValue>,
-): Plan<SpawnRef> {
+function spawn<ReturnValue, SpawnRef = unknown>(_plan: Plan<ReturnValue>): Plan<SpawnRef> {
   return notImplementedKernelPrimitivePlan("spawn");
 }
 

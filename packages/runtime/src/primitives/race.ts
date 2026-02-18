@@ -1,17 +1,15 @@
 import type { KernelRaceResult, Plan } from "@khora/kernel";
 import type { RuntimePlan, RuntimePrimitiveTuple } from "#src/contracts";
-import { BLUEPRINT_BRIDGE } from "#src/blueprint-bridge";
 import { race as kernelRace } from "@khora/kernel";
-import { liftPlan } from "#src/plan-lift";
+import { liftPlan } from "#src/adapter/plan-lift";
+import { lowerPrimitiveTuple } from "#src/adapter/plan-lower";
 
 export type RuntimeRaceResult<ReturnValue> = KernelRaceResult<ReturnValue>;
 
 function raceKernelPrimitive<ReturnValues extends readonly unknown[]>(
   runtimePrimitives: RuntimePrimitiveTuple<ReturnValues>,
 ): Plan<RuntimeRaceResult<ReturnValues[number]>> {
-  const kernelPrimitives = runtimePrimitives.map((runtimePrimitive) =>
-    BLUEPRINT_BRIDGE.raise(runtimePrimitive)(),
-  ) as { readonly [Index in keyof ReturnValues]: Plan<ReturnValues[Index]> };
+  const kernelPrimitives = lowerPrimitiveTuple(runtimePrimitives);
 
   return kernelRace<ReturnValues>(kernelPrimitives);
 }

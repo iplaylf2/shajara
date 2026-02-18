@@ -1,5 +1,4 @@
-import type { Result } from "@khora/kernel";
-import type { RuntimeStep } from "#src/runtime-step";
+import type { Result, Syscall } from "@khora/kernel";
 
 const RUNTIME_SCOPE_HANDLE_TOKEN: unique symbol = Symbol("runtime-scope-handle");
 const RUNTIME_SPAWN_REF_TOKEN: unique symbol = Symbol("runtime-spawn-ref");
@@ -20,7 +19,7 @@ interface RuntimeSelfDescriptor {
 type RuntimeResumeValue<ReturnValue> = Result<ReturnValue>;
 
 export type RuntimePlan<ReturnValue> = Generator<
-  RuntimeStep<unknown>,
+  Syscall<unknown>,
   ReturnValue,
   RuntimeResumeValue<unknown>
 >;

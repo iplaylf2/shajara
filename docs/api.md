@@ -23,6 +23,12 @@
 - 在 `blueprint/plan` 中通过 `yield*` 使用的 API 属于上下文敏感入口，作用域归属由当前执行上下文决定。
 - 上下文敏感入口创建的作用域附着在当前执行上下文所在分支。
 
+### 1.4 kernel/runtime 适配术语
+
+- `lift` 固定表示 `kernel -> runtime` 的适配方向。
+- `lower` 固定表示 `runtime -> kernel` 的适配方向。
+- 方向命名按语义层级固定：kernel 作为执行语义单源在“下”，runtime 作为编排表达层在“上”。
+
 ---
 
 ## 2. 用户侧计算单元

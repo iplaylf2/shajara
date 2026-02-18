@@ -13,6 +13,8 @@
 - `@khora/kernel` 承载 GADT 契约表达（如 `Plan`、`Syscall`、`Result`）。
 - `@khora/runtime` 是封装层，负责协议转换与宿主边界，不把 generator 细节下沉到 kernel。
 - 桥接逻辑仅在 runtime 内部存在，不作为 example 的直接依赖。
+- `lift` 术语固定表示 `kernel -> runtime` 适配；`lower` 术语固定表示 `runtime -> kernel` 适配。
+- “上/下”按语义层级定义：kernel 是执行语义单源，runtime 是编排表达层。
 
 ## 3. primitive 约束
 
@@ -25,7 +27,7 @@
 - `packages/runtime/src/primitives` 是原语集合目录。
 - 该目录仅放 `index.ts` 与具体原语文件。
 - runtime 契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录。
-- runtime 行为支撑代码按职责拆分为独立文件（如 `blueprint-bridge.ts`、`plan-lift.ts`、`runtime-step.ts`），不挂在 `primitives` 集合目录下。
+- runtime 行为支撑代码按职责拆分为独立文件（如 `adapter/plan-lower.ts`、`adapter/plan-lift.ts`），不挂在 `primitives` 集合目录下。
 
 ## 5. runtime 对外表面
 
