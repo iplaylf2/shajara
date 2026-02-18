@@ -35,15 +35,7 @@
 
 `Scope` 是生命周期、身份与上下文的统一载体。
 
-- 每个 `Scope` 有唯一 `ScopeId`
-- `Scope` 构成严格树；除根以外的每个 `Scope` 恰有一个父 `Scope`
-- 每个 `Scope` 持有：
-  - 该范围内的 `Process` 集合
-  - 作用域上下文存储（供 `Bind/Lookup`）
-  - 作用域输入缓冲 `Sink`
-  - 服务入口 `Portal`
-  - 调度器 `Scheduler`（蓝图）
-  - 仲裁器 `Reaper`（蓝图）
+每个 `Scope` 都有唯一 `ScopeId`，且 `Scope` 构成严格树：除根以外的每个 `Scope` 恰有一个父 `Scope`。每个 `Scope` 持有该范围内的 `Process` 集合、作用域上下文存储（供 `Bind/Lookup`）、作用域输入缓冲 `Sink`、服务入口 `Portal`、调度器 `Scheduler`（蓝图）和仲裁器 `Reaper`（蓝图）。
 
 ### 1.4 Process 与 Call 信息
 
@@ -54,21 +46,17 @@
 
 当 `Process` 由 `Invoke` 创建时，它携带不可变的调用信息：
 
-- `call = { method: string, args: any[] }`
+`call = { method: string, args: any[] }`
 
 该调用信息可由 `Self()` 观察。
 
 ### 1.5 Processor 与 EventQueue
 
-- `Processor` 是系统中唯一的逻辑原子执行权令牌
-- `EventQueue` 是微内核内部队列，存放可运行的 `Process`
+`Processor` 是系统中唯一的逻辑原子执行权令牌，`EventQueue` 是微内核内部队列，用于存放可运行的 `Process`。
 
 ### 1.6 Portal、Capability、Sink、PostFn
 
-- `Portal` 是 `Scope` 所拥有的入口映射：`{ methodName: Blueprint<any> }`
-- `Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`
-- `Sink` 是 `Scope` 所拥有的 FIFO 值缓冲
-- `PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `Sink`
+`Portal` 是 `Scope` 所拥有的入口映射（`{ methodName: Blueprint<any> }`）。`Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`。`Sink` 是 `Scope` 所拥有的 FIFO 值缓冲，`PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `Sink`。
 
 ### 1.7 Limbo 与孤儿 Scope
 
@@ -149,9 +137,7 @@
 
 ### 3.5 未处理 Fault 触发终止
 
-在同一个 `Scope` 中：
-
-- 若某 `Process` 以 `Failed(fault)` 退出，且没有任何 `Process` 通过 `AwaitProcess` 观察到该退出结果，则该 `Scope` 进入 `Terminating`。
+在同一个 `Scope` 中，若某 `Process` 以 `Failed(fault)` 退出，且没有任何 `Process` 通过 `AwaitProcess` 观察到该退出结果，则该 `Scope` 进入 `Terminating`。
 
 ### 3.6 结构性收敛：Reaper 与孤儿
 
@@ -180,8 +166,7 @@
 
 ### 4.2 阻塞分类
 
-- `[Non-Blocking]`：调用方保留 `Processor`，其 continuation 立刻继续
-- `[Blocking]`：调用方释放 `Processor`；当阻塞条件满足时由微内核恢复该 `Process`
+`[Non-Blocking]` 表示调用方保留 `Processor`，其 continuation 立刻继续。`[Blocking]` 表示调用方释放 `Processor`，当阻塞条件满足时由微内核恢复该 `Process`。
 
 ---
 
@@ -189,9 +174,7 @@
 
 可见性规则：
 
-- 以 `ProcessId` 为目标的操作要求目标 `Process` 属于调用方所在 `Scope`
-- `Spawn` 返回的 `ScopeId` 对调用方可见
-- 目标 `ScopeId` 若不对调用方可见，则相关操作返回 `Err(NotVisible)`
+以 `ProcessId` 为目标的操作要求目标 `Process` 属于调用方所在 `Scope`。`Spawn` 返回的 `ScopeId` 对调用方可见。目标 `ScopeId` 若不对调用方可见，则相关操作返回 `Err(NotVisible)`。
 
 ### 5.1 创建与调用
 
