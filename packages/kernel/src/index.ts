@@ -1,13 +1,6 @@
 export type { Blueprint } from "./contracts";
-export type { ExecutionFuture } from "./executor";
-export type { ExecutionFutureListener } from "./executor";
 export type { ExecutionHandle } from "./executor";
-export type { ExecutionPending } from "./executor";
-export type { ExecutionRef } from "./executor";
-export type { ExecutionResult } from "./executor";
-export type { ExecutionSnapshot } from "./executor";
-export type { ExecutionSettled } from "./executor";
-export type { Executor } from "./executor";
+export type { ExecutionScopeRef } from "./executor";
 export type { ImpurePlan } from "./contracts";
 export type { Plan } from "./contracts";
 export type { PurePlan } from "./contracts";

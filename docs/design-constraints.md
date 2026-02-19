@@ -18,7 +18,7 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 
 ## 4. 目录与结构边界
 
-`packages/runtime/src/primitives` 是原语集合目录，该目录仅放 `index.ts` 与具体原语文件。runtime 契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录。runtime 行为支撑代码按职责拆分为独立文件（如 `adapter/plan-lower.ts`、`adapter/plan-lift.ts`），不挂在 `primitives` 集合目录下。
+`packages/runtime/src/primitives` 是原语集合目录，该目录仅放 `index.ts` 与具体原语文件。`packages/runtime/src/operations` 是宿主操作集合目录，该目录仅放 `index.ts` 与具体 operation 文件；operation 共享支撑代码放在 `packages/runtime/src/operations-kit`。runtime 契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录。runtime 行为支撑代码按职责拆分为独立文件（如 `adapter/plan-lower.ts`、`adapter/plan-lift.ts`），不挂在集合目录下。
 
 ## 5. runtime 对外表面
 

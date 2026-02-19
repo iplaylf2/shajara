@@ -1,5 +1,6 @@
 import type { RuntimeBlueprint } from "#src/contracts";
-import { notImplemented } from "#src/internal/not-implemented";
+import { ensureExecutor } from "@khora/kernel";
+import { launchRuntimeBlueprintInScope } from "#src/operations-kit/launch-runtime-blueprint";
 
 export interface RuntimeScope {
   run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue>;
@@ -15,5 +16,25 @@ export type RuntimeScopeCloseResult =
   | { readonly status: "failed"; readonly reason: unknown };
 
 export function createScope(): RuntimeScope {
-  return notImplemented("creating a host-managed scope with run()/halt() lifecycle controls");
+  const scope = ensureExecutor().createScope();
+  const closed = new Promise<RuntimeScopeCloseResult>((resolve) => {
+    scope.onClose(resolve);
+  });
+
+  return {
+    [Symbol.asyncDispose](): Promise<void> {
+      return this.halt();
+    },
+    closed,
+    async halt(): Promise<void> {
+      scope.terminate();
+      await closed;
+    },
+    run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue> {
+      return launchRuntimeBlueprintInScope(scope.ref, runtimeBlueprint);
+    },
+    get state(): RuntimeScopeState {
+      return scope.state();
+    },
+  };
 }

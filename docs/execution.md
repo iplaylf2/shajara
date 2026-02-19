@@ -16,12 +16,13 @@ Current Phase 为 **Build — Make it work**。当前实现主线仍采用 **run
 ## 3. 当前现实与证据（Build）
 
 1. 文档职责边界已稳定，Execution Doc 可回到“实现状态快照”角色。Evidence: `docs/README.md`, `docs/design-constraints.md`。
-2. `kernel` 已暴露单一执行入口契约：`ensureExecutor().launch(Blueprint)` 返回 `future`，`future` 以 `ok/err` 收敛执行结果；当前入口实现仍为占位。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`。
-3. runtime 执行入口已接入 kernel 执行契约，但语义桥仍未闭环：`lowerPlan`、`liftPlan` 仍为未实现。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`。
-4. runtime 宿主操作仍有未实现入口（`createScope/action/sleep/until`），不具备完整宿主侧运行能力。Evidence: `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`。
-5. `kernel` 导出面已完成治理：根入口仅保留核心契约/执行入口，primitives 通过独立子路径 `@khora/kernel/primitives` 暴露。Evidence: `packages/kernel/src/index.ts`, `packages/kernel/src/primitives/index.ts`, `packages/kernel/package.json`, `packages/kernel/vite.config.ts`。
-6. 契约命名已做一次一致化治理：`plan-contract.ts` 重命名为 `contracts.ts`，并将 `Kernel*` 类型前缀收敛为包内语义命名（如 `Execution*`、`RaceResult`、`ResourceBody`）。Evidence: `packages/kernel/src/contracts.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/primitives/index.ts`, `packages/runtime/src/primitives/race.ts`。
-7. 本轮改动已通过仓库格式与静态检查。Evidence: `package.json`, `packages/runtime/src/primitives/race.ts`, `packages/runtime/src/primitives/resource.ts`, `packages/runtime/src/primitives/scoped.ts`。
+2. `kernel` 执行入口契约已收敛为“显式 scope 锚点 + 单一 launch”：`rootScope()` 暴露顶级锚点，`launch(scope, Blueprint)` 统一 root/scoped 运行提交，`createScope()` 提供托管 scope 句柄；收敛仍通过 `future/onSettle` 与 `scope/onClose` 暴露。当前实现仍为占位。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`。
+3. `kernel` 执行契约已移除 runtime 未消费的冗余暴露：删除 `ExecutionRef`、`ExecutionFuture.state()` 及其快照相关类型，并收缩根入口 executor 相关导出到最小使用面。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations-kit/await-execution.ts`。
+4. runtime 执行入口已接入 kernel 执行契约，但语义桥仍未闭环：`lowerPlan`、`liftPlan` 仍为未实现。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`。
+5. runtime 宿主操作已完成 `createScope` 与 `run` 收敛路径统一（共用 `future -> Promise` 映射），但 `action/sleep/until` 仍未实现，尚不具备完整宿主侧运行能力。Evidence: `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations-kit/await-execution.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`。
+6. `kernel` 导出面已完成治理：根入口仅保留核心契约/执行入口，primitives 通过独立子路径 `@khora/kernel/primitives` 暴露。Evidence: `packages/kernel/src/index.ts`, `packages/kernel/src/primitives/index.ts`, `packages/kernel/package.json`, `packages/kernel/vite.config.ts`。
+7. 契约命名已做一次一致化治理：`plan-contract.ts` 重命名为 `contracts.ts`，并将 `Kernel*` 类型前缀收敛为包内语义命名（如 `Execution*`、`RaceResult`、`ResourceBody`）。Evidence: `packages/kernel/src/contracts.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/primitives/index.ts`, `packages/runtime/src/primitives/race.ts`。
+8. 本轮改动已通过仓库格式与静态检查。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations-kit/await-execution.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`。
 
 ## 4. 相对设计基线增量（仅记录 delta）
 
@@ -47,7 +48,7 @@ Impact: 先验证执行入口契约，再验证 runtime 语义桥与最小 primi
 
 ### 4.5 增量：执行入口契约收敛为 Future 结果模型
 
-Impact: `kernel` 执行入口从“运行器细节暴露”收敛为“结果收敛契约暴露”：runtime 只消费 `ensureExecutor().launch(...)` 与 `future.onSettle(ok/err)`，不承担执行器创建与推进职责，避免跨层职责漂移。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations/run.ts`。
+Impact: `kernel` 执行入口从“运行器细节暴露”收敛为“结果收敛契约暴露”：runtime 只消费 `ensureExecutor().rootScope()`、`ensureExecutor().launch(scope, ...)` 与 `future.onSettle(ok/err)`，不承担执行器创建与推进职责，避免跨层职责漂移。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations/run.ts`。
 
 ### 4.6 增量：kernel 导出面改为“根入口 + primitives 子路径”
 
@@ -57,16 +58,24 @@ Impact: 对外导出职责更清晰，`Plan/Executor` 与 primitives 分离，�
 
 Impact: 包内类型命名从“自指前缀”收敛为语义命名，降低阅读噪音；`plan-contract.ts` 更名为 `contracts.ts`，路径语义与内容范围一致。Evidence: `packages/kernel/src/contracts.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/primitives/index.ts`, `packages/runtime/src/primitives/scoped.ts`。
 
+### 4.8 增量：执行入口收敛为“显式 scope + 单一 launch”
+
+Impact: `runtime.run` 与 `runtime.createScope().run` 走同一个 kernel 调用形状：`launch(scope, blueprint)`；差异只在 scope 来源（`rootScope()` 或托管 `scope.ref`）。runtime 不再维护并行入口语义。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`。
+
+### 4.9 增量：执行契约去除未消费类型与导出
+
+Impact: runtime 与 kernel 的边界契约收敛到“实际使用面”，避免保留未被消费的状态快照与引用类型，减少后续误用入口与历史包袱。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations-kit/await-execution.ts`。
+
 ## 5. 当前阶段执行切片（Build）
 
 | Slice                                             | Status      | Output                                                                                                                          | Evidence                                                                                                                                                                                              |
 | ------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | B1 文档职责路由建立                               | Completed   | `docs/` 职责边界已可单点检索。                                                                                                  | `docs/README.md`                                                                                                                                                                                      |
-| B2 kernel 执行入口契约与最小实现                  | In Progress | 执行入口契约已固定为 `ensureExecutor().launch(Blueprint)` + Future(`ok/err`)；并完成导出面拆分与契约命名治理；实现仍占位。      | `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/kernel/src/contracts.ts`, `packages/kernel/src/primitives/index.ts`, `packages/kernel/package.json`, `docs/semantics.md` |
+| B2 kernel 执行入口契约与最小实现                  | In Progress | 执行入口契约已收敛为 `rootScope()` + `launch(scope, blueprint)` + `createScope`，并移除 runtime 未消费的执行快照/引用类型暴露；实现仍占位。 | `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/kernel/src/contracts.ts`, `packages/kernel/src/primitives/index.ts`, `packages/kernel/package.json`, `docs/semantics.md` |
 | B3 runtime 语义桥闭环（lower/lift）               | Pending     | 实现 `RuntimePlan -> Plan` 与 `Plan -> RuntimePlan` 适配，保证 `then/terminate` 与 generator 协议一致。                         | `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `docs/runtime.md`                                                                                          |
 | B4 runtime 执行入口闭环（run）                    | In Progress | `run(RuntimeBlueprint)` 已提交到 kernel 执行入口并接入 Future 结果；受 `lowerPlan` 与 kernel 占位实现限制，尚未形成可运行闭环。 | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/kernel/src/executor.ts`                                                                             |
 | B5 primitive 垂直切片（最小集合）                 | Pending     | 选取最小原语集合完成 runtime primitive 到 kernel primitive 的端到端验证。                                                       | `packages/runtime/src/primitives/cede.ts`, `packages/runtime/src/primitives/bind.ts`, `packages/runtime/src/primitives/all.ts`                                                                        |
-| B6 宿主操作实现（createScope/action/sleep/until） | Pending     | 按 API 约束补齐宿主侧生命周期与异步桥接能力。                                                                                   | `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `docs/api.md` |
+| B6 宿主操作实现（createScope/action/sleep/until） | In Progress | `createScope` 已接入 kernel 托管 scope 契约并闭合 `run/halt/state/closed` 形状；`action/sleep/until` 待补齐。                   | `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `docs/api.md` |
 | B7 kernel 支持缺口回补（按触发）                  | Conditional | 仅在验证到签名错误或支持缺口时最小化调整 kernel，避免主动扩面。                                                                 | `packages/kernel/src/contracts.ts`, `packages/kernel/src/primitives/index.ts`                                                                                                                         |
 
 ## 6. 后续方向
