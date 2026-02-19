@@ -1,14 +1,12 @@
-import type { Plan } from "#src/plan-contract";
+import type { Plan } from "#src/contracts";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export type KernelResourceProvide<ProvidedValue> = (value: ProvidedValue) => Plan<never>;
+export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Plan<never>;
 
-export type KernelResourceBody<ProvidedValue> = (
-  provide: KernelResourceProvide<ProvidedValue>,
+export type ResourceBody<ProvidedValue> = (
+  provide: ResourceProvide<ProvidedValue>,
 ) => Plan<unknown>;
 
-export function resource<ProvidedValue>(
-  _body: KernelResourceBody<ProvidedValue>,
-): Plan<ProvidedValue> {
+export function resource<ProvidedValue>(_body: ResourceBody<ProvidedValue>): Plan<ProvidedValue> {
   return notImplemented("kernel primitive 'resource'");
 }

@@ -1,10 +1,11 @@
-import type { KernelRaceResult, Plan } from "@khora/kernel";
 import type { RuntimePlan, RuntimePrimitiveTuple } from "#src/contracts";
-import { race as kernelRace } from "@khora/kernel";
+import type { Plan } from "@khora/kernel";
+import type { RaceResult } from "@khora/kernel/primitives";
+import { race as kernelRace } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPrimitiveTuple } from "#src/adapter/plan-lower";
 
-export type RuntimeRaceResult<ReturnValue> = KernelRaceResult<ReturnValue>;
+export type RuntimeRaceResult<ReturnValue> = RaceResult<ReturnValue>;
 
 function raceKernelPrimitive<ReturnValues extends readonly unknown[]>(
   runtimePrimitives: RuntimePrimitiveTuple<ReturnValues>,

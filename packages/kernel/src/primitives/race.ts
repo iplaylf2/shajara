@@ -1,13 +1,13 @@
-import type { Plan } from "#src/plan-contract";
+import type { Plan } from "#src/contracts";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export interface KernelRaceResult<ReturnValue> {
+export interface RaceResult<ReturnValue> {
   readonly winnerIndex: number;
   readonly value: ReturnValue;
 }
 
 export function race<ReturnValues extends readonly unknown[]>(_primitives: {
   readonly [Index in keyof ReturnValues]: Plan<ReturnValues[Index]>;
-}): Plan<KernelRaceResult<ReturnValues[number]>> {
+}): Plan<RaceResult<ReturnValues[number]>> {
   return notImplemented("kernel primitive 'race'");
 }

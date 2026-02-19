@@ -13,7 +13,7 @@ export { spawn } from "./spawn";
 export { suspend } from "./suspend";
 export { terminate } from "./terminate";
 
-export type { KernelRaceResult } from "./race";
-export type { KernelResourceBody } from "./resource";
-export type { KernelResourceProvide } from "./resource";
-export type { KernelResumableErrorHandler } from "./scoped";
+export type { RaceResult } from "./race";
+export type { ResourceBody } from "./resource";
+export type { ResourceProvide } from "./resource";
+export type { ResumableErrorHandler } from "./scoped";

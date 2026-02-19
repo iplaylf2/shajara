@@ -1,6 +1,6 @@
 import type { RuntimePlan, RuntimePrimitiveTuple } from "#src/contracts";
 import type { Plan } from "@khora/kernel";
-import { all as kernelAll } from "@khora/kernel";
+import { all as kernelAll } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPrimitiveTuple } from "#src/adapter/plan-lower";
 

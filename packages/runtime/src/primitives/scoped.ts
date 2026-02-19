@@ -1,6 +1,7 @@
-import type { KernelResumableErrorHandler, Plan } from "@khora/kernel";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { scoped as kernelScoped } from "@khora/kernel";
+import type { Plan } from "@khora/kernel";
+import type { ResumableErrorHandler } from "@khora/kernel/primitives";
+import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
@@ -14,7 +15,7 @@ function scopedKernelPrimitive<ReturnValue, CaughtValue = never>(
     return kernelScoped<ReturnValue, CaughtValue>(lowerPlan(runtimeBlueprint()));
   }
 
-  const kernelOnResumableError: KernelResumableErrorHandler<CaughtValue> = (error: Error) =>
+  const kernelOnResumableError: ResumableErrorHandler<CaughtValue> = (error: Error) =>
     lowerPlan(onResumableError(error));
 
   return kernelScoped<ReturnValue, CaughtValue>(

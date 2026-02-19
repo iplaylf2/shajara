@@ -1,4 +1,4 @@
-import type { Plan } from "#src/plan-contract";
+import type { Plan } from "#src/contracts";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export function lookup<Value>(_key: string): Plan<Value> {

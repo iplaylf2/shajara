@@ -1,5 +1,5 @@
 import type { RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
-import { join as kernelJoin } from "@khora/kernel";
+import { join as kernelJoin } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 
 export const join = <ReturnValue>(

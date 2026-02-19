@@ -1,6 +1,7 @@
-import type { KernelResourceBody, KernelResourceProvide, Plan } from "@khora/kernel";
+import type { ResourceBody, ResourceProvide } from "@khora/kernel/primitives";
+import type { Plan } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
-import { resource as kernelResource } from "@khora/kernel";
+import { resource as kernelResource } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
@@ -13,8 +14,8 @@ export type RuntimeResourceBody<ProvidedValue> = (
 function resourceKernelPrimitive<ProvidedValue>(
   runtimeBody: RuntimeResourceBody<ProvidedValue>,
 ): Plan<ProvidedValue> {
-  const kernelBody: KernelResourceBody<ProvidedValue> = (
-    kernelProvide: KernelResourceProvide<ProvidedValue>,
+  const kernelBody: ResourceBody<ProvidedValue> = (
+    kernelProvide: ResourceProvide<ProvidedValue>,
   ) => {
     const runtimeProvide: RuntimeResourceProvide<ProvidedValue> = (value: ProvidedValue) =>
       liftPlan(kernelProvide(value));

@@ -1,5 +1,5 @@
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { resumable as kernelResumable } from "@khora/kernel";
+import { resumable as kernelResumable } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
