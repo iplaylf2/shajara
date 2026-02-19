@@ -16,8 +16,8 @@ Current Phase 为 **Build — Make it work**。当前实现主线仍采用 **run
 ## 3. 当前现实与证据（Build）
 
 1. 文档职责边界已稳定，Execution Doc 可回到“实现状态快照”角色。Evidence: `docs/README.md`, `docs/design-constraints.md`。
-2. `kernel` 当前仅暴露类型与 primitives，对外尚无可直接承载 `RuntimeBlueprint` 运行的执行入口契约。Evidence: `packages/kernel/src/index.ts`, `packages/kernel/src/plan-contract.ts`。
-3. runtime 关键桥接尚未闭环：`liftPlan`、`lowerPlan`、`run` 仍为未实现。Evidence: `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/operations/run.ts`。
+2. `kernel` 已暴露单一执行入口契约：`ensureExecutor().launch(Blueprint)` 返回 `future`，`future` 以 `ok/err` 收敛执行结果；当前入口实现仍为占位。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`。
+3. runtime 执行入口已接入 kernel 执行契约，但语义桥仍未闭环：`lowerPlan`、`liftPlan` 仍为未实现。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`。
 4. runtime 宿主操作仍有未实现入口（`createScope/action/sleep/until`），不具备完整宿主侧运行能力。Evidence: `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`。
 5. kernel primitives 仍有未实现项，但本轮不作为主动清理目标，仅在 runtime 触发条件成立时处理。Evidence: `packages/kernel/src/primitives/cede.ts`, `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives/bind.ts`。
 
@@ -43,14 +43,18 @@ Impact: kernel 变更需满足明确判据，避免在 Build 阶段扩散到非�
 
 Impact: 先验证执行入口契约，再验证 runtime 语义桥与最小 primitive 闭环，最后推进宿主操作与生命周期 API。Evidence: `packages/kernel/src/index.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/operations/index.ts`。
 
+### 4.5 增量：执行入口契约收敛为 Future 结果模型
+
+Impact: `kernel` 执行入口从“运行器细节暴露”收敛为“结果收敛契约暴露”：runtime 只消费 `ensureExecutor().launch(...)` 与 `future.onSettle(ok/err)`，不承担执行器创建与推进职责，避免跨层职责漂移。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations/run.ts`。
+
 ## 5. 当前阶段执行切片（Build）
 
 | Slice                                             | Status      | Output                                                                                | Evidence                                                                                                                                                                                              |
 | ------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | B1 文档职责路由建立                               | Completed   | `docs/` 职责边界已可单点检索。                                                        | `docs/README.md`                                                                                                                                                                                      |
-| B2 kernel 执行入口契约与最小实现                  | In Progress | 定义并实现单一执行入口：接收 `Blueprint` 并推进到 `Promise` 结果。                    | `packages/kernel/src/index.ts`, `packages/kernel/src/plan-contract.ts`, `docs/semantics.md`                                                                                                           |
+| B2 kernel 执行入口契约与最小实现                  | In Progress | 执行入口契约已固定为 `ensureExecutor().launch(Blueprint)` + Future(`ok/err`)；实现仍占位。 | `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `docs/semantics.md`                                                                                                               |
 | B3 runtime 语义桥闭环（lower/lift）               | Pending     | 实现 `RuntimePlan -> Plan` 与 `Plan -> RuntimePlan` 适配，保证 `then/terminate` 与 generator 协议一致。 | `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `docs/runtime.md`                                                                                          |
-| B4 runtime 执行入口闭环（run）                    | Pending     | `run(RuntimeBlueprint)` 通过 `lowerBlueprint` 提交到 kernel 执行入口，形成最小可运行路径。 | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/operations/index.ts`                                                                    |
+| B4 runtime 执行入口闭环（run）                    | In Progress | `run(RuntimeBlueprint)` 已提交到 kernel 执行入口并接入 Future 结果；受 `lowerPlan` 与 kernel 占位实现限制，尚未形成可运行闭环。 | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/kernel/src/executor.ts`                                                                             |
 | B5 primitive 垂直切片（最小集合）                 | Pending     | 选取最小原语集合完成 runtime primitive 到 kernel primitive 的端到端验证。             | `packages/runtime/src/primitives/cede.ts`, `packages/runtime/src/primitives/bind.ts`, `packages/runtime/src/primitives/all.ts`                                                                        |
 | B6 宿主操作实现（createScope/action/sleep/until） | Pending     | 按 API 约束补齐宿主侧生命周期与异步桥接能力。                                         | `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `docs/api.md` |
 | B7 kernel 支持缺口回补（按触发）                  | Conditional | 仅在验证到签名错误或支持缺口时最小化调整 kernel，避免主动扩面。                       | `packages/kernel/src/plan-contract.ts`, `packages/kernel/src/primitives/index.ts`                                                                                                                     |
