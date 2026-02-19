@@ -11,6 +11,10 @@ interface RuntimeSpawnRef<ReturnValue = unknown> {
   readonly _return?: ReturnValue;
 }
 
+function runtimeSpawnRef<ReturnValue>(): RuntimeSpawnRef<ReturnValue> {
+  return { [RUNTIME_SPAWN_REF_TOKEN]: "runtime-spawn-ref" };
+}
+
 interface RuntimeSelfDescriptor {
   readonly scope: RuntimeScopeHandle;
   readonly call: { readonly method: string; readonly args: readonly unknown[] } | undefined;
@@ -32,4 +36,5 @@ export type RuntimePrimitiveTuple<ReturnValues extends readonly unknown[]> = {
 
 export type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
 
+export { runtimeSpawnRef };
 export type { RuntimeScopeHandle, RuntimeSelfDescriptor, RuntimeSpawnRef };

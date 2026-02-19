@@ -52,6 +52,10 @@ export interface Executor {
     blueprint: Blueprint<ReturnValue>,
   ): ExecutionHandle<ReturnValue>;
   /**
+   * Post an input value into the target runtime ingress channel.
+   */
+  post<PostedValue>(scope: unknown, value: PostedValue): void;
+  /**
    * Create a host-managed scope rooted under the global root scope.
    */
   createScope(): ExecutionScopeHandle;

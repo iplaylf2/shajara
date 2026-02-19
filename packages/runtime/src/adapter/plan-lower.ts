@@ -1,14 +1,32 @@
-import type { Blueprint, Plan } from "@khora/kernel";
+import type { Blueprint, Plan, Result, Syscall } from "@khora/kernel";
 import type {
   RuntimeBlueprint,
   RuntimePlan,
   RuntimePrimitive,
   RuntimePrimitiveTuple,
 } from "#src/contracts";
-import { notImplemented } from "#src/internal/not-implemented";
 
-export function lowerPlan<ReturnValue>(_runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
-  return notImplemented("lowering RuntimePlan<ReturnValue> to kernel Plan<ReturnValue>");
+function lowerIteratorResult<ReturnValue>(
+  runtimePlan: RuntimePlan<ReturnValue>,
+  iteratorResult: IteratorResult<Syscall<unknown>, ReturnValue>,
+): Plan<ReturnValue> {
+  if (iteratorResult.done) {
+    return {
+      kind: "pure",
+      value: iteratorResult.value,
+    };
+  }
+
+  return {
+    kind: "impure",
+    syscall: iteratorResult.value,
+    terminate: () => lowerIteratorResult(runtimePlan, runtimePlan.return(null as ReturnValue)),
+    then: (result: Result<unknown>) => lowerIteratorResult(runtimePlan, runtimePlan.next(result)),
+  };
+}
+
+export function lowerPlan<ReturnValue>(runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
+  return lowerIteratorResult(runtimePlan, runtimePlan.next());
 }
 
 export function lowerBlueprint<ReturnValue>(

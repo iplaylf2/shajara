@@ -28,7 +28,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 7. 边界适配协议
 
-边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口，`lowerBlueprint` 作为蓝图入口薄包装。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；响应推进走 `then`，关闭推进走 `terminate`，输入投递通过 runtime 内部宿主适配层完成。
+边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口，`lowerBlueprint` 作为蓝图入口薄包装。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；响应推进走 `then`，关闭推进走 `terminate`。宿主输入投递通过执行入口 `post` 注入，编排侧等待通过 `receive` 配对收敛。
 
 ## 8. 术语与方向约束
 

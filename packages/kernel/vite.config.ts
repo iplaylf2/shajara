@@ -7,6 +7,7 @@ export default defineConfig({
       entry: {
         index: "src/index.ts",
         primitives: "src/primitives/index.ts",
+        syscalls: "src/syscalls/index.ts",
       },
       fileName: (format, entryName) => (format === "es" ? `${entryName}.js` : `${entryName}.cjs`),
       formats: ["es", "cjs"],

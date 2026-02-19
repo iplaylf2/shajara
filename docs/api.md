@@ -34,11 +34,11 @@
 
 ### 3.3 sleep
 
-`sleep(milliseconds): RuntimePlan<void>`，用于等待一段宿主时间。
+`sleep(milliseconds): RuntimePlan<void>`，用于等待一段宿主时间。runtime 内部通过宿主投递与 `receive` 等待配对完成挂起与唤醒，`sleep` 对外不暴露输入读取细节。
 
 ### 3.4 until
 
-`until(thunk)` 接受一个 promise thunk，返回可被 `join` 的 `scope` 句柄。
+`yield* until(thunk)` 接受一个 promise thunk，并等待其完成后返回结果值（reject 按异常传播）。`until` 属于上下文敏感宿主入口，内部通过宿主投递与 `receive` 等待配对完成结算。
 
 ### 3.5 createScope
 

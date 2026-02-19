@@ -4,6 +4,7 @@ export { cede } from "./cede";
 export { halt } from "./halt";
 export { join } from "./join";
 export { lookup } from "./lookup";
+export { receive } from "./receive";
 export { race } from "./race";
 export { resource } from "./resource";
 export { resumable } from "./resumable";

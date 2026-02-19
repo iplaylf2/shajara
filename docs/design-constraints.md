@@ -23,6 +23,7 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 ## 5. runtime 对外表面
 
 runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimePrimitive`）与公开宿主入口（`run`、`createScope`），但不引导用户直接构造 kernel 层细节。输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
+宿主输入投递与等待配对通过 runtime 内部适配完成（`post` 注入与 `receive` 等待），不在 runtime 公开 primitives 表面额外暴露输入读取入口。
 
 宿主入口 `run/createScope` 的作用域挂载在全局 root 锚点下；`yield*` 语境中的上下文敏感入口沿当前执行上下文作用域分支绑定。`action` 作为上下文敏感宿主入口，以 `yield* action<T>()` 返回 `RuntimeAction<T>`，不作为顶级直接调用能力。
 
