@@ -1,4 +1,4 @@
-import type { Result, Syscall } from "@khora/kernel";
+import type { Syscall } from "@khora/kernel";
 
 const RUNTIME_SCOPE_HANDLE_TOKEN: unique symbol = Symbol("runtime-scope-handle");
 const RUNTIME_SPAWN_REF_TOKEN: unique symbol = Symbol("runtime-spawn-ref");
@@ -11,22 +11,12 @@ interface RuntimeSpawnRef<ReturnValue = unknown> {
   readonly _return?: ReturnValue;
 }
 
-function runtimeSpawnRef<ReturnValue>(): RuntimeSpawnRef<ReturnValue> {
-  return { [RUNTIME_SPAWN_REF_TOKEN]: "runtime-spawn-ref" };
-}
-
 interface RuntimeSelfDescriptor {
   readonly scope: RuntimeScopeHandle;
   readonly call: { readonly method: string; readonly args: readonly unknown[] } | undefined;
 }
 
-type RuntimeResumeValue<ReturnValue> = Result<ReturnValue>;
-
-export type RuntimePlan<ReturnValue> = Generator<
-  Syscall<unknown>,
-  ReturnValue,
-  RuntimeResumeValue<unknown>
->;
+export type RuntimePlan<ReturnValue> = Generator<Syscall<unknown>, ReturnValue, unknown>;
 
 export type RuntimePrimitive<ReturnValue> = () => RuntimePlan<ReturnValue>;
 
@@ -36,5 +26,4 @@ export type RuntimePrimitiveTuple<ReturnValues extends readonly unknown[]> = {
 
 export type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
 
-export { runtimeSpawnRef };
 export type { RuntimeScopeHandle, RuntimeSelfDescriptor, RuntimeSpawnRef };

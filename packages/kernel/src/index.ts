@@ -4,7 +4,6 @@ export type { ExecutionScopeRef } from "./executor";
 export type { ImpurePlan } from "./contracts";
 export type { Plan } from "./contracts";
 export type { PurePlan } from "./contracts";
-export type { Result } from "./contracts";
 export type { RuntimeError } from "./contracts";
 export type { RuntimeErrorCode } from "./contracts";
 export type { Syscall } from "./contracts";

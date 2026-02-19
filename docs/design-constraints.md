@@ -5,10 +5,11 @@
 ## 1. 文档职责
 
 静态设计文档集合为 `docs/*.md`（不含 `docs/execution.md`），用于描述目标设计与稳定边界。`docs/README.md` 维护静态设计文档集合与 `docs/execution.md` 的职责路由。`docs/execution.md` 是动态执行文档，记录当前进度、未完成项、阶段状态与证据。进度态信息不进入静态设计文档集合，稳定约束不在 `docs/execution.md` 作为主叙述重复。
+静态设计文档不承载项目状态叙述（如“当前阶段”“进行中”“已完成”），仅描述稳定语义与约束。
 
 ## 2. kernel 与 runtime 边界
 
-`@khora/kernel` 承载 GADT 契约表达（如 `Plan`、`Syscall`、`Result`）。`@khora/runtime` 是封装层，负责协议转换与宿主边界，不把 generator 细节下沉到 kernel。桥接逻辑仅在 runtime 内部存在，不作为 example 的直接依赖。
+`@khora/kernel` 承载 GADT 契约表达（如 `Plan`、`Syscall` 与类型化续延）。`@khora/runtime` 是封装层，负责协议转换与宿主边界，不把 generator 细节下沉到 kernel。桥接逻辑仅在 runtime 内部存在，不作为 example 的直接依赖。`Impure.then` 仅承接 syscall 成功值；可恢复业务失败是否以带内值表达由具体 syscall 语义决定，不在 `Plan` 层统一强制二元包裹。
 
 术语方向固定如下：`lift` 表示 `kernel -> runtime` 适配，`lower` 表示 `runtime -> kernel` 适配。“上/下”按语义层级定义，kernel 是执行语义单源，runtime 是编排表达层。
 
@@ -22,7 +23,7 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 
 ## 5. runtime 对外表面
 
-runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimePrimitive`）与公开宿主入口（`run`、`createScope`），但不引导用户直接构造 kernel 层细节。输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
+runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimeScope`）与公开宿主入口（`run`、`createScope`），但不引导用户直接构造 kernel 层细节。输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
 宿主输入投递与等待配对通过 runtime 内部适配完成（`post` 注入与 `receive` 等待），不在 runtime 公开 primitives 表面额外暴露输入读取入口。
 
 宿主入口 `run/createScope` 的作用域挂载在全局 root 锚点下；`yield*` 语境中的上下文敏感入口沿当前执行上下文作用域分支绑定。`action` 作为上下文敏感宿主入口，以 `yield* action<T>()` 返回 `RuntimeAction<T>`，不作为顶级直接调用能力。

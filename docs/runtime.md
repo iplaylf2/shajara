@@ -12,7 +12,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 3. 中止续延
 
-`Impure` 节点包含两条推进路径：`then(response)` 处理带内响应到达后的推进，`terminate()` 处理等待响应期间发生关闭或打断时的推进。边界层以固定协议触发这两条路径，响应推进走 `then`，关闭推进走 `terminate`。
+`Impure` 节点包含两条推进路径：`then(value)` 处理 syscall 成功值到达后的推进，`terminate()` 处理等待响应期间发生关闭或打断时的推进。边界层以固定协议触发这两条路径，成功响应推进走 `then`，关闭推进走 `terminate`。失败是否作为带内值建模由具体 syscall 语义决定，执行器异常与不可恢复错误走带外异常路径。
 
 ## 4. 推进与调度
 
@@ -28,7 +28,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 7. 边界适配协议
 
-边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口，`lowerBlueprint` 作为蓝图入口薄包装。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；响应推进走 `then`，关闭推进走 `terminate`。宿主输入投递通过执行入口 `post` 注入，编排侧等待通过 `receive` 配对收敛。
+边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；成功响应推进走 `then`，关闭推进走 `terminate`。宿主输入投递通过执行入口 `post` 注入，编排侧等待通过 `receive` 配对收敛。
 
 ## 8. 术语与方向约束
 
@@ -36,4 +36,4 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 9. 内部表达与对外表面
 
-内核内部使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的响应类型，内部用于表达与组合的结构不进入 `Plan` 与 `Syscall<A>` 的类型参数。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。对外 API 面定义与使用约束见 `docs/api.md`。
+内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的成功响应类型；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。对外 API 面定义与使用约束见 `docs/api.md`。

@@ -1,33 +1,33 @@
-import type { ImpurePlan, Plan, Result } from "@khora/kernel";
+import type { ImpurePlan, Plan } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 
 function* continueFromImpure<ReturnValue>(
   impurePlan: ImpurePlan<unknown, ReturnValue>,
 ): RuntimePlan<Plan<ReturnValue>> {
-  let nextPlan: Plan<ReturnValue> = impurePlan.terminate();
+  let nextPlan: Plan<ReturnValue> | null = null;
 
   try {
-    const result: Result<unknown> = yield impurePlan.syscall;
-    nextPlan = impurePlan.then(result);
+    const resumeValue: unknown = yield impurePlan.syscall;
+    nextPlan = impurePlan.then(resumeValue);
   } finally {
     // Keep terminate-as-default when close/termination interrupts resume.
+    if (nextPlan === null) {
+      nextPlan = impurePlan.terminate();
+    }
   }
 
-  return nextPlan;
+  return nextPlan as Plan<ReturnValue>;
+}
+
+function* liftStep<ReturnValue>(plan: Plan<ReturnValue>): RuntimePlan<ReturnValue> {
+  if (plan.kind === "pure") {
+    return plan.value;
+  }
+
+  const nextPlan: Plan<ReturnValue> = yield* continueFromImpure(plan);
+  return yield* liftStep(nextPlan);
 }
 
 export function* liftPlan<ReturnValue>(plan: Plan<ReturnValue>): RuntimePlan<ReturnValue> {
-  let currentPlan: Plan<ReturnValue> = plan;
-
-  while (currentPlan.kind !== "pure") {
-    currentPlan = yield* continueFromImpure(currentPlan);
-  }
-
-  return currentPlan.value;
-}
-
-// IMPORTANT: Plan.terminate is a control-flow branch, not an error value branch.
-// It must align with generator.return() so user try...finally blocks run during close/termination.
-export interface RuntimeTerminationSemantics {
-  readonly driveTerminateViaGeneratorReturn: true;
+  return yield* liftStep(plan);
 }

@@ -1,45 +1,36 @@
-import type { Blueprint, Plan, Result, Syscall } from "@khora/kernel";
-import type {
-  RuntimeBlueprint,
-  RuntimePlan,
-  RuntimePrimitive,
-  RuntimePrimitiveTuple,
-} from "#src/contracts";
+import type { Plan, Syscall } from "@khora/kernel";
+import type { RuntimePlan } from "#src/contracts";
 
-function lowerIteratorResult<ReturnValue>(
+function lowerRuntimeStep<ReturnValue>(
   runtimePlan: RuntimePlan<ReturnValue>,
-  iteratorResult: IteratorResult<Syscall<unknown>, ReturnValue>,
+  step: IteratorResult<Syscall<unknown>, ReturnValue>,
 ): Plan<ReturnValue> {
-  if (iteratorResult.done) {
+  if (step.done) {
     return {
       kind: "pure",
-      value: iteratorResult.value,
+      value: step.value,
     };
   }
 
   return {
     kind: "impure",
-    syscall: iteratorResult.value,
-    terminate: () => lowerIteratorResult(runtimePlan, runtimePlan.return(null as ReturnValue)),
-    then: (result: Result<unknown>) => lowerIteratorResult(runtimePlan, runtimePlan.next(result)),
+    syscall: step.value,
+    terminate: () => lowerRuntimeReturn(runtimePlan),
+    then: (response: unknown) => lowerRuntimeNext(runtimePlan, response),
   };
 }
 
+function lowerRuntimeNext<ReturnValue>(
+  runtimePlan: RuntimePlan<ReturnValue>,
+  response: unknown,
+): Plan<ReturnValue> {
+  return lowerRuntimeStep(runtimePlan, runtimePlan.next(response));
+}
+
+function lowerRuntimeReturn<ReturnValue>(runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
+  return lowerRuntimeStep(runtimePlan, runtimePlan.return(null as ReturnValue));
+}
+
 export function lowerPlan<ReturnValue>(runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
-  return lowerIteratorResult(runtimePlan, runtimePlan.next());
-}
-
-export function lowerBlueprint<ReturnValue>(
-  runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
-): Blueprint<ReturnValue> {
-  return () => lowerPlan(runtimeBlueprint());
-}
-
-export function lowerPrimitiveTuple<ReturnValues extends readonly unknown[]>(
-  runtimePrimitives: RuntimePrimitiveTuple<ReturnValues>,
-): { readonly [Index in keyof ReturnValues]: Plan<ReturnValues[Index]> };
-export function lowerPrimitiveTuple(
-  runtimePrimitives: ReadonlyArray<RuntimePrimitive<unknown>>,
-): ReadonlyArray<Plan<unknown>> {
-  return runtimePrimitives.map((runtimePrimitive) => lowerPlan(runtimePrimitive()));
+  return lowerRuntimeNext(runtimePlan, null);
 }
