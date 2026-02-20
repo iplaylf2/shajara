@@ -3,6 +3,11 @@ import type { SpawnRef } from "@khora/kernel";
 import { ensureExecutor } from "@khora/kernel";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
+import type {
+  RejectedSettlement,
+  ResolvedSettlement,
+  Settlement,
+} from "#src/operations-kit/settlement";
 import { spawn } from "#src/primitives/spawn";
 
 export interface RuntimeAction<ReturnValue> {
@@ -11,21 +16,9 @@ export interface RuntimeAction<ReturnValue> {
   reject(reason: unknown): void;
 }
 
-interface ActionResolve<ReturnValue> {
-  readonly status: "resolved";
-  readonly value: ReturnValue;
-}
-
-interface ActionReject {
-  readonly status: "rejected";
-  readonly reason: unknown;
-}
-
-type ActionSettlement<ReturnValue> = ActionResolve<ReturnValue> | ActionReject;
-
 export function* action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> {
   const scope = yield* spawn(function* actionBlueprint(): RuntimePlan<ReturnValue> {
-    const settlement = yield* liftPlan(kernelReceive<ActionSettlement<ReturnValue>>());
+    const settlement = yield* liftPlan(kernelReceive<Settlement<ReturnValue>>());
     switch (settlement.status) {
       case "resolved":
         return settlement.value;
@@ -37,10 +30,10 @@ export function* action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> 
 
   return {
     reject(reason: unknown): void {
-      executor.post(scope, { reason, status: "rejected" } satisfies ActionReject);
+      executor.post(scope, { reason, status: "rejected" } satisfies RejectedSettlement);
     },
     resolve(value: ReturnValue): void {
-      executor.post(scope, { status: "resolved", value } satisfies ActionResolve<ReturnValue>);
+      executor.post(scope, { status: "resolved", value } satisfies ResolvedSettlement<ReturnValue>);
     },
     scope,
   };
