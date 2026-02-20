@@ -30,8 +30,6 @@ export function* action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> 
         return settlement.value;
       case "rejected":
         throw settlement.reason;
-      default:
-        throw new Error("Invalid action settlement.");
     }
   });
   const executor = ensureExecutor();

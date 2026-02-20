@@ -1,5 +1,4 @@
 import type { ExecutionHandle } from "@khora/kernel";
-import { assertNever } from "#src/utils/assert-never";
 
 export function awaitExecution<ReturnValue>(
   execution: ExecutionHandle<ReturnValue>,
@@ -9,12 +8,10 @@ export function awaitExecution<ReturnValue>(
       switch (result.kind) {
         case "ok":
           resolve(result.value);
-          return;
+          break;
         case "err":
           reject(result.error);
-          return;
-        default:
-          assertNever(result);
+          break;
       }
     });
   });

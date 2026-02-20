@@ -1,5 +1,4 @@
 import type { RuntimePlan, RuntimeScopeHandle } from "#src/contracts";
-import { assertNever } from "#src/utils/assert-never";
 import { ensureExecutor } from "@khora/kernel";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
@@ -38,8 +37,6 @@ export function* until<ReturnValue>(
         return settlement.value;
       case "rejected":
         throw settlement.reason;
-      default:
-        return assertNever(settlement);
     }
   });
 }
