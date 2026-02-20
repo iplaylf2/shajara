@@ -14,7 +14,6 @@ import {
   self,
   spawn,
   suspend,
-  terminate,
 } from "@khora/runtime/primitives";
 import type { RuntimeResourceProvide } from "@khora/runtime/primitives";
 
@@ -66,11 +65,6 @@ function* scopedBlueprint(): RuntimePlan<void> {
   consume(scopedResult);
 }
 
-function* terminateBlueprint(): RuntimePlan<void> {
-  const spawned = yield* spawn(childBlueprint);
-  yield* terminate(spawned);
-}
-
 function* bindLookupBlueprint(): RuntimePlan<void> {
   yield* bind("traceId", "request-1");
   const traceId = yield* lookup<string>("traceId");
@@ -120,9 +114,7 @@ function* sleepBlueprint(): RuntimePlan<void> {
 }
 
 function* untilBlueprint(): RuntimePlan<void> {
-  const scope = until(() => Promise.resolve("until done"));
-
-  const value = yield* join(scope);
+  const value = yield* until(() => Promise.resolve("until done"));
   consume(value);
 }
 
@@ -141,7 +133,6 @@ const EXAMPLE_SCENARIOS = {
   sleep: sleepBlueprint,
   spawn: spawnBlueprint,
   suspend: suspendBlueprint,
-  terminate: terminateBlueprint,
   until: untilBlueprint,
 } satisfies Record<string, RuntimeBlueprint<unknown>>;
 

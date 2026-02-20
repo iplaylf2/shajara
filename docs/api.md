@@ -60,7 +60,6 @@
 ### 4.2 基础原语
 
 - `join` 等待一个 `spawn` 句柄对应作用域成功完成并返回结果值。
-- `terminate` 触发一个 `spawn` 句柄对应作用域的收敛。
 - `halt` 触发当前 `Scope` 的终止级联。
 - `cede` 进行协作式让权。
 - `suspend` 使当前执行体持续挂起，直到父 scope 在回收清理阶段以失败路径唤醒。
@@ -73,7 +72,7 @@
 
 ## 5. 使用约束
 
-用户侧通过 `yield* 原语(...)` 进行交互与编排。原语调用后直接得到可 `yield*` 的 `RuntimePlan`，不使用 `yield* 原语(...)()` 形式。用户侧不直接接触内核契约细节，宿主输入投递经 runtime 内部适配层完成。用户侧可观察与控制的生命周期粒度是 `Scope`，不是 `Process`；作用域观察与控制通过 `spawn` 返回句柄承接，不透出底层 scope 结构字段。编排层暂不暴露输入读取原语（如 `receive`）。generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播，不通过返回值编码失败态。`createScope` 属于用户编排 API（非 primitives），`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理。
+用户侧通过 `yield* 原语(...)` 进行交互与编排。原语调用后直接得到可 `yield*` 的 `RuntimePlan`，不使用 `yield* 原语(...)()` 形式。用户侧不直接接触内核契约细节，宿主输入投递经 runtime 内部适配层完成。用户侧可观察的生命周期粒度是 `Scope`，不是 `Process`；编排层通过 `spawn` 句柄配合 `join` 等待分支收敛，不透出底层 scope 结构字段。编排层暂不暴露输入读取原语（如 `receive`）。generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播，不通过返回值编码失败态。`createScope` 属于用户编排 API（非 primitives），`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理。
 
 ## 6. 相关文档
 
