@@ -24,7 +24,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 6. Scope 树锚点
 
-运行时维护单例 `Scope` 树，存在全局 `root scope` 作为锚点。`root scope` 不作为业务收敛目标，不参与常规清理退出流程；`limbo scope` 作为特殊子作用域承接被结构性修剪后的孤儿子树。
+`Scope` 树锚点由 `kernel` 维护。runtime 通过执行入口消费 `rootScope` 锚点并提交 `launch`；`root scope` 不作为业务收敛目标，不参与常规清理退出流程；`limbo scope` 作为特殊子作用域承接被结构性修剪后的孤儿子树。
 
 ## 7. 边界适配协议
 
