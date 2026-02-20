@@ -1,11 +1,12 @@
-import type { RuntimePlan, RuntimeSpawnRef } from "#src/contracts";
+import type { RuntimePlan } from "#src/contracts";
+import type { SpawnRef } from "@khora/kernel";
 import { ensureExecutor } from "@khora/kernel";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { spawn } from "#src/primitives/spawn";
 
 export interface RuntimeAction<ReturnValue> {
-  readonly scope: RuntimeSpawnRef<ReturnValue>;
+  readonly scope: SpawnRef<ReturnValue>;
   resolve(value: ReturnValue): void;
   reject(reason: unknown): void;
 }

@@ -1,6 +1,9 @@
 export type { Blueprint } from "./contracts";
 export type { ExecutionHandle } from "./executor";
-export type { ExecutionScopeRef } from "./executor";
+export type { PostRef } from "./executor";
+export type { ScopeRef } from "./executor";
+export type { SelfDescriptor } from "./executor";
+export type { SpawnRef } from "./executor";
 export type { ImpurePlan } from "./contracts";
 export type { Plan } from "./contracts";
 export type { PurePlan } from "./contracts";

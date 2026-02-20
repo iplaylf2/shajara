@@ -1,11 +1,11 @@
-import type { RuntimePlan, RuntimePrimitiveTuple } from "#src/contracts";
+import type { RuntimePlan, RuntimePlanFactoryTuple } from "#src/contracts";
 import type { Plan } from "@khora/kernel";
 import { all as kernelAll } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
 function allKernelPrimitive<ReturnValues extends readonly unknown[]>(
-  runtimePrimitives: RuntimePrimitiveTuple<ReturnValues>,
+  runtimePrimitives: RuntimePlanFactoryTuple<ReturnValues>,
 ): Plan<ReturnValues> {
   const kernelPrimitives = runtimePrimitives.map((runtimePrimitive) =>
     lowerPlan(runtimePrimitive()),
@@ -17,5 +17,5 @@ function allKernelPrimitive<ReturnValues extends readonly unknown[]>(
 }
 
 export const all = <ReturnValues extends readonly unknown[]>(
-  primitives: RuntimePrimitiveTuple<ReturnValues>,
+  primitives: RuntimePlanFactoryTuple<ReturnValues>,
 ): RuntimePlan<ReturnValues> => liftPlan(allKernelPrimitive(primitives));

@@ -1,4 +1,5 @@
-import type { RuntimePlan, RuntimePrimitiveTuple } from "#src/contracts";
+import type { RuntimePlan, RuntimePlanFactoryTuple } from "#src/contracts";
+import type { ArrayValues } from "type-fest";
 import type { Plan } from "@khora/kernel";
 import type { RaceResult } from "@khora/kernel/primitives";
 import { race as kernelRace } from "@khora/kernel/primitives";
@@ -8,8 +9,8 @@ import { lowerPlan } from "#src/adapter/plan-lower";
 export type RuntimeRaceResult<ReturnValue> = RaceResult<ReturnValue>;
 
 function raceKernelPrimitive<ReturnValues extends readonly unknown[]>(
-  runtimePrimitives: RuntimePrimitiveTuple<ReturnValues>,
-): Plan<RuntimeRaceResult<ReturnValues[number]>> {
+  runtimePrimitives: RuntimePlanFactoryTuple<ReturnValues>,
+): Plan<RuntimeRaceResult<ArrayValues<ReturnValues>>> {
   const kernelPrimitives = runtimePrimitives.map((runtimePrimitive) =>
     lowerPlan(runtimePrimitive()),
   ) as {
@@ -20,6 +21,6 @@ function raceKernelPrimitive<ReturnValues extends readonly unknown[]>(
 }
 
 export const race = <ReturnValues extends readonly unknown[]>(
-  primitives: RuntimePrimitiveTuple<ReturnValues>,
-): RuntimePlan<RuntimeRaceResult<ReturnValues[number]>> =>
+  primitives: RuntimePlanFactoryTuple<ReturnValues>,
+): RuntimePlan<RuntimeRaceResult<ArrayValues<ReturnValues>>> =>
   liftPlan(raceKernelPrimitive(primitives));

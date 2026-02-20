@@ -1,4 +1,4 @@
-import type { RuntimePlan, RuntimeScopeHandle } from "#src/contracts";
+import type { RuntimePlan } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
@@ -24,7 +24,7 @@ export function* until<ReturnValue>(
 ): RuntimePlan<ReturnValue> {
   const executor = ensureExecutor();
   return yield* scoped(function* untilBlueprint(): RuntimePlan<ReturnValue> {
-    const { scope }: { scope: RuntimeScopeHandle } = yield* self();
+    const { scope } = yield* self();
 
     thunk().then(
       (value: ReturnValue) => executor.post(scope, { status: "resolved", value }),

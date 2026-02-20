@@ -2,9 +2,23 @@ import type { Blueprint } from "#src/contracts";
 import { notImplemented } from "#src/internal/not-implemented";
 
 const KERNEL_EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("kernel-execution-scope-ref");
+const KERNEL_EXECUTION_POST_REF_TOKEN: unique symbol = Symbol("kernel-execution-post-ref");
 
-export interface ExecutionScopeRef {
+export interface PostRef {
+  readonly [KERNEL_EXECUTION_POST_REF_TOKEN]: "kernel-execution-post-ref";
+}
+
+export interface SpawnRef<ReturnValue = unknown> extends PostRef {
+  readonly _return?: ReturnValue;
+}
+
+export interface ScopeRef extends PostRef {
   readonly [KERNEL_EXECUTION_SCOPE_REF_TOKEN]: "kernel-execution-scope-ref";
+}
+
+export interface SelfDescriptor {
+  readonly scope: PostRef;
+  readonly call: { readonly method: string; readonly args: readonly unknown[] } | undefined;
 }
 
 export type ExecutionResult<ReturnValue> =
@@ -29,7 +43,7 @@ export interface ExecutionHandle<ReturnValue> {
 }
 
 export interface ExecutionScopeHandle {
-  readonly ref: ExecutionScopeRef;
+  readonly ref: ScopeRef;
   state(): ExecutionScopeState;
   /**
    * Register a one-shot close callback.
@@ -43,18 +57,18 @@ export interface Executor {
   /**
    * Return the global root scope anchor.
    */
-  rootScope(): ExecutionScopeRef;
+  rootScope(): ScopeRef;
   /**
    * Launch a blueprint under the given scope.
    */
   launch<ReturnValue>(
-    scope: ExecutionScopeRef,
+    scope: ScopeRef,
     blueprint: Blueprint<ReturnValue>,
   ): ExecutionHandle<ReturnValue>;
   /**
    * Post an input value into the target runtime ingress channel.
    */
-  post<PostedValue>(scope: unknown, value: PostedValue): void;
+  post<PostedValue>(scope: PostRef, value: PostedValue): void;
   /**
    * Create a host-managed scope rooted under the global root scope.
    */

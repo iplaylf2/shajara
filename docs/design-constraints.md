@@ -11,6 +11,8 @@
 
 `@khora/kernel` 承载 GADT 契约表达（如 `Plan`、`Syscall` 与类型化续延）。`@khora/runtime` 是封装层，负责协议转换与宿主边界，不把 generator 细节下沉到 kernel。桥接逻辑仅在 runtime 内部存在，不作为 example 的直接依赖。`Impure.then` 仅承接 syscall 成功值；可恢复业务失败是否以带内值表达由具体 syscall 语义决定，不在 `Plan` 层统一强制二元包裹。
 
+边界引用类型（如 `PostRef`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
+
 术语方向固定如下：`lift` 表示 `kernel -> runtime` 适配，`lower` 表示 `runtime -> kernel` 适配。“上/下”按语义层级定义，kernel 是执行语义单源，runtime 是编排表达层。
 
 ## 3. primitive 约束

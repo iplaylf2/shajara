@@ -30,10 +30,12 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；成功响应推进走 `then`，关闭推进走 `terminate`。宿主输入投递通过执行入口 `post` 注入，编排侧等待通过 `receive` 配对收敛。
 
+`self/spawn/join/terminate` 涉及的 `SelfDescriptor/SpawnRef/ScopeRef/PostRef` 等边界类型由 `kernel` 统一定义并导出；runtime 不再定义同语义包装类型，只负责 `Plan <-> RuntimePlan` 的形态适配与宿主 API 组合。
+
 ## 8. 术语与方向约束
 
 `lift` 固定表示 `kernel -> runtime` 的语义适配，即把 `Plan<T>` 嵌入为可被 generator `yield*` 消费的 `RuntimePlan<T>`；`lower` 固定表示 `runtime -> kernel` 的语义适配，即把 runtime 侧编排表达降解为 kernel 可执行表达。“上/下”按语义层级而非实现位置命名：kernel 是执行语义单源，runtime 是用户编排与宿主边界表达层。该命名约束用于避免把 runtime 误当作第二语义源，保持 `then/terminate` 的执行真相只在 kernel 收敛。
 
 ## 9. 内部表达与对外表面
 
-内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的成功响应类型；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。对外 API 面定义与使用约束见 `docs/api.md`。
+内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的成功响应类型；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。runtime `contracts` 仅保留 `RuntimePlan/RuntimeBlueprint` 与 tuple 工厂类型，不承载 kernel 语义引用类型定义。对外 API 面定义与使用约束见 `docs/api.md`。

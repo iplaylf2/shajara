@@ -31,6 +31,7 @@
   "devDependencies": {
     "@khora/presets": "workspace:^",
     "oxlint": "catalog:",
+    "type-fest": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:"
