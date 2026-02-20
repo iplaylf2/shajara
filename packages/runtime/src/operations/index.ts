@@ -5,5 +5,5 @@ export { sleep } from "./sleep";
 export { until } from "./until";
 
 export type { RuntimeAction } from "./action";
-export type { RuntimeScope, RuntimeScopeCloseResult, RuntimeScopeState } from "./create-scope";
+export type { RuntimeScope, RuntimeScopeState } from "./create-scope";
 export type { RuntimeUntilThunk } from "./until";

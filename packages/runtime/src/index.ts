@@ -3,4 +3,5 @@ export type { RuntimePlan } from "./contracts";
 export type { RuntimeScope } from "./operations";
 
 export { action, createScope, run, sleep, until } from "./operations";
+export { RuntimeScopeFailedError } from "./errors/runtime-scope-failed";
 export { RuntimeScopeInterruptedError } from "./errors/runtime-scope-interrupted";

@@ -75,10 +75,6 @@ export interface Executor {
    * Terminate a host/runtime-controllable execution scope.
    */
   terminate(scope: ExecutionScopeRef): void;
-  /**
-   * Create a host-managed scope rooted under the global root scope.
-   */
-  createScope(): ExecutionScope<never>;
 }
 
 export function ensureExecutor(): Executor {
