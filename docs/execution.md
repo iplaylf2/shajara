@@ -16,7 +16,7 @@ Current Phase 为 **Build — Make it work**。当前实现主线仍采用 **run
 ## 3. 当前现实与证据（Build）
 
 1. 文档职责边界已稳定，Execution Doc 可回到“实现状态快照”角色。Evidence: `docs/README.md`, `docs/design-constraints.md`。
-2. `kernel` 执行入口契约维持“显式 scope 锚点 + 单一 launch + post(scope, value)”；`post` 目标类型已收敛为 `PostRef`，`ScopeRef/SpawnRef/SelfDescriptor` 由 `kernel` 统一定义并导出；执行入口实现仍为占位。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`。
+2. `kernel` 执行入口契约维持“显式 scope 锚点 + 单一 launch + post(scope, value)”；`rootScope` 为只读锚点值（非方法），`launch` 目标为 `RootScopeRef | ExecutionScopeRef`，`post/terminate` 目标统一为 `ExecutionScopeRef`；`ExecutionScope` 暴露 `result: ExecutionFuture<T>` 与 `state()`，`ExecutionResult<T>` 采用三态 sum type（`success | failure | interruption`）。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations-kit/await-execution.ts`。
 3. `kernel` 已新增 syscall 子路径 `@khora/kernel/syscalls`，当前落地 `receive` 最小签名；同时在 primitives 中提供 `receive` 计划片段，供 runtime 通过 `liftPlan` 使用。Evidence: `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/index.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/index.ts`, `packages/kernel/package.json`, `packages/kernel/vite.config.ts`。
 4. runtime 语义桥已闭环：`lowerPlan` 与 `liftPlan` 都已落地，`then/terminate` 路径按 generator 协议推进；桥接已收敛到 `lowerPlan` 单入口，去除 `lowerBlueprint/lowerPrimitiveTuple` 中间包装。Evidence: `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/race.ts`。
 5. runtime 宿主操作主路径已接通：`until` 采用 `scoped + receive + post`，`sleep` 采用 `scoped + try/finally(clearTimeout) + receive`，`action` 采用 `spawn + receive + post` 返回宿主结算句柄；相关 `scope/spawn/self` 描述类型直接消费 kernel 导出类型，不再由 runtime 重新包装。Evidence: `packages/runtime/src/operations/until.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/primitives/self.ts`, `packages/runtime/src/primitives/spawn.ts`。
@@ -48,7 +48,7 @@ Impact: 先验证执行入口契约，再验证 runtime 语义桥与最小 primi
 
 ### 4.5 增量：执行入口契约收敛为 Future 结果模型
 
-Impact: `kernel` 执行入口从“运行器细节暴露”收敛为“结果收敛契约暴露”：runtime 只消费 `ensureExecutor().rootScope()`、`ensureExecutor().launch(scope, ...)` 与 `future.onSettle(ok/err)`，不承担执行器创建与推进职责，避免跨层职责漂移。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations/run.ts`。
+Impact: `kernel` 执行入口从“运行器细节暴露”收敛为“结果收敛契约暴露”：runtime 只消费 `ensureExecutor().rootScope`、`ensureExecutor().launch(scope, ...)` 与 `execution.result.onResult(...)`，不承担执行器创建与推进职责，避免跨层职责漂移。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations-kit/await-execution.ts`。
 
 ### 4.6 增量：kernel 导出面改为“根入口 + primitives 子路径”
 
@@ -60,7 +60,7 @@ Impact: 包内类型命名从“自指前缀”收敛为语义命名，降低阅
 
 ### 4.8 增量：执行入口收敛为“显式 scope + 单一 launch”
 
-Impact: `runtime.run` 与 `runtime.createScope().run` 走同一个 kernel 调用形状：`launch(scope, blueprint)`；差异只在 scope 来源（`rootScope()` 或托管 `scope.ref`）。runtime 不再维护并行入口语义。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`。
+Impact: `runtime.run` 与 `runtime.createScope().run` 走同一个 kernel 调用形状：`launch(scope, blueprint)`；差异只在 scope 来源（`rootScope` 或托管 `scope.ref`）。runtime 不再维护并行入口语义。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`。
 
 ### 4.9 增量：执行契约去除未消费类型与导出
 
@@ -82,17 +82,31 @@ Impact: `Impure.then` 从统一二元包裹收敛为只接收 syscall 成功值�
 
 Impact: 静态设计文档仅保留稳定语义与约束，不再夹带项目阶段状态与待办式叙述；项目状态统一集中在 Execution Doc，降低跨文档职责混淆。Evidence: `docs/design-constraints.md`, `docs/semantics.md`, `docs/README.md`, `docs/execution.md`。
 
+### 4.14 增量：执行入口契约命名与语义纠偏（对话回顾固化）
+
+Impact: 本轮对话明确了“先定语义，再定命名，再实现适配”的约束，避免在 `createScope` 或 runtime 侧用额外抽象掩盖 kernel 契约问题。已固化的决议如下：
+
+1. `ExecutionScope` 是统一执行句柄，不再并行维护同语义的 `ExecutionHandle/ExecutionScopeHandle` 分裂模型。
+2. `ExecutionScope` 不包含 `terminate` 方法；作用域终止统一由 `executor.terminate(scopeRef)` 发起。
+3. `createScope()` 返回 `ExecutionScope<never>`；`launch()` 返回 `ExecutionScope<ReturnValue>`，二者都是 `ExecutionScope`，只在结果类型上区分。
+4. `rootScope` 是只读值，不是方法；其类型为专用 `RootScopeRef`。
+5. `ExecutionResult<T>` 采用三态 sum type（`success | failure | interruption`），kernel 不把失败强制异常化。
+6. `ExecutionFuture<T>` 与 `PromiseLike` 解耦；当前采用 `onResult(listener)` 暴露一次性结算观察接口。
+7. runtime 侧 `await-execution` 通过 `ExecutionResult` 做分支收敛，其中 `interruption` 映射为 `RuntimeScopeInterruptedError`。
+
+Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations-kit/await-execution.ts`, `packages/runtime/src/errors/runtime-scope-interrupted.ts`, `packages/runtime/src/operations/create-scope.ts`。
+
 ## 5. 当前阶段执行切片（Build）
 
-| Slice                                             | Status      | Output                                                                                                                                  | Evidence                                                                                                                                                                                                                         |
-| ------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1 文档职责路由建立                               | Completed   | `docs/` 职责边界已可单点检索。                                                                                                          | `docs/README.md`                                                                                                                                                                                                                 |
-| B2 kernel 执行入口契约与最小实现                  | In Progress | 执行入口契约维持 `rootScope()` + `launch(scope, blueprint)` + `createScope` + `post(scope, value)`；目标引用类型收敛为 `PostRef/ScopeRef/SpawnRef/SelfDescriptor`，实现仍占位。 | `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/kernel/src/contracts.ts`, `docs/semantics.md`                                                                                                       |
-| B3 runtime 语义桥闭环（lower/lift）               | Completed   | `RuntimePlan -> Plan` 与 `Plan -> RuntimePlan` 适配已落地，`then/terminate` 双路径已接入 generator 协议，且桥接入口收敛为 `lowerPlan`。 | `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`, `docs/runtime.md`                                                  |
-| B4 runtime 执行入口闭环（run）                    | In Progress | `run(RuntimeBlueprint)` 已提交到 kernel 执行入口并接入 Future 结果；受 `lowerPlan` 与 kernel 占位实现限制，尚未形成可运行闭环。         | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/kernel/src/executor.ts`                                                                                                        |
-| B5 primitive 垂直切片（最小集合）                 | In Progress | `receive` 已作为最小 syscall/primitive 垂直切片接入，其他 primitives 语义实现仍待补齐。                                                 | `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/runtime/src/operations/until.ts`                                                                                               |
-| B6 宿主操作实现（createScope/action/sleep/until） | In Progress | `createScope`、`run`、`action`、`sleep`、`until` 形状已接通；依赖 kernel 执行入口与 primitive 语义实现完成后才能形成端到端运行闭环。    | `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts` |
-| B7 kernel 支持缺口回补（按触发）                  | In Progress | 已触发并回补最小支持缺口（`post` 签名、`receive` syscall/primitive）；后续继续按触发条件最小化扩面。                                    | `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/receive.ts`                                                                                                        |
+| Slice                                             | Status      | Output                                                                                                                                                                          | Evidence                                                                                                                                                                                                                         |
+| ------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1 文档职责路由建立                               | Completed   | `docs/` 职责边界已可单点检索。                                                                                                                                                  | `docs/README.md`                                                                                                                                                                                                                 |
+| B2 kernel 执行入口契约与最小实现                  | In Progress | 执行入口契约维持 `rootScope` + `launch(scope, blueprint)` + `createScope` + `post(scope, value)` + `terminate(scope)`；目标引用类型收敛为 `RootScopeRef/ExecutionScopeRef/ScopeRef/SpawnRef/SelfDescriptor`，实现仍占位。 | `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/kernel/src/contracts.ts`, `docs/semantics.md`                                                                                                       |
+| B3 runtime 语义桥闭环（lower/lift）               | Completed   | `RuntimePlan -> Plan` 与 `Plan -> RuntimePlan` 适配已落地，`then/terminate` 双路径已接入 generator 协议，且桥接入口收敛为 `lowerPlan`。                                         | `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/operations-kit/launch-runtime-blueprint.ts`, `docs/runtime.md`                                                  |
+| B4 runtime 执行入口闭环（run）                    | In Progress | `run(RuntimeBlueprint)` 已提交到 kernel 执行入口并接入 Future 结果；受 `lowerPlan` 与 kernel 占位实现限制，尚未形成可运行闭环。                                                 | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/kernel/src/executor.ts`                                                                                                        |
+| B5 primitive 垂直切片（最小集合）                 | In Progress | `receive` 已作为最小 syscall/primitive 垂直切片接入，其他 primitives 语义实现仍待补齐。                                                                                         | `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/runtime/src/operations/until.ts`                                                                                               |
+| B6 宿主操作实现（createScope/action/sleep/until） | In Progress | `createScope`、`run`、`action`、`sleep`、`until` 形状已接通；依赖 kernel 执行入口与 primitive 语义实现完成后才能形成端到端运行闭环。                                            | `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts` |
+| B7 kernel 支持缺口回补（按触发）                  | In Progress | 已触发并回补最小支持缺口（`post` 签名、`receive` syscall/primitive）；后续继续按触发条件最小化扩面。                                                                            | `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/receive.ts`                                                                                                        |
 
 ## 6. 后续方向
 

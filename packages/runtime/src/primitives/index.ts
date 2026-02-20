@@ -11,6 +11,5 @@ export { scoped } from "./scoped";
 export { self } from "./self";
 export { spawn } from "./spawn";
 export { suspend } from "./suspend";
-export { terminate } from "./terminate";
 
 export type { RuntimeResourceProvide } from "./resource";

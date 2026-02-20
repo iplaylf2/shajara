@@ -6,5 +6,5 @@ export function run<ReturnValue>(
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
 ): Promise<ReturnValue> {
   const executor = ensureExecutor();
-  return launchRuntimeBlueprintInScope(executor.rootScope(), runtimeBlueprint);
+  return launchRuntimeBlueprintInScope(executor.rootScope, runtimeBlueprint);
 }
