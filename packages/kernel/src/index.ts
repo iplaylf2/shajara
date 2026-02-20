@@ -1,6 +1,8 @@
 export type { Blueprint } from "./contracts";
 export type { ExecutionScope } from "./executor";
+export type { Executor } from "./executor";
 export type { ExecutionScopeRef } from "./executor";
+export type { ExecutionScopeState } from "./executor";
 export type { RootScopeRef } from "./executor";
 export type { ScopeRef } from "./executor";
 export type { SelfDescriptor } from "./executor";

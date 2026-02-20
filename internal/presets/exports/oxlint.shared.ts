@@ -14,6 +14,7 @@ export default defineConfig({
   rules: {
     "eslint/default-case": "off",
     "eslint/func-style": ["error", "declaration", { allowArrowFunctions: true }],
+    "eslint/max-params": ["error", { max: 4 }],
     "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
     "eslint/no-ternary": "off",
     "eslint/no-use-before-define": "off",

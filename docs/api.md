@@ -26,7 +26,7 @@
 
 ### 3.1 run
 
-`run` 启动一段 `RuntimeBlueprint` 并在宿主侧等待其结果。`run` 的运行作用域挂载在全局 `root scope` 下；成功时返回结果值，中断时抛出 `RuntimeScopeInterruptedError`，失败时抛出 `RuntimeScopeFailedError`，`root scope` 继续作为生命周期锚点。
+`run` 启动一段 `RuntimeBlueprint` 并返回 stateful promise 形状（`PromiseLike<T> & { state(): ExecutionScopeState }`）。`run` 支持可选参数 `{ signal?: AbortSignal }`；当 `signal` 触发 abort 时，runtime 终止对应执行作用域。`run` 的运行作用域挂载在全局 `root scope` 下；成功时返回结果值，中断时抛出 `RuntimeScopeInterruptedError`，失败时抛出 `RuntimeScopeFailedError`，`root scope` 继续作为生命周期锚点。
 
 ### 3.2 action
 
@@ -42,7 +42,7 @@
 
 ### 3.5 createScope
 
-`createScope` 创建一个宿主侧托管作用域句柄，返回 `{ run, halt, state, closed, [Symbol.asyncDispose] }`。托管作用域本身挂载在全局 `root scope` 下；`scope.run(blueprint)` 在该托管作用域下启动一次 `RuntimeBlueprint` 并等待结果；`scope.halt()` 触发该托管作用域的关闭流程并等待收敛；`scope.state` 提供同步状态快照（`open | closing | closed`）；`scope.closed` 在托管作用域真正完成清理后 `resolve(void)`，中断时抛出 `RuntimeScopeInterruptedError`，失败时抛出 `RuntimeScopeFailedError`；`scope[Symbol.asyncDispose]()` 等价于 `scope.halt()`。`scope.run(...)` 与 `run(...)` 一致：成功返回值，中断抛 `RuntimeScopeInterruptedError`，失败抛 `RuntimeScopeFailedError`。托管作用域生命周期由 `scope.halt()` 或 async dispose 约定治理。
+`createScope` 创建一个宿主侧托管作用域句柄，返回 `{ run, halt, state, closed, [Symbol.asyncDispose] }`。托管作用域本身挂载在全局 `root scope` 下；`scope.run(blueprint, options?)` 在该托管作用域下启动一次 `RuntimeBlueprint` 并返回与 `run` 一致的 stateful promise 形状；`scope.halt()` 触发该托管作用域的关闭流程并等待收敛；`scope.state` 提供同步状态快照（`open | closing | closed`）；`scope.closed` 在托管作用域真正完成清理后 `resolve(void)`，中断时抛出 `RuntimeScopeInterruptedError`，失败时抛出 `RuntimeScopeFailedError`；`scope[Symbol.asyncDispose]()` 等价于 `scope.halt()`。`scope.run(...)` 与 `run(...)` 一致：成功返回值，中断抛 `RuntimeScopeInterruptedError`，失败抛 `RuntimeScopeFailedError`。托管作用域生命周期由 `scope.halt()` 或 async dispose 约定治理。
 
 ## 4. 编排原语 API
 

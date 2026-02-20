@@ -1,13 +1,12 @@
+import type { RunOptions, StatefulPromise } from "#src/operations-kit/runtime-launch";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
-import { executionAsPromise } from "#src/operations-kit/execution-as-promise";
-import { lowerPlan } from "#src/adapter/plan-lower";
+import { runtimeLaunch } from "#src/operations-kit/runtime-launch";
 
 export function run<ReturnValue>(
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
-): Promise<ReturnValue> {
+  options?: RunOptions,
+): StatefulPromise<ReturnValue> {
   const executor = ensureExecutor();
-  return executionAsPromise(
-    executor.launch(executor.rootScope, () => lowerPlan(runtimeBlueprint())),
-  );
+  return runtimeLaunch(executor, executor.rootScope, runtimeBlueprint, options).settled;
 }

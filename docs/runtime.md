@@ -32,7 +32,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 `self/spawn/join` 涉及的 `SelfDescriptor/SpawnRef/ScopeRef/RootScopeRef/ExecutionScopeRef` 等边界类型由 `kernel` 统一定义并导出；runtime 不再定义同语义包装类型，只负责 `Plan <-> RuntimePlan` 的形态适配与宿主 API 组合。
 
-执行入口返回 `ExecutionScope<T>`，runtime 通过 `execution.result.onResult(...)` 接收 `ExecutionResult<T>`（`success | failure | interruption`）并在边界层完成 Promise 语义收敛；其中 `interruption` 映射为 runtime 侧中断异常，`failure` 映射为 runtime 侧失败异常。收敛入口命名为 `executionAsPromise`，用于表达“执行句柄到 Promise 语义”的边界适配职责。
+runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launch`、`RuntimeBlueprint -> Plan` 降解、`ExecutionResult<T>` 到 Promise 语义收敛，以及可选 `AbortSignal` 到 `terminate` 的映射。收敛后返回 `StatefulPromise<T>`（`PromiseLike<T> + state()`）并暴露被启动作用域的 `ExecutionScopeRef`。其中 `interruption` 映射为 runtime 侧中断异常，`failure` 映射为 runtime 侧失败异常。
 
 ## 8. 术语与方向约束
 
