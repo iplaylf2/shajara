@@ -40,4 +40,4 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 9. 内部表达与对外表面
 
-内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的成功响应类型；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。runtime `contracts` 仅保留 `RuntimePlan/RuntimeBlueprint` 与 tuple 工厂类型，不承载 kernel 语义引用类型定义。对外 API 面定义与使用约束见 `docs/api.md`。
+内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的成功响应类型；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。runtime `contracts` 仅保留 `RuntimePlan/RuntimeBlueprint`，不承载 kernel 语义引用类型定义。对外 API 面定义与使用约束见 `docs/api.md`。
