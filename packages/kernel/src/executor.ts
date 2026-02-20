@@ -70,7 +70,7 @@ export interface Executor {
   /**
    * Post an input value into the target runtime ingress channel.
    */
-  post<PostedValue>(scope: ExecutionScopeRef, value: PostedValue): void;
+  post<PostedValue>(scope: ScopeRef, value: PostedValue): void;
   /**
    * Terminate a host/runtime-controllable execution scope.
    */

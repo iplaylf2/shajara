@@ -1,6 +1,7 @@
 import type { RuntimeBlueprint } from "#src/contracts";
+import { awaitExecution } from "#src/operations-kit/await-execution";
 import { ensureExecutor } from "@khora/kernel";
-import { launchRuntimeBlueprintInScope } from "#src/operations-kit/launch-runtime-blueprint";
+import { lowerPlan } from "#src/adapter/plan-lower";
 
 export interface RuntimeScope {
   run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue>;
@@ -92,7 +93,7 @@ export function createScope(): RuntimeScope {
     closed: close.closed,
     halt: haltScope,
     run<ReturnValue>(runtimeBlueprint: RuntimeBlueprint<ReturnValue>): Promise<ReturnValue> {
-      return launchRuntimeBlueprintInScope(scope.ref, runtimeBlueprint);
+      return awaitExecution(executor.launch(scope.ref, () => lowerPlan(runtimeBlueprint())));
     },
     get state(): RuntimeScopeState {
       return runtimeState;

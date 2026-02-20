@@ -1,7 +1,7 @@
 import type { RuntimePlan } from "#src/contracts";
-import { liftPlan } from "#src/adapter/plan-lift";
 import { ensureExecutor } from "@khora/kernel";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
+import { liftPlan } from "#src/adapter/plan-lift";
 import { scoped } from "#src/primitives/scoped";
 import { self } from "#src/primitives/self";
 

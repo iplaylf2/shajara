@@ -13,7 +13,7 @@
 
 边界引用类型（如 `RootScopeRef`、`ExecutionScopeRef`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
 
-执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值；`launch` 接受 `RootScopeRef | ExecutionScopeRef` 并返回 `ExecutionScope<T>`；`createScope` 返回 `ExecutionScope<never>`；`post/terminate` 的目标类型统一为 `ExecutionScopeRef`。`ExecutionScope` 暴露 `result: ExecutionFuture<T>` 与 `state()`；`ExecutionResult<T>` 采用三态 sum type（`success | failure | interruption`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
+执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值；`launch` 接受 `RootScopeRef | ExecutionScopeRef` 并返回 `ExecutionScope<T>`；`createScope` 返回 `ExecutionScope<never>`；`post` 的目标类型为 `ScopeRef`，`terminate` 的目标类型为 `ExecutionScopeRef`。`ExecutionScope` 暴露 `result: ExecutionFuture<T>` 与 `state()`；`ExecutionResult<T>` 采用三态 sum type（`success | failure | interruption`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
 
 术语方向固定如下：`lift` 表示 `kernel -> runtime` 适配，`lower` 表示 `runtime -> kernel` 适配。“上/下”按语义层级定义，kernel 是执行语义单源，runtime 是编排表达层。
 
