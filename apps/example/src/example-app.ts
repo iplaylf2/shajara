@@ -12,15 +12,15 @@ const DEFAULT_EXAMPLE_APP_OPTIONS: ExampleAppOptions = {
   scenario: "run",
 };
 
-function startExampleApp(
+async function startExampleApp(
   options: ExampleAppOptions = DEFAULT_EXAMPLE_APP_OPTIONS,
 ): Promise<unknown> {
   if (!options.execute) {
-    return Promise.resolve({ kind: "skipped" as const });
+    return { kind: "skipped" as const };
   }
 
   const selectedScenario = getExampleScenario(options.scenario);
-  return run(selectedScenario);
+  return await run(selectedScenario);
 }
 
 async function runInManagedScope(
