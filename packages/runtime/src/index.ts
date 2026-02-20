@@ -1,6 +1,5 @@
-export type { RuntimeBlueprint } from "./contracts";
-export type { RuntimePlan } from "./contracts";
-export type { RuntimeScope } from "./operations";
+export type { RuntimeBlueprint, RuntimePlan } from "./contracts";
+export { RuntimeScopeFailedError, RuntimeScopeInterruptedError } from "./errors";
 
 export { action, createScope, run, sleep, until } from "./operations";
-export { RuntimeScopeFailedError, RuntimeScopeInterruptedError } from "./errors";
+export type { RuntimeScope } from "./operations";
