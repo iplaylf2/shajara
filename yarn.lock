@@ -277,6 +277,7 @@ __metadata:
   resolution: "@khora/kernel@workspace:packages/kernel"
   dependencies:
     "@khora/presets": "workspace:^"
+    fp-ts: "npm:^2.16.11"
     oxlint: "catalog:"
     type-fest: "catalog:"
     typescript: "catalog:"
@@ -1384,6 +1385,13 @@ __metadata:
     picomatch:
       optional: true
   checksum: 10c0/e345083c4306b3aed6cb8ec551e26c36bab5c511e99ea4576a16750ddc8d3240e63826cc624f5ae17ad4dc82e68a253213b60d556c11bfad064b7607847ed07f
+  languageName: node
+  linkType: hard
+
+"fp-ts@npm:^2.16.11":
+  version: 2.16.11
+  resolution: "fp-ts@npm:2.16.11"
+  checksum: 10c0/9a263a577964adbb754221c48449a64a6962c91fa6af136e73b043ee70ee41c7b856fe1e6cc21fb4f0264dd9a75c53bd381b1bb486b6caa99a71f33d1bb24c2a
   languageName: node
   linkType: hard
 

@@ -28,6 +28,9 @@
     "lint": "oxlint",
     "typecheck": "yarn run -T tsc"
   },
+  "dependencies": {
+    "fp-ts": "^2.16.11"
+  },
   "devDependencies": {
     "@khora/presets": "workspace:^",
     "oxlint": "catalog:",
