@@ -16,7 +16,11 @@
 
 规范性约束与变更协议见 `docs/design-constraints.md`，迭代期动态状态见 `docs/execution.md`。
 
-## 3. Runtime 变更后的联动校验
+## 3. Scope 语义入口
+
+`Scope` 角色分层（`SchedulerScope` / `ReaperScope` / `IngressScope` / `PortalScope`）与 `LaunchRef` 边界定义以 `docs/semantics.md` 为单源；跨文档稳定约束见 `docs/design-constraints.md`。
+
+## 4. Runtime 变更后的联动校验
 
 runtime API 或语义变更时，按以下顺序确认联动一致性：
 

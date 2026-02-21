@@ -3,35 +3,35 @@ import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
-const EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("execution-scope-ref");
+const LAUNCH_REF_TOKEN: unique symbol = Symbol("launch-ref");
 
 export interface RootScopeRef extends ScopeRef {
   readonly [ROOT_SCOPE_REF_TOKEN]: "root-scope-ref";
 }
 
-export interface ExecutionScopeRef extends ScopeRef {
-  readonly [EXECUTION_SCOPE_REF_TOKEN]: "execution-scope-ref";
+export interface LaunchRef extends ScopeRef {
+  readonly [LAUNCH_REF_TOKEN]: "launch-ref";
 }
 
-export type ExecutionResult<ReturnValue> =
+export type LaunchResult<ReturnValue> =
   | { readonly kind: "success"; readonly value: ReturnValue }
   | { readonly kind: "failure"; readonly reason: unknown }
   | { readonly kind: "interruption" };
-export type ExecutionScopeState = "open" | "closing" | "closed";
+export type LaunchState = "open" | "closing" | "closed";
 
-export interface ExecutionFuture<ReturnValue> {
+export interface LaunchFuture<ReturnValue> {
   /**
    * Register a callback for the single settlement result.
    * Kernel invokes listener at most once.
    * If already settled, invocation is synchronous.
    */
-  onResult(listener: (result: ExecutionResult<ReturnValue>) => void): void;
+  onResult(listener: (result: LaunchResult<ReturnValue>) => void): void;
 }
 
-export interface ExecutionScope<ReturnValue = void> {
-  readonly ref: ExecutionScopeRef;
-  readonly result: ExecutionFuture<ReturnValue>;
-  state(): ExecutionScopeState;
+export interface LaunchHandle<ReturnValue = void> {
+  readonly ref: LaunchRef;
+  readonly result: LaunchFuture<ReturnValue>;
+  state(): LaunchState;
 }
 
 export interface Executor {
@@ -43,17 +43,17 @@ export interface Executor {
    * Launch a blueprint under the given scope.
    */
   launch<ReturnValue>(
-    scope: RootScopeRef | ExecutionScopeRef,
+    scope: RootScopeRef | LaunchRef,
     blueprint: Blueprint<ReturnValue>,
-  ): ExecutionScope<ReturnValue>;
+  ): LaunchHandle<ReturnValue>;
   /**
    * Post an input value into the target runtime ingress channel.
    */
   post<PostedValue>(scope: ScopeRef, value: PostedValue): void;
   /**
-   * Terminate a host/runtime-controllable execution scope.
+   * Terminate a host/runtime-controllable scope.
    */
-  terminate(scope: ExecutionScopeRef): void;
+  terminate(scope: LaunchRef): void;
 }
 
 export function ensureExecutor(): Executor {

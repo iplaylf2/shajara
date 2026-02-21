@@ -1,9 +1,9 @@
 import type {
-  ExecutionResult,
-  ExecutionScope,
-  ExecutionScopeRef,
-  ExecutionScopeState,
   Executor,
+  LaunchHandle,
+  LaunchRef,
+  LaunchResult,
+  LaunchState,
   RootScopeRef,
 } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
@@ -16,19 +16,17 @@ export interface RunOptions {
 }
 
 export interface StatefulPromise<ReturnValue> extends PromiseLike<ReturnValue> {
-  state(): ExecutionScopeState;
+  state(): LaunchState;
 }
 
 export interface RuntimeLaunchResult<ReturnValue> {
-  readonly scope: ExecutionScopeRef;
+  readonly scope: LaunchRef;
   readonly settled: StatefulPromise<ReturnValue>;
 }
 
-function asSettledPromise<ReturnValue>(
-  execution: ExecutionScope<ReturnValue>,
-): Promise<ReturnValue> {
+function asSettledPromise<ReturnValue>(execution: LaunchHandle<ReturnValue>): Promise<ReturnValue> {
   return new Promise<ReturnValue>((resolve, reject) => {
-    execution.result.onResult((result: ExecutionResult<ReturnValue>) => {
+    execution.result.onResult((result: LaunchResult<ReturnValue>) => {
       switch (result.kind) {
         case "success":
           resolve(result.value);
@@ -45,11 +43,11 @@ function asSettledPromise<ReturnValue>(
 }
 
 function toStatefulPromise<ReturnValue>(
-  execution: ExecutionScope<ReturnValue>,
+  execution: LaunchHandle<ReturnValue>,
   settled: Promise<ReturnValue>,
 ): StatefulPromise<ReturnValue> {
   return {
-    state(): ExecutionScopeState {
+    state(): LaunchState {
       return execution.state();
     },
     then<TResult1 = ReturnValue, TResult2 = never>(
@@ -63,7 +61,7 @@ function toStatefulPromise<ReturnValue>(
 
 export function runtimeLaunch<ReturnValue>(
   executor: Executor,
-  scope: RootScopeRef | ExecutionScopeRef,
+  scope: RootScopeRef | LaunchRef,
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
   options?: RunOptions,
 ): RuntimeLaunchResult<ReturnValue> {

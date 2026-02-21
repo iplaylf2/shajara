@@ -26,7 +26,7 @@
 
 ### 3.1 run
 
-`run` 启动一段 `RuntimeBlueprint` 并返回 stateful promise 形状（`PromiseLike<T> & { state(): ExecutionScopeState }`）。`run` 支持可选参数 `{ signal?: AbortSignal }`；当 `signal` 触发 abort 时，runtime 终止对应执行作用域。`run` 的运行作用域挂载在全局 `root scope` 下；成功时返回结果值，中断时抛出 `RuntimeScopeInterruptedError`，失败时抛出 `RuntimeScopeFailedError`，`root scope` 继续作为生命周期锚点。
+`run` 启动一段 `RuntimeBlueprint` 并返回 stateful promise 形状（`PromiseLike<T> & { state(): LaunchState }`）。`run` 支持可选参数 `{ signal?: AbortSignal }`；当 `signal` 触发 abort 时，runtime 终止对应执行作用域。`run` 的运行作用域挂载在全局 `root scope` 下；成功时返回结果值，中断时抛出 `RuntimeScopeInterruptedError`，失败时抛出 `RuntimeScopeFailedError`，`root scope` 继续作为生命周期锚点。
 
 ### 3.2 action
 

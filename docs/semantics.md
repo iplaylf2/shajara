@@ -18,11 +18,22 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 `Fault` 为带外终止事件。发生 `Fault` 时，目标 `Process` 立即退出，后续 continuation 不再执行。
 错误编码与失败值形状由具体 syscall 语义定义。
 
-### 1.3 Scope
+### 1.3 Scope（统一对象与角色分层）
 
 `Scope` 是生命周期、身份与上下文的统一载体。
 
-每个 `Scope` 都有唯一 `ScopeId`，且 `Scope` 构成严格树：除根以外的每个 `Scope` 恰有一个父 `Scope`。每个 `Scope` 持有该范围内的 `Process` 集合、作用域上下文存储（供 `Bind/Lookup`）、作用域输入缓冲 `Sink`、服务入口 `Portal`、调度器 `Scheduler`（蓝图）和仲裁器 `Reaper`（蓝图）。
+每个 `Scope` 都有唯一 `ScopeId`，且 `Scope` 构成严格树：除根以外的每个 `Scope` 恰有一个父 `Scope`。
+
+- `Scope` 作为统一对象，承载身份、父子关系、上下文边界与 `Process` 归属。
+
+角色分层：
+
+- `SchedulerScope`：调度编排角色（对应 `Scheduler` 职责）。
+- `ReaperScope`：终止收敛仲裁角色（对应 `Reaper` 职责）。
+- `IngressScope`：宿主或 runtime 输入通道角色（对应 `Sink/PostFn`）。
+- `PortalScope`：能力投放角色（通过 `Capability -> Portal` 被其他 `Scope` 触发任务，驱动其内部 `Process` 与后续 `syscall` 推进）。
+
+补充约束：`LaunchRef` 是执行入口返回的技术引用类型，用于后续 `launch` 链接与生命周期治理；该命名不引入新的 scope 概念。
 
 ### 1.4 Process 与 Call 信息
 
@@ -41,7 +52,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 1.6 Portal、Capability、Sink、PostFn
 
-`Portal` 是 `Scope` 所拥有的入口映射（`{ methodName: Blueprint<any> }`）。`Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`。`Sink` 是 `Scope` 所拥有的 FIFO 值缓冲，`PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `Sink`。
+`Portal` 是 `Scope` 所拥有的入口映射（`{ methodName: Blueprint<any> }`）。`Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`。具备 `Portal + Capability` 投放面的 `Scope` 在角色上属于 `PortalScope`。`Sink` 是 `Scope` 的 `IngressScope` 通道（FIFO 值缓冲），`PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `IngressScope`。
 
 ### 1.7 Limbo 与孤儿 Scope
 
@@ -124,7 +135,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 3.6 结构性收敛：Reaper 与孤儿
 
-当某个 `Scope` 为 `Terminating` 且其终止无法推进到 `Exited` 时，微内核运行该 `Scope` 的 `Reaper`。
+当某个 `Scope` 为 `Terminating` 且其终止无法推进到 `Exited` 时，微内核运行该 `Scope` 的 `Reaper`。语义上该收敛仲裁职责归于 `ReaperScope`，与 `SchedulerScope` 分离。
 
 `Reaper` 通过 syscalls 得到系统观测，并产出一个仲裁决定：
 
@@ -170,6 +181,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
   - 创建子 `Scope`：`S'`
   - 创建根 `Process`：`P'`，其初始 `Plan = blueprint()`
   - 返回 `PostFn`（绑定 `S'.Sink`）
+  - `S'` 默认仅作为结构对象创建；是否可被执行入口复用为 `LaunchRef` 取决于创建路径（syscall `spawn` 不自动授予该引用能力）
 - `Terminating`：调用失败
 
 `Spawn` 扩展参数（如 `options`）与返回能力令牌（如 `capability`）当前不暴露，仍属设计待定项。

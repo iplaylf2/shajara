@@ -1,5 +1,5 @@
 import type { RunOptions, StatefulPromise } from "#src/operations-kit/runtime-launch";
-import type { ExecutionScopeState } from "@khora/kernel";
+import type { LaunchState } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
 import { runtimeLaunch } from "#src/operations-kit/runtime-launch";
@@ -16,12 +16,12 @@ export interface RuntimeScope {
   [Symbol.asyncDispose](): Promise<void>;
 }
 
-export type RuntimeScopeState = ExecutionScopeState;
+export type RuntimeScopeState = LaunchState;
 
 export function createScope(): RuntimeScope {
   const executor = ensureExecutor();
-  const managedScope = runtimeLaunch(executor, executor.rootScope, suspend);
-  const closed: Promise<void> = Promise.resolve(managedScope.settled);
+  const launchedScope = runtimeLaunch(executor, executor.rootScope, suspend);
+  const closed: Promise<void> = Promise.resolve(launchedScope.settled);
 
   return {
     [Symbol.asyncDispose](): Promise<void> {
@@ -33,16 +33,16 @@ export function createScope(): RuntimeScope {
       runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
       options?: RunOptions,
     ): StatefulPromise<ReturnValue> {
-      return runtimeLaunch(executor, managedScope.scope, runtimeBlueprint, options).settled;
+      return runtimeLaunch(executor, launchedScope.scope, runtimeBlueprint, options).settled;
     },
     get state(): RuntimeScopeState {
-      return managedScope.settled.state();
+      return launchedScope.settled.state();
     },
   };
 
   async function haltScope(): Promise<void> {
-    if (managedScope.settled.state() === "open") {
-      executor.terminate(managedScope.scope);
+    if (launchedScope.settled.state() === "open") {
+      executor.terminate(launchedScope.scope);
     }
     await closed;
   }
