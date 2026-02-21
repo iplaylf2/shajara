@@ -1,28 +1,16 @@
 import type { Blueprint } from "./plan";
+import type { ScopeRef } from "./scope";
 import { notImplemented } from "./internal/not-implemented";
 
-const KERNEL_EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("kernel-execution-scope-ref");
-const KERNEL_EXECUTION_ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol(
-  "kernel-execution-root-scope-ref",
-);
-const KERNEL_EXECUTION_MANAGED_SCOPE_REF_TOKEN: unique symbol = Symbol(
-  "kernel-execution-managed-scope-ref",
-);
-
-export interface ScopeRef {
-  readonly [KERNEL_EXECUTION_SCOPE_REF_TOKEN]: "kernel-execution-scope-ref";
-}
+const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
+const EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("execution-scope-ref");
 
 export interface RootScopeRef extends ScopeRef {
-  readonly [KERNEL_EXECUTION_ROOT_SCOPE_REF_TOKEN]: "kernel-execution-root-scope-ref";
+  readonly [ROOT_SCOPE_REF_TOKEN]: "root-scope-ref";
 }
 
-/**
- * Host/runtime-controllable execution scope reference.
- * This is narrower than ScopeRef and is the only accepted target for external termination.
- */
 export interface ExecutionScopeRef extends ScopeRef {
-  readonly [KERNEL_EXECUTION_MANAGED_SCOPE_REF_TOKEN]: "kernel-execution-managed-scope-ref";
+  readonly [EXECUTION_SCOPE_REF_TOKEN]: "execution-scope-ref";
 }
 
 export type ExecutionResult<ReturnValue> =

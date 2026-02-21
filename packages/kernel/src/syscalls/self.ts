@@ -1,9 +1,13 @@
-import type { ScopeRef } from "#src/executor";
+import type { CallDescriptor } from "#src/syscalls-kit/capability";
+import type { ProcessRef } from "#src/syscalls-kit/process";
+import type { ScopeRef } from "#src/scope";
 import type { Syscall } from "#src/syscalls-kit/syscall";
+import { notImplemented } from "#src/internal/not-implemented";
 
 export interface SelfDescriptor {
   readonly scope: ScopeRef;
-  readonly call: { readonly method: string; readonly args: readonly unknown[] } | undefined;
+  readonly process: ProcessRef;
+  readonly call: CallDescriptor | undefined;
 }
 
 export interface SelfSyscall extends Syscall<SelfDescriptor> {
@@ -11,5 +15,5 @@ export interface SelfSyscall extends Syscall<SelfDescriptor> {
 }
 
 export function self(): SelfSyscall {
-  return { kind: "self" };
+  return notImplemented("kernel syscall 'self'");
 }
