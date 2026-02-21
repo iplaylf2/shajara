@@ -1,18 +1,23 @@
-export type { Blueprint } from "./contracts";
-export type { ExecutionScope } from "./executor";
-export type { Executor } from "./executor";
-export type { ExecutionScopeRef } from "./executor";
-export type { ExecutionScopeState } from "./executor";
-export type { RootScopeRef } from "./executor";
-export type { ScopeRef } from "./executor";
-export type { SelfDescriptor } from "./executor";
-export type { SpawnRef } from "./executor";
-export type { ExecutionFuture } from "./executor";
-export type { ExecutionResult } from "./executor";
-export type { ImpurePlan } from "./contracts";
-export type { Plan } from "./contracts";
-export type { PurePlan } from "./contracts";
-export type { RuntimeError } from "./contracts";
-export type { RuntimeErrorCode } from "./contracts";
-export type { Syscall } from "./contracts";
+export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./plan";
+
 export { ensureExecutor } from "./executor";
+export type {
+  ExecutionFuture,
+  ExecutionResult,
+  ExecutionScope,
+  ExecutionScopeRef,
+  ExecutionScopeState,
+  Executor,
+  RootScopeRef,
+  ScopeRef,
+} from "./executor";
+
+export { receive, self, spawn } from "./syscalls";
+export type {
+  ReceiveSyscall,
+  SelfDescriptor,
+  SelfSyscall,
+  SpawnRef,
+  SpawnSyscall,
+} from "./syscalls";
+export type { Syscall } from "./syscalls-kit/syscall";

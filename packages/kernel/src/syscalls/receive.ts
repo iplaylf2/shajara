@@ -1,4 +1,4 @@
-import type { Syscall } from "#src/contracts";
+import type { Syscall } from "#src/syscalls-kit/syscall";
 
 export interface ReceiveSyscall<ReceiveValue = unknown> extends Syscall<ReceiveValue> {
   readonly kind: "receive";

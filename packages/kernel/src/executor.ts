@@ -1,5 +1,5 @@
-import type { Blueprint } from "#src/contracts";
-import { notImplemented } from "#src/internal/not-implemented";
+import type { Blueprint } from "./plan";
+import { notImplemented } from "./internal/not-implemented";
 
 const KERNEL_EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("kernel-execution-scope-ref");
 const KERNEL_EXECUTION_ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol(
@@ -23,15 +23,6 @@ export interface RootScopeRef extends ScopeRef {
  */
 export interface ExecutionScopeRef extends ScopeRef {
   readonly [KERNEL_EXECUTION_MANAGED_SCOPE_REF_TOKEN]: "kernel-execution-managed-scope-ref";
-}
-
-export interface SpawnRef<ReturnValue = unknown> extends ScopeRef {
-  readonly _return?: ReturnValue;
-}
-
-export interface SelfDescriptor {
-  readonly scope: ScopeRef;
-  readonly call: { readonly method: string; readonly args: readonly unknown[] } | undefined;
 }
 
 export type ExecutionResult<ReturnValue> =

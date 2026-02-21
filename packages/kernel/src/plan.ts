@@ -1,21 +1,4 @@
-export type RuntimeErrorCode =
-  | "ScopeTerminating"
-  | "TargetScopeTerminating"
-  | "InvalidCapability"
-  | "NoSuchMethod"
-  | "NotFound"
-  | "NotRunnable"
-  | "NotInScope"
-  | "NotVisible";
-
-export interface RuntimeError {
-  readonly code: RuntimeErrorCode;
-}
-
-export interface Syscall<ReturnValue> {
-  readonly kind: string;
-  readonly _return?: ReturnValue;
-}
+import type { Syscall } from "#src/syscalls-kit/syscall";
 
 export interface PurePlan<ReturnValue> {
   readonly kind: "pure";

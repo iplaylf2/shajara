@@ -1,6 +1,9 @@
-import type { Plan } from "#src/contracts";
+import type { Plan } from "#src/plan";
+import type { SpawnRef as SpawnScopeRef } from "#src/syscalls";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export function join<ReturnValue, SpawnRef = unknown>(_spawned: SpawnRef): Plan<ReturnValue> {
+export function join<ReturnValue, SpawnRef = SpawnScopeRef<ReturnValue>>(
+  _spawned: SpawnRef,
+): Plan<ReturnValue> {
   return notImplemented("kernel primitive 'join'");
 }

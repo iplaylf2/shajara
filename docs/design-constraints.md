@@ -25,6 +25,8 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 
 `packages/runtime/src/primitives` 是原语集合目录，该目录仅放 `index.ts` 与具体原语文件。`packages/runtime/src/operations` 是宿主操作集合目录，该目录仅放 `index.ts` 与具体 operation 文件；operation 共享支撑代码放在 `packages/runtime/src/operations-kit`。runtime 对外契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录；边界内部约束类型定义应靠近提出约束的实现位置。runtime 行为支撑代码按职责拆分为独立文件（如 `adapter/plan-lower.ts`、`adapter/plan-lift.ts`），不挂在集合目录下。
 
+`packages/kernel/src/plan.ts` 是 kernel `Plan/Blueprint` 契约单源。`packages/kernel/src/executor.ts` 仅承载执行入口契约与作用域执行状态约束；与具体 syscall 语义直接绑定的类型（如 `SpawnRef`、`SelfDescriptor`）定义应靠近 `packages/kernel/src/syscalls`。kernel 对外导出采用根入口分组导出，不单独暴露 `@khora/kernel/syscalls` 子路径。
+
 ## 5. runtime 对外表面
 
 runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimeScope`）与公开宿主入口（`run`、`createScope`），但不引导用户直接构造 kernel 层细节。输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。

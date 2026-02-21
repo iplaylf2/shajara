@@ -21,6 +21,7 @@ Current Phase 为 **Build — Make it work**。runtime 的公开 API、原语桥
 4. runtime 语义桥接已闭环：`lowerPlan` 与 `liftPlan` 均已实现，`then/terminate` 路径接入 generator 协议；`all/race` 通过 tuple 降解入口统一对接 kernel primitive。Evidence: `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/primitives-kit/lower-runtime-blueprints.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/race.ts`。
 5. runtime 宿主操作与结果收敛形状已落地：`run`、`createScope`、`action`、`sleep`、`until` 的调用协议与错误映射完整，`failure/interruption` 分别映射到 `RuntimeScopeFailedError/RuntimeScopeInterruptedError`；`run` 与 `scope.run` 统一复用 `RunOptions/StatefulPromise` 约束。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors`。
 6. 已验证 lint 与 typecheck 通过。Evidence: workspace 命令 `yarn lint`、`yarn typecheck`。
+7. kernel 结构治理已按当前迭代约束收敛：`Plan/Blueprint` 提升为顶层单源（`plan.ts`），`SelfDescriptor/SpawnRef` 从 executor 收回到 syscall 定义，kernel 根入口采用分组导出且不再暴露 `@khora/kernel/syscalls` 子路径。Evidence: `packages/kernel/src/plan.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/self.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/index.ts`, `packages/kernel/package.json`。
 
 ## 4. 相对设计基线增量（仅记录 delta）
 
@@ -44,6 +45,10 @@ Impact: kernel `receive` syscall/primitive 与 runtime `sleep/until/action` 的�
 
 Impact: runtime 继续仅消费 kernel 契约，不引入第二执行循环；执行真相仍限定在 kernel。Evidence: `docs/runtime.md`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 
+### 4.6 增量：kernel 契约位置按“第一性”重排
+
+Impact: 顶层 `contracts` 聚合已移除，`Plan/Blueprint` 与 syscall 约束改为就近单源，降低 `executor` 契约混杂度；当前变更属于结构治理，不改变 `ensureExecutor` 仍为占位的实现现实。Evidence: `packages/kernel/src/plan.ts`, `packages/kernel/src/syscalls/index.ts`, `packages/kernel/src/syscalls/self.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`。
+
 ## 5. 当前阶段执行切片（Build）
 
 | Slice                                             | Status      | Output                                                                                                       | Evidence                                                                                                                                                                                                                       |
@@ -55,6 +60,7 @@ Impact: runtime 继续仅消费 kernel 契约，不引入第二执行循环；�
 | B5 primitive 垂直切片（最小集合）                 | Completed   | `receive` 垂直切片已接通到 runtime 宿主操作主路径。                                                          | `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `packages/runtime/src/operations/action.ts`    |
 | B6 宿主操作实现（createScope/action/sleep/until） | Completed   | API 形状与收敛逻辑已落地，包括 `state/closed/halt` 门闩、`post + receive` 结算与错误映射。                   | `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `packages/runtime/src/errors/index.ts` |
 | B7 基础验证（类型层）                             | Completed   | `@khora/runtime` 与 `@khora/kernel` typecheck 通过。                                                         | workspace 命令 `yarn workspace @khora/runtime typecheck`、`yarn workspace @khora/kernel typecheck`                                                                                                                             |
+| B8 kernel 结构治理（contracts 收敛与导出整形）    | Completed   | `Plan` 顶层化、`syscall` 根导出化、`executor` 契约去混杂已完成；primitive 实现策略保持占位不前推。           | `packages/kernel/src/plan.ts`, `packages/kernel/src/index.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/index.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/primitives/spawn.ts` |
 
 ## 6. 后续方向
 

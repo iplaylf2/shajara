@@ -16,11 +16,6 @@
       "types": "./dist/primitives/index.d.ts",
       "import": "./dist/primitives.js",
       "require": "./dist/primitives.cjs"
-    },
-    "./syscalls": {
-      "types": "./dist/syscalls/index.d.ts",
-      "import": "./dist/syscalls.js",
-      "require": "./dist/syscalls.cjs"
     }
   },
   "scripts": {
