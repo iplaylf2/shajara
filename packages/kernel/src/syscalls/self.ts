@@ -1,13 +1,11 @@
-import type { CallDescriptor } from "#src/syscalls-kit/capability";
-import type { ProcessRef } from "#src/syscalls-kit/process";
-import type { ScopeRef } from "#src/scope";
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { ProcessRef } from "#src/contracts/process";
+import type { ScopeRef } from "#src/contracts/scope";
+import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export interface SelfDescriptor {
   readonly scope: ScopeRef;
   readonly process: ProcessRef;
-  readonly call: CallDescriptor | undefined;
 }
 
 export interface SelfSyscall extends Syscall<SelfDescriptor> {

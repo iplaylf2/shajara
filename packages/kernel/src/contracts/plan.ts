@@ -1,4 +1,4 @@
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { Syscall } from "#src/contracts/syscall";
 
 export interface PurePlan<ReturnValue> {
   readonly kind: "pure";

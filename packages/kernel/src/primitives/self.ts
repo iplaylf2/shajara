@@ -1,4 +1,4 @@
-import type { Plan } from "#src/plan";
+import type { Plan } from "#src/contracts/plan";
 import type { SelfDescriptor } from "#src/syscalls";
 import { notImplemented } from "#src/internal/not-implemented";
 

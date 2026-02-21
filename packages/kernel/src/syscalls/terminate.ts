@@ -1,5 +1,5 @@
-import type { ProcessRef } from "#src/syscalls-kit/process";
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { ProcessRef } from "#src/contracts/process";
+import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export interface TerminateSyscall<Process extends ProcessRef = ProcessRef> extends Syscall<void> {

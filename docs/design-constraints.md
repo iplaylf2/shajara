@@ -13,7 +13,7 @@
 
 边界引用类型（如 `RootScopeRef`、`ExecutionScopeRef`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
 
-作用域引用约束固定为：`ScopeRef` 作为共享作用域引用基类型定义在 `packages/kernel/src/scope.ts`；`RootScopeRef` 与 `ExecutionScopeRef` 作为执行入口专属引用类型定义在 `packages/kernel/src/executor.ts`。`syscalls` 与 `syscalls-kit` 不反向依赖 `executor` 承载共同约束类型。
+作用域引用约束固定为：`ScopeRef` 作为共享作用域引用基类型定义在 `packages/kernel/src/contracts/scope.ts`；`RootScopeRef` 与 `ExecutionScopeRef` 作为执行入口专属引用类型定义在 `packages/kernel/src/executor.ts`。`syscalls` 与 `contracts` 不反向依赖 `executor` 承载共同约束类型。
 
 执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值；`launch` 接受 `RootScopeRef | ExecutionScopeRef` 并返回 `ExecutionScope<T>`（含 `ExecutionScope<never>`）；`post` 的目标类型为 `ScopeRef`，`terminate` 的目标类型为 `ExecutionScopeRef`。`ExecutionScope` 暴露 `result: ExecutionFuture<T>` 与 `state()`；`ExecutionResult<T>` 采用三态 sum type（`success | failure | interruption`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
 
@@ -27,7 +27,7 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 
 `packages/runtime/src/primitives` 是原语集合目录，该目录仅放 `index.ts` 与具体原语文件。`packages/runtime/src/operations` 是宿主操作集合目录，该目录仅放 `index.ts` 与具体 operation 文件；operation 共享支撑代码放在 `packages/runtime/src/operations-kit`。runtime 对外契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录；边界内部约束类型定义应靠近提出约束的实现位置。runtime 行为支撑代码按职责拆分为独立文件（如 `adapter/plan-lower.ts`、`adapter/plan-lift.ts`），不挂在集合目录下。
 
-`packages/kernel/src/plan.ts` 是 kernel `Plan/Blueprint` 契约单源。`packages/kernel/src/executor.ts` 仅承载执行入口契约与作用域执行状态约束；与具体 syscall 语义直接绑定的类型（如 `SpawnRef`、`SelfDescriptor`）定义应靠近 `packages/kernel/src/syscalls`。`packages/kernel/src/syscalls` 目录仅承载 syscall 声明文件与 `index.ts`；非 syscall 的共享约束类型放在 `packages/kernel/src/syscalls-kit`。kernel 对外导出采用根入口分组导出，不单独暴露 `@khora/kernel/syscalls` 子路径。
+`packages/kernel/src/contracts/plan.ts` 是 kernel `Plan/Blueprint` 契约单源。`packages/kernel/src/executor.ts` 仅承载执行入口契约与作用域执行状态约束；与具体 syscall 语义直接绑定的类型（如 `SpawnRef`、`SelfDescriptor`）定义应靠近 `packages/kernel/src/syscalls`。`packages/kernel/src/syscalls` 目录仅承载 syscall 声明文件与 `index.ts`；非 syscall 的共享约束类型放在 `packages/kernel/src/contracts`。kernel 对外导出采用根入口分组导出，不单独暴露 `@khora/kernel/syscalls` 子路径。
 
 ## 5. runtime 对外表面
 

@@ -1,6 +1,6 @@
-import type { Blueprint } from "#src/plan";
-import type { ProcessRef } from "#src/syscalls-kit/process";
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { Blueprint } from "#src/contracts/plan";
+import type { ProcessRef } from "#src/contracts/process";
+import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export interface ForkSyscall<

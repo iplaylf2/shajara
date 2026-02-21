@@ -1,4 +1,4 @@
-export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./plan";
+export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./contracts/plan";
 
 export { ensureExecutor } from "./executor";
 export type {
@@ -10,17 +10,15 @@ export type {
   Executor,
   RootScopeRef,
 } from "./executor";
-export type { ScopeRef } from "./scope";
+export type { ScopeRef } from "./contracts/scope";
 
 export {
-  arm,
   awaitProcess,
   awaitScope,
   bind,
   cede,
   fork,
   halt,
-  invoke,
   lookup,
   pollProcess,
   pollScope,
@@ -30,17 +28,13 @@ export {
   terminate,
 } from "./syscalls";
 export type {
-  ArmSyscall,
   AwaitProcessSyscall,
   AwaitScopeExit,
   AwaitScopeSyscall,
   BindSyscall,
-  CallDescriptor,
-  CapabilityRef,
   CedeSyscall,
   ForkSyscall,
   HaltSyscall,
-  InvokeSyscall,
   LookupSyscall,
   PollProcessResult,
   PollProcessSyscall,
@@ -53,9 +47,8 @@ export type {
   SelfDescriptor,
   SelfSyscall,
   SpawnDescriptor,
-  SpawnOptions,
   SpawnRef,
   SpawnSyscall,
   TerminateSyscall,
 } from "./syscalls";
-export type { Syscall } from "./syscalls-kit/syscall";
+export type { Syscall } from "./contracts/syscall";

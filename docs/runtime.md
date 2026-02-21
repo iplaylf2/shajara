@@ -16,7 +16,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 4. 推进与调度
 
-执行推进由 `kernel` 完成：`EventQueue` 存放待执行 `Process`，`drive()` 从队列取出一个 `Process` 并解释其 `Plan`，直到遇到阻塞型 syscall 或退出；当队列为空时，运行一次 `Scheduler`，由 `Scheduler` 通过 `Arm` 将目标 `Process` 放入队列。runtime 不引入第二执行循环，仅通过执行入口把降解后的 `Blueprint` 提交给 `kernel`。
+执行推进由 `kernel` 完成：`EventQueue` 存放待执行 `Process`，`drive()` 从队列取出一个 `Process` 并解释其 `Plan`，直到遇到阻塞型 syscall 或退出；当队列为空时，运行一次 `Scheduler`，由内核调度策略选择可运行 `Process` 入队。当前版本不经由公开 `Arm` syscall；`Arm` 是否回归公开表面仍待设计决策。runtime 不引入第二执行循环，仅通过执行入口把降解后的 `Blueprint` 提交给 `kernel`。
 
 ## 5. 运行期索引
 

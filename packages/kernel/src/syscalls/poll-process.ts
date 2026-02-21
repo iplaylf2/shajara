@@ -1,5 +1,5 @@
-import type { ProcessExit, ProcessRef } from "#src/syscalls-kit/process";
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { ProcessExit, ProcessRef } from "#src/contracts/process";
+import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export type PollProcessResult<ReturnValue = unknown> =

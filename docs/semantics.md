@@ -31,11 +31,9 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - 每个 `Process` 有唯一 `ProcessId`
 - 每个 `Process` 自创建起始终属于且仅属于一个 `Scope`
 
-当 `Process` 由 `Invoke` 创建时，它携带不可变的调用信息：
+当 `Process` 由入口调用创建时，它可携带不可变的调用信息（当前版本该创建路径待定）：
 
 `call = { method: string, args: any[] }`
-
-该调用信息可由 `Self()` 观察。
 
 ### 1.5 Processor 与 EventQueue
 
@@ -75,7 +73,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 当 `EventQueue` 为空且 `Processor` 在微内核手中时：
 
 1. 微内核以 `Process` 形式运行该 `Scope` 的 `Scheduler`
-2. `Scheduler` 通过 syscalls（尤其是 `Arm`）将目标 `Process` 送入 `EventQueue`
+2. `Scheduler` 按内核调度策略选择可运行 `Process` 并将其送入 `EventQueue`（当前版本不经由公开 `Arm` syscall）
 3. `Scheduler` 让出 `Processor` 后，进入下一轮反应相
 
 ---
@@ -115,12 +113,10 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 当调用方所在 `Scope` 为 `Terminating`：
 
-- `Spawn / Fork / Invoke` 会失败
+- `Spawn / Fork` 会失败
 - 其他 syscalls 按其定义执行
 
-当 `Invoke` 的目标 `Scope` 为 `Terminating`：
-
-- `Invoke` 会失败
+`Invoke` 相关终止门控语义（若未来回归公开 syscall）仍属待定项。
 
 ### 3.5 未处理 Fault 触发终止
 
@@ -163,9 +159,9 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 以 `ProcessId` 为目标的操作要求目标 `Process` 属于调用方所在 `Scope`。`Spawn` 返回的 `ScopeId` 对调用方可见。目标 `ScopeId` 若不对调用方可见，则相关操作失败。
 
-### 5.1 创建与调用
+### 5.1 创建（含待定调用能力）
 
-#### Spawn(blueprint, options?) -> { scopeId, rootProcessId, capability, post } [Non-Blocking]
+#### Spawn(blueprint) -> { scopeId, rootProcessId, post } [Non-Blocking]
 
 在调用方 `Scope` 下创建子 `Scope`，并在子 `Scope` 内创建根 `Process`。
 
@@ -173,8 +169,10 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - 效果：
   - 创建子 `Scope`：`S'`
   - 创建根 `Process`：`P'`，其初始 `Plan = blueprint()`
-  - 返回 `Capability`（绑定 `S'.Portal`）与 `PostFn`（绑定 `S'.Sink`）
+  - 返回 `PostFn`（绑定 `S'.Sink`）
 - `Terminating`：调用失败
+
+`Spawn` 扩展参数（如 `options`）与返回能力令牌（如 `capability`）当前不暴露，仍属设计待定项。
 
 #### Fork(blueprint) -> { processId } [Non-Blocking]
 
@@ -184,30 +182,16 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - 效果：创建 `Process`：`P'`，`P'.Plan = blueprint()`，`P'` 初始为可运行
 - `Terminating`：调用失败
 
-#### Invoke(capability, method, args) -> void [Non-Blocking]
+#### 调用能力（待定）
 
-在目标 `Scope` 内创建一次入口调用 `Process`。
+当前版本不暴露公开 `Invoke` syscall。
+是否以 `Invoke` 形态回归及其门控语义，仍属设计待定项。
 
-- 前置条件：
-  - `capability` 绑定目标 `Scope`
-  - 目标 `Portal` 中存在 `method`
-- 效果：
-  - 在目标 `Scope` 内创建 `Process`：`Pcall`
-  - `Pcall.Plan = Portal[method]()`
-  - `Pcall.call = { method, args }`
-  - `Pcall` 初始为可运行
-- 终止门控：调用方或目标 `Scope` 为 `Terminating` 时调用失败
+### 5.2 调度推进（内核内部）
 
-### 5.2 调度推进
-
-#### Arm(processId) -> void [Non-Blocking]
-
-将目标 `Process` 入队到 `EventQueue`。
-
-- 前置条件：
-  - 目标 `Process` 属于调用方 `Scope`
-  - 目标 `Process` 为可运行
-- 效果：将目标 `Process` 入队到 `EventQueue`
+`EventQueue` 的入队由内核调度策略负责。当前版本不暴露公开 `Arm` syscall。
+`Arm` 是否以公开 syscall 形态回归仍属设计待定项。
+可运行 `Process` 由创建/恢复等语义事件产生，并由内核推进到执行循环。
 
 ### 5.3 控制与等待
 
@@ -273,13 +257,14 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 沿调用方 `Scope` 到其祖先链查找上下文绑定。
 
-#### Self() -> { scopeId, processId, call? } [Non-Blocking]
+#### Self() -> { scopeId, processId } [Non-Blocking]
 
 返回调用方的自省信息：
 
 - `scopeId`
 - `processId`
-- `call`（仅当由 `Invoke` 创建时存在）
+
+`Self.call` 字段当前不暴露；是否随入口调用能力一并回归，仍属设计待定项。
 
 #### PollProcess(processId) -> { exited, exit? } [Non-Blocking]
 

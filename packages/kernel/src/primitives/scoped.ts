@@ -1,4 +1,4 @@
-import type { Plan } from "#src/plan";
+import type { Plan } from "#src/contracts/plan";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export type ResumableErrorHandler<CaughtValue> = (error: Error) => Plan<CaughtValue>;

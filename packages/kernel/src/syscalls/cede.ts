@@ -1,4 +1,4 @@
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export interface CedeSyscall extends Syscall<void> {

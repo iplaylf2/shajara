@@ -1,5 +1,5 @@
-import type { ScopeRef } from "#src/scope";
-import type { Syscall } from "#src/syscalls-kit/syscall";
+import type { ScopeRef } from "#src/contracts/scope";
+import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export type ScopeStatus = "Running" | "Terminating" | "Exited" | "InLimbo";

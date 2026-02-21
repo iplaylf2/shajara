@@ -1,5 +1,5 @@
-import type { Blueprint } from "./plan";
-import type { ScopeRef } from "./scope";
+import type { Blueprint } from "./contracts/plan";
+import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
