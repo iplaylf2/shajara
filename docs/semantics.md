@@ -34,6 +34,12 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - `IngressScope`：宿主或 runtime 输入通道角色（对应 `Sink/PostFn`）；只承载输入投递语义，不承载执行入口生命周期控制语义。
 - `PortalScope`：能力投放角色（通过 `Capability -> Portal` 被其他 `Scope` 触发任务，驱动其内部 `Process` 与后续 `syscall` 推进）。
 
+控制面层级约束：
+
+- `ExecutionScopeRoot` 的直接父 `Scope` 是 `SchedulerScope`。
+- 该 `SchedulerScope` 的直接父 `Scope` 是 `ReaperScope`。
+- 运行中的执行入口 `launch` 产物位于对应 `ExecutionScopeRoot` 子树内。
+
 ### 1.4 执行入口能力视图与依赖方向
 
 执行入口能力视图由 executor 基于 `Scope` 派生：
@@ -68,7 +74,12 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 系统包含一个特殊 `Scope`：`Limbo`。
 
-当一个 `Scope` 因结构性收敛被从其父 `Scope` 的树中移除并挂接到 `Limbo` 之下时，该 `Scope` 变为孤儿 `Scope`，其状态为 `InLimbo`。
+`Limbo` 相关不变量如下：
+
+- 常态下不存在 `Scope` 父子迁移。
+- 仅当最近祖先 `ReaperScope` 在结构性收敛中给出 `Prune` 仲裁时，目标 `Scope` 才会被从原父树断开并挂接到 `Limbo` 之下。
+- 迁移时保持被迁移 `Scope` 的原子树结构：仅变更被迁移子树根节点的父指针，不重排其后代关系。
+- 被迁移 `Scope` 状态变为 `InLimbo`，并作为孤儿子树继续存在于 `Limbo` 之下。
 
 ---
 
@@ -145,7 +156,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 3.6 结构性收敛：Reaper 与孤儿
 
-当某个 `Scope` 为 `Terminating` 且其终止无法推进到 `Exited` 时，微内核运行该 `Scope` 的 `Reaper`。语义上该收敛仲裁职责归于 `ReaperScope`，与 `SchedulerScope` 分离。
+当某个 `Scope` 为 `Terminating` 且其终止无法推进到 `Exited` 时，微内核运行其最近祖先 `ReaperScope` 对应的 `Reaper`。语义上该收敛仲裁职责归于 `ReaperScope`，与 `SchedulerScope` 分离。
 
 `Reaper` 通过 syscalls 得到系统观测，并产出一个仲裁决定：
 
@@ -154,9 +165,9 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 当决定为 `Prune` 时，微内核执行结构性修剪：
 
-- 选择若干叶子后代 `Scope`
-- 将其从原树断开并挂接到 `Limbo` 下
-- 被修剪的 `Scope` 进入 `InLimbo`，成为孤儿 `Scope`
+- 选择一个或多个后代 `Scope` 作为被修剪子树根
+- 将每个被修剪子树根从原树断开并挂接到 `Limbo` 下
+- 被修剪子树根及其后代保持原有内部结构；被修剪子树根进入 `InLimbo`，成为孤儿 `Scope`
 
 结构性修剪的效果是：被修剪的后代不再阻塞原祖先 `Scope` 的退出，祖先 `Scope` 的终止流程可继续推进到 `Exited`。
 
@@ -204,6 +215,15 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - 前置条件：调用方 `Scope` 为 `Running`
 - 效果：创建 `Process`：`P'`，`P'.Plan = blueprint()`，`P'` 初始为可运行
 - `Terminating`：调用失败
+
+#### 创建治理 Scope（调度/裁决）[Non-Blocking]
+
+内核支持通过 syscall 创建治理 `Scope`（`SchedulerScope` 与 `ReaperScope`），并建立其治理子树边界。该能力用于控制面编排，不等同于业务 `Spawn`。
+
+该类 syscall 的具体命名、入参与可见性细则当前仍属待定项；稳定约束仅包括：
+
+- 创建后的治理层级需满足 `ReaperScope -> SchedulerScope -> ExecutionScopeRoot`。
+- 该治理链所覆盖的执行子树由对应 `ExecutionScopeRoot` 锚定。
 
 #### 调用能力（待定）
 
