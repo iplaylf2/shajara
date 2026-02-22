@@ -34,12 +34,6 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - `IngressScope`：宿主或 runtime 输入通道角色（对应 `Sink/PostFn`）；只承载输入投递语义，不承载执行入口生命周期控制语义。
 - `PortalScope`：能力投放角色（通过 `Capability -> Portal` 被其他 `Scope` 触发任务，驱动其内部 `Process` 与后续 `syscall` 推进）。
 
-控制面层级约束：
-
-- `ExecutionScopeRoot` 的直接父 `Scope` 是 `SchedulerScope`。
-- 该 `SchedulerScope` 的直接父 `Scope` 是 `ReaperScope`。
-- 运行中的执行入口 `launch` 产物位于对应 `ExecutionScopeRoot` 子树内。
-
 ### 1.4 执行入口能力视图与依赖方向
 
 执行入口能力视图由 executor 基于 `Scope` 派生：
@@ -222,8 +216,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 该类 syscall 的具体命名、入参与可见性细则当前仍属待定项；稳定约束仅包括：
 
-- 创建后的治理层级需满足 `ReaperScope -> SchedulerScope -> ExecutionScopeRoot`。
-- 该治理链所覆盖的执行子树由对应 `ExecutionScopeRoot` 锚定。
+- 创建后的基础治理层级需满足 `ReaperScope -> SchedulerScope -> 执行子树根 Scope`。
 
 #### 调用能力（待定）
 
