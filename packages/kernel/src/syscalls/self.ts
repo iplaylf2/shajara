@@ -4,8 +4,8 @@ import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export interface SelfDescriptor {
-  readonly scopeId: ScopeRef;
-  readonly processId: ProcessRef;
+  readonly scopeRef: ScopeRef;
+  readonly processRef: ProcessRef;
 }
 
 export interface SelfSyscall extends Syscall<SelfDescriptor> {

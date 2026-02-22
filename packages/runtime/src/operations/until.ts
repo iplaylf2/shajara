@@ -13,11 +13,11 @@ export function* until<ReturnValue>(
 ): RuntimePlan<ReturnValue> {
   const executor = ensureExecutor();
   return yield* scoped(function* untilBlueprint(): RuntimePlan<ReturnValue> {
-    const { scopeId } = yield* self();
+    const { scopeRef } = yield* self();
 
     thunk().then(
-      (value: ReturnValue) => executor.post(scopeId, { status: "resolved", value }),
-      (reason: unknown) => executor.post(scopeId, { reason, status: "rejected" }),
+      (value: ReturnValue) => executor.post(scopeRef, { status: "resolved", value }),
+      (reason: unknown) => executor.post(scopeRef, { reason, status: "rejected" }),
     );
 
     const settlement = yield* liftPlan(kernelReceive<Settlement<ReturnValue>>());

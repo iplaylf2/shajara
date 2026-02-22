@@ -22,7 +22,8 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Scope` 是生命周期、身份与上下文的统一载体。
 
-每个 `Scope` 都有唯一 `ScopeId`，且 `Scope` 构成严格树：除根以外的每个 `Scope` 恰有一个父 `Scope`。
+每个 `Scope` 都有唯一 `ScopeRef`，且 `Scope` 构成严格树：除根以外的每个 `Scope` 恰有一个父 `Scope`。
+`ScopeRef` 是控制面引用（capability handle），用于执行与治理相关操作；`id` 若存在仅用于观测，不进入控制面契约。
 
 - `Scope` 作为统一对象，承载身份、父子关系、上下文边界与 `Process` 归属。
 
@@ -46,8 +47,10 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Process` 是 `Plan` 的动态实例。
 
-- 每个 `Process` 有唯一 `ProcessId`
+- 每个 `Process` 有唯一 `ProcessRef`
 - 每个 `Process` 自创建起始终属于且仅属于一个 `Scope`
+
+`ProcessRef` 与 `ScopeRef` 一样属于控制面引用；`id` 若存在仅作为日志与追踪用途，不作为 syscall 入参或权限依据。
 
 当 `Process` 由入口调用创建时，它可携带不可变的调用信息（当前版本该创建路径待定）：
 
@@ -177,11 +180,11 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 可见性规则：
 
-以 `ProcessId` 为目标的操作要求目标 `Process` 属于调用方所在 `Scope`。`Spawn` 返回的 `ScopeId` 对调用方可见。目标 `ScopeId` 若不对调用方可见，则相关操作失败。
+以 `ProcessRef` 为目标的操作要求目标 `Process` 属于调用方所在 `Scope`。`Spawn` 返回的 `ScopeRef` 对调用方可见。目标 `ScopeRef` 若不对调用方可见，则相关操作失败。
 
 ### 5.1 创建（含待定调用能力）
 
-#### Spawn(blueprint) -> { scopeId, rootProcessId, post } [Non-Blocking]
+#### Spawn(blueprint) -> { scopeRef, rootProcessRef, post } [Non-Blocking]
 
 在调用方 `Scope` 下创建子 `Scope`，并在子 `Scope` 内创建根 `Process`。
 
@@ -194,7 +197,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Spawn` 扩展参数（如 `options`）与返回能力令牌（如 `capability`）当前不暴露，仍属设计待定项。
 
-#### Fork(blueprint) -> { processId } [Non-Blocking]
+#### Fork(blueprint) -> { processRef } [Non-Blocking]
 
 在调用方 `Scope` 内创建并行 `Process`。
 
@@ -215,14 +218,14 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 5.3 控制与等待
 
-#### Terminate(processId) -> void [Non-Blocking]
+#### Terminate(processRef) -> void [Non-Blocking]
 
 令目标 `Process` 退出为 `Terminated`。
 
 - 前置条件：目标 `Process` 属于调用方 `Scope`
 - 效果：
   - 若目标尚未退出，则令其退出为 `Terminated`
-  - 释放等待 `AwaitProcess(processId)` 的阻塞者
+  - 释放等待 `AwaitProcess(processRef)` 的阻塞者
 
 #### Halt() -> Fault [Blocking]
 
@@ -233,7 +236,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
   - 触发对后代 `Scope` 的终止级联
   - 调用方 `Process` 以 `Fault(halt)` 退出
 
-#### AwaitProcess(processId) -> { exit } [Blocking]
+#### AwaitProcess(processRef) -> { exit } [Blocking]
 
 等待目标 `Process` 退出。
 
@@ -246,11 +249,11 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
   - `{ kind: "failed", fault }`
   - `{ kind: "terminated" }`
 
-#### AwaitScope(scopeId) -> { exit } [Blocking]
+#### AwaitScope(scopeRef) -> { exit } [Blocking]
 
 等待目标 `Scope` 退出或被结构性修剪。
 
-- 前置条件：`scopeId` 对调用方可见
+- 前置条件：`scopeRef` 对调用方可见
 - 效果：
   - 若目标为 `Exited`：返回 `{ kind: "exited" }`
   - 若目标为 `InLimbo`：返回 `{ kind: "pruned_to_limbo" }`
@@ -277,20 +280,20 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 沿调用方 `Scope` 到其祖先链查找上下文绑定。
 
-#### Self() -> { scopeId, processId } [Non-Blocking]
+#### Self() -> { scopeRef, processRef } [Non-Blocking]
 
 返回调用方的自省信息：
 
-- `scopeId`
-- `processId`
+- `scopeRef`
+- `processRef`
 
 `Self.call` 字段当前不暴露；是否随入口调用能力一并回归，仍属设计待定项。
 
-#### PollProcess(processId) -> { exited, exit? } [Non-Blocking]
+#### PollProcess(processRef) -> { exited, exit? } [Non-Blocking]
 
 查询目标 `Process` 是否已退出；若已退出返回其退出信息。
 
-#### PollScope(scopeId) -> { status } [Non-Blocking]
+#### PollScope(scopeRef) -> { status } [Non-Blocking]
 
 查询目标 `Scope` 状态：
 
