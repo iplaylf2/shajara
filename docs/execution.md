@@ -16,12 +16,12 @@ Current Phase 为 **Build — Make it work**。runtime 的公开 API、原语桥
 ## 3. 当前现实与证据（Build）
 
 1. 文档职责边界稳定：静态约束在 `docs/*.md`（不含 `docs/execution.md`），阶段状态集中在 Execution Doc。Evidence: `docs/README.md`, `docs/design-constraints.md`。
-2. `kernel` 执行入口契约已收敛到 `rootScope + launch + post + terminate`，并通过 `LaunchHandle.result.onResult(...)` 暴露三态结果（`success | failure | interruption`）。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`。
+2. `kernel` 执行入口契约已按静态设计文档约束收敛，且通过 `LaunchHandle.result.onResult(...)` 暴露三态结果（`success | failure | interruption`）。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/index.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `docs/semantics.md`, `docs/design-constraints.md`。
 3. `kernel` 执行器实现仍未落地：`ensureExecutor()` 当前仍调用 `notImplemented(...)`。这使 runtime 的 `run/createScope` 在运行期依赖未满足。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 4. runtime 语义桥接已闭环：`lowerPlan` 与 `liftPlan` 均已实现，`then/terminate` 路径接入 generator 协议；`all/race` 通过 tuple 降解入口统一对接 kernel primitive。Evidence: `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/primitives-kit/lower-runtime-blueprints.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/race.ts`。
 5. runtime 宿主操作与结果收敛形状已落地：`run`、`createScope`、`action`、`sleep`、`until` 的调用协议与错误映射完整，`failure/interruption` 分别映射到 `RuntimeScopeFailedError/RuntimeScopeInterruptedError`；`run` 与 `scope.run` 统一复用 `RunOptions/StatefulPromise` 约束。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors`。
 6. 已验证 lint 与 typecheck 通过。Evidence: workspace 命令 `yarn lint`、`yarn typecheck`。
-7. kernel 边界结构继续收敛：`ScopeRef` 与执行入口引用类型已按依赖方向拆分（`ScopeRef` 在 `contracts/scope.ts`，`RootScopeRef/LaunchRef` 在 `executor.ts`），`syscalls` 目录仅保留 syscall 声明，且 process 终止 syscall 命名已简化为 `terminate`。Evidence: `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/index.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/syscalls/self.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/index.ts`。
+7. kernel 边界结构继续收敛：执行入口引用类型与共享引用类型保持拆分，`syscalls` 目录仅保留 syscall 声明，且 process 终止 syscall 命名已简化为 `terminate`。Evidence: `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/index.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/syscalls/self.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/index.ts`。
 8. 文档职责去重已完成：`Scope` 角色语义收敛到 `docs/semantics.md` 单源；`docs/runtime.md`、`docs/api.md`、`docs/README.md` 改为按职责引用，减少跨文档重复叙述。Evidence: `docs/semantics.md`, `docs/runtime.md`, `docs/api.md`, `docs/README.md`, `docs/design-constraints.md`。
 
 ## 4. 相对设计基线增量（仅记录 delta）
@@ -52,7 +52,7 @@ Impact: 顶层 `contracts` 聚合已移除，`Plan/Blueprint` 与 syscall 约束
 
 ### 4.7 增量：作用域引用与执行入口引用按依赖方向解耦
 
-Impact: `ScopeRef` 作为共享类型从执行入口契约中抽离到 `contracts/scope.ts`，`RootScopeRef/LaunchRef` 保留在 `executor.ts`，避免 `syscalls` 对 `executor` 形成反向概念耦合。Evidence: `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/self.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/await-scope.ts`。
+Impact: `ScopeRef` 作为共享类型从执行入口契约中抽离到 `contracts/scope.ts`，执行入口控制引用保留在 `executor.ts`，避免 `syscalls` 对 `executor` 形成反向概念耦合。Evidence: `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/self.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/await-scope.ts`。
 
 ### 4.8 增量：syscall 目录语义与命名收敛
 

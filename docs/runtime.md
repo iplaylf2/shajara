@@ -30,19 +30,18 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 - `ScopeRef`：结构层引用，不承诺宿主控制能力。
 - `SpawnRef`：编排侧子作用域引用。
-- `LaunchRef`：执行入口返回的 launch 链接引用（技术类型名，不新增 scope 概念）。
+- `ExecutionScopeRoot`：执行入口 root 锚点引用。
+- `ExecutionScope`：执行入口 launch 返回引用。
 
-`Scope` 角色分层（`SchedulerScope` / `ReaperScope` / `IngressScope` / `PortalScope`）定义在 `docs/semantics.md`，runtime 文档不重复展开角色语义。
+`Scope` 角色分层与执行入口能力语义定义在 `docs/semantics.md`，runtime 文档不重复展开定义。
 
 ## 7. 边界适配协议
 
 边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；成功响应推进走 `then`，关闭推进走 `terminate`。宿主输入投递通过执行入口 `post` 注入，编排侧等待通过 `receive` 配对收敛。
 
-`self/spawn/join` 涉及的 `SelfDescriptor/SpawnRef/ScopeRef/RootScopeRef/LaunchRef` 等边界类型由 `kernel` 统一定义并导出；runtime 不再定义同语义包装类型，只负责 `Plan <-> RuntimePlan` 的形态适配与宿主 API 组合。
+`self/spawn/join` 涉及的 `SelfDescriptor/SpawnRef/ScopeRef/ExecutionScopeRoot/ExecutionScope` 等边界类型由 `kernel` 统一定义并导出；runtime 不再定义同语义包装类型，只负责 `Plan <-> RuntimePlan` 的形态适配与宿主 API 组合。
 
-scope 概念与 executor 实现解耦：`LaunchRef` 仅表示执行入口 launch 链接能力，不暗含新的 scope 分类。
-
-runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launch`、`RuntimeBlueprint -> Plan` 降解、`LaunchResult<T>` 到 Promise 语义收敛，以及可选 `AbortSignal` 到 `terminate` 的映射。收敛后返回 `StatefulPromise<T>`（`PromiseLike<T> + state()`）并暴露被启动作用域的 `LaunchRef`。其中 `interruption` 映射为 runtime 侧中断异常，`failure` 映射为 runtime 侧失败异常。
+runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launch`、`RuntimeBlueprint -> Plan` 降解、`LaunchResult<T>` 到 Promise 语义收敛，以及可选 `AbortSignal` 到 `terminate` 的映射。收敛后返回 `StatefulPromise<T>`（`PromiseLike<T> + state()`）并暴露被启动作用域的 `ExecutionScope`。其中 `interruption` 映射为 runtime 侧中断异常，`failure` 映射为 runtime 侧失败异常。
 
 ## 8. 术语与方向约束
 

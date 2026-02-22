@@ -16,11 +16,21 @@
 
 规范性约束与变更协议见 `docs/design-constraints.md`，迭代期动态状态见 `docs/execution.md`。
 
-## 3. Scope 语义入口
+## 3. 去重规则
 
-`Scope` 角色分层（`SchedulerScope` / `ReaperScope` / `IngressScope` / `PortalScope`）与 `LaunchRef` 边界定义以 `docs/semantics.md` 为单源；跨文档稳定约束见 `docs/design-constraints.md`。
+术语与语义定义只在其单源文档出现；其余文档只做职责内引用，不重复给出同义定义：
 
-## 4. Runtime 变更后的联动校验
+1. `Scope` 角色分层、执行入口能力视图与 syscall 语义定义只在 `docs/semantics.md`。
+2. `docs/runtime.md` 只描述 runtime 分层、适配协议与边界消费方式。
+3. `docs/api.md` 只描述对外 API 形状与使用约束。
+4. `docs/design-constraints.md` 只固化约束与变更协议，不复制语义正文。
+5. `docs/execution.md` 只记录阶段状态、增量与证据，不承载稳定设计定义。
+
+## 4. Scope 语义入口
+
+`Scope` 角色分层（`SchedulerScope` / `ReaperScope` / `IngressScope` / `PortalScope`）与执行入口能力视图（`ExecutionScopeRoot` / `ExecutionScope`）定义以 `docs/semantics.md` 为单源；跨文档稳定约束见 `docs/design-constraints.md`。
+
+## 5. Runtime 变更后的联动校验
 
 runtime API 或语义变更时，按以下顺序确认联动一致性：
 

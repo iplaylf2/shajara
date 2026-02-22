@@ -30,12 +30,19 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 - `SchedulerScope`：调度编排角色（对应 `Scheduler` 职责）。
 - `ReaperScope`：终止收敛仲裁角色（对应 `Reaper` 职责）。
-- `IngressScope`：宿主或 runtime 输入通道角色（对应 `Sink/PostFn`）。
+- `IngressScope`：宿主或 runtime 输入通道角色（对应 `Sink/PostFn`）；只承载输入投递语义，不承载执行入口生命周期控制语义。
 - `PortalScope`：能力投放角色（通过 `Capability -> Portal` 被其他 `Scope` 触发任务，驱动其内部 `Process` 与后续 `syscall` 推进）。
 
-补充约束：`LaunchRef` 是执行入口返回的技术引用类型，用于后续 `launch` 链接与生命周期治理；该命名不引入新的 scope 概念。
+### 1.4 执行入口能力视图与依赖方向
 
-### 1.4 Process 与 Call 信息
+执行入口能力视图由 executor 基于 `Scope` 派生：
+
+- `ExecutionScopeRoot`：仅具备 `launch` 能力，不具备 `terminate` 能力。
+- `ExecutionScope`：成对具备 `launch + terminate` 能力。
+
+依赖方向固定为：`executor` 建立在 `Scope/Plan/Syscall` 等基础语义之上，`syscalls/contracts` 不反向依赖 `executor`。
+
+### 1.5 Process 与 Call 信息
 
 `Process` 是 `Plan` 的动态实例。
 
@@ -46,15 +53,15 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `call = { method: string, args: any[] }`
 
-### 1.5 Processor 与 EventQueue
+### 1.6 Processor 与 EventQueue
 
 `Processor` 是系统中唯一的逻辑原子执行权令牌，`EventQueue` 是微内核内部队列，用于存放可运行的 `Process`。
 
-### 1.6 Portal、Capability、Sink、PostFn
+### 1.7 Portal、Capability、Sink、PostFn
 
-`Portal` 是 `Scope` 所拥有的入口映射（`{ methodName: Blueprint<any> }`）。`Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`。具备 `Portal + Capability` 投放面的 `Scope` 在角色上属于 `PortalScope`。`Sink` 是 `Scope` 的 `IngressScope` 通道（FIFO 值缓冲），`PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `IngressScope`。
+`Portal` 是 `Scope` 所拥有的入口映射（`{ methodName: Blueprint<any> }`）。`Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`。具备 `Portal + Capability` 投放面的 `Scope` 在角色上属于 `PortalScope`。`Sink` 是 `Scope` 的 `IngressScope` 通道（FIFO 值缓冲），`PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `IngressScope`。`IngressScope` 语义只覆盖该输入通道与 `post` 投递配对，不覆盖 `terminate` 生命周期控制。
 
-### 1.7 Limbo 与孤儿 Scope
+### 1.8 Limbo 与孤儿 Scope
 
 系统包含一个特殊 `Scope`：`Limbo`。
 
@@ -166,6 +173,8 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ## 5. Syscalls
 
+本节仅描述 syscall 协议与效果，不展开执行入口能力语义。
+
 可见性规则：
 
 以 `ProcessId` 为目标的操作要求目标 `Process` 属于调用方所在 `Scope`。`Spawn` 返回的 `ScopeId` 对调用方可见。目标 `ScopeId` 若不对调用方可见，则相关操作失败。
@@ -181,7 +190,6 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
   - 创建子 `Scope`：`S'`
   - 创建根 `Process`：`P'`，其初始 `Plan = blueprint()`
   - 返回 `PostFn`（绑定 `S'.Sink`）
-  - `S'` 默认仅作为结构对象创建；是否可被执行入口复用为 `LaunchRef` 取决于创建路径（syscall `spawn` 不自动授予该引用能力）
 - `Terminating`：调用失败
 
 `Spawn` 扩展参数（如 `options`）与返回能力令牌（如 `capability`）当前不暴露，仍属设计待定项。

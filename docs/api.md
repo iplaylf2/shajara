@@ -14,7 +14,7 @@
 
 ### 1.3 宿主 API 的作用域绑定方式
 
-`run` 与 `createScope` 属于 root 锚定入口，其运行作用域挂在全局 `root scope` 下。在 `blueprint/plan` 中通过 `yield*` 使用的 API 属于上下文敏感入口，作用域归属由当前执行上下文决定；若该入口创建作用域，则新作用域附着在当前执行上下文所在分支。
+`run` 与 `createScope` 属于 root 锚定入口，其运行作用域挂在全局 `root scope` 下。在 `blueprint/plan` 中通过 `yield*` 使用的 API 属于上下文敏感入口，作用域归属由当前执行上下文决定。
 
 ## 2. 用户侧计算单元
 
@@ -34,11 +34,11 @@
 
 ### 3.3 sleep
 
-`sleep(milliseconds): RuntimePlan<void>`，用于等待一段宿主时间。runtime 内部通过宿主投递与 `receive` 等待配对完成挂起与唤醒，`sleep` 对外不暴露输入读取细节。
+`sleep(milliseconds): RuntimePlan<void>`，用于等待一段宿主时间。
 
 ### 3.4 until
 
-`yield* until(thunk)` 接受一个 promise thunk，并等待其完成后返回结果值（reject 按异常传播）。`until` 属于上下文敏感宿主入口，内部通过宿主投递与 `receive` 等待配对完成结算。
+`yield* until(thunk)` 接受一个 promise thunk，并等待其完成后返回结果值（reject 按异常传播）。`until` 属于上下文敏感宿主入口。
 
 ### 3.5 createScope
 
@@ -72,7 +72,7 @@
 
 ## 5. 使用约束
 
-用户侧通过 `yield* 原语(...)` 进行交互与编排。原语调用后直接得到可 `yield*` 的 `RuntimePlan`，不使用 `yield* 原语(...)()` 形式。用户侧不直接接触内核契约细节，宿主输入投递经 runtime 内部适配层完成。用户侧可观察的生命周期粒度是 `Scope`，不是 `Process`；编排层通过 `spawn` 句柄配合 `join` 等待分支收敛，不透出底层 scope 结构字段。编排层暂不暴露输入读取原语（如 `receive`）。generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播，不通过返回值编码失败态。`createScope` 属于用户编排 API（非 primitives），`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理。
+用户侧通过 `yield* 原语(...)` 进行交互与编排。原语调用后直接得到可 `yield*` 的 `RuntimePlan`，不使用 `yield* 原语(...)()` 形式。用户侧不直接接触内核契约细节。用户侧可观察的生命周期粒度是 `Scope`，不是 `Process`；编排层通过 `spawn` 句柄配合 `join` 等待分支收敛，不透出底层 scope 结构字段。编排层暂不暴露输入读取原语（如 `receive`）。generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播，不通过返回值编码失败态。`createScope` 属于用户编排 API（非 primitives），`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理。
 
 ## 6. 相关文档
 

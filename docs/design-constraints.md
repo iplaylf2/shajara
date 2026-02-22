@@ -11,17 +11,17 @@
 
 `@khora/kernel` 承载 GADT 契约表达（如 `Plan`、`Syscall` 与类型化续延）。`@khora/runtime` 是封装层，负责协议转换与宿主边界，不把 generator 细节下沉到 kernel。桥接逻辑仅在 runtime 内部存在，不作为 example 的直接依赖。`Impure.then` 仅承接 syscall 成功值；可恢复业务失败是否以带内值表达由具体 syscall 语义决定，不在 `Plan` 层统一强制二元包裹。
 
-边界引用类型（如 `RootScopeRef`、`LaunchRef`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
+边界引用类型（如 `ExecutionScopeRoot`、`ExecutionScope`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
 
-作用域语义分层固定为：统一 `Scope` 对象与角色分层（`SchedulerScope` / `ReaperScope` / `IngressScope` / `PortalScope`）。角色语义定义以 `docs/semantics.md` 为单源，其他文档只按各自职责引用，不重复展开定义。
+作用域语义与执行入口能力语义定义以 `docs/semantics.md` 为单源，其他文档只按职责引用，不重复展开定义。
 
-作用域引用约束固定为：`ScopeRef` 作为共享作用域引用基类型定义在 `packages/kernel/src/contracts/scope.ts`；`RootScopeRef` 与 `LaunchRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。`syscalls` 与 `contracts` 不反向依赖 `executor` 承载共同约束类型。
+作用域引用约束固定为：`ScopeRef` 作为共享作用域引用基类型定义在 `packages/kernel/src/contracts/scope.ts`；`ExecutionScopeRoot` 与 `ExecutionScope` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 
-执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值；`launch` 接受 `RootScopeRef | LaunchRef` 并返回 `LaunchHandle<T>`（含 `LaunchHandle<never>`）；`post` 的目标类型为 `ScopeRef`，`terminate` 的目标类型为 `LaunchRef`。`LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`；`LaunchResult<T>` 采用三态 sum type（`success | failure | interruption`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
+依赖方向约束固定为：`executor -> contracts/syscalls`。`syscalls/contracts` 不反向依赖 `executor` 承载共同约束类型。
 
-职责边界固定为：`LaunchRef` 主要承载 launch 链接与生命周期治理；输入投递语义归属 `IngressScope`（`Sink/PostFn`），不由 `LaunchRef` 定义。
+执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值（`ExecutionScopeRoot`）；`launch` 接受 `ExecutionScopeRoot | ExecutionScope` 并返回 `LaunchHandle<T>`（含 `LaunchHandle<never>`）；`post` 的目标类型为 `ScopeRef`，`terminate` 的目标类型为 `ExecutionScope`。`LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`；`LaunchResult<T>` 采用三态 sum type（`success | failure | interruption`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
 
-作用域与执行器解耦约束固定为：`Scope` 是语义对象，不以内核执行器实现形态命名。设计允许存在多个 executor 实例，只要 `ScopeRef`/`LaunchRef` 的身份与可见性规则保持一致。
+作用域与执行器解耦约束固定为：`Scope` 是语义对象，不以内核执行器实现形态命名。设计允许存在多个 executor 实例，只要 `ScopeRef`/`ExecutionScope` 的身份与可见性规则保持一致。
 
 术语方向固定如下：`lift` 表示 `kernel -> runtime` 适配，`lower` 表示 `runtime -> kernel` 适配。“上/下”按语义层级定义，kernel 是执行语义单源，runtime 是编排表达层。
 
