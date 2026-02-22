@@ -1,10 +1,10 @@
 import type {
+  ExecutionScope,
+  ExecutionScopeRoot,
   Executor,
   LaunchHandle,
-  LaunchRef,
   LaunchResult,
   LaunchState,
-  RootScopeRef,
 } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { RuntimeScopeFailedError } from "#src/errors/runtime-scope-failed";
@@ -20,7 +20,7 @@ export interface StatefulPromise<ReturnValue> extends PromiseLike<ReturnValue> {
 }
 
 export interface RuntimeLaunchResult<ReturnValue> {
-  readonly scope: LaunchRef;
+  readonly scope: ExecutionScope;
   readonly settled: StatefulPromise<ReturnValue>;
 }
 
@@ -61,7 +61,7 @@ function toStatefulPromise<ReturnValue>(
 
 export function runtimeLaunch<ReturnValue>(
   executor: Executor,
-  scope: RootScopeRef | LaunchRef,
+  scope: ExecutionScopeRoot | ExecutionScope,
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
   options?: RunOptions,
 ): RuntimeLaunchResult<ReturnValue> {

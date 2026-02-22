@@ -5,11 +5,11 @@ import { notImplemented } from "./internal/not-implemented";
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
 const LAUNCH_REF_TOKEN: unique symbol = Symbol("launch-ref");
 
-export interface RootScopeRef extends ScopeRef {
+export interface ExecutionScopeRoot extends ScopeRef {
   readonly [ROOT_SCOPE_REF_TOKEN]: "root-scope-ref";
 }
 
-export interface LaunchRef extends ScopeRef {
+export interface ExecutionScope extends ScopeRef {
   readonly [LAUNCH_REF_TOKEN]: "launch-ref";
 }
 
@@ -29,7 +29,7 @@ export interface LaunchFuture<ReturnValue> {
 }
 
 export interface LaunchHandle<ReturnValue = void> {
-  readonly ref: LaunchRef;
+  readonly ref: ExecutionScope;
   readonly result: LaunchFuture<ReturnValue>;
   state(): LaunchState;
 }
@@ -38,12 +38,12 @@ export interface Executor {
   /**
    * Global root scope anchor.
    */
-  readonly rootScope: RootScopeRef;
+  readonly rootScope: ExecutionScopeRoot;
   /**
    * Launch a blueprint under the given scope.
    */
   launch<ReturnValue>(
-    scope: RootScopeRef | LaunchRef,
+    scope: ExecutionScopeRoot | ExecutionScope,
     blueprint: Blueprint<ReturnValue>,
   ): LaunchHandle<ReturnValue>;
   /**
@@ -53,7 +53,7 @@ export interface Executor {
   /**
    * Terminate a host/runtime-controllable scope.
    */
-  terminate(scope: LaunchRef): void;
+  terminate(scope: ExecutionScope): void;
 }
 
 export function ensureExecutor(): Executor {
