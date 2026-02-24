@@ -9,7 +9,7 @@ export type RuntimeResumableErrorHandler<CaughtValue> = (error: Error) => Runtim
 
 function scopedKernelPrimitive<ReturnValue, CaughtValue = never>(
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
-  onResumableError?: RuntimeResumableErrorHandler<CaughtValue> | undefined,
+  onResumableError?: RuntimeResumableErrorHandler<CaughtValue>,
 ): Plan<ReturnValue | CaughtValue> {
   if (!onResumableError) {
     return kernelScoped<ReturnValue, CaughtValue>(lowerPlan(runtimeBlueprint()));
@@ -18,14 +18,13 @@ function scopedKernelPrimitive<ReturnValue, CaughtValue = never>(
   const kernelOnResumableError: ResumableErrorHandler<CaughtValue> = (error: Error) =>
     lowerPlan(onResumableError(error));
 
-  return kernelScoped<ReturnValue, CaughtValue>(
-    lowerPlan(runtimeBlueprint()),
-    kernelOnResumableError,
-  );
+  return kernelScoped<ReturnValue, CaughtValue>(lowerPlan(runtimeBlueprint()), {
+    onResumableError: kernelOnResumableError,
+  });
 }
 
 export const scoped = <ReturnValue, CaughtValue = never>(
   blueprint: RuntimeBlueprint<ReturnValue>,
-  onResumableError?: RuntimeResumableErrorHandler<CaughtValue> | undefined,
+  onResumableError?: RuntimeResumableErrorHandler<CaughtValue>,
 ): RuntimePlan<ReturnValue | CaughtValue> =>
   liftPlan(scopedKernelPrimitive(blueprint, onResumableError));

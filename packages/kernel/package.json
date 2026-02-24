@@ -16,6 +16,11 @@
       "types": "./dist/primitives/index.d.ts",
       "import": "./dist/primitives.js",
       "require": "./dist/primitives.cjs"
+    },
+    "./primitives-kit": {
+      "types": "./dist/primitives-kit/index.d.ts",
+      "import": "./dist/primitives-kit.js",
+      "require": "./dist/primitives-kit.cjs"
     }
   },
   "scripts": {
