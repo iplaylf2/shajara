@@ -1,6 +1,6 @@
 import type {
-  ExecutionScope,
-  ExecutionScopeRoot,
+  ExecutionScopeRef,
+  ExecutionScopeRootRef,
   Executor,
   LaunchHandle,
   LaunchResult,
@@ -20,7 +20,7 @@ export interface StatefulPromise<ReturnValue> extends PromiseLike<ReturnValue> {
 }
 
 export interface RuntimeLaunchResult<ReturnValue> {
-  readonly scope: ExecutionScope;
+  readonly scope: ExecutionScopeRef;
   readonly settled: StatefulPromise<ReturnValue>;
 }
 
@@ -61,7 +61,7 @@ function toStatefulPromise<ReturnValue>(
 
 export function runtimeLaunch<ReturnValue>(
   executor: Executor,
-  scope: ExecutionScopeRoot | ExecutionScope,
+  scope: ExecutionScopeRootRef | ExecutionScopeRef,
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
   options?: RunOptions,
 ): RuntimeLaunchResult<ReturnValue> {

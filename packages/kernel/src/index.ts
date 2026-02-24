@@ -2,8 +2,8 @@ export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./contracts/plan";
 
 export { ensureExecutor } from "./executor";
 export type {
-  ExecutionScope,
-  ExecutionScopeRoot,
+  ExecutionScopeRef,
+  ExecutionScopeRootRef,
   Executor,
   LaunchFuture,
   LaunchHandle,

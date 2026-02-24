@@ -42,6 +42,8 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - `ExecutionScopeRoot`：仅具备 `launch` 能力，不具备 `terminate` 能力。
 - `ExecutionScope`：成对具备 `launch + terminate` 能力。
 
+代码契约中的对应句柄类型名为 `ExecutionScopeRootRef` 与 `ExecutionScopeRef`。
+
 依赖方向固定为：`executor` 建立在 `Scope/Plan/Syscall` 等基础语义之上，`syscalls/contracts` 不反向依赖 `executor`。
 
 ### 1.5 Process 与 Call 信息

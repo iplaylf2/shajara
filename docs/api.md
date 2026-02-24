@@ -50,11 +50,11 @@
 
 ### 4.1 并发构造原语
 
-- `spawn` 创建子 `Scope` 并在其中引入并行分支。
+- `spawn(blueprint, spec?)` 创建子 `Scope` 并在其中引入并行分支；未提供 `spec` 时采用默认编排角色。`spec` 由 `@khora/kernel/primitives-kit` 的角色工厂生成。
 - `resource` 创建资源作用域；调用方等待 `provide(value)` 的首个值作为返回，资源作用域在 `provide` 后继续挂起并等待父 scope 回收。
 - `all` 聚合等待多个分支。
 - `race` 选择最先完成者，并触发其余分支收敛。
-- `scoped` 创建子 `Scope` 并立即等待其收敛；第二参数 `onResumableError` 是捕获 handler，不是 `scoped` 自身异常兜底。
+- `scoped(blueprint, options?)` 创建子 `Scope` 并立即等待其收敛；`options` 可包含 `spec` 与 `onResumableError`。`onResumableError` 是 `resumable` 路径捕获 handler，不是 `scoped` 自身异常兜底。
 - `resumable` 在 `scoped` body 中声明可恢复边界；只有被 `resumable` 标记的子孙作用域抛出的异常会进入祖先 `scoped` 的 `onResumableError` 路径。
 
 ### 4.2 基础原语

@@ -26,12 +26,13 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 `Scope` 树锚点由 `kernel` 维护。runtime 通过执行入口消费 `rootScope` 锚点并提交 `launch`；`root scope` 不作为业务收敛目标，不参与常规清理退出流程；`limbo scope` 作为特殊子作用域承接被结构性修剪后的孤儿子树。
 
-运行时边界按统一 `Scope` 对象消费作用域：
+运行时边界按统一 `Scope` 对象消费作用域（角色名与句柄名分离：角色用 `*Scope`，句柄用 `*Ref`）：
 
 - `ScopeRef`：结构层引用，不承诺宿主控制能力。
+- `IngressScopeRef`：可接收 `post` 输入投递的引用能力。
 - `SpawnRef`：编排侧子作用域引用。
-- `ExecutionScopeRoot`：执行入口 root 锚点引用。
-- `ExecutionScope`：执行入口 launch 返回引用。
+- `ExecutionScopeRootRef`：执行入口 root 锚点引用。
+- `ExecutionScopeRef`：执行入口 launch 返回引用。
 
 运行时控制面统一使用 `*Ref`。
 
@@ -39,11 +40,13 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 7. 边界适配协议
 
-边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；成功响应推进走 `then`，关闭推进走 `terminate`。宿主输入投递通过执行入口 `post` 注入，编排侧等待通过 `receive` 配对收敛。
+边界层承接宿主 API 与用户侧编排表达，并把入口调用协议映射到 `kernel` 推进协议。用户侧以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。原语在 `kernel` 侧构造 `Plan<T>`，runtime 侧通过 `liftPlan` 提升为 `RuntimePlan<T>` 供 `yield*` 消费；跨包适配以 `lowerPlan` 为主入口。`run/createScope` 把降解后的蓝图提交到 `kernel` 执行入口；成功响应推进走 `then`，关闭推进走 `terminate`。
 
-`self/spawn/join` 涉及的 `SelfDescriptor/SpawnRef/ScopeRef/ExecutionScopeRoot/ExecutionScope` 等边界类型由 `kernel` 统一定义并导出；runtime 不再定义同语义包装类型，只负责 `Plan <-> RuntimePlan` 的形态适配与宿主 API 组合。
+宿主输入投递统一通过执行入口 `post` 注入，且目标能力固定为 `IngressScopeRef`；编排侧等待通过 `receive` 配对收敛。`action/sleep/until` 这类宿主桥接操作通过 `spawn/scoped` 的可选 `spec` 把目标作用域声明为 ingress 角色，再在 runtime 内部完成局部类型收敛，不把该收敛约束暴露为用户侧 API 负担。
 
-runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launch`、`RuntimeBlueprint -> Plan` 降解、`LaunchResult<T>` 到 Promise 语义收敛，以及可选 `AbortSignal` 到 `terminate` 的映射。收敛后返回 `StatefulPromise<T>`（`PromiseLike<T> + state()`）并暴露被启动作用域的 `ExecutionScope`。其中 `interruption` 映射为 runtime 侧中断异常，`failure` 映射为 runtime 侧失败异常。
+`self/spawn/join` 涉及的 `SelfDescriptor/SpawnRef/ScopeRef/IngressScopeRef/ExecutionScopeRootRef/ExecutionScopeRef` 等边界类型由 `kernel` 统一定义并导出；runtime 不再定义同语义包装类型，只负责 `Plan <-> RuntimePlan` 的形态适配与宿主 API 组合。
+
+runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launch`、`RuntimeBlueprint -> Plan` 降解、`LaunchResult<T>` 到 Promise 语义收敛，以及可选 `AbortSignal` 到 `terminate` 的映射。收敛后返回 `StatefulPromise<T>`（`PromiseLike<T> + state()`）并暴露被启动作用域的 `ExecutionScopeRef`。其中 `interruption` 映射为 runtime 侧中断异常，`failure` 映射为 runtime 侧失败异常。
 
 ## 8. 术语与方向约束
 
