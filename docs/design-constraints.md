@@ -15,6 +15,7 @@
 边界引用类型（如 `ExecutionScopeRoot`、`ExecutionScope`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
 
 作用域语义与执行入口能力语义定义以 `docs/semantics.md` 为单源，其他文档只按职责引用，不重复展开定义。
+作用域角色可创建性约束固定为：当前角色集合包括 `StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope`、`ExecutionScope`、`LimboScope`；其中 syscall 可创建角色包括 `StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope`，`ExecutionScope` 与 `LimboScope` 属于系统语义保留角色，不作为 syscall 创建目标。被修剪子树根进入 `InLimbo` 状态，但不成为新的 `LimboScope`。
 
 作用域引用约束固定为：`ScopeRef` 作为共享作用域引用基类型定义在 `packages/kernel/src/contracts/scope.ts`；`ExecutionScopeRoot` 与 `ExecutionScope` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 

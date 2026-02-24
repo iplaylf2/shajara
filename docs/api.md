@@ -72,7 +72,7 @@
 
 ## 5. 使用约束
 
-用户侧通过 `yield* 原语(...)` 进行交互与编排。原语调用后直接得到可 `yield*` 的 `RuntimePlan`，不使用 `yield* 原语(...)()` 形式。用户侧不直接接触内核契约细节。用户侧可观察的生命周期粒度是 `Scope`，不是 `Process`；编排层通过 `spawn` 句柄配合 `join` 等待分支收敛，不透出底层 scope 结构字段。编排层暂不暴露输入读取原语（如 `receive`）。generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播，不通过返回值编码失败态。控制面契约统一以 `*Ref` 表达能力句柄；`*Id` 若未来出现，只用于观测，不进入控制 API。`createScope` 属于用户编排 API（非 primitives），`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理。
+用户侧通过 `yield* 原语(...)` 进行交互与编排。原语调用后直接得到可 `yield*` 的 `RuntimePlan`，不使用 `yield* 原语(...)()` 形式。用户侧不直接接触内核契约细节。用户侧可观察的生命周期粒度是 `Scope`，不是 `Process`；编排层通过 `spawn` 句柄配合 `join` 等待分支收敛，不透出底层 scope 结构字段。编排层暂不暴露输入读取原语（如 `receive`）。generator 侧只通过正常返回值表达成功结果，失败由 runtime 以异常抛出传播，不通过返回值编码失败态。控制面契约统一以 `*Ref` 表达能力句柄。`createScope` 属于用户编排 API（非 primitives），`scope.run` 与 `scope.halt`（含 async dispose）负责宿主侧生命周期治理。
 
 ## 6. 相关文档
 

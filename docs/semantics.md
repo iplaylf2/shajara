@@ -20,19 +20,20 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 1.3 Scope（统一对象与角色分层）
 
-`Scope` 是生命周期、身份与上下文的统一载体。
+`Scope` 是生命周期、身份与上下文的统一载体，承载父子关系、上下文边界与 `Process` 归属。
+每个 `Scope` 都有唯一 `ScopeRef`，且 `Scope` 构成严格树（除根以外每个 `Scope` 恰有一个父 `Scope`）。`ScopeRef` 是控制面引用（capability handle）。
 
-每个 `Scope` 都有唯一 `ScopeRef`，且 `Scope` 构成严格树：除根以外的每个 `Scope` 恰有一个父 `Scope`。
-`ScopeRef` 是控制面引用（capability handle），用于执行与治理相关操作；`id` 若存在仅用于观测，不进入控制面契约。
+当前角色集合：
 
-- `Scope` 作为统一对象，承载身份、父子关系、上下文边界与 `Process` 归属。
+- `StandardScope`：普通编排角色，承载大多数业务流程与默认并发分支。
+- `SchedulerScope`：调度编排角色（`Scheduler` 职责）。
+- `ReaperScope`：终止收敛仲裁角色（`Reaper` 职责）。
+- `IngressScope`：输入通道角色（`Sink/PostFn` 语义）。
+- `PortalScope`：能力投放角色（`Capability -> Portal` 触发任务）。
+- `ExecutionScope`：执行入口能力角色（`launch + terminate` 语义，见 1.4）。
+- `LimboScope`：结构性修剪承接角色（全局单例，见 1.8）。
 
-角色分层：
-
-- `SchedulerScope`：调度编排角色（对应 `Scheduler` 职责）。
-- `ReaperScope`：终止收敛仲裁角色（对应 `Reaper` 职责）。
-- `IngressScope`：宿主或 runtime 输入通道角色（对应 `Sink/PostFn`）；只承载输入投递语义，不承载执行入口生命周期控制语义。
-- `PortalScope`：能力投放角色（通过 `Capability -> Portal` 被其他 `Scope` 触发任务，驱动其内部 `Process` 与后续 `syscall` 推进）。
+创建约束：`StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。
 
 ### 1.4 执行入口能力视图与依赖方向
 
@@ -50,7 +51,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - 每个 `Process` 有唯一 `ProcessRef`
 - 每个 `Process` 自创建起始终属于且仅属于一个 `Scope`
 
-`ProcessRef` 与 `ScopeRef` 一样属于控制面引用；`id` 若存在仅作为日志与追踪用途，不作为 syscall 入参或权限依据。
+`ProcessRef` 与 `ScopeRef` 一样属于控制面引用。
 
 当 `Process` 由入口调用创建时，它可携带不可变的调用信息（当前版本该创建路径待定）：
 
@@ -66,14 +67,14 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 1.8 Limbo 与孤儿 Scope
 
-系统包含一个特殊 `Scope`：`Limbo`。
+系统包含一个特殊 `Scope`：`Limbo`。该节点在全局范围内唯一（`LimboScope` 单例）。
 
 `Limbo` 相关不变量如下：
 
 - 常态下不存在 `Scope` 父子迁移。
 - 仅当最近祖先 `ReaperScope` 在结构性收敛中给出 `Prune` 仲裁时，目标 `Scope` 才会被从原父树断开并挂接到 `Limbo` 之下。
 - 迁移时保持被迁移 `Scope` 的原子树结构：仅变更被迁移子树根节点的父指针，不重排其后代关系。
-- 被迁移 `Scope` 状态变为 `InLimbo`，并作为孤儿子树继续存在于 `Limbo` 之下。
+- 被迁移 `Scope` 状态变为 `InLimbo`，并作为孤儿子树继续存在于 `Limbo` 之下；被迁移对象本身不是 `LimboScope`，仅是挂接到 `LimboScope` 之下的普通 `Scope`。
 
 ---
 
@@ -189,15 +190,15 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 5.1 创建（含待定调用能力）
 
-#### Spawn(blueprint) -> { scopeRef, rootProcessRef, post } [Non-Blocking]
+#### Spawn(blueprint) -> { scopeRef, rootProcessRef } [Non-Blocking]
 
 在调用方 `Scope` 下创建子 `Scope`，并在子 `Scope` 内创建根 `Process`。
+业务场景下，`Spawn` 默认创建 `StandardScope`。
 
 - 前置条件：调用方 `Scope` 为 `Running`
 - 效果：
   - 创建子 `Scope`：`S'`
   - 创建根 `Process`：`P'`，其初始 `Plan = blueprint()`
-  - 返回 `PostFn`（绑定 `S'.Sink`）
 - `Terminating`：调用失败
 
 `Spawn` 扩展参数（如 `options`）与返回能力令牌（如 `capability`）当前不暴露，仍属设计待定项。

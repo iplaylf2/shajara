@@ -33,7 +33,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 - `ExecutionScopeRoot`：执行入口 root 锚点引用。
 - `ExecutionScope`：执行入口 launch 返回引用。
 
-运行时控制面统一使用 `*Ref`；`*Id` 若未来引入，只允许出现在日志、追踪与快照等观测面，不进入执行或治理 API。
+运行时控制面统一使用 `*Ref`。
 
 `Scope` 角色分层与执行入口能力语义定义在 `docs/semantics.md`，runtime 文档不重复展开定义。
 

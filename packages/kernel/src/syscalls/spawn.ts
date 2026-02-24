@@ -11,7 +11,6 @@ export interface SpawnRef<ReturnValue = unknown> extends ScopeRef {
 export interface SpawnDescriptor<ReturnValue, SpawnedRef extends SpawnRef<ReturnValue>> {
   readonly scopeRef: SpawnedRef;
   readonly rootProcessRef: ProcessRef<ReturnValue>;
-  readonly post: <PostedValue>(value: PostedValue) => void;
 }
 
 export interface SpawnSyscall<
