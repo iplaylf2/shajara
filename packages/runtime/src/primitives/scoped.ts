@@ -1,30 +1,52 @@
+import type { ResumableErrorHandler, ScopedOptions } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import type { Plan } from "@khora/kernel";
-import type { ResumableErrorHandler } from "@khora/kernel/primitives";
+import type { ScopeSpec } from "@khora/kernel/primitives-kit";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
+export const scoped = <ReturnValue, CaughtValue = never>(
+  blueprint: RuntimeBlueprint<ReturnValue>,
+  options?: RuntimeScopedOptions<CaughtValue>,
+): RuntimePlan<ReturnValue | CaughtValue> => liftPlan(scopedKernelPrimitive(blueprint, options));
+
 export type RuntimeResumableErrorHandler<CaughtValue> = (error: Error) => RuntimePlan<CaughtValue>;
+export interface RuntimeScopedOptions<CaughtValue> {
+  readonly onResumableError?: RuntimeResumableErrorHandler<CaughtValue>;
+  readonly spec?: ScopeSpec;
+}
 
 function scopedKernelPrimitive<ReturnValue, CaughtValue = never>(
   runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
-  onResumableError?: RuntimeResumableErrorHandler<CaughtValue>,
-): Plan<ReturnValue | CaughtValue> {
-  if (!onResumableError) {
-    return kernelScoped<ReturnValue, CaughtValue>(lowerPlan(runtimeBlueprint()));
-  }
-
-  const kernelOnResumableError: ResumableErrorHandler<CaughtValue> = (error: Error) =>
-    lowerPlan(onResumableError(error));
-
-  return kernelScoped<ReturnValue, CaughtValue>(lowerPlan(runtimeBlueprint()), {
-    onResumableError: kernelOnResumableError,
-  });
+  options?: RuntimeScopedOptions<CaughtValue>,
+) {
+  const plan = lowerPlan(runtimeBlueprint());
+  const kernelOnResumableError = toKernelOnResumableError(options?.onResumableError);
+  const kernelOptions = toKernelScopedOptions(options?.spec, kernelOnResumableError);
+  return kernelScoped<ReturnValue, CaughtValue>(plan, kernelOptions);
 }
 
-export const scoped = <ReturnValue, CaughtValue = never>(
-  blueprint: RuntimeBlueprint<ReturnValue>,
-  onResumableError?: RuntimeResumableErrorHandler<CaughtValue>,
-): RuntimePlan<ReturnValue | CaughtValue> =>
-  liftPlan(scopedKernelPrimitive(blueprint, onResumableError));
+function toKernelOnResumableError<CaughtValue>(
+  runtimeOnResumableError: RuntimeResumableErrorHandler<CaughtValue> | undefined,
+): ResumableErrorHandler<CaughtValue> | undefined {
+  if (!runtimeOnResumableError) {
+    return;
+  }
+  return (error: Error) => lowerPlan(runtimeOnResumableError(error));
+}
+
+function toKernelScopedOptions<CaughtValue>(
+  spec: RuntimeScopedOptions<CaughtValue>["spec"],
+  onResumableError: ResumableErrorHandler<CaughtValue> | undefined,
+): ScopedOptions<CaughtValue> {
+  if (spec && onResumableError) {
+    return { onResumableError, spec };
+  }
+  if (spec) {
+    return { spec };
+  }
+  if (onResumableError) {
+    return { onResumableError };
+  }
+  return {};
+}

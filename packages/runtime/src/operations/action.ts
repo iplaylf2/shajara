@@ -1,11 +1,12 @@
+import type { IngressScopeRef, SpawnRef } from "@khora/kernel";
 import type {
   RejectedSettlement,
   ResolvedSettlement,
   Settlement,
 } from "#src/operations-kit/settlement";
 import type { RuntimePlan } from "#src/contracts";
-import type { SpawnRef } from "@khora/kernel";
 import { ensureExecutor } from "@khora/kernel";
+import { ingressScopeSpec } from "@khora/kernel/primitives-kit";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { spawn } from "#src/primitives/spawn";
@@ -25,15 +26,21 @@ export function* action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> 
       case "rejected":
         throw settlement.reason;
     }
-  });
+  }, ingressScopeSpec());
   const executor = ensureExecutor();
 
   return {
     reject(reason: unknown): void {
-      executor.post(scope, { reason, status: "rejected" } satisfies RejectedSettlement);
+      executor.post(scope as IngressScopeRef, {
+        reason,
+        status: "rejected",
+      } satisfies RejectedSettlement);
     },
     resolve(value: ReturnValue): void {
-      executor.post(scope, { status: "resolved", value } satisfies ResolvedSettlement<ReturnValue>);
+      executor.post(scope as IngressScopeRef, {
+        status: "resolved",
+        value,
+      } satisfies ResolvedSettlement<ReturnValue>);
     },
     scope,
   };

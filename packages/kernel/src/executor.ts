@@ -1,5 +1,5 @@
+import type { IngressScopeRef, ScopeRef } from "./contracts/scope";
 import type { Blueprint } from "./contracts/plan";
-import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
@@ -49,7 +49,7 @@ export interface Executor {
   /**
    * Post an input value into the target runtime ingress channel.
    */
-  post<PostedValue>(scope: ScopeRef, value: PostedValue): void;
+  post<PostedValue>(scope: IngressScopeRef, value: PostedValue): void;
   /**
    * Terminate a host/runtime-controllable scope.
    */

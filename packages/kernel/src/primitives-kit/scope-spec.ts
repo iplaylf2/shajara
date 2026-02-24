@@ -1,4 +1,5 @@
 export type ScopeRole = "standard" | "scheduler" | "reaper" | "ingress" | "portal";
+export type SpawnableScopeRole = ScopeRole;
 
 const SCOPE_SPEC_TOKEN: unique symbol = Symbol("scope-spec");
 

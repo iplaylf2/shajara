@@ -12,6 +12,7 @@ export type {
   ReaperScopeSpecOptions,
   SchedulerScopeSpecOptions,
   ScopeRole,
+  SpawnableScopeRole,
   ScopeSpec,
   StandardScopeSpecOptions,
 } from "./scope-spec";

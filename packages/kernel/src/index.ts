@@ -10,7 +10,7 @@ export type {
   LaunchResult,
   LaunchState,
 } from "./executor";
-export type { ScopeRef } from "./contracts/scope";
+export type { IngressScopeRef, ScopeRef } from "./contracts/scope";
 
 export {
   awaitProcess,
