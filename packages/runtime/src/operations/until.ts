@@ -1,3 +1,4 @@
+import { scoped, self } from "#src/primitives";
 import type { IngressScopeRef } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit/settlement";
@@ -5,8 +6,6 @@ import { ensureExecutor } from "@khora/kernel";
 import { ingressScopeSpec } from "@khora/kernel/primitives-kit";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
-import { scoped } from "#src/primitives/scoped";
-import { self } from "#src/primitives/self";
 
 export type RuntimeUntilThunk<ReturnValue> = () => PromiseLike<ReturnValue>;
 
