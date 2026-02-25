@@ -18,11 +18,17 @@
 
 命名约束固定为：语义角色使用 `*Scope`（不带 `Ref`），控制面能力句柄使用 `*Ref`。
 
+结果类型后缀约束固定为：
+
+- `*Return` 仅用于“调用返回载荷”语义（call-return payload），即某个调用/协议在返回通道中的值形状。
+- `*Exit` 仅用于“生命周期终态”语义（lifecycle termination），即实体如何结束（如 `completed/failed/terminated`）。
+- 这两类后缀不可混用：生命周期终态类型不得命名为 `*Return`，普通调用返回载荷类型不得命名为 `*Exit`。
+
 作用域引用约束固定为：`ScopeRef` 与 `ScopeSpec` 基础类型定义在 `packages/kernel/src/contracts/scope.ts`；`IngressScopeRef` 定义在 `packages/kernel/src/scopes/ingress.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 
 依赖方向约束固定为：`executor -> contracts/syscalls`。`syscalls/contracts` 不反向依赖 `executor` 承载共同约束类型。
 
-执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值（`ExecutionScopeRootRef`）；`launch` 接受 `ExecutionScopeRootRef | ExecutionScopeRef` 并返回 `LaunchHandle<T>`（含 `LaunchHandle<never>`）；`post` 的目标类型为 `IngressScopeRef`，`terminate` 的目标类型为 `ExecutionScopeRef`。`LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`；`LaunchResult<T>` 采用三态 sum type（`success | failure | interruption`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
+执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值（`ExecutionScopeRootRef`）；`launch` 接受 `ExecutionScopeRootRef | ExecutionScopeRef` 并返回 `LaunchHandle<T>`（含 `LaunchHandle<never>`）；`post` 的目标类型为 `IngressScopeRef`，`terminate` 的目标类型为 `ExecutionScopeRef`。`LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`；`LaunchResult<T>` 采用三态 sum type（`success | failure | terminated`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
 
 作用域与执行器解耦约束固定为：`Scope` 是语义对象，不以内核执行器实现形态命名。设计允许存在多个 executor 实例，只要 `ScopeRef`/`ExecutionScopeRef` 的身份与可见性规则保持一致。
 

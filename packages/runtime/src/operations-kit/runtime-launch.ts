@@ -8,7 +8,7 @@ import type {
 } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { RuntimeScopeFailedError } from "#src/errors/runtime-scope-failed";
-import { RuntimeScopeInterruptedError } from "#src/errors/runtime-scope-interrupted";
+import { RuntimeScopeTerminatedError } from "#src/errors/runtime-scope-terminated";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
 export interface RunOptions {
@@ -34,8 +34,8 @@ function asSettledPromise<ReturnValue>(execution: LaunchHandle<ReturnValue>): Pr
         case "failure":
           reject(new RuntimeScopeFailedError(result.reason));
           break;
-        case "interruption":
-          reject(new RuntimeScopeInterruptedError());
+        case "terminated":
+          reject(new RuntimeScopeTerminatedError());
           break;
       }
     });

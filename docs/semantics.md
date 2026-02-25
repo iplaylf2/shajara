@@ -24,6 +24,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Fault` 为带外终止事件。发生 `Fault` 时，目标 `Process` 立即退出，后续 continuation 不再执行。
 错误编码与失败值形状由具体 syscall 语义定义。
+`Failed(fault)` 的传播语义按 `Scope` 父链进行：当 `Process` 在某个 `Scope` 内以 `Failed(fault)` 退出时，该失败事件按祖先链向上传播，行为等价于“按 `Scope` 边界做异常展开”。
 
 ### 1.3 Scope（统一对象与角色分层）
 
@@ -116,51 +117,69 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ## 3. 收敛与终止
 
-### 3.1 Process 退出形态
+### 3.1 终态模型（Process 与 Scope）
 
-`Process` 退出后处于以下形态之一：
+本系统的终态语义按结果建模，而不是按过程词建模。`Process` 与 `Scope` 都只有三种互斥终态：
 
-- `Completed(value)`
-- `Failed(fault)`
-- `Terminated`
+- `Completed`：成功收敛
+- `Terminated`：被外部终止级联打断
+- `Failed`：以 fault 失败
 
-`AwaitProcess` 以该形态作为返回值。
+同一个实体不会同时属于以上多个终态。
 
-### 3.2 Scope 状态
+### 3.2 Scope 过程态（phase）
+
+`Scope` 运行过程仍需要阶段状态：
 
 - `Running`
-- `Terminating`
+- `Closing`
 - `Exited`
 - `InLimbo`
 
-### 3.3 进入终止与级联
+`Closing` 是过程态，不是终态名。`Scope` 最终终态（`Completed | Terminated | Failed`）在进入 `Closing` 时确定，并在该次收敛流程中保持不变。
 
-`Scope` 进入 `Terminating` 的条件：
+### 3.3 进入 Closing、终态判定与级联
+
+`Scope` 进入 `Closing` 的触发条件：
 
 - 在该 `Scope` 内执行 `Halt()`
+- 该 `Scope` 内任一 `Process` 以 `Failed(fault)` 退出
+- 该 `Scope` 从后代链路接收到 `Failed(fault)` 传播
 - 从祖先 `Scope` 收到终止级联
 - 该 `Scope` 变为空（不再包含任何 `Process`）
 
-进入 `Terminating` 时，终止级联传播到所有后代 `Scope`。
+终态判定：
+
+- 由本地 `Failed(fault)` 或后代失败传播触发进入 `Closing` 时，该 `Scope` 终态为 `Failed`。
+- 仅由祖先终止级联触发进入 `Closing` 时，该 `Scope` 终态为 `Terminated`。
+- 一旦某个 `Scope` 已确定为 `Failed`，后续收到终止级联不会把其改写为 `Terminated`。
+
+进入 `Closing` 时，终止级联传播到所有后代 `Scope`。
 
 当一个 `Scope` 的所有 `Process` 都退出后，该 `Scope` 进入 `Exited`。
 
-### 3.4 终止门控
+### 3.4 Closing 门控
 
-当调用方所在 `Scope` 为 `Terminating`：
+当调用方所在 `Scope` 为 `Closing`：
 
 - `Spawn / Fork` 会失败
 - 其他 syscalls 按其定义执行
 
 `Invoke` 相关终止门控语义（若未来回归公开 syscall）仍属待定项。
 
-### 3.5 未处理 Fault 触发终止
+### 3.5 Failed 传播与级联
 
-在同一个 `Scope` 中，若某 `Process` 以 `Failed(fault)` 退出，且没有任何 `Process` 通过 `AwaitProcess` 观察到该退出结果，则该 `Scope` 进入 `Terminating`。
+当某 `Process` 以 `Failed(fault)` 退出时，系统按以下顺序处理：
+
+- 该 `Process` 所属 `Scope` 进入 `Closing`，并确定终态为 `Failed`。
+- 该 `Scope` 对其后代 `Scope` 触发终止级联。
+- 失败事件沿该 `Scope` 的祖先链继续传播；传播到的祖先 `Scope` 进入 `Closing`，并确定终态为 `Failed`，随后继续级联。
+
+`AwaitProcess` 对 `Failed(fault)` 的观察仅提供结果可见性，不构成对上述传播与终止流程的拦截。
 
 ### 3.6 结构性收敛：Reaper 与孤儿
 
-当某个 `Scope` 为 `Terminating` 且其终止无法推进到 `Exited` 时，微内核运行其最近祖先 `ReaperScope` 对应的 `Reaper`。语义上该收敛仲裁职责归于 `ReaperScope`，与 `SchedulerScope` 分离。
+当某个 `Scope` 处于 `Closing` 且其终止无法推进到 `Exited` 时，微内核运行其最近祖先 `ReaperScope` 对应的 `Reaper`。语义上该收敛仲裁职责归于 `ReaperScope`，与 `SchedulerScope` 分离。
 
 `Reaper` 通过 syscalls 得到系统观测，并产出一个仲裁决定：
 
@@ -214,7 +233,7 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 - 效果：
   - 创建子 `Scope`：`S'`
   - 创建根 `Process`：`P'`，其初始 `Plan = blueprint()`
-- `Terminating`：调用失败
+- `Closing`：调用失败
 
 `Spawn` 扩展参数（如 `options`）与返回能力令牌（如 `capability`）当前不暴露，仍属设计待定项。
 
@@ -224,7 +243,7 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 
 - 前置条件：调用方 `Scope` 为 `Running`
 - 效果：创建 `Process`：`P'`，`P'.Plan = blueprint()`，`P'` 初始为可运行
-- `Terminating`：调用失败
+- `Closing`：调用失败
 
 #### 创建治理 Scope（调度/裁决）[Non-Blocking]
 
@@ -256,12 +275,13 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
   - 若目标尚未退出，则令其退出为 `Terminated`
   - 释放等待 `AwaitProcess(processRef)` 的阻塞者
 
-#### Halt() -> Fault [Blocking]
+#### Halt(fault?) -> Fault [Blocking]
 
-令调用方 `Scope` 进入 `Terminating`，并令调用方 `Process` 退出为 `Failed(Fault(halt))`。
+令调用方 `Scope` 进入 `Closing`，并令调用方 `Process` 退出为 `Failed(Fault(halt))`。
+`fault` 为可选携带负载：未提供时由执行引擎使用默认 halt fault；提供时由执行引擎将该负载并入 fault 语义。
 
 - 效果：
-  - 调用方 `Scope -> Terminating`
+  - 调用方 `Scope -> Closing`
   - 触发对后代 `Scope` 的终止级联
   - 调用方 `Process` 以 `Fault(halt)` 退出
 
@@ -278,15 +298,20 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
   - `{ kind: "failed", fault }`
   - `{ kind: "terminated" }`
 
+`AwaitProcess` 返回 `failed` 仅表示调用方观察到了退出结果，不改变 `Failed` 已触发的 `Scope` 终止与祖先链传播。
+
 #### AwaitScope(scopeRef) -> { exit } [Blocking]
 
-等待目标 `Scope` 退出或被结构性修剪。
+等待目标 `Scope` 收敛到可观察终态。
 
 - 前置条件：`scopeRef` 对调用方可见
 - 效果：
-  - 若目标为 `Exited`：返回 `{ kind: "exited" }`
-  - 若目标为 `InLimbo`：返回 `{ kind: "pruned_to_limbo" }`
+  - 若目标以成功终态退出：返回 `{ kind: "completed", value }`
+  - 若目标以失败终态退出：返回 `{ kind: "failed", fault }`
+  - 若目标以终止终态退出：返回 `{ kind: "terminated" }`
   - 否则阻塞，目标到达上述状态时恢复并返回
+
+`InLimbo` 属于结构状态，不作为 `AwaitScope` 的直接返回分支暴露；目标若进入 `InLimbo`，其可观察结果仍按 `failed/terminated` 终态收敛。
 
 #### Receive() -> value [Blocking]
 
@@ -326,4 +351,6 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 
 查询目标 `Scope` 状态：
 
-- `Running | Terminating | Exited | InLimbo`
+- `Running | Closing | Exited | InLimbo`
+
+当前 `PollScope` 仅返回 phase，不返回退出原因；退出原因属于 `Scope` 语义状态，但不在该 syscall 的返回形状中暴露。

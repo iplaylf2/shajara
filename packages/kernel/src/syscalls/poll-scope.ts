@@ -1,7 +1,7 @@
 import type { ScopeRef } from "#src/contracts/scope";
 import type { Syscall } from "#src/contracts/syscall";
 
-export type ScopeStatus = "Running" | "Terminating" | "Exited" | "InLimbo";
+export type ScopeStatus = "Running" | "Closing" | "Exited" | "InLimbo";
 
 export interface PollScopeResult {
   readonly status: ScopeStatus;

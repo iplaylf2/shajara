@@ -1,6 +1,7 @@
 import type { Plan } from "#src/contracts/plan";
-import { notImplemented } from "#src/internal/not-implemented";
+import { plan } from "#src/internal/fp/plan";
+import { halt as syscallHalt } from "#src/syscalls";
 
-export function halt(): Plan<never> {
-  return notImplemented("kernel primitive 'halt'");
+export function halt(fault?: unknown): Plan<never> {
+  return plan.liftF(syscallHalt(fault));
 }

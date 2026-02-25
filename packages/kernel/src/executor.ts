@@ -17,7 +17,7 @@ export interface ExecutionScopeRef extends ScopeRef {
 export type LaunchResult<ReturnValue> =
   | { readonly kind: "success"; readonly value: ReturnValue }
   | { readonly kind: "failure"; readonly reason: unknown }
-  | { readonly kind: "interruption" };
+  | { readonly kind: "terminated" };
 export type LaunchState = "open" | "closing" | "closed";
 
 export interface LaunchFuture<ReturnValue> {

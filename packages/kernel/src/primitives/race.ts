@@ -1,4 +1,5 @@
-import type { Plan } from "#src/contracts/plan";
+import type { Blueprint, Plan } from "#src/contracts/plan";
+import type { UnknownArray } from "type-fest";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export interface RaceResult<ReturnValue> {
@@ -6,8 +7,8 @@ export interface RaceResult<ReturnValue> {
   readonly value: ReturnValue;
 }
 
-export function race<ReturnValues extends readonly unknown[]>(_primitives: {
-  readonly [Index in keyof ReturnValues]: Plan<ReturnValues[Index]>;
-}): Plan<RaceResult<ReturnValues[number]>> {
+export function race<BranchReturnValues extends UnknownArray>(_branches: {
+  readonly [Index in keyof BranchReturnValues]: Blueprint<BranchReturnValues[Index]>;
+}): Plan<RaceResult<BranchReturnValues[number]>> {
   return notImplemented("kernel primitive 'race'");
 }
