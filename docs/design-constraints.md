@@ -38,6 +38,8 @@
 
 kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段，不默认承载可重放模板语义。`yield*` 消费的是 `RuntimePlan<T>`。primitive 可由一条或多条底层步骤组成，不假设“一原语 = 一指令”。
 
+kernel primitive 的失败语义约束固定为：实现不得直接依赖宿主 `throw` 作为主要失败通道。primitive 应优先通过显式、可类型化的语义通道表达失败（例如生命周期终态或代数容器），由 runtime 边界决定是否将该失败降解为宿主异常。
+
 `spawn/scoped` 可接收可选 `spec`；`spec` 由 `@khora/kernel/scopes` 的角色工厂生成，不在调用点直接构造固有字面量。该 `spec` 形状属于 primitive 编排策略层，不改写 syscall 基线语义。
 
 ## 4. 目录与结构边界

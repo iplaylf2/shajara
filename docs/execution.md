@@ -2,48 +2,54 @@
 
 ## 1. 当前快照
 
-Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` 执行器实现未落地（`ensureExecutor` 仍为占位实现）；runtime 公开 API、原语桥接与宿主操作形状已形成可接线状态，但端到端运行闭环依赖执行器实现完成。
+Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` 执行器实现未落地（`ensureExecutor` 仍为占位实现）；同时已进入一轮“原语失败通道收敛”重构准备，目标是为下一位 agent 提供明确重构入口与验收边界。
 
 ## 2. 当前现实与证据（Build）
 
-1. 执行入口契约已稳定：`launch` 接受 `ExecutionScopeRootRef | ExecutionScopeRef`，`post` 仅接受 `IngressScopeRef`，`terminate` 仅接受 `ExecutionScopeRef`；结果收敛仍基于 `LaunchResult` 三态（`success | failure | terminated`）。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`。
-2. `kernel` 执行器实现仍未落地：`ensureExecutor()` 当前返回占位实现，导致 `run/createScope` 运行期依赖未满足。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
-3. runtime 桥接主链已接通：`lowerPlan/liftPlan`、`then/terminate` 推进、`all/race` tuple 降解入口均已落地。Evidence: `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/primitives-kit/lower-runtime-blueprints.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/race.ts`。
-4. 宿主操作形状已收敛：`run/createScope/action/sleep/until` 均接入 runtime 收敛协议，`failure/terminated` 分别映射到 runtime 错误类型。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`, `packages/runtime/src/errors`。
-5. scope spec 入口已完成结构重排：基础类型并入 `contracts/scope.ts`，角色条目收敛到 `scopes/*`，共享工厂放入 `scopes-kit/factory.ts`，运行时调用统一使用 `@khora/kernel/scopes`。Evidence: `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/scopes/index.ts`, `packages/kernel/src/scopes/ingress.ts`, `packages/kernel/src/scopes-kit/factory.ts`, `packages/runtime/src/primitives/spawn.ts`, `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/operations/action.ts`。
-6. kernel 计划模型已收敛为 `PurePlan/ImpurePlan` 命名，并将 syscall 返回类型绑定方式收敛为“`Syscall` 基础契约 + syscall 自身 `return` tuple 见证 + `SyscallReturn` 推导”；runtime `Plan <-> RuntimePlan` 适配链已同步该约束。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/syscall.ts`, `packages/kernel/src/syscalls/*.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/contracts.ts`, `apps/example/src/scenarios.ts`。
+1. 执行入口结果词已统一为 `success | failure | terminated`，runtime 收敛链同步到 `RuntimeScopeFailedError / RuntimeScopeTerminatedError`。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`。
+2. `Scope` 过程态名称已统一为 `Closing`，`PollScope` 枚举与语义文档一致，不再使用 `Terminating`。Evidence: `packages/kernel/src/syscalls/poll-scope.ts`, `docs/semantics.md`。
+3. `AwaitScope` 已升级为可观察终态通道（`completed | failed | terminated`），不再暴露 `pruned_to_limbo` 分支。Evidence: `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`。
+4. `all` 原语已改为“协调 scope + 分支 scope”结构，并以 `AwaitScope` 做分支收敛；当前失败路径采用 `halt(fault)` 通知执行引擎。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/syscalls/halt.ts`, `packages/kernel/src/primitives/halt.ts`。
+5. runtime 桥接主链持续可用：`lowerPlan/liftPlan`、`all/race` blueprint lowering、宿主入口收敛类型检查均通过。Evidence: `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/primitives-kit/lower-runtime-blueprints.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/race.ts`。
+6. `kernel` 执行器实现仍未落地：`ensureExecutor()` 当前返回占位实现，端到端运行闭环尚未建立。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 
 ## 3. 相对设计基线增量（仅记录 delta）
 
-### 3.1 delta：scope spec 结构边界收敛
+### 3.1 delta：终态/过程态命名统一完成一轮收敛
 
-Impact: `scope spec` 基础类型与角色条目分离，`scopes` 目录保持“角色集合”语义，边界共享支撑迁至 `scopes-kit`，目录语义更清晰。Evidence: `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/scopes/index.ts`, `packages/kernel/src/scopes-kit/factory.ts`。
+Impact: `terminated` 作为终态词、`Closing` 作为过程态词，跨 kernel/runtime/docs 对齐，降低“过程态误读为终态”的歧义。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `docs/semantics.md`, `docs/runtime.md`, `docs/api.md`。
 
-### 3.2 delta：kernel 子路径命名收敛到 `@khora/kernel/scopes`
+### 3.2 delta：`AwaitScope` 观测语义从“结构状态”收敛到“终态结果”
 
-Impact: 公开入口从单数命名收敛到集合命名，运行时侧调用与文档引用同步到 `@khora/kernel/scopes`。Evidence: `packages/kernel/package.json`, `packages/kernel/vite.config.ts`, `packages/runtime/src/primitives/spawn.ts`, `packages/runtime/src/primitives/scoped.ts`, `docs/api.md`, `docs/design-constraints.md`。
+Impact: `AwaitScopeExit` 现在承载终态结果（`completed/failed/terminated`）；`InLimbo` 仍为结构事实，但不作为该 syscall 的直接返回分支。Evidence: `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`。
 
-### 3.3 delta：Build 主阻塞未变
+### 3.3 delta：`all` 进入“失败通道重构前状态”
 
-Impact: API/桥接/结构治理继续推进，但端到端运行能力仍受 `ensureExecutor` 占位实现阻塞。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
+Impact: `all` 已具备结构化并发骨架（协调 scope），但失败路径仍是“将带内失败提升为 `halt(fault)`”；该点被固定为下一位 agent 的重构入口。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/syscalls/halt.ts`。
 
-### 3.4 delta：Plan/Syscall 类型契约从“syscall 泛型参数”收敛到“返回见证”
+### 3.4 delta：Build 主阻塞未变
 
-Impact: `Syscall` 保持基础对象契约，返回类型在 syscall 条目处显式声明，`then` 续延通过 `SyscallReturn<S>` 推导；`runtime` 适配层与示例代码已按该契约对齐。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/syscall.ts`, `packages/kernel/src/syscalls/*.ts`, `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/contracts.ts`, `apps/example/src/scenarios.ts`。
+Impact: API/桥接/语义命名持续推进，但端到端运行能力仍受 `ensureExecutor` 占位实现阻塞。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 
 ## 4. 当前阶段执行切片（Build）
 
-| Slice                                | Status      | Output                                                                                                        | Evidence                                                                                                                                                                                          |
-| ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1 kernel 执行器实现                 | In Progress | 执行入口类型约束已稳定，执行器实现仍为占位。                                                                  | `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`                                                                                                              |
-| B2 runtime 桥接主链                  | Completed   | `RuntimePlan <-> Plan` 双向桥接与推进协议接通，并已对齐 `PurePlan/ImpurePlan + Syscall return witness` 契约。 | `packages/runtime/src/adapter/plan-lower.ts`, `packages/runtime/src/adapter/plan-lift.ts`, `packages/runtime/src/contracts.ts`, `packages/runtime/src/primitives-kit/lower-runtime-blueprints.ts` |
-| B3 runtime 宿主入口接线              | In Progress | `run/createScope` 已接线到 runtime 收敛入口，运行闭环依赖 B1。                                                | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/kernel/src/executor.ts`           |
-| B4 scope spec 结构重排与入口命名收敛 | Completed   | `contracts/scopes/scopes-kit` 边界分工落地，公开入口收敛到 `@khora/kernel/scopes`。                           | `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/scopes/index.ts`, `packages/kernel/src/scopes-kit/factory.ts`, `packages/kernel/package.json`                                      |
+| Slice                        | Status      | Output                                                                    | Evidence                                                                                                                                            |
+| ---------------------------- | ----------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1 kernel 执行器实现         | In Progress | 执行入口契约稳定，执行器仍为占位实现。                                    | `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`                                                                |
+| B2 终态/过程态命名与契约收敛 | Completed   | `terminated`/`Closing` 命名统一，`AwaitScope` 结果语义统一。              | `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md` |
+| B3 runtime 收敛链同步        | Completed   | runtime 错误类型和 `LaunchResult` 三态对齐。                              | `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`, `docs/runtime.md`               |
+| B4 `all` 结构化并发重排      | In Progress | coordinator scope 模型已落地，失败通道策略仍待重构（下一位 agent 入口）。 | `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/syscalls/halt.ts`                                                                     |
+| B5 runtime 宿主入口闭环      | In Progress | `run/createScope` 类型接线稳定，运行闭环仍依赖 B1。                       | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/kernel/src/executor.ts`                      |
 
 ## 5. 后续方向
 
-Build 阶段继续按 `B1 -> B3 -> Prove` 推进：
+Build 阶段继续按 `B4 -> B1 -> B5 -> Prove` 推进：
 
-1. `B1` 出口条件：`ensureExecutor()` 不再占位，具备可运行的 kernel 执行器实现。
-2. `B3` 出口条件：`run/createScope` 覆盖成功、失败、中断三态的端到端运行。
-3. Prove 入口条件：Build 主链闭环后补充 `terminate`、作用域状态转换与异常传播验证。
+1. `B4`（下一位 agent 优先）
+   出口条件：`all` 的失败语义从“primitive 内策略性转换（当前 `halt(fault)`）”收敛为统一失败通道模型；同类 primitive（至少 `race/join/scoped/resource`）使用同一规则。
+2. `B1`
+   出口条件：`ensureExecutor()` 不再占位，具备可运行的 kernel 执行器实现。
+3. `B5`
+   出口条件：`run/createScope` 覆盖成功、失败、终止三态的端到端运行。
+4. Prove 入口条件
+   Build 主链闭环后补充 `terminate`、作用域状态转换、失败传播与结构性收敛验证。
