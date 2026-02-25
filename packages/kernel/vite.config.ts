@@ -7,7 +7,7 @@ export default defineConfig({
       entry: {
         index: "src/index.ts",
         primitives: "src/primitives/index.ts",
-        "primitives-kit": "src/primitives-kit/index.ts",
+        scopes: "src/scopes/index.ts",
       },
       fileName: (format, entryName) => (format === "es" ? `${entryName}.js` : `${entryName}.cjs`),
       formats: ["es", "cjs"],

@@ -50,7 +50,7 @@
 
 ### 4.1 并发构造原语
 
-- `spawn(blueprint, spec?)` 创建子 `Scope` 并在其中引入并行分支；未提供 `spec` 时采用默认编排角色。`spec` 由 `@khora/kernel/primitives-kit` 的角色工厂生成。
+- `spawn(blueprint, spec?)` 创建子 `Scope` 并在其中引入并行分支；未提供 `spec` 时采用默认编排角色。`spec` 由 `@khora/kernel/scopes` 的角色工厂生成。
 - `resource` 创建资源作用域；调用方等待 `provide(value)` 的首个值作为返回，资源作用域在 `provide` 后继续挂起并等待父 scope 回收。
 - `all` 聚合等待多个分支。
 - `race` 选择最先完成者，并触发其余分支收敛。

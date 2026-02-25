@@ -5,20 +5,20 @@
 ## 1. 文档职责
 
 静态设计文档集合为 `docs/*.md`（不含 `docs/execution.md`），用于描述目标设计与稳定边界。`docs/README.md` 维护静态设计文档集合与 `docs/execution.md` 的职责路由。`docs/execution.md` 是动态执行文档，记录当前进度、未完成项、阶段状态与证据。进度态信息不进入静态设计文档集合，稳定约束不在 `docs/execution.md` 作为主叙述重复。
-静态设计文档不承载项目状态叙述（如“当前阶段”“进行中”“已完成”），仅描述稳定语义与约束。
-`docs/execution.md` 只记录实现现实：代码状态、测试结果、运行行为与阻塞项。文档修订本身不作为阶段完成依据；若文档变更影响实现，应以对应代码/测试/运行证据入账。
+
+静态设计文档不承载项目状态叙述（如“当前阶段”“进行中”“已完成”），仅描述稳定语义与约束。`docs/execution.md` 只记录实现现实：代码状态、测试结果、运行行为与阻塞项。文档修订本身不作为阶段完成依据；若文档变更影响实现，应以对应代码/测试/运行证据入账。
 
 ## 2. kernel 与 runtime 边界
 
 `@khora/kernel` 承载 GADT 契约表达（如 `Plan`、`Syscall` 与类型化续延）。`@khora/runtime` 是封装层，负责协议转换与宿主边界，不把 generator 细节下沉到 kernel。桥接逻辑仅在 runtime 内部存在，不作为 example 的直接依赖。`Impure.then` 仅承接 syscall 成功值；可恢复业务失败是否以带内值表达由具体 syscall 语义决定，不在 `Plan` 层统一强制二元包裹。
 
+作用域角色分层、执行入口能力语义与 syscall 语义定义以 `docs/semantics.md` 为单源；本文件不重复语义正文，只保留跨文档稳定约束。
+
 边界引用类型（如 `ExecutionScopeRootRef`、`ExecutionScopeRef`、`ScopeRef`、`IngressScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
 
-作用域语义与执行入口能力语义定义以 `docs/semantics.md` 为单源，其他文档只按职责引用，不重复展开定义。
-作用域角色可创建性约束固定为：当前角色集合包括 `StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope`、`ExecutionScope`、`LimboScope`；其中 syscall 可创建角色包括 `StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope`，`ExecutionScope` 与 `LimboScope` 属于系统语义保留角色，不作为 syscall 创建目标。被修剪子树根进入 `InLimbo` 状态，但不成为新的 `LimboScope`。
 命名约束固定为：语义角色使用 `*Scope`（不带 `Ref`），控制面能力句柄使用 `*Ref`。
 
-作用域引用约束固定为：`ScopeRef` 作为共享作用域引用基类型定义在 `packages/kernel/src/contracts/scope.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
+作用域引用约束固定为：`ScopeRef` 与 `ScopeSpec` 基础类型定义在 `packages/kernel/src/contracts/scope.ts`；`IngressScopeRef` 定义在 `packages/kernel/src/scopes/ingress.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 
 依赖方向约束固定为：`executor -> contracts/syscalls`。`syscalls/contracts` 不反向依赖 `executor` 承载共同约束类型。
 
@@ -31,17 +31,19 @@
 ## 3. primitive 约束
 
 kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段，不默认承载可重放模板语义。`yield*` 消费的是 `RuntimePlan<T>`。primitive 可由一条或多条底层步骤组成，不假设“一原语 = 一指令”。
-`spawn/scoped` 可接收可选 `spec`；`spec` 由 `@khora/kernel/primitives-kit` 的角色工厂生成，不在调用点直接构造固有字面量。该 `spec` 形状属于 primitive 编排策略层，不改写 syscall 基线语义。
+
+`spawn/scoped` 可接收可选 `spec`；`spec` 由 `@khora/kernel/scopes` 的角色工厂生成，不在调用点直接构造固有字面量。该 `spec` 形状属于 primitive 编排策略层，不改写 syscall 基线语义。
 
 ## 4. 目录与结构边界
 
 `packages/runtime/src/primitives` 是原语集合目录，该目录仅放 `index.ts` 与具体原语文件。`packages/runtime/src/operations` 是宿主操作集合目录，该目录仅放 `index.ts` 与具体 operation 文件；operation 共享支撑代码放在 `packages/runtime/src/operations-kit`。runtime 对外契约类型默认收敛在单文件 `packages/runtime/src/contracts.ts`，避免在无明确增长需求时提前拆目录；边界内部约束类型定义应靠近提出约束的实现位置。runtime 行为支撑代码按职责拆分为独立文件（如 `adapter/plan-lower.ts`、`adapter/plan-lift.ts`），不挂在集合目录下。
 
-`packages/kernel/src/contracts/plan.ts` 是 kernel `Plan/Blueprint` 契约单源。`packages/kernel/src/executor.ts` 仅承载执行入口契约与作用域执行状态约束；与具体 syscall 语义直接绑定的类型（如 `SpawnRef`、`SelfDescriptor`）定义应靠近 `packages/kernel/src/syscalls`。`packages/kernel/src/syscalls` 目录仅承载 syscall 声明文件与 `index.ts`；非 syscall 的共享约束类型放在 `packages/kernel/src/contracts`。kernel 对外导出采用根入口分组导出，不单独暴露 `@khora/kernel/syscalls` 子路径。
+`packages/kernel/src/contracts/plan.ts` 是 kernel `Plan/Blueprint` 契约单源。`packages/kernel/src/contracts/scope.ts` 是 `ScopeRef/ScopeSpec` 基础类型单源；`packages/kernel/src/scopes` 仅承载角色条目，`packages/kernel/src/scopes-kit` 承载该边界共享支撑代码。`packages/kernel/src/executor.ts` 仅承载执行入口契约与作用域执行状态约束；与具体 syscall 语义直接绑定的类型（如 `SpawnRef`、`SelfDescriptor`）定义应靠近 `packages/kernel/src/syscalls`。`packages/kernel/src/syscalls` 目录仅承载 syscall 声明文件与 `index.ts`；非 syscall 的共享约束类型放在 `packages/kernel/src/contracts`。kernel 对外导出采用根入口分组导出，不单独暴露 `@khora/kernel/syscalls` 子路径。
 
 ## 5. runtime 对外表面
 
 runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimeScope`）与公开宿主入口（`run`、`createScope`），但不引导用户直接构造 kernel 层细节。输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
+
 宿主输入投递与等待配对通过 runtime 内部适配完成（`post` 注入与 `receive` 等待），不在 runtime 公开 primitives 表面额外暴露输入读取入口。
 runtime 在宿主输入投递点消费 `IngressScopeRef` 约束；必要的局部类型收敛只允许出现在 runtime 内部适配层，不外溢到用户侧 API。
 

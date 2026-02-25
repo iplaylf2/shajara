@@ -3,7 +3,7 @@ import type { IngressScopeRef } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit/settlement";
 import { ensureExecutor } from "@khora/kernel";
-import { ingressScopeSpec } from "@khora/kernel/primitives-kit";
+import { ingressScopeSpec } from "@khora/kernel/scopes";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 
