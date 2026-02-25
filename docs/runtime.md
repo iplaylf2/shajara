@@ -57,3 +57,5 @@ runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launc
 内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 的成功响应类型由各 syscall 的 `return` tuple 见证表达；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。runtime `contracts` 仅保留 `RuntimePlan/RuntimeBlueprint`，不承载 kernel 语义引用类型定义。对外 API 面定义与使用约束见 `docs/api.md`。
 
 失败通道职责分层固定为：kernel primitive 应优先通过显式、可类型化语义通道表达失败（如生命周期终态或代数结果），而不是依赖宿主异常；runtime 在宿主边界负责把该失败语义收敛为 TS 生态可消费形态（例如抛出错误对象）。该分层用于保持 kernel 语义可组合与可推理，同时维持 runtime API 的使用习惯。
+
+当前编排原语中，“等待并收敛子执行结果”的一组 primitive（`all/join/race/scoped/resource/resumable`）在 kernel 侧以 `Either<unknown, T>` 表达带内失败；runtime primitives 侧通过统一解包步骤把 `Left` 收敛为 `RuntimeScopeFailedError` 抛出，对用户侧继续维持“成功返回值、失败抛异常”的使用模型。

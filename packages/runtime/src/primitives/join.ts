@@ -2,6 +2,9 @@ import type { RuntimePlan } from "#src/contracts";
 import type { SpawnRef } from "@khora/kernel";
 import { join as kernelJoin } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
+import { unwrapEither } from "#src/primitives-kit/unwrap-either";
 
-export const join = <ReturnValue>(spawned: SpawnRef<ReturnValue>): RuntimePlan<ReturnValue> =>
-  liftPlan(kernelJoin(spawned));
+export function* join<ReturnValue>(spawned: SpawnRef<ReturnValue>): RuntimePlan<ReturnValue> {
+  const either = yield* liftPlan(kernelJoin(spawned));
+  return unwrapEither(either);
+}

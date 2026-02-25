@@ -40,6 +40,8 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 
 kernel primitive 的失败语义约束固定为：实现不得直接依赖宿主 `throw` 作为主要失败通道。primitive 应优先通过显式、可类型化的语义通道表达失败（例如生命周期终态或代数容器），由 runtime 边界决定是否将该失败降解为宿主异常。
 
+失败通道建模约束补充为：对“等待并收敛子执行结果”的编排原语（当前包括 `all/join/race/scoped/resource/resumable`），kernel 侧返回形状统一为 `Either<unknown, T>`；该 `Left` 表示可恢复失败载荷，`Right` 表示成功值。runtime 侧在 primitive 适配边界统一解包该 `Either`，并将 `Left` 收敛为异常传播，不向用户侧公开 `Either`。
+
 `spawn/scoped` 可接收可选 `spec`；`spec` 由 `@khora/kernel/scopes` 的角色工厂生成，不在调用点直接构造固有字面量。该 `spec` 形状属于 primitive 编排策略层，不改写 syscall 基线语义。
 
 ## 4. 目录与结构边界

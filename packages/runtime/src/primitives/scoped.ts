@@ -4,11 +4,15 @@ import type { ScopeSpec } from "@khora/kernel/scopes";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
+import { unwrapEither } from "#src/primitives-kit/unwrap-either";
 
-export const scoped = <ReturnValue, CaughtValue = never>(
+export function* scoped<ReturnValue, CaughtValue = never>(
   blueprint: RuntimeBlueprint<ReturnValue>,
   options?: RuntimeScopedOptions<CaughtValue>,
-): RuntimePlan<ReturnValue | CaughtValue> => liftPlan(scopedKernelPrimitive(blueprint, options));
+): RuntimePlan<ReturnValue | CaughtValue> {
+  const either = yield* liftPlan(scopedKernelPrimitive(blueprint, options));
+  return unwrapEither(either);
+}
 
 export type RuntimeResumableErrorHandler<CaughtValue> = (error: Error) => RuntimePlan<CaughtValue>;
 export interface RuntimeScopedOptions<CaughtValue> {
