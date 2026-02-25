@@ -4,6 +4,5 @@ export interface Syscall {
   readonly return?: readonly [unknown];
 }
 
-export type SyscallReturn<T extends Syscall> = T["return"] & {} extends readonly [infer R]
-  ? R
-  : never;
+export type SyscallReturn<T extends Syscall> =
+  NonNullable<T["return"]> extends readonly [infer R] ? R : never;

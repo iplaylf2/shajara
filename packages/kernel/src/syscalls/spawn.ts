@@ -2,15 +2,12 @@ import type { Blueprint } from "#src/contracts/plan";
 import type { ProcessRef } from "#src/contracts/process";
 import type { ScopeRef } from "#src/contracts/scope";
 import type { Syscall } from "#src/contracts/syscall";
-import { notImplemented } from "#src/internal/not-implemented";
 
-export interface SpawnRef<ReturnValue = unknown> extends ScopeRef {
-  readonly _return?: ReturnValue;
-}
+export type SpawnRef<ReturnValue = unknown> = ScopeRef<ReturnValue>;
 
 export interface SpawnDescriptor<ReturnValue, SpawnedRef extends SpawnRef<ReturnValue>> {
   readonly scopeRef: SpawnedRef;
-  readonly rootProcessRef: ProcessRef<ReturnValue>;
+  readonly processRef: ProcessRef<ReturnValue>;
 }
 
 export interface SpawnSyscall<
@@ -19,12 +16,15 @@ export interface SpawnSyscall<
 > extends Syscall {
   readonly kind: "spawn";
   readonly blueprint: Blueprint<ReturnValue>;
-  readonly return: readonly [SpawnDescriptor<ReturnValue, SpawnedRef>];
+  readonly return?: readonly [SpawnDescriptor<ReturnValue, SpawnedRef>];
 }
 
 export function spawn<
   ReturnValue,
   SpawnedRef extends SpawnRef<ReturnValue> = SpawnRef<ReturnValue>,
->(_blueprint: Blueprint<ReturnValue>): SpawnSyscall<ReturnValue, SpawnedRef> {
-  return notImplemented("kernel syscall 'spawn'");
+>(blueprint: Blueprint<ReturnValue>): SpawnSyscall<ReturnValue, SpawnedRef> {
+  return {
+    blueprint,
+    kind: "spawn",
+  };
 }

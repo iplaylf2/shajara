@@ -1,6 +1,5 @@
 import type { ProcessExit, ProcessRef } from "#src/contracts/process";
 import type { Syscall } from "#src/contracts/syscall";
-import { notImplemented } from "#src/internal/not-implemented";
 
 export type PollProcessResult<ReturnValue = unknown> =
   | { readonly exited: false }
@@ -12,12 +11,15 @@ export interface PollProcessSyscall<
 > extends Syscall {
   readonly kind: "poll-process";
   readonly process: Process;
-  readonly return: readonly [PollProcessResult<ReturnValue>];
+  readonly return?: readonly [PollProcessResult<ReturnValue>];
 }
 
 export function pollProcess<
   ReturnValue = unknown,
   Process extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
->(_process: Process): PollProcessSyscall<ReturnValue, Process> {
-  return notImplemented("kernel syscall 'poll-process'");
+>(process: Process): PollProcessSyscall<ReturnValue, Process> {
+  return {
+    kind: "poll-process",
+    process,
+  };
 }

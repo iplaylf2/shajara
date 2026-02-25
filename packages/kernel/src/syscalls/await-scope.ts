@@ -1,17 +1,19 @@
 import type { ScopeRef } from "#src/contracts/scope";
 import type { Syscall } from "#src/contracts/syscall";
-import { notImplemented } from "#src/internal/not-implemented";
 
 export type AwaitScopeExit = { readonly kind: "exited" } | { readonly kind: "pruned_to_limbo" };
 
 export interface AwaitScopeSyscall<Scope extends ScopeRef = ScopeRef> extends Syscall {
   readonly kind: "await-scope";
   readonly scope: Scope;
-  readonly return: readonly [AwaitScopeExit];
+  readonly return?: readonly [AwaitScopeExit];
 }
 
 export function awaitScope<Scope extends ScopeRef = ScopeRef>(
-  _scope: Scope,
+  scope: Scope,
 ): AwaitScopeSyscall<Scope> {
-  return notImplemented("kernel syscall 'await-scope'");
+  return {
+    kind: "await-scope",
+    scope,
+  };
 }

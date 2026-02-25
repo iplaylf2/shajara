@@ -179,9 +179,15 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ## 4. Syscall 协议
 
+### 4.0 声明与解释边界
+
+`syscalls/` 提供的是 syscall 声明对象（指令形状），用于在 `ImpurePlan` 中表达“要做什么”以及“承诺返回值形状”。
+syscall 对象本身不具备解释执行能力，也不直接修改系统状态。
+解释、调度与状态变更由 executor 在执行循环中完成。
+
 ### 4.1 原子性
 
-每个 syscall 以微内核的一个原子步骤执行；其效果在该步骤结束后对系统可见。
+当 executor 解释到一个 syscall 声明时，会以微内核的一个原子步骤处理它；其效果在该步骤结束后对系统可见。
 
 ### 4.2 阻塞分类
 
@@ -199,7 +205,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 5.1 创建（含待定调用能力）
 
-#### Spawn(blueprint) -> { scopeRef, rootProcessRef } [Non-Blocking]
+#### Spawn(blueprint) -> { scopeRef, processRef } [Non-Blocking]
 
 在调用方 `Scope` 下创建子 `Scope`，并在子 `Scope` 内创建根 `Process`。
 业务场景下，`Spawn` 默认创建 `StandardScope`。
