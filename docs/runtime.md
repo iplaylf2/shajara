@@ -8,7 +8,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 2. 运行时承载面
 
-运行时承载面以 GADT 方式表达类型关系：`Syscall<A>` 把 syscall 与返回类型 `A` 绑定，`Plan<T>` 把计算与最终结果类型 `T` 绑定，`Impure` 在类型上同时量化 `A` 与 `T`，使续延只接收本次 syscall 对应的返回类型。内核内部可以使用“返回类型见证”把 syscall 构造子与 `A` 对齐；该见证只用于内核分派与类型对齐，不参与对外表面的类型参数。
+运行时承载面的 GADT-like 编码主体是 `Plan<T>`：`ImpurePlan<S, T, E>` 把“当前 syscall 与续延参数类型”绑定在同一节点上（`S extends Syscall`），使 `then` 只接收 `SyscallReturn<S>`。`Syscall` 本身不是 GADT，而是基础对象契约（非泛型）；具体返回类型由各 syscall 自身的 `return` tuple 见证声明，再由 `SyscallReturn<S>` 推导给 `Plan` 的续延。该见证仅用于内核分派与类型对齐，不扩散为对外表面的泛型负担。
 
 ## 3. 中止续延
 
@@ -54,4 +54,4 @@ runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launc
 
 ## 9. 内部表达与对外表面
 
-内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 返回类型参数 `A` 表达对外表面可见的成功响应类型；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。runtime `contracts` 仅保留 `RuntimePlan/RuntimeBlueprint`，不承载 kernel 语义引用类型定义。对外 API 面定义与使用约束见 `docs/api.md`。
+内核内部可使用代数数据结构表达带内错误与可选值，并将其封装在内核边界内。syscall 的成功响应类型由各 syscall 的 `return` tuple 见证表达；可恢复业务失败是否以带内值表达由具体 syscall 决定，不由 `Plan` 统一强制二元包裹。编排原语在语义上归属于 `Plan` 组合层，不等同于单个 syscall。runtime `contracts` 仅保留 `RuntimePlan/RuntimeBlueprint`，不承载 kernel 语义引用类型定义。对外 API 面定义与使用约束见 `docs/api.md`。

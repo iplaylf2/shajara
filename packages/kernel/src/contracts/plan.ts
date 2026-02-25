@@ -1,17 +1,30 @@
-import type { Syscall } from "#src/contracts/syscall";
+import type { Syscall, SyscallReturn } from "./syscall";
 
-export interface PurePlan<ReturnValue> {
+export type Blueprint<Result = unknown> = () => Plan<Result>;
+export type Plan<Result = unknown> = ImpurePlan<Syscall, Result, unknown> | PurePlan<Result>;
+
+export interface PurePlan<Result = unknown> {
   readonly kind: "pure";
-  readonly value: ReturnValue;
+  readonly value: Result;
 }
 
-export interface ImpurePlan<SyscallReturnValue, ReturnValue> {
+// oxlint-disable-next-line id-length
+export interface ImpurePlan<S extends Syscall = Syscall, Result = unknown, Else = Result> {
   readonly kind: "impure";
-  readonly syscall: Syscall<SyscallReturnValue>;
-  readonly then: (value: SyscallReturnValue) => Plan<ReturnValue>;
-  readonly terminate: () => Plan<ReturnValue>;
+  readonly syscall: S;
+  readonly terminate: () => Plan<Else>;
+  readonly then: (returnValue: SyscallReturn<S>) => Plan<Result>;
 }
 
-export type Plan<ReturnValue> = PurePlan<ReturnValue> | ImpurePlan<unknown, ReturnValue>;
+export function purePlan<Result>(value: Result): PurePlan<Result> {
+  return { kind: "pure", value };
+}
 
-export type Blueprint<ReturnValue> = () => Plan<ReturnValue>;
+// oxlint-disable-next-line id-length
+export function impurePlan<S extends Syscall, Result, Else>(
+  syscall: S,
+  then: (returnValue: SyscallReturn<S>) => Plan<Result>,
+  terminate: () => Plan<Else>,
+): ImpurePlan<S, Result, Else> {
+  return { kind: "impure", syscall, terminate, then };
+}

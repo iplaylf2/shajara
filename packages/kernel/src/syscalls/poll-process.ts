@@ -9,9 +9,10 @@ export type PollProcessResult<ReturnValue = unknown> =
 export interface PollProcessSyscall<
   ReturnValue = unknown,
   Process extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
-> extends Syscall<PollProcessResult<ReturnValue>> {
+> extends Syscall {
   readonly kind: "poll-process";
   readonly process: Process;
+  readonly return: readonly [PollProcessResult<ReturnValue>];
 }
 
 export function pollProcess<

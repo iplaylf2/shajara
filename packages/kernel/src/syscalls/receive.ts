@@ -1,8 +1,9 @@
 import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export interface ReceiveSyscall<ReceiveValue = unknown> extends Syscall<ReceiveValue> {
+export interface ReceiveSyscall<ReceiveValue = unknown> extends Syscall {
   readonly kind: "receive";
+  readonly return: readonly [ReceiveValue];
 }
 
 export function receive<ReceiveValue = unknown>(): ReceiveSyscall<ReceiveValue> {

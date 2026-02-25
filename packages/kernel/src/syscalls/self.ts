@@ -8,8 +8,9 @@ export interface SelfDescriptor {
   readonly processRef: ProcessRef;
 }
 
-export interface SelfSyscall extends Syscall<SelfDescriptor> {
+export interface SelfSyscall extends Syscall {
   readonly kind: "self";
+  readonly return: readonly [SelfDescriptor];
 }
 
 export function self(): SelfSyscall {

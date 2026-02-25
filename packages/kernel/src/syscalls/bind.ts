@@ -1,9 +1,10 @@
 import type { Syscall } from "#src/contracts/syscall";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export interface BindSyscall<Key extends string = string, Value = unknown> extends Syscall<void> {
+export interface BindSyscall<Key extends string = string, Value = unknown> extends Syscall {
   readonly kind: "bind";
   readonly key: Key;
+  readonly return: readonly [void];
   readonly value: Value;
 }
 

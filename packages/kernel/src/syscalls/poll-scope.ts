@@ -8,11 +8,10 @@ export interface PollScopeResult {
   readonly status: ScopeStatus;
 }
 
-export interface PollScopeSyscall<
-  Scope extends ScopeRef = ScopeRef,
-> extends Syscall<PollScopeResult> {
+export interface PollScopeSyscall<Scope extends ScopeRef = ScopeRef> extends Syscall {
   readonly kind: "poll-scope";
   readonly scope: Scope;
+  readonly return: readonly [PollScopeResult];
 }
 
 export function pollScope<Scope extends ScopeRef = ScopeRef>(

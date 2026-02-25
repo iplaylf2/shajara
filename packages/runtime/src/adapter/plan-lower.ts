@@ -3,7 +3,7 @@ import type { RuntimePlan } from "#src/contracts";
 
 function lowerRuntimeStep<ReturnValue>(
   runtimePlan: RuntimePlan<ReturnValue>,
-  step: IteratorResult<Syscall<unknown>, ReturnValue>,
+  step: IteratorResult<Syscall, ReturnValue>,
 ): Plan<ReturnValue> {
   if (step.done) {
     return {

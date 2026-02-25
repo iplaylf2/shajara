@@ -6,9 +6,10 @@ import { notImplemented } from "#src/internal/not-implemented";
 export interface ForkSyscall<
   ReturnValue = unknown,
   ForkedProcess extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
-> extends Syscall<ForkedProcess> {
+> extends Syscall {
   readonly kind: "fork";
   readonly blueprint: Blueprint<ReturnValue>;
+  readonly return: readonly [ForkedProcess];
 }
 
 export function fork<

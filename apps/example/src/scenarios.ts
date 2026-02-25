@@ -61,7 +61,7 @@ function* scopedBodyBlueprint(): RuntimePlan<string> {
 }
 
 function* scopedBlueprint(): RuntimePlan<void> {
-  const scopedResult = yield* scoped(scopedBodyBlueprint, onResumableError);
+  const scopedResult = yield* scoped(scopedBodyBlueprint, { onResumableError });
   consume(scopedResult);
 }
 

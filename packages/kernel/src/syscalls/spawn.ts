@@ -16,9 +16,10 @@ export interface SpawnDescriptor<ReturnValue, SpawnedRef extends SpawnRef<Return
 export interface SpawnSyscall<
   ReturnValue,
   SpawnedRef extends SpawnRef<ReturnValue> = SpawnRef<ReturnValue>,
-> extends Syscall<SpawnDescriptor<ReturnValue, SpawnedRef>> {
+> extends Syscall {
   readonly kind: "spawn";
   readonly blueprint: Blueprint<ReturnValue>;
+  readonly return: readonly [SpawnDescriptor<ReturnValue, SpawnedRef>];
 }
 
 export function spawn<

@@ -1,4 +1,6 @@
+bimap
 oxfmt
 oxlint
 oxlintrc
+pipeable
 vite

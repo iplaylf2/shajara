@@ -1,8 +1,8 @@
-import type { ImpurePlan, Plan } from "@khora/kernel";
+import type { ImpurePlan, Plan, Syscall } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 
 function* continueFromImpure<ReturnValue>(
-  impurePlan: ImpurePlan<unknown, ReturnValue>,
+  impurePlan: ImpurePlan<Syscall, ReturnValue, unknown>,
 ): RuntimePlan<Plan<ReturnValue>> {
   let nextPlan: Plan<ReturnValue> | null = null;
 
@@ -12,11 +12,11 @@ function* continueFromImpure<ReturnValue>(
   } finally {
     // Keep terminate-as-default when close/termination interrupts resume.
     if (nextPlan === null) {
-      nextPlan = impurePlan.terminate();
+      nextPlan = impurePlan.terminate() as Plan<ReturnValue>;
     }
   }
 
-  return nextPlan as Plan<ReturnValue>;
+  return nextPlan;
 }
 
 function* liftStep<ReturnValue>(plan: Plan<ReturnValue>): RuntimePlan<ReturnValue> {

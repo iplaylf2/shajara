@@ -6,10 +6,17 @@
 
 `Plan<T>` 为二者之一：
 
-- `Pure(value: T)`
-- `Impure(syscall: Syscall<A>, then: (value: A) => Plan<T>, terminate: () => Plan<T>)`
+- `PurePlan(value: T)`
+- `ImpurePlan(syscall: S, then: (value: SyscallReturn<S>) => Plan<T>, terminate: () => Plan<E>)`（`S extends Syscall`）
 
 `Blueprint<T>` 为 `() => Plan<T>`。
+
+`Syscall` 为基础对象契约（非泛型），最小形状为：
+
+- `kind: string`
+- `return?: readonly [unknown]`
+
+具体 syscall 通过自身的 `return` tuple 见证声明返回值类型，`then` 的参数类型由 `SyscallReturn<S>` 从该见证推导。
 
 ### 1.2 响应通道与 Fault
 
