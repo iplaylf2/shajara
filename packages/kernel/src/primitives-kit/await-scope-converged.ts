@@ -8,7 +8,7 @@ import { plan } from "#src/internal/fp/plan";
 import { scopeTerminated } from "#src/contracts/scope";
 import { unreachable } from "#src/utils/unreachable";
 
-export function awaitScopeEitherValue<Return>(
+export function awaitScopeConverged<Return>(
   scopeRef: ScopeRef<Return>,
 ): Plan<Either<unknown, Return>> {
   return pipe(

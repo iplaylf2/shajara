@@ -2,8 +2,8 @@ import type { Blueprint, Plan } from "#src/contracts/plan";
 import { flow, pipe } from "fp-ts/function";
 import type { Either } from "fp-ts/Either";
 import type { UnknownArray } from "type-fest";
-import { awaitCompletedScopeValue } from "#src/primitives-kit/await-completed-scope-value";
-import { awaitScopeEitherValue } from "#src/primitives-kit/await-scope-either-value";
+import { awaitScopeConverged } from "#src/primitives-kit/await-scope-converged";
+import { awaitSupervisedScope } from "#src/primitives-kit/await-supervised-scope";
 import { narrowArrayAs } from "#src/utils/narrow.js";
 import { plan } from "#src/internal/fp/plan";
 import { readonlyArray } from "fp-ts";
@@ -24,13 +24,13 @@ export function all<BranchReturnValues extends UnknownArray>(
           branches,
           readonlyArray.map(flow(spawn, plan.liftF)),
           plan.sequence,
-          plan.map(readonlyArray.map(({ scopeRef }) => awaitCompletedScopeValue(scopeRef))),
+          plan.map(readonlyArray.map(({ scopeRef }) => awaitSupervisedScope(scopeRef))),
           plan.chain(plan.sequence),
           plan.map(narrowArrayAs<BranchReturnValues>()),
         ),
       supervisorScopeSpec(),
     ),
     plan.liftF,
-    plan.chain(({ scopeRef }) => awaitScopeEitherValue(scopeRef)),
+    plan.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
   );
 }

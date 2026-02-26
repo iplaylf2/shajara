@@ -11,7 +11,11 @@ type CompletedAwaitScopeExit<ReturnValue> = Extract<
   { readonly kind: "completed" }
 >;
 
-export function awaitCompletedScopeValue<ReturnValue>(
+/**
+ * Awaits a child scope supervised by the current supervisor scope.
+ * "Supervised" is a relative relationship role, not a distinct scope entity.
+ */
+export function awaitSupervisedScope<ReturnValue>(
   scopeRef: ScopeRef<ReturnValue>,
 ): Plan<ReturnValue> {
   return pipe(
