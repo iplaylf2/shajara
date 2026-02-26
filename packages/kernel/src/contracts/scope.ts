@@ -10,3 +10,15 @@ export interface ScopeSpec<Role extends string = string> {
   readonly role: Role;
   readonly [SCOPE_SPEC_TOKEN]: "scope-spec";
 }
+
+export interface ScopeTerminatedFailure {
+  readonly kind: "scope-terminated";
+  readonly scopeRef: ScopeRef;
+}
+
+export function scopeTerminated(scopeRef: ScopeRef): ScopeTerminatedFailure {
+  return {
+    kind: "scope-terminated",
+    scopeRef,
+  };
+}

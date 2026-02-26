@@ -48,7 +48,6 @@ export type {
   SelfDescriptor,
   SelfSyscall,
   SpawnDescriptor,
-  SpawnOptions,
   SpawnRef,
   SpawnSyscall,
   TerminateSyscall,

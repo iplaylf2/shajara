@@ -20,6 +20,7 @@ export default defineConfig({
     "eslint/no-use-before-define": "off",
     "import/exports-last": "off",
     "import/group-exports": "off",
+    "import/max-dependencies": ["error", { ignoreTypeImports: true }],
     "import/no-default-export": "off",
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",

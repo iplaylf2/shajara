@@ -7,8 +7,12 @@ export type { ReaperScopeSpecOptions } from "./reaper";
 export { schedulerScopeSpec } from "./scheduler";
 export type { SchedulerScopeSpecOptions } from "./scheduler";
 export { standardScopeSpec } from "./standard";
-export type { StandardScopeSpecOptions } from "./standard";
+export type { StandardScopeSpec, StandardScopeSpecOptions } from "./standard";
 export { supervisorScopeSpec } from "./supervisor";
-export type { SupervisorScopeSpecOptions, SupervisorSpawnDescriptor } from "./supervisor";
+export type {
+  SupervisorScopeSpec,
+  SupervisorScopeSpecOptions,
+  SupervisorSpawnDescriptor,
+} from "./supervisor";
 
 export type { ScopeSpec } from "#src/contracts/scope";
