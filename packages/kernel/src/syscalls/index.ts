@@ -31,6 +31,7 @@ export type { ReceiveSyscall } from "./receive";
 export type { SelfDescriptor } from "./self";
 export type { SelfSyscall } from "./self";
 export type { SpawnDescriptor } from "./spawn";
+export type { SpawnOptions } from "./spawn";
 export type { SpawnRef } from "./spawn";
 export type { SpawnSyscall } from "./spawn";
 export type { TerminateSyscall } from "./terminate";

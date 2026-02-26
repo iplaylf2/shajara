@@ -9,6 +9,6 @@ export type { SchedulerScopeSpecOptions } from "./scheduler";
 export { standardScopeSpec } from "./standard";
 export type { StandardScopeSpecOptions } from "./standard";
 export { supervisorScopeSpec } from "./supervisor";
-export type { SupervisorScopeSpecOptions } from "./supervisor";
+export type { SupervisorScopeSpecOptions, SupervisorSpawnDescriptor } from "./supervisor";
 
 export type { ScopeSpec } from "#src/contracts/scope";
