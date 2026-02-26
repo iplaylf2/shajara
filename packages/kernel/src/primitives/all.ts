@@ -2,9 +2,9 @@ import type { Blueprint, Plan } from "#src/contracts/plan";
 import { flow, pipe } from "fp-ts/function";
 import type { Either } from "fp-ts/Either";
 import type { UnknownArray } from "type-fest";
-import { assume } from "#src/utils/assume";
 import { awaitCompletedScopeValue } from "#src/primitives-kit/await-completed-scope-value";
 import { awaitScopeEitherValue } from "#src/primitives-kit/await-scope-either-value";
+import { narrowArrayAs } from "#src/utils/narrow.js";
 import { plan } from "#src/internal/fp/plan";
 import { readonlyArray } from "fp-ts";
 import { spawn } from "#src/syscalls";
@@ -26,7 +26,7 @@ export function all<BranchReturnValues extends UnknownArray>(
           plan.sequence,
           plan.map(readonlyArray.map(({ scopeRef }) => awaitCompletedScopeValue(scopeRef))),
           plan.chain(plan.sequence),
-          plan.map(assume<BranchReturnValues>),
+          plan.map(narrowArrayAs<BranchReturnValues>()),
         ),
       supervisorScopeSpec(),
     ),

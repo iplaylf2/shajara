@@ -1,8 +1,8 @@
 import type { AwaitScopeExit } from "#src/syscalls";
 import type { Plan } from "#src/contracts/plan";
 import type { ScopeRef } from "#src/contracts/scope";
-import { assume } from "#src/utils/assume";
 import { awaitScope } from "#src/syscalls";
+import { narrowAs } from "#src/utils/narrow.js";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp/plan";
 
@@ -17,7 +17,7 @@ export function awaitCompletedScopeValue<ReturnValue>(
   return pipe(
     awaitScope(scopeRef),
     plan.liftF,
-    plan.map(assume<CompletedAwaitScopeExit<ReturnValue>>),
+    plan.map(narrowAs<CompletedAwaitScopeExit<ReturnValue>>()),
     plan.map(({ value }) => value),
   );
 }
