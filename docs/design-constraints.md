@@ -40,7 +40,9 @@ kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段�
 
 kernel primitive 的失败语义约束固定为：实现不得直接依赖宿主 `throw` 作为主要失败通道。primitive 应优先通过显式、可类型化的语义通道表达失败（例如生命周期终态或代数容器），由 runtime 边界决定是否将该失败降解为宿主异常。
 
-失败通道建模约束补充为：对“等待并收敛子执行结果”的编排原语（当前包括 `all/join/race/scoped/resource/resumable`），kernel 侧返回形状统一为 `Either<unknown, T>`；该 `Left` 表示可恢复失败载荷，`Right` 表示成功值。runtime 侧在 primitive 适配边界统一解包该 `Either`，并将 `Left` 收敛为异常传播，不向用户侧公开 `Either`。
+失败传播约束补充为：`awaitProcess/awaitScope` 仅负责观察终态，不承担失败拦截职责；失败是否向祖先升级由 `Scope` 角色语义决定，而不是由观察 syscall 动态改写。
+
+失败通道建模约束补充为：对“等待并收敛子执行结果”的编排原语（当前包括 `all/join/race/scoped/resource/resumable`），kernel 侧返回形状统一为 `Either<unknown, T>`；该 `Either` 的来源约束为 `SupervisorScope` 收敛边界（`Left` 表示收敛后的失败/终止载荷，`Right` 表示成功值），而非 `awaitScope` 对默认传播语义的临时拦截。runtime 侧在 primitive 适配边界统一解包该 `Either`，并将 `Left` 收敛为异常传播，不向用户侧公开 `Either`。
 
 `spawn/scoped` 可接收可选 `spec`；`spec` 由 `@khora/kernel/scopes` 的角色工厂生成，不在调用点直接构造固有字面量。该 `spec` 形状属于 primitive 编排策略层，不改写 syscall 基线语义。
 
@@ -63,7 +65,7 @@ kernel 中 `Fork` 属于 syscall 语义，编排层不直接暴露 `fork` 原语
 
 用户侧生命周期控制粒度固定为 `Scope`，process 级句柄与 `awaitProcess` 不进入编排层公开表面。`spawn` 返回值作为编排层唯一的作用域控制句柄，不在公开 API 暴露其内部结构字段（如 `scope`）。作用域等待/控制 API 采用 `join/terminate` 对称命名，`join` 仅返回成功值，失败通过异常传播。`suspend` 表达持续挂起语义，恢复路径由父 scope 回收清理阶段触发，且以失败传播进入清理流程。
 
-结构性监督语义通过 `scoped + resumable` 建模，不再以 `supervise` 作为公开编排原语。`scoped` 的第二参数是 `resumable` 路径异常的捕获 handler，不表示 `scoped` 对任意异常的本地兜底。编排层公开原语暂不包含输入读取能力（`receive` 不在公开 primitives 表面）。
+结构性监督语义通过 `SupervisorScope + scoped + resumable` 建模，不再以 `supervise` 作为公开编排原语。`scoped` 的第二参数是 `resumable` 路径异常的捕获 handler，不表示 `scoped` 对任意异常的本地兜底。编排层公开原语暂不包含输入读取能力（`receive` 不在公开 primitives 表面）。
 
 ## 6. example 约束
 

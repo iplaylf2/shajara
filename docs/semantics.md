@@ -24,7 +24,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Fault` 为带外终止事件。发生 `Fault` 时，目标 `Process` 立即退出，后续 continuation 不再执行。
 错误编码与失败值形状由具体 syscall 语义定义。
-`Failed(fault)` 的传播语义按 `Scope` 父链进行：当 `Process` 在某个 `Scope` 内以 `Failed(fault)` 退出时，该失败事件按祖先链向上传播，行为等价于“按 `Scope` 边界做异常展开”。
+`Failed(fault)` 在 `Scope` 树上的上传策略由父 `Scope` 角色语义决定；默认角色沿父链传播，`SupervisorScope` 可将后代终态收敛为带内结果（见 3.5）。
 
 ### 1.3 Scope（统一对象与角色分层）
 
@@ -36,12 +36,13 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 - `StandardScope`：普通编排角色，承载大多数业务流程与默认并发分支。
 - `SchedulerScope`：调度编排角色（`Scheduler` 职责）。
 - `ReaperScope`：终止收敛仲裁角色（`Reaper` 职责）。
+- `SupervisorScope`：终态收敛角色，用于把后代失败/终止收敛为带内结果（见 3.5）。
 - `IngressScope`：输入通道角色（`Sink/PostFn` 语义）。
 - `PortalScope`：能力投放角色（`Capability -> Portal` 触发任务）。
 - `ExecutionScope`：执行入口能力角色（`launch + terminate` 语义，见 1.4）。
 - `LimboScope`：结构性修剪承接角色（全局单例，见 1.8）。
 
-创建约束：`StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。
+创建约束：`StandardScope`、`SchedulerScope`、`ReaperScope`、`SupervisorScope`、`IngressScope`、`PortalScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。
 
 ### 1.4 执行入口能力视图与依赖方向
 
@@ -144,7 +145,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 - 在该 `Scope` 内执行 `Halt()`
 - 该 `Scope` 内任一 `Process` 以 `Failed(fault)` 退出
-- 该 `Scope` 从后代链路接收到 `Failed(fault)` 传播
+- 该 `Scope` 从后代链路接收到 `Failed(fault)` 传播（适用于失败上传策略为传播的角色）
 - 从祖先 `Scope` 收到终止级联
 - 该 `Scope` 变为空（不再包含任何 `Process`）
 
@@ -167,15 +168,21 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Invoke` 相关终止门控语义（若未来回归公开 syscall）仍属待定项。
 
-### 3.5 Failed 传播与级联
+### 3.5 子 Scope 终态上传与 SupervisorScope 收敛
 
-当某 `Process` 以 `Failed(fault)` 退出时，系统按以下顺序处理：
+当某个 `Scope` 内 `Process` 以 `Failed(fault)` 退出时，系统先在该 `Scope` 内完成本地关闭：
 
 - 该 `Process` 所属 `Scope` 进入 `Closing`，并确定终态为 `Failed`。
 - 该 `Scope` 对其后代 `Scope` 触发终止级联。
-- 失败事件沿该 `Scope` 的祖先链继续传播；传播到的祖先 `Scope` 进入 `Closing`，并确定终态为 `Failed`，随后继续级联。
 
-`AwaitProcess` 对 `Failed(fault)` 的观察仅提供结果可见性，不构成对上述传播与终止流程的拦截。
+随后，子 `Scope` 终态向父 `Scope` 的上传按父角色语义处理：
+
+- 默认角色（当前包括 `StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope`）对后代 `{ kind: "failed", fault }` 采用传播策略：父 `Scope` 进入 `Closing` 并确定终态为 `Failed`，然后继续按祖先链传播。
+- `SupervisorScope` 对后代终态采用收敛策略：后代 `failed/terminated` 不再升级为祖先失败，而是由 `SupervisorScope` 本地收敛为可观察带内结果。
+
+`terminated` 与 `failed` 语义分离：后代 `terminated` 不会被重写为祖先 `failed`。`terminated` 表示终止级联结果，`failed` 表示 fault 失败结果。
+
+`AwaitProcess` 与 `AwaitScope` 仅提供结果可见性，不构成对上传策略的拦截；上传策略在 `Scope` 角色语义中预先确定，不由观察 syscall 临时决定。
 
 ### 3.6 结构性收敛：Reaper 与孤儿
 
@@ -245,9 +252,9 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 - 效果：创建 `Process`：`P'`，`P'.Plan = blueprint()`，`P'` 初始为可运行
 - `Closing`：调用失败
 
-#### 创建治理 Scope（调度/裁决）[Non-Blocking]
+#### 创建治理/收敛 Scope（调度/裁决/监督）[Non-Blocking]
 
-内核支持通过 syscall 创建治理 `Scope`（`SchedulerScope` 与 `ReaperScope`），并建立其治理子树边界。该能力用于控制面编排，不等同于业务 `Spawn`。
+内核支持通过 syscall 创建治理/收敛 `Scope`（`SchedulerScope`、`ReaperScope` 与 `SupervisorScope`），并建立其治理子树边界。该能力用于控制面编排，不等同于业务 `Spawn`。
 
 该类 syscall 的具体命名、入参与可见性细则当前仍属待定项；稳定约束仅包括：
 
@@ -312,6 +319,7 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
   - 否则阻塞，目标到达上述状态时恢复并返回
 
 `InLimbo` 属于结构状态，不作为 `AwaitScope` 的直接返回分支暴露；目标若进入 `InLimbo`，其可观察结果仍按 `failed/terminated` 终态收敛。
+`AwaitScope` 不改变失败上传语义；是否向祖先传播或被本地收敛由父 `Scope` 角色（含 `SupervisorScope`）决定。
 
 #### Receive() -> value [Blocking]
 

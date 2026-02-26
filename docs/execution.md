@@ -32,6 +32,10 @@ Impact: `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Eithe
 
 Impact: API/桥接/语义命名持续推进，但端到端运行能力仍受 `ensureExecutor` 占位实现阻塞。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 
+### 3.5 delta：失败传播语义完成文档基线收敛（待实现）
+
+Impact: 静态设计文档将失败传播模型明确为“`Scope` 角色决定上传策略；`await*` 仅观察不拦截；`SupervisorScope` 承担收敛语义来源”。当前仅文档基线收敛，尚未在 syscall/primitive 代码中兑现。Evidence: `docs/semantics.md`, `docs/design-constraints.md`, `docs/runtime.md`, `docs/api.md`, `docs/README.md`。
+
 ## 4. 当前阶段执行切片（Build）
 
 | Slice                        | Status      | Output                                                                   | Evidence                                                                                                                                                                                                                                                                                                                     |
