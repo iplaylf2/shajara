@@ -3,7 +3,7 @@ import type { applicative, apply, either, functor, monad, pointed } from "fp-ts"
 import { eitherT, chain as fpChain, fromIO as fpFromIO, readonlyArray } from "fp-ts";
 import type { Plan } from "#src/contracts/plan.js";
 import type { Syscall } from "#src/contracts/syscall.js";
-import { flow } from "fp-ts/lib/function";
+import { flow } from "fp-ts/function";
 import { lifting } from "./lifting";
 import { plan } from "./plan";
 import type { syscall } from "./syscall";

@@ -1,7 +1,7 @@
 // oxlint-disable id-length
 import type { Kind, Kind2, URIS, URIS2 } from "fp-ts/HKT";
 import { chain, pipeable } from "fp-ts";
-import { flow } from "fp-ts/lib/function";
+import { flow } from "fp-ts/function";
 
 export namespace lifting {
   export interface Lifting<M extends URIS, F extends URIS, C> extends chain.Chain1<M> {

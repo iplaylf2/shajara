@@ -1,5 +1,5 @@
 import type { Blueprint, Plan } from "#src/contracts/plan";
-import { flow, pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/function";
 import type { Either } from "fp-ts/Either";
 import type { SupervisorSpawnDescriptor } from "#src/scopes";
 import type { UnknownArray } from "type-fest";
