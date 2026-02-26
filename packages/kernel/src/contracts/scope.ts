@@ -1,3 +1,5 @@
+import type { KhoraFailure } from "./failure";
+
 const SCOPE_REF_TOKEN: unique symbol = Symbol("scope-ref");
 const SCOPE_SPEC_TOKEN: unique symbol = Symbol("scope-spec");
 
@@ -11,7 +13,7 @@ export interface ScopeSpec<Role extends string = string> {
   readonly [SCOPE_SPEC_TOKEN]: "scope-spec";
 }
 
-export interface ScopeTerminatedFailure {
+export interface ScopeTerminatedFailure extends KhoraFailure {
   readonly kind: "scope-terminated";
   readonly scopeRef: ScopeRef;
 }
@@ -19,6 +21,9 @@ export interface ScopeTerminatedFailure {
 export function scopeTerminated(scopeRef: ScopeRef): ScopeTerminatedFailure {
   return {
     kind: "scope-terminated",
+    message(): string {
+      return "Scope terminated before completion";
+    },
     scopeRef,
   };
 }

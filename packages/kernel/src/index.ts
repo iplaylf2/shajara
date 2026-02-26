@@ -1,4 +1,5 @@
 export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./contracts/plan";
+export type { KhoraFailure } from "./contracts/failure";
 
 export { ensureExecutor } from "./executor";
 export type {

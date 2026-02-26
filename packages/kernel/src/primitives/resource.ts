@@ -1,4 +1,5 @@
 import type { Either } from "fp-ts/Either";
+import type { KhoraFailure } from "#src/contracts/failure";
 import type { Plan } from "#src/contracts/plan";
 import { notImplemented } from "#src/internal/not-implemented";
 
@@ -10,6 +11,6 @@ export type ResourceBody<ProvidedValue> = (
 
 export function resource<ProvidedValue>(
   _body: ResourceBody<ProvidedValue>,
-): Plan<Either<unknown, ProvidedValue>> {
+): Plan<Either<KhoraFailure, ProvidedValue>> {
   return notImplemented("kernel primitive 'resource'");
 }

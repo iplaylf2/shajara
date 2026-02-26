@@ -1,5 +1,6 @@
 import type { Blueprint } from "./contracts/plan";
 import type { IngressScopeRef } from "./scopes";
+import type { KhoraFailure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
@@ -16,7 +17,7 @@ export interface ExecutionScopeRef extends ScopeRef {
 
 export type LaunchResult<Return> =
   | { readonly kind: "success"; readonly value: Return }
-  | { readonly kind: "failure"; readonly reason: unknown }
+  | { readonly kind: "failure"; readonly reason: KhoraFailure }
   | { readonly kind: "terminated" };
 export type LaunchState = "open" | "closing" | "closed";
 

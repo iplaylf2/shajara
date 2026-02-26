@@ -6,11 +6,11 @@ Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` �
 
 ## 2. 当前现实与证据（Build）
 
-1. 执行入口结果词已统一为 `success | failure | terminated`，runtime 收敛链同步到 `RuntimeScopeFailedError / RuntimeScopeTerminatedError`。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`。
+1. 执行入口结果词已统一为 `success | failure | terminated`，runtime 收敛链同步到 `RuntimeKhoraFailureError / RuntimeScopeTerminatedError`。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`。
 2. `Scope` 过程态名称已统一为 `Closing`，`PollScope` 枚举与语义文档一致，不再使用 `Terminating`。Evidence: `packages/kernel/src/syscalls/poll-scope.ts`, `docs/semantics.md`。
 3. `AwaitScope` 已升级为可观察终态通道（`completed | failed | terminated`），不再暴露 `pruned_to_limbo` 分支。Evidence: `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`。
-4. kernel “收敛型 primitive” 的失败通道已统一为带内 `Either<unknown, T>`：`all/join/race/scoped/resource/resumable` 均采用该返回形状，替代 `all` 旧的 `halt(fault)` 路径；其中 `all` 已改为通过 `awaitScope` 观察结果并在 kit 中显式收敛为 `Either`。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`。
-5. runtime 对应 primitive 已统一通过解包器收敛 kernel `Either`，并将 `Left` 映射为 `RuntimeScopeFailedError`，维持用户侧“成功返回/失败抛错”模型。Evidence: `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/join.ts`, `packages/runtime/src/primitives/race.ts`, `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/primitives/resource.ts`, `packages/runtime/src/primitives/resumable.ts`。
+4. kernel “收敛型 primitive” 的失败通道已统一为带内 `Either<KhoraFailure, T>`：`all/join/race/scoped/resource/resumable` 均采用该返回形状，替代 `all` 旧的 `halt(fault)` 路径；其中 `all` 已改为通过 `awaitScope` 观察结果并在 kit 中显式收敛为 `Either`。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`。
+5. runtime 对应 primitive 已统一通过解包器收敛 kernel `Either`，并将 `Left` 映射为 `RuntimeKhoraFailureError`，维持用户侧“成功返回/失败抛错”模型。Evidence: `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/join.ts`, `packages/runtime/src/primitives/race.ts`, `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/primitives/resource.ts`, `packages/runtime/src/primitives/resumable.ts`。
 6. `kernel` 执行器实现仍未落地：`ensureExecutor()` 当前返回占位实现，端到端运行闭环尚未建立。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 7. 代码检查已通过当前改动范围：`@khora/kernel` 与 `@khora/runtime` 的 typecheck 均通过，仓库 lint 通过。Evidence: `yarn workspace @khora/kernel typecheck`, `yarn workspace @khora/runtime typecheck`, `yarn lint`。
 
@@ -26,7 +26,7 @@ Impact: `AwaitScopeExit` 现在承载终态结果（`completed/failed/terminated
 
 ### 3.3 delta：收敛型 primitive 失败通道完成一轮统一
 
-Impact: `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Either<unknown, T>`，runtime 层统一在 primitive 边界收敛 `Left -> RuntimeScopeFailedError`。该变更把“primitive 内策略性升级为 `halt`”替换为显式失败容器，降低失败语义分散；`all` 的 `Either` 构造已下沉到 kit 复用层。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/runtime/src/primitives-kit/unwrap-either.ts`。
+Impact: `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Either<KhoraFailure, T>`，runtime 层统一在 primitive 边界收敛 `Left -> RuntimeKhoraFailureError`。该变更把“primitive 内策略性升级为 `halt`”替换为显式失败容器，降低失败语义分散；`all` 的 `Either` 构造已下沉到 kit 复用层。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/runtime/src/primitives-kit/unwrap-either.ts`。
 
 ### 3.4 delta：Build 主阻塞未变
 

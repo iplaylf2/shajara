@@ -1,6 +1,7 @@
 import type { Blueprint, Plan } from "#src/contracts/plan";
 import { flow, pipe } from "fp-ts/function";
 import type { Either } from "fp-ts/Either";
+import type { KhoraFailure } from "#src/contracts/failure";
 import type { UnknownArray } from "type-fest";
 import { awaitScopeConverged } from "#src/primitives-kit/await-scope-converged";
 import { awaitSupervisedScope } from "#src/primitives-kit/await-supervised-scope";
@@ -16,7 +17,7 @@ type AllBranches<BranchReturns extends UnknownArray> = {
 
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
-): Plan<Either<unknown, BranchReturns>> {
+): Plan<Either<KhoraFailure, BranchReturns>> {
   return pipe(
     spawn(
       () =>

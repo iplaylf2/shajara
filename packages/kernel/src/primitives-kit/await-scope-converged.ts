@@ -1,5 +1,6 @@
 import { left, right } from "fp-ts/Either";
 import type { Either } from "fp-ts/Either";
+import type { KhoraFailure } from "#src/contracts/failure";
 import type { Plan } from "#src/contracts/plan";
 import type { ScopeRef } from "#src/contracts/scope";
 import { awaitScope } from "#src/syscalls";
@@ -10,7 +11,7 @@ import { unreachable } from "#src/utils/unreachable";
 
 export function awaitScopeConverged<Return>(
   scopeRef: ScopeRef<Return>,
-): Plan<Either<unknown, Return>> {
+): Plan<Either<KhoraFailure, Return>> {
   return pipe(
     awaitScope(scopeRef),
     plan.liftF,

@@ -1,4 +1,5 @@
 import type { Either } from "fp-ts/Either";
+import type { KhoraFailure } from "#src/contracts/failure";
 import type { Plan } from "#src/contracts/plan";
 import type { ScopeSpec } from "#src/contracts/scope";
 import { notImplemented } from "#src/internal/not-implemented";
@@ -12,6 +13,6 @@ export interface ScopedOptions<CaughtValue> {
 export function scoped<Return, CaughtValue = never>(
   _plan: Plan<Return>,
   _options?: ScopedOptions<CaughtValue>,
-): Plan<Either<unknown, Return | CaughtValue>> {
+): Plan<Either<KhoraFailure, Return | CaughtValue>> {
   return notImplemented("kernel primitive 'scoped'");
 }

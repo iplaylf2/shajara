@@ -1,3 +1,4 @@
+import type { KhoraFailure } from "./failure";
 const PROCESS_REF_TOKEN: unique symbol = Symbol("process-ref");
 
 export interface ProcessRef<Return = unknown> {
@@ -7,5 +8,5 @@ export interface ProcessRef<Return = unknown> {
 
 export type ProcessExit<Return = unknown> =
   | { readonly kind: "completed"; readonly value: Return }
-  | { readonly kind: "failed"; readonly fault: unknown }
+  | { readonly kind: "failed"; readonly fault: KhoraFailure }
   | { readonly kind: "terminated" };
