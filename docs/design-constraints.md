@@ -42,7 +42,7 @@ kernel primitive 的失败语义约束固定为：实现不得直接依赖宿主
 
 失败传播约束补充为：`awaitProcess/awaitScope` 仅负责观察终态，不承担失败拦截职责；失败是否向祖先升级由 `Scope` 角色语义决定，而不是由观察 syscall 动态改写。
 
-失败通道建模约束补充为：对“等待并收敛子执行结果”的编排原语（当前包括 `all/join/race/scoped/resource/resumable`），kernel 侧返回形状统一为 `Either<unknown, T>`；该 `Either` 的来源约束为 `SupervisorScope` 收敛边界（`Left` 表示收敛后的失败/终止载荷，`Right` 表示成功值），而非 `awaitScope` 对默认传播语义的临时拦截。runtime 侧在 primitive 适配边界统一解包该 `Either`，并将 `Left` 收敛为异常传播，不向用户侧公开 `Either`。
+失败通道建模约束补充为：对“等待并收敛子执行结果”的编排原语（当前包括 `all/join/race/scoped/resource/resumable`），kernel 侧返回形状统一为 `Either<unknown, T>`。该 `Either` 由 primitive 对等待结果的显式收敛逻辑构造（`Left` 表示失败/终止载荷，`Right` 表示成功值）；`spawn` syscall 的返回契约不因 `ScopeSpec` 改写。runtime 侧在 primitive 适配边界统一解包该 `Either`，并将 `Left` 收敛为异常传播，不向用户侧公开 `Either`。
 
 `spawn/scoped` 可接收可选 `spec`；`spec` 由 `@khora/kernel/scopes` 的角色工厂生成，不在调用点直接构造固有字面量。该 `spec` 形状属于 primitive 编排策略层，不改写 syscall 基线语义。
 
