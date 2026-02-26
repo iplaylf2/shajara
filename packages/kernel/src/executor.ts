@@ -14,24 +14,24 @@ export interface ExecutionScopeRef extends ScopeRef {
   readonly [LAUNCH_REF_TOKEN]: "launch-ref";
 }
 
-export type LaunchResult<ReturnValue> =
-  | { readonly kind: "success"; readonly value: ReturnValue }
+export type LaunchResult<Return> =
+  | { readonly kind: "success"; readonly value: Return }
   | { readonly kind: "failure"; readonly reason: unknown }
   | { readonly kind: "terminated" };
 export type LaunchState = "open" | "closing" | "closed";
 
-export interface LaunchFuture<ReturnValue> {
+export interface LaunchFuture<Return> {
   /**
    * Register a callback for the single settlement result.
    * Kernel invokes listener at most once.
    * If already settled, invocation is synchronous.
    */
-  onResult(listener: (result: LaunchResult<ReturnValue>) => void): void;
+  onResult(listener: (result: LaunchResult<Return>) => void): void;
 }
 
-export interface LaunchHandle<ReturnValue = void> {
+export interface LaunchHandle<Return = void> {
   readonly ref: ExecutionScopeRef;
-  readonly result: LaunchFuture<ReturnValue>;
+  readonly result: LaunchFuture<Return>;
   state(): LaunchState;
 }
 
@@ -43,10 +43,10 @@ export interface Executor {
   /**
    * Launch a blueprint under the given scope.
    */
-  launch<ReturnValue>(
+  launch<Return>(
     scope: ExecutionScopeRootRef | ExecutionScopeRef,
-    blueprint: Blueprint<ReturnValue>,
-  ): LaunchHandle<ReturnValue>;
+    blueprint: Blueprint<Return>,
+  ): LaunchHandle<Return>;
   /**
    * Post an input value into the target runtime ingress channel.
    */

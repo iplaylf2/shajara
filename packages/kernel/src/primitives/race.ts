@@ -3,13 +3,13 @@ import type { Either } from "fp-ts/Either";
 import type { UnknownArray } from "type-fest";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export interface RaceResult<ReturnValue> {
+export interface RaceResult<Return> {
   readonly winnerIndex: number;
-  readonly value: ReturnValue;
+  readonly value: Return;
 }
 
-export function race<BranchReturnValues extends UnknownArray>(_branches: {
-  readonly [Index in keyof BranchReturnValues]: Blueprint<BranchReturnValues[Index]>;
-}): Plan<Either<unknown, RaceResult<BranchReturnValues[number]>>> {
+export function race<BranchReturns extends UnknownArray>(_branches: {
+  readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
+}): Plan<Either<unknown, RaceResult<BranchReturns[number]>>> {
   return notImplemented("kernel primitive 'race'");
 }

@@ -2,18 +2,18 @@ import type { ProcessExit, ProcessRef } from "#src/contracts/process";
 import type { Syscall } from "#src/contracts/syscall";
 
 export interface AwaitProcessSyscall<
-  ReturnValue = unknown,
-  Process extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
+  Return = unknown,
+  Process extends ProcessRef<Return> = ProcessRef<Return>,
 > extends Syscall {
   readonly kind: "await-process";
   readonly process: Process;
-  readonly return?: readonly [ProcessExit<ReturnValue>];
+  readonly return?: readonly [ProcessExit<Return>];
 }
 
 export function awaitProcess<
-  ReturnValue = unknown,
-  Process extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
->(process: Process): AwaitProcessSyscall<ReturnValue, Process> {
+  Return = unknown,
+  Process extends ProcessRef<Return> = ProcessRef<Return>,
+>(process: Process): AwaitProcessSyscall<Return, Process> {
   return {
     kind: "await-process",
     process,

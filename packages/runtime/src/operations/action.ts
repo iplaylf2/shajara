@@ -11,15 +11,15 @@ import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { spawn } from "#src/primitives/spawn";
 
-export interface RuntimeAction<ReturnValue> {
-  readonly scope: SpawnRef<ReturnValue>;
-  resolve(value: ReturnValue): void;
+export interface RuntimeAction<Return> {
+  readonly scope: SpawnRef<Return>;
+  resolve(value: Return): void;
   reject(reason: unknown): void;
 }
 
-export function* action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> {
-  const scope = yield* spawn(function* actionBlueprint(): RuntimePlan<ReturnValue> {
-    const settlement = yield* liftPlan(kernelReceive<Settlement<ReturnValue>>());
+export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
+  const scope = yield* spawn(function* actionBlueprint(): RuntimePlan<Return> {
+    const settlement = yield* liftPlan(kernelReceive<Settlement<Return>>());
     switch (settlement.status) {
       case "resolved":
         return settlement.value;
@@ -36,11 +36,11 @@ export function* action<ReturnValue>(): RuntimePlan<RuntimeAction<ReturnValue>> 
         status: "rejected",
       } satisfies RejectedSettlement);
     },
-    resolve(value: ReturnValue): void {
+    resolve(value: Return): void {
       executor.post(scope as IngressScopeRef, {
         status: "resolved",
         value,
-      } satisfies ResolvedSettlement<ReturnValue>);
+      } satisfies ResolvedSettlement<Return>);
     },
     scope,
   };

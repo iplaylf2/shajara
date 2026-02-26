@@ -6,8 +6,8 @@ import { narrowAs } from "#src/utils/narrow.js";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp/plan";
 
-type CompletedAwaitScopeExit<ReturnValue> = Extract<
-  AwaitScopeExit<ReturnValue>,
+type CompletedAwaitScopeExit<Return> = Extract<
+  AwaitScopeExit<Return>,
   { readonly kind: "completed" }
 >;
 
@@ -15,13 +15,11 @@ type CompletedAwaitScopeExit<ReturnValue> = Extract<
  * Awaits a child scope supervised by the current supervisor scope.
  * "Supervised" is a relative relationship role, not a distinct scope entity.
  */
-export function awaitSupervisedScope<ReturnValue>(
-  scopeRef: ScopeRef<ReturnValue>,
-): Plan<ReturnValue> {
+export function awaitSupervisedScope<Return>(scopeRef: ScopeRef<Return>): Plan<Return> {
   return pipe(
     awaitScope(scopeRef),
     plan.liftF,
-    plan.map(narrowAs<CompletedAwaitScopeExit<ReturnValue>>()),
+    plan.map(narrowAs<CompletedAwaitScopeExit<Return>>()),
     plan.map(({ value }) => value),
   );
 }

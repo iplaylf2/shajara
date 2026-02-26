@@ -6,10 +6,10 @@ import { runtimeLaunch } from "#src/operations-kit/runtime-launch";
 import { suspend } from "#src/primitives/suspend";
 
 export interface RuntimeScope {
-  run<ReturnValue>(
-    runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
+  run<Return>(
+    runtimeBlueprint: RuntimeBlueprint<Return>,
     options?: RunOptions,
-  ): StatefulPromise<ReturnValue>;
+  ): StatefulPromise<Return>;
   halt(): Promise<void>;
   readonly state: RuntimeScopeState;
   readonly closed: Promise<void>;
@@ -29,10 +29,10 @@ export function createScope(): RuntimeScope {
     },
     closed,
     halt: haltScope,
-    run<ReturnValue>(
-      runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
+    run<Return>(
+      runtimeBlueprint: RuntimeBlueprint<Return>,
       options?: RunOptions,
-    ): StatefulPromise<ReturnValue> {
+    ): StatefulPromise<Return> {
       return runtimeLaunch(executor, launchedScope.scope, runtimeBlueprint, options).settled;
     },
     get state(): RuntimeScopeState {

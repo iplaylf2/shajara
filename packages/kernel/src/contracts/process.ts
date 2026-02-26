@@ -1,11 +1,11 @@
 const PROCESS_REF_TOKEN: unique symbol = Symbol("process-ref");
 
-export interface ProcessRef<ReturnValue = unknown> {
+export interface ProcessRef<Return = unknown> {
   readonly [PROCESS_REF_TOKEN]: "process-ref";
-  readonly _return?: ReturnValue;
+  readonly _return?: Return;
 }
 
-export type ProcessExit<ReturnValue = unknown> =
-  | { readonly kind: "completed"; readonly value: ReturnValue }
+export type ProcessExit<Return = unknown> =
+  | { readonly kind: "completed"; readonly value: Return }
   | { readonly kind: "failed"; readonly fault: unknown }
   | { readonly kind: "terminated" };

@@ -1,6 +1,6 @@
-export interface ResolvedSettlement<ReturnValue> {
+export interface ResolvedSettlement<Return> {
   readonly status: "resolved";
-  readonly value: ReturnValue;
+  readonly value: Return;
 }
 
 export interface RejectedSettlement {
@@ -8,4 +8,4 @@ export interface RejectedSettlement {
   readonly reason: unknown;
 }
 
-export type Settlement<ReturnValue> = ResolvedSettlement<ReturnValue> | RejectedSettlement;
+export type Settlement<Return> = ResolvedSettlement<Return> | RejectedSettlement;

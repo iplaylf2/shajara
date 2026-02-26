@@ -1,5 +1,5 @@
 import type { Syscall } from "@khora/kernel";
 
-export type RuntimePlan<ReturnValue> = Generator<Syscall, ReturnValue, unknown>;
+export type RuntimePlan<Return> = Generator<Syscall, Return, unknown>;
 
-export type RuntimeBlueprint<ReturnValue> = () => RuntimePlan<ReturnValue>;
+export type RuntimeBlueprint<Return> = () => RuntimePlan<Return>;

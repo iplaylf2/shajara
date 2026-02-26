@@ -1,10 +1,10 @@
 import type { Plan, Syscall } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 
-function lowerRuntimeStep<ReturnValue>(
-  runtimePlan: RuntimePlan<ReturnValue>,
-  step: IteratorResult<Syscall, ReturnValue>,
-): Plan<ReturnValue> {
+function lowerRuntimeStep<Return>(
+  runtimePlan: RuntimePlan<Return>,
+  step: IteratorResult<Syscall, Return>,
+): Plan<Return> {
   if (step.done) {
     return {
       kind: "pure",
@@ -20,17 +20,17 @@ function lowerRuntimeStep<ReturnValue>(
   };
 }
 
-function lowerRuntimeNext<ReturnValue>(
-  runtimePlan: RuntimePlan<ReturnValue>,
+function lowerRuntimeNext<Return>(
+  runtimePlan: RuntimePlan<Return>,
   response: unknown,
-): Plan<ReturnValue> {
+): Plan<Return> {
   return lowerRuntimeStep(runtimePlan, runtimePlan.next(response));
 }
 
-function lowerRuntimeReturn<ReturnValue>(runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
-  return lowerRuntimeStep(runtimePlan, runtimePlan.return(null as ReturnValue));
+function lowerRuntimeReturn<Return>(runtimePlan: RuntimePlan<Return>): Plan<Return> {
+  return lowerRuntimeStep(runtimePlan, runtimePlan.return(null as Return));
 }
 
-export function lowerPlan<ReturnValue>(runtimePlan: RuntimePlan<ReturnValue>): Plan<ReturnValue> {
+export function lowerPlan<Return>(runtimePlan: RuntimePlan<Return>): Plan<Return> {
   return lowerRuntimeNext(runtimePlan, null);
 }

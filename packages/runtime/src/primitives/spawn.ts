@@ -5,9 +5,9 @@ import { spawn as kernelSpawn } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
-export function spawn<ReturnValue>(
-  blueprint: RuntimeBlueprint<ReturnValue>,
+export function spawn<Return>(
+  blueprint: RuntimeBlueprint<Return>,
   spec?: ScopeSpec,
-): RuntimePlan<SpawnRef<ReturnValue>> {
+): RuntimePlan<SpawnRef<Return>> {
   return liftPlan(kernelSpawn(lowerPlan(blueprint()), spec));
 }

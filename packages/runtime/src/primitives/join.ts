@@ -4,7 +4,7 @@ import { join as kernelJoin } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { unwrapEither } from "#src/primitives-kit/unwrap-either";
 
-export function* join<ReturnValue>(spawned: SpawnRef<ReturnValue>): RuntimePlan<ReturnValue> {
+export function* join<Return>(spawned: SpawnRef<Return>): RuntimePlan<Return> {
   const either = yield* liftPlan(kernelJoin(spawned));
   return unwrapEither(either);
 }

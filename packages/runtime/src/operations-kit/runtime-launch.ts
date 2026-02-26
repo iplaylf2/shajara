@@ -15,18 +15,18 @@ export interface RunOptions {
   readonly signal?: AbortSignal;
 }
 
-export interface StatefulPromise<ReturnValue> extends PromiseLike<ReturnValue> {
+export interface StatefulPromise<Return> extends PromiseLike<Return> {
   state(): LaunchState;
 }
 
-export interface RuntimeLaunchResult<ReturnValue> {
+export interface RuntimeLaunchResult<Return> {
   readonly scope: ExecutionScopeRef;
-  readonly settled: StatefulPromise<ReturnValue>;
+  readonly settled: StatefulPromise<Return>;
 }
 
-function asSettledPromise<ReturnValue>(execution: LaunchHandle<ReturnValue>): Promise<ReturnValue> {
-  return new Promise<ReturnValue>((resolve, reject) => {
-    execution.result.onResult((result: LaunchResult<ReturnValue>) => {
+function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Return> {
+  return new Promise<Return>((resolve, reject) => {
+    execution.result.onResult((result: LaunchResult<Return>) => {
       switch (result.kind) {
         case "success":
           resolve(result.value);
@@ -42,16 +42,16 @@ function asSettledPromise<ReturnValue>(execution: LaunchHandle<ReturnValue>): Pr
   });
 }
 
-function toStatefulPromise<ReturnValue>(
-  execution: LaunchHandle<ReturnValue>,
-  settled: Promise<ReturnValue>,
-): StatefulPromise<ReturnValue> {
+function toStatefulPromise<Return>(
+  execution: LaunchHandle<Return>,
+  settled: Promise<Return>,
+): StatefulPromise<Return> {
   return {
     state(): LaunchState {
       return execution.state();
     },
-    then<TResult1 = ReturnValue, TResult2 = never>(
-      onfulfilled?: ((value: ReturnValue) => TResult1 | PromiseLike<TResult1>) | null | undefined,
+    then<TResult1 = Return, TResult2 = never>(
+      onfulfilled?: ((value: Return) => TResult1 | PromiseLike<TResult1>) | null | undefined,
       onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null | undefined,
     ): PromiseLike<TResult1 | TResult2> {
       return settled.then(onfulfilled, onrejected);
@@ -59,15 +59,15 @@ function toStatefulPromise<ReturnValue>(
   };
 }
 
-export function runtimeLaunch<ReturnValue>(
+export function runtimeLaunch<Return>(
   executor: Executor,
   scope: ExecutionScopeRootRef | ExecutionScopeRef,
-  runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
+  runtimeBlueprint: RuntimeBlueprint<Return>,
   options?: RunOptions,
-): RuntimeLaunchResult<ReturnValue> {
+): RuntimeLaunchResult<Return> {
   const signal = options?.signal;
 
-  function* wrappedRuntimeBlueprint(): ReturnType<RuntimeBlueprint<ReturnValue>> {
+  function* wrappedRuntimeBlueprint(): ReturnType<RuntimeBlueprint<Return>> {
     if (!signal) {
       return yield* runtimeBlueprint();
     }

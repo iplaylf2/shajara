@@ -10,13 +10,13 @@ import { readonlyArray } from "fp-ts";
 import { spawn } from "#src/syscalls";
 import { supervisorScopeSpec } from "#src/scopes";
 
-type AllBranches<BranchReturnValues extends UnknownArray> = {
-  readonly [Index in keyof BranchReturnValues]: Blueprint<BranchReturnValues[Index]>;
+type AllBranches<BranchReturns extends UnknownArray> = {
+  readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
 };
 
-export function all<BranchReturnValues extends UnknownArray>(
-  branches: AllBranches<BranchReturnValues>,
-): Plan<Either<unknown, BranchReturnValues>> {
+export function all<BranchReturns extends UnknownArray>(
+  branches: AllBranches<BranchReturns>,
+): Plan<Either<unknown, BranchReturns>> {
   return pipe(
     spawn(
       () =>
@@ -26,7 +26,7 @@ export function all<BranchReturnValues extends UnknownArray>(
           plan.sequence,
           plan.map(readonlyArray.map(({ scopeRef }) => awaitSupervisedScope(scopeRef))),
           plan.chain(plan.sequence),
-          plan.map(narrowArrayAs<BranchReturnValues>()),
+          plan.map(narrowArrayAs<BranchReturns>()),
         ),
       supervisorScopeSpec(),
     ),

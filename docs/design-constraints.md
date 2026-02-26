@@ -23,6 +23,7 @@
 - `*Return` 仅用于“调用返回载荷”语义（call-return payload），即某个调用/协议在返回通道中的值形状。
 - `*Exit` 仅用于“生命周期终态”语义（lifecycle termination），即实体如何结束（如 `completed/failed/terminated`）。
 - 这两类后缀不可混用：生命周期终态类型不得命名为 `*Return`，普通调用返回载荷类型不得命名为 `*Exit`。
+- 返回类型相关泛型参数统一命名为 `Return`（复数为 `Returns`）；运行时值字段统一命名为 `value`。
 
 作用域引用约束固定为：`ScopeRef` 与 `ScopeSpec` 基础类型定义在 `packages/kernel/src/contracts/scope.ts`；`IngressScopeRef` 定义在 `packages/kernel/src/scopes/ingress.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 

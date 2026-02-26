@@ -3,18 +3,18 @@ import type { ProcessRef } from "#src/contracts/process";
 import type { Syscall } from "#src/contracts/syscall";
 
 export interface ForkSyscall<
-  ReturnValue = unknown,
-  ForkedProcess extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
+  Return = unknown,
+  ForkedProcess extends ProcessRef<Return> = ProcessRef<Return>,
 > extends Syscall {
   readonly kind: "fork";
-  readonly blueprint: Blueprint<ReturnValue>;
+  readonly blueprint: Blueprint<Return>;
   readonly return?: readonly [ForkedProcess];
 }
 
 export function fork<
-  ReturnValue = unknown,
-  ForkedProcess extends ProcessRef<ReturnValue> = ProcessRef<ReturnValue>,
->(blueprint: Blueprint<ReturnValue>): ForkSyscall<ReturnValue, ForkedProcess> {
+  Return = unknown,
+  ForkedProcess extends ProcessRef<Return> = ProcessRef<Return>,
+>(blueprint: Blueprint<Return>): ForkSyscall<Return, ForkedProcess> {
   return {
     blueprint,
     kind: "fork",

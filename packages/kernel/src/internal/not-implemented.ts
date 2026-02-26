@@ -1,3 +1,3 @@
-export function notImplemented<ReturnValue>(subject: string): ReturnValue {
+export function notImplemented<Return>(subject: string): Return {
   throw new Error(`Not implemented: ${subject}.`);
 }

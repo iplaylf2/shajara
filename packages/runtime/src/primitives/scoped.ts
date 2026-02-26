@@ -6,10 +6,10 @@ import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 import { unwrapEither } from "#src/primitives-kit/unwrap-either";
 
-export function* scoped<ReturnValue, CaughtValue = never>(
-  blueprint: RuntimeBlueprint<ReturnValue>,
+export function* scoped<Return, CaughtValue = never>(
+  blueprint: RuntimeBlueprint<Return>,
   options?: RuntimeScopedOptions<CaughtValue>,
-): RuntimePlan<ReturnValue | CaughtValue> {
+): RuntimePlan<Return | CaughtValue> {
   const either = yield* liftPlan(scopedKernelPrimitive(blueprint, options));
   return unwrapEither(either);
 }
@@ -20,14 +20,14 @@ export interface RuntimeScopedOptions<CaughtValue> {
   readonly spec?: ScopeSpec;
 }
 
-function scopedKernelPrimitive<ReturnValue, CaughtValue = never>(
-  runtimeBlueprint: RuntimeBlueprint<ReturnValue>,
+function scopedKernelPrimitive<Return, CaughtValue = never>(
+  runtimeBlueprint: RuntimeBlueprint<Return>,
   options?: RuntimeScopedOptions<CaughtValue>,
 ) {
   const plan = lowerPlan(runtimeBlueprint());
   const kernelOnResumableError = toKernelOnResumableError(options?.onResumableError);
   const kernelOptions = toKernelScopedOptions(options?.spec, kernelOnResumableError);
-  return kernelScoped<ReturnValue, CaughtValue>(plan, kernelOptions);
+  return kernelScoped<Return, CaughtValue>(plan, kernelOptions);
 }
 
 function toKernelOnResumableError<CaughtValue>(

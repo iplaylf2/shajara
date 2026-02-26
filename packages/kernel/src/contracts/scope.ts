@@ -1,9 +1,9 @@
 const SCOPE_REF_TOKEN: unique symbol = Symbol("scope-ref");
 const SCOPE_SPEC_TOKEN: unique symbol = Symbol("scope-spec");
 
-export interface ScopeRef<ReturnValue = unknown> {
+export interface ScopeRef<Return = unknown> {
   readonly [SCOPE_REF_TOKEN]: "scope-ref";
-  readonly _return?: ReturnValue;
+  readonly _return?: Return;
 }
 
 export interface ScopeSpec<Role extends string = string> {

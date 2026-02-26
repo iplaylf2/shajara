@@ -3,19 +3,18 @@ import type { Blueprint } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
-export type RuntimeBlueprintTuple<ReturnValues extends readonly unknown[]> = {
-  readonly [Index in keyof ReturnValues]: RuntimeBlueprint<ReturnValues[Index]>;
+export type RuntimeBlueprintTuple<Returns extends readonly unknown[]> = {
+  readonly [Index in keyof Returns]: RuntimeBlueprint<Returns[Index]>;
 };
 
-export type RuntimeBlueprintValue<ReturnValues extends readonly unknown[]> =
-  ArrayValues<ReturnValues>;
+export type RuntimeBlueprintValue<Returns extends readonly unknown[]> = ArrayValues<Returns>;
 
-export function lowerRuntimeBlueprints<ReturnValues extends readonly unknown[]>(
-  runtimeBlueprints: RuntimeBlueprintTuple<ReturnValues>,
+export function lowerRuntimeBlueprints<Returns extends readonly unknown[]>(
+  runtimeBlueprints: RuntimeBlueprintTuple<Returns>,
 ): {
-  readonly [Index in keyof ReturnValues]: Blueprint<ReturnValues[Index]>;
+  readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
 } {
   return runtimeBlueprints.map((runtimeBlueprint) => () => lowerPlan(runtimeBlueprint())) as {
-    readonly [Index in keyof ReturnValues]: Blueprint<ReturnValues[Index]>;
+    readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
   };
 }

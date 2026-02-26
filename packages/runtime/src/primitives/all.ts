@@ -5,9 +5,9 @@ import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerRuntimeBlueprints } from "#src/primitives-kit/lower-runtime-blueprints";
 import { unwrapEither } from "#src/primitives-kit/unwrap-either";
 
-export function* all<ReturnValues extends readonly unknown[]>(
-  primitives: RuntimeBlueprintTuple<ReturnValues>,
-): RuntimePlan<ReturnValues> {
+export function* all<Returns extends readonly unknown[]>(
+  primitives: RuntimeBlueprintTuple<Returns>,
+): RuntimePlan<Returns> {
   const either = yield* liftPlan(kernelAll(lowerRuntimeBlueprints(primitives)));
   return unwrapEither(either);
 }

@@ -3,9 +3,6 @@ import type { ScopeSpec } from "#src/contracts/scope";
 import type { SpawnRef as SpawnScopeRef } from "#src/syscalls";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export function spawn<ReturnValue>(
-  _plan: Plan<ReturnValue>,
-  _spec?: ScopeSpec,
-): Plan<SpawnScopeRef<ReturnValue>> {
+export function spawn<Return>(_plan: Plan<Return>, _spec?: ScopeSpec): Plan<SpawnScopeRef<Return>> {
   return notImplemented("kernel primitive 'spawn'");
 }

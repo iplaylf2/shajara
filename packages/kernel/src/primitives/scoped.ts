@@ -9,9 +9,9 @@ export interface ScopedOptions<CaughtValue> {
   readonly spec?: ScopeSpec;
 }
 
-export function scoped<ReturnValue, CaughtValue = never>(
-  _plan: Plan<ReturnValue>,
+export function scoped<Return, CaughtValue = never>(
+  _plan: Plan<Return>,
   _options?: ScopedOptions<CaughtValue>,
-): Plan<Either<unknown, ReturnValue | CaughtValue>> {
+): Plan<Either<unknown, Return | CaughtValue>> {
   return notImplemented("kernel primitive 'scoped'");
 }
