@@ -1,5 +1,4 @@
-import type { ScopeExit, ScopeRef, ScopeRefReturn } from "#src/contracts/scope";
-import type { Syscall } from "#src/contracts/syscall";
+import type { ScopeExit, ScopeRef, ScopeRefReturn, Syscall } from "#src/contracts";
 
 export interface AwaitScopeSyscall<Scope extends ScopeRef<unknown>> extends Syscall {
   readonly kind: "await-scope";

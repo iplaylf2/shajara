@@ -1,9 +1,9 @@
-import type { RunOptions, StatefulPromise } from "#src/operations-kit/runtime-launch";
+import type { RunOptions, StatefulPromise } from "#src/operations-kit";
 import type { LaunchState } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
-import { runtimeLaunch } from "#src/operations-kit/runtime-launch";
-import { suspend } from "#src/primitives/suspend";
+import { runtimeLaunch } from "#src/operations-kit";
+import { suspend } from "#src/primitives";
 
 export interface RuntimeScope {
   run<Return>(

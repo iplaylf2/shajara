@@ -1,4 +1,4 @@
-import type { ScopeSpec } from "#src/contracts/scope";
+import type { ScopeSpec } from "#src/contracts";
 import type { SpawnDescriptor } from "#src/syscalls";
 
 export interface SupervisorScopeSpecOptions {}

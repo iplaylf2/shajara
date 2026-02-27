@@ -1,9 +1,8 @@
-import type { ScopeCompletedExit, ScopeRef } from "#src/contracts/scope";
-import type { Plan } from "#src/contracts/plan";
+import type { Plan, ScopeCompletedExit, ScopeRef } from "#src/contracts";
 import { awaitScope } from "#src/syscalls";
-import { narrowAs } from "#src/utils/narrow";
+import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
-import { plan } from "#src/internal/fp/plan";
+import { plan } from "#src/internal/fp";
 
 /**
  * Awaits a child scope supervised by the current supervisor scope.

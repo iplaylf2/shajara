@@ -6,9 +6,8 @@ import type {
   LaunchResult,
   LaunchState,
 } from "@khora/kernel";
+import { RuntimeKhoraFailureError, RuntimeScopeTerminatedError } from "#src/errors";
 import type { RuntimeBlueprint } from "#src/contracts";
-import { RuntimeKhoraFailureError } from "#src/errors/runtime-khora-failure";
-import { RuntimeScopeTerminatedError } from "#src/errors/runtime-scope-terminated";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
 export interface RunOptions {

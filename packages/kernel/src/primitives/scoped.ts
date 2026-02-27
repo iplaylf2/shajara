@@ -1,7 +1,5 @@
+import type { KhoraFailure, Plan, ScopeSpec } from "#src/contracts";
 import type { Either } from "fp-ts/Either";
-import type { KhoraFailure } from "#src/contracts/failure";
-import type { Plan } from "#src/contracts/plan";
-import type { ScopeSpec } from "#src/contracts/scope";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export type ResumableErrorHandler<CaughtValue> = (error: Error) => Plan<CaughtValue>;

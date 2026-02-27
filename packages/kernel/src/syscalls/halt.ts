@@ -1,5 +1,4 @@
-import type { KhoraFailure } from "#src/contracts/failure";
-import type { Syscall } from "#src/contracts/syscall";
+import type { KhoraFailure, Syscall } from "#src/contracts";
 
 export interface HaltSyscall extends Syscall {
   readonly fault?: KhoraFailure;

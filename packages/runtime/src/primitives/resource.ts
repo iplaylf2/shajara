@@ -2,7 +2,7 @@ import type { RuntimePlan } from "#src/contracts";
 import { resource as kernelResource } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
-import { unwrapEither } from "#src/primitives-kit/unwrap-either";
+import { unwrapEither } from "#src/primitives-kit";
 
 export type RuntimeResourceProvide<ProvidedValue> = (value: ProvidedValue) => RuntimePlan<never>;
 

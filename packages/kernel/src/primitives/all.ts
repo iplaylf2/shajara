@@ -1,12 +1,10 @@
-import type { Blueprint, Plan } from "#src/contracts/plan";
+import type { Blueprint, KhoraFailure, Plan } from "#src/contracts";
+import { awaitScopeConverged, awaitSupervisedScope } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
 import type { Either } from "fp-ts/Either";
-import type { KhoraFailure } from "#src/contracts/failure";
 import type { UnknownArray } from "type-fest";
-import { awaitScopeConverged } from "#src/primitives-kit/await-scope-converged";
-import { awaitSupervisedScope } from "#src/primitives-kit/await-supervised-scope";
-import { narrowArrayAs } from "#src/utils/narrow";
-import { plan } from "#src/internal/fp/plan";
+import { narrowArrayAs } from "#src/utils";
+import { plan } from "#src/internal/fp";
 import { readonlyArray } from "fp-ts";
 import { spawn } from "#src/syscalls";
 import { supervisorScopeSpec } from "#src/scopes";

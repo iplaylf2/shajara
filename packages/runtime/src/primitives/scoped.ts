@@ -4,7 +4,7 @@ import type { ScopeSpec } from "@khora/kernel";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
-import { unwrapEither } from "#src/primitives-kit/unwrap-either";
+import { unwrapEither } from "#src/primitives-kit";
 
 export function* scoped<Return, CaughtValue = never>(
   blueprint: RuntimeBlueprint<Return>,

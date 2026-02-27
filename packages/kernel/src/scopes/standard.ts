@@ -1,4 +1,4 @@
-import type { ScopeSpec } from "#src/contracts/scope";
+import type { ScopeSpec } from "#src/contracts";
 
 export interface StandardScopeSpecOptions {}
 export interface StandardScopeSpec extends ScopeSpec {

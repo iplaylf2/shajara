@@ -1,5 +1,4 @@
-import type { ScopeRef } from "#src/contracts/scope";
-import type { Syscall } from "#src/contracts/syscall";
+import type { ScopeRef, Syscall } from "#src/contracts";
 
 export type ScopeStatus = "Running" | "Closing" | "Exited" | "InLimbo";
 

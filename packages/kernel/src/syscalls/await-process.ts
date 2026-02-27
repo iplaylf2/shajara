@@ -1,5 +1,4 @@
-import type { ProcessExit, ProcessRef, ProcessRefReturn } from "#src/contracts/process";
-import type { Syscall } from "#src/contracts/syscall";
+import type { ProcessExit, ProcessRef, ProcessRefReturn, Syscall } from "#src/contracts";
 
 export interface AwaitProcessSyscall<Process extends ProcessRef<unknown>> extends Syscall {
   readonly kind: "await-process";

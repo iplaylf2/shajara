@@ -1,6 +1,4 @@
-import type { Blueprint } from "#src/contracts/plan";
-import type { ProcessRef } from "#src/contracts/process";
-import type { Syscall } from "#src/contracts/syscall";
+import type { Blueprint, ProcessRef, Syscall } from "#src/contracts";
 
 export interface ForkSyscall<Return, ForkedProcess extends ProcessRef<Return>> extends Syscall {
   readonly kind: "fork";

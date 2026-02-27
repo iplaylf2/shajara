@@ -1,4 +1,4 @@
-import type { Syscall } from "#src/contracts/syscall";
+import type { Syscall } from "#src/contracts";
 
 export interface CedeSyscall extends Syscall {
   readonly kind: "cede";

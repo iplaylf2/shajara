@@ -1,5 +1,4 @@
-import type { ProcessRef } from "#src/contracts/process";
-import type { Syscall } from "#src/contracts/syscall";
+import type { ProcessRef, Syscall } from "#src/contracts";
 
 export interface TerminateSyscall<Process extends ProcessRef<unknown>> extends Syscall {
   readonly kind: "terminate";

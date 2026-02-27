@@ -1,5 +1,4 @@
-import type { ProcessExit, ProcessRef, ProcessRefReturn } from "#src/contracts/process";
-import type { Syscall } from "#src/contracts/syscall";
+import type { ProcessExit, ProcessRef, ProcessRefReturn, Syscall } from "#src/contracts";
 
 export type PollProcessResult<Return> =
   | { readonly exited: false }

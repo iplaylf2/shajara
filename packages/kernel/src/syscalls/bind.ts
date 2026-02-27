@@ -1,4 +1,4 @@
-import type { Syscall } from "#src/contracts/syscall";
+import type { Syscall } from "#src/contracts";
 
 export interface BindSyscall<Key extends string, Value> extends Syscall {
   readonly kind: "bind";

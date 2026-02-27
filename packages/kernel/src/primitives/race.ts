@@ -1,6 +1,5 @@
-import type { Blueprint, Plan } from "#src/contracts/plan";
+import type { Blueprint, KhoraFailure, Plan } from "#src/contracts";
 import type { Either } from "fp-ts/Either";
-import type { KhoraFailure } from "#src/contracts/failure";
 import type { UnknownArray } from "type-fest";
 import { notImplemented } from "#src/internal/not-implemented";
 

@@ -1,5 +1,5 @@
 import type { KhoraFailure } from "./failure";
-import { REF_TOKEN } from "#src/utils/ref";
+import { REF_TOKEN } from "#src/utils";
 
 export interface ProcessRef<Return> {
   readonly [REF_TOKEN]: "process";

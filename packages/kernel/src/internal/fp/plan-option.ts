@@ -1,8 +1,7 @@
 // oxlint-disable id-length
+import type { Plan, Syscall } from "#src/contracts";
 import type { applicative, apply, functor, monad, option, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, optionT, readonlyArray } from "fp-ts";
-import type { Plan } from "#src/contracts/plan.js";
-import type { Syscall } from "#src/contracts/syscall.js";
 import { flow } from "fp-ts/function";
 import { lifting } from "./lifting";
 import { plan } from "./plan";

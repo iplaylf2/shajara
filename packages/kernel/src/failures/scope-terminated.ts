@@ -1,5 +1,4 @@
-import type { KhoraFailure } from "#src/contracts/failure";
-import type { ScopeRef } from "#src/contracts/scope";
+import type { KhoraFailure, ScopeRef } from "#src/contracts";
 
 export interface ScopeTerminatedFailure extends KhoraFailure {
   readonly kind: "scope-terminated";

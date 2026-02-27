@@ -1,5 +1,5 @@
 import type { KhoraFailure } from "@khora/kernel";
-import { RuntimeKhoraFailureError } from "#src/errors/runtime-khora-failure";
+import { RuntimeKhoraFailureError } from "#src/errors";
 
 type Right<Return> = { readonly right: Return };
 type Left = { readonly left: KhoraFailure };

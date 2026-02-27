@@ -1,7 +1,7 @@
-import type { RunOptions, StatefulPromise } from "#src/operations-kit/runtime-launch";
+import type { RunOptions, StatefulPromise } from "#src/operations-kit";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
-import { runtimeLaunch } from "#src/operations-kit/runtime-launch";
+import { runtimeLaunch } from "#src/operations-kit";
 
 export function run<Return>(
   runtimeBlueprint: RuntimeBlueprint<Return>,

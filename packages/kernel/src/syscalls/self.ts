@@ -1,6 +1,4 @@
-import type { ProcessRef } from "#src/contracts/process";
-import type { ScopeRef } from "#src/contracts/scope";
-import type { Syscall } from "#src/contracts/syscall";
+import type { ProcessRef, ScopeRef, Syscall } from "#src/contracts";
 
 export interface SelfDescriptor {
   readonly scopeRef: ScopeRef<unknown>;

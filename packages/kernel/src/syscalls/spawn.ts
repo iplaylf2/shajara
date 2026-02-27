@@ -1,7 +1,4 @@
-import type { ScopeRef, ScopeSpec } from "#src/contracts/scope";
-import type { Blueprint } from "#src/contracts/plan";
-import type { ProcessRef } from "#src/contracts/process";
-import type { Syscall } from "#src/contracts/syscall";
+import type { Blueprint, ProcessRef, ScopeRef, ScopeSpec, Syscall } from "#src/contracts";
 
 export type SpawnRef<Return> = ScopeRef<Return>;
 

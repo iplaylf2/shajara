@@ -1,4 +1,4 @@
-import type { ScopeRef, ScopeSpec } from "#src/contracts/scope";
+import type { ScopeRef, ScopeSpec } from "#src/contracts";
 
 const INGRESS_SCOPE_REF_TOKEN: unique symbol = Symbol("ingress-scope-ref");
 

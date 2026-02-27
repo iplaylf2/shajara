@@ -1,4 +1,4 @@
-import type { Plan } from "#src/contracts/plan";
+import type { Plan } from "#src/contracts";
 import { receive as syscallReceive } from "#src/syscalls";
 
 export function receive<ReceiveValue>(): Plan<ReceiveValue> {

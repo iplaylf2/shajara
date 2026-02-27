@@ -1,6 +1,5 @@
-import type { KhoraFailure } from "#src/contracts/failure";
-import type { Plan } from "#src/contracts/plan";
-import { plan } from "#src/internal/fp/plan";
+import type { KhoraFailure, Plan } from "#src/contracts";
+import { plan } from "#src/internal/fp";
 import { halt as syscallHalt } from "#src/syscalls";
 
 export function halt(fault?: KhoraFailure): Plan<never> {
