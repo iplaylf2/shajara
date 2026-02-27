@@ -1,7 +1,7 @@
 import type { Blueprint, ProcessRef, ScopeRef, ScopeSpec, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
-import { standardScopeSpec } from "#src/scopes/standard";
 import type { StandardScopeSpec } from "#src/scopes/standard";
+import { standardScopeSpec } from "#src/scopes/standard";
 
 export interface SpawnDescriptor<Return, Spec extends ScopeSpec> {
   readonly scopeRef: ScopeRef<Return, Spec>;
