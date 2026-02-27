@@ -1,4 +1,4 @@
-import type { RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
+import type { RuntimeBlueprint, RuntimeKhoraFailureError, RuntimePlan } from "@khora/runtime";
 import { action, sleep, until } from "@khora/runtime";
 import {
   all,
@@ -49,8 +49,8 @@ function* raceBlueprint(): RuntimePlan<void> {
   consume(winner);
 }
 
-function* onResumableError(error: Error): RuntimePlan<string> {
-  consume(error);
+function* onResumableFailure(error: RuntimeKhoraFailureError): RuntimePlan<unknown> {
+  consume(error.message);
   yield* cede();
   return "scoped fallback";
 }
@@ -61,7 +61,7 @@ function* scopedBodyBlueprint(): RuntimePlan<string> {
 }
 
 function* scopedBlueprint(): RuntimePlan<void> {
-  const scopedResult = yield* scoped(scopedBodyBlueprint, { onResumableError });
+  const scopedResult = yield* scoped(scopedBodyBlueprint, { onResumableFailure });
   consume(scopedResult);
 }
 

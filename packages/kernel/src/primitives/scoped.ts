@@ -2,15 +2,15 @@ import type { KhoraFailure, Plan, ScopeSpec } from "#src/contracts";
 import type { Either } from "fp-ts/Either";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export type ResumableErrorHandler<CaughtValue> = (error: Error) => Plan<CaughtValue>;
-export interface ScopedOptions<CaughtValue> {
-  readonly onResumableError?: ResumableErrorHandler<CaughtValue>;
+export type ResumableFailureHandler = (failure: KhoraFailure) => Plan<unknown>;
+export interface ScopedOptions {
+  readonly onResumableFailure?: ResumableFailureHandler;
   readonly spec?: ScopeSpec;
 }
 
-export function scoped<Return, CaughtValue>(
+export function scoped<Return>(
   _plan: Plan<Return>,
-  _options?: ScopedOptions<CaughtValue>,
-): Plan<Either<KhoraFailure, Return | CaughtValue>> {
+  _options?: ScopedOptions,
+): Plan<Either<KhoraFailure, Return>> {
   return notImplemented("kernel primitive 'scoped'");
 }

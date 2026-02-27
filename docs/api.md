@@ -54,8 +54,8 @@
 - `resource` 创建资源作用域；调用方等待 `provide(value)` 的首个值作为返回，资源作用域在 `provide` 后继续挂起并等待父 scope 回收。
 - `all` 聚合等待多个分支。
 - `race` 选择最先完成者，并触发其余分支收敛。
-- `scoped(blueprint, options?)` 创建子 `Scope` 并立即等待其收敛；`options` 可包含 `spec` 与 `onResumableError`。`onResumableError` 是 `resumable` 路径捕获 handler，不是 `scoped` 自身异常兜底；等待 syscall 的观察语义与终态传播规则见 `docs/semantics.md`。
-- `resumable` 在 `scoped` body 中声明可恢复边界；只有被 `resumable` 标记的子孙作用域抛出的异常会进入祖先 `scoped` 的 `onResumableError` 路径。
+- `scoped(blueprint, options?)` 创建子 `Scope` 并立即等待其收敛；`options` 可包含 `spec` 与 `onResumableFailure`。`onResumableFailure` 是 `resumable` 路径捕获 handler，不是 `scoped` 自身异常兜底；其入参类型为 `RuntimeKhoraFailureError`，返回 `RuntimePlan<unknown>`，不改写 `scoped` 的成功返回类型；等待 syscall 的观察语义与终态传播规则见 `docs/semantics.md`。
+- `resumable` 在 `scoped` body 中声明可恢复边界；只有被 `resumable` 标记的子孙作用域失败会进入祖先 `scoped` 的 `onResumableFailure` 路径。
 
 ### 4.2 基础原语
 

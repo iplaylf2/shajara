@@ -15,6 +15,7 @@ Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` �
 7. 本轮代码检查结果：`@khora/kernel` 与 `@khora/runtime` 的 typecheck 通过，仓库 lint 通过。Evidence: `yarn workspace @khora/kernel typecheck`, `yarn workspace @khora/runtime typecheck`, `yarn lint`。
 8. runtime 宿主桥接入口保持一致：`run/createScope` 均通过 `runtimeLaunch` 收敛 `LaunchResult`，`action` 通过 `IngressScopeRef + executor.post` 完成宿主结算投递，未引入绕过执行入口的新通道。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/operations/action.ts`, `packages/kernel/src/executor.ts`。
 9. “可选参数/默认参数”治理已从盘点进入落地：`kernel` 侧 `Plan/Scope/Process` 合约与多处 syscall/primitives 的默认泛型已移除；`ScopeRef/ScopeSpec/ProcessRef` 引用位已补全显式类型参数，避免通过默认值静默降级为弱约束。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`。
+10. `scoped` 的失败 handler 在 runtime 边界已收敛为错误对象消费：kernel 仍以 `KhoraFailure` 为内部失败契约，runtime `onResumableFailure` 入参映射为 `RuntimeKhoraFailureError`；example 调用侧已切回直接使用 runtime 错误类型（不再暴露 kernel 失败契约细节）。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
 
 ## 3. 相对设计基线增量（仅记录 delta）
 
@@ -42,6 +43,10 @@ Impact: `spawn` syscall 返回契约不再随 `SupervisorScope` 变化；`awaitS
 
 Impact: kernel 合约与核心 syscall/primitives 的默认泛型已移除，类型约束从“隐式默认”转为“调用点显式”；该变化降低了 `unknown` 默认外溢与契约误读风险。当前剩余默认泛型位于 runtime 内部实现细节，后续可按需要继续收敛。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/primitives/scoped.ts`。
 
+### 3.7 delta：`scoped` 失败 handler 的 runtime 消费面完成边界收敛
+
+Impact: 用户侧 `onResumableFailure` 已直接消费 `RuntimeKhoraFailureError`，不再暴露 kernel `KhoraFailure`；`docs/api.md` 与 `docs/design-constraints.md` 的职责分工已回到“API 只写用户可见签名、约束文档只写边界规则”。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
+
 ## 4. 当前阶段执行切片（Build）
 
 | Slice                        | Status      | Output                                                                                      | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -64,4 +69,4 @@ Build 阶段继续按 `B1 -> B5 -> Prove` 推进：
 3. Prove 入口条件
    Build 主链闭环后补充 `terminate`、作用域状态转换、失败传播与结构性收敛验证。
 4. B6 后续收敛入口
-   在不改变用户侧公开语义前提下，按需继续移除 runtime 内部残余默认泛型（当前集中在 PromiseLike `then<TResult...>` 与 scoped 的 `CaughtValue = never`）。
+   在不改变用户侧公开语义前提下，按需继续移除 runtime 内部残余默认泛型（当前集中在 PromiseLike `then<TResult...>`）。
