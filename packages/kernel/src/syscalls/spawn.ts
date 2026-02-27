@@ -10,17 +10,14 @@ export interface SpawnDescriptor<Return> {
   readonly processRef: ProcessRef<Return>;
 }
 
-export interface SpawnSyscall<Return, Spec extends ScopeSpec<string>> extends Syscall {
+export interface SpawnSyscall<Return> extends Syscall {
   readonly kind: "spawn";
   readonly entry: Blueprint<Return>;
-  readonly spec?: Spec;
+  readonly spec?: ScopeSpec;
   readonly return?: readonly [SpawnDescriptor<Return>];
 }
 
-export function spawn<Return, Spec extends ScopeSpec<string>>(
-  entry: Blueprint<Return>,
-  spec?: Spec,
-): SpawnSyscall<Return, Spec> {
+export function spawn<Return>(entry: Blueprint<Return>, spec?: ScopeSpec): SpawnSyscall<Return> {
   return {
     entry,
     kind: "spawn",

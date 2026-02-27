@@ -1,5 +1,4 @@
 import type { ScopeRef, ScopeSpec } from "#src/contracts/scope";
-import { createScopeSpec } from "#src/scopes-kit/factory";
 
 const INGRESS_SCOPE_REF_TOKEN: unique symbol = Symbol("ingress-scope-ref");
 
@@ -8,6 +7,10 @@ export interface IngressScopeRef extends ScopeRef<unknown> {
 }
 
 export interface IngressScopeSpecOptions {}
+export interface IngressScopeSpec extends ScopeSpec {
+  readonly role: "ingress";
+}
 
-export const ingressScopeSpec = (options?: IngressScopeSpecOptions): ScopeSpec<"ingress"> =>
-  createScopeSpec("ingress", options);
+export const ingressScopeSpec = (_options?: IngressScopeSpecOptions): IngressScopeSpec => ({
+  role: "ingress",
+});

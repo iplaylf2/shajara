@@ -7,7 +7,7 @@ import { lowerPlan } from "#src/adapter/plan-lower";
 
 export function spawn<Return>(
   blueprint: RuntimeBlueprint<Return>,
-  spec?: ScopeSpec<string>,
+  spec?: ScopeSpec,
 ): RuntimePlan<SpawnRef<Return>> {
   return liftPlan(kernelSpawn(lowerPlan(blueprint()), spec));
 }

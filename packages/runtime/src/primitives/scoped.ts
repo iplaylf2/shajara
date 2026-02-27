@@ -17,7 +17,7 @@ export function* scoped<Return, CaughtValue = never>(
 export type RuntimeResumableErrorHandler<CaughtValue> = (error: Error) => RuntimePlan<CaughtValue>;
 export interface RuntimeScopedOptions<CaughtValue> {
   readonly onResumableError?: RuntimeResumableErrorHandler<CaughtValue>;
-  readonly spec?: ScopeSpec<string>;
+  readonly spec?: ScopeSpec;
 }
 
 function scopedKernelPrimitive<Return, CaughtValue = never>(
