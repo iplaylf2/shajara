@@ -5,7 +5,7 @@ import type { KhoraFailure } from "#src/contracts/failure";
 import type { UnknownArray } from "type-fest";
 import { awaitScopeConverged } from "#src/primitives-kit/await-scope-converged";
 import { awaitSupervisedScope } from "#src/primitives-kit/await-supervised-scope";
-import { narrowArrayAs } from "#src/utils/narrow.js";
+import { narrowArrayAs } from "#src/utils/narrow";
 import { plan } from "#src/internal/fp/plan";
 import { readonlyArray } from "fp-ts";
 import { spawn } from "#src/syscalls";

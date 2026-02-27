@@ -1,7 +1,7 @@
 import type { ScopeCompletedExit, ScopeRef } from "#src/contracts/scope";
 import type { Plan } from "#src/contracts/plan";
 import { awaitScope } from "#src/syscalls";
-import { narrowAs } from "#src/utils/narrow.js";
+import { narrowAs } from "#src/utils/narrow";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp/plan";
 
