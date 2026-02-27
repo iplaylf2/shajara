@@ -11,9 +11,9 @@ export function* sleep(milliseconds: number): RuntimePlan<void> {
 
   return yield* scoped(
     function* sleepBlueprint(): RuntimePlan<void> {
-      const descriptor = yield* self();
+      const descriptor = yield* self<IngressScopeRef<unknown>>();
       const timeoutId = globalThis.setTimeout(() => {
-        executor.post(descriptor.scopeRef as IngressScopeRef, null);
+        executor.post(descriptor.scopeRef, null);
       }, milliseconds);
 
       try {

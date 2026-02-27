@@ -13,13 +13,11 @@ export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Re
   const executor = ensureExecutor();
   return yield* scoped(
     function* untilBlueprint(): RuntimePlan<Return> {
-      const { scopeRef } = yield* self();
+      const { scopeRef } = yield* self<IngressScopeRef<Return>>();
 
       thunk().then(
-        (value: Return) =>
-          executor.post(scopeRef as IngressScopeRef, { status: "resolved", value }),
-        (reason: unknown) =>
-          executor.post(scopeRef as IngressScopeRef, { reason, status: "rejected" }),
+        (value: Return) => executor.post(scopeRef, { status: "resolved", value }),
+        (reason: unknown) => executor.post(scopeRef, { reason, status: "rejected" }),
       );
 
       const settlement = yield* liftPlan(kernelReceive<Settlement<Return>>());
