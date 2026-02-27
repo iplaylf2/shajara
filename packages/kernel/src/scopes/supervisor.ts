@@ -8,8 +8,8 @@ export interface SupervisorScopeSpec extends ScopeSpec {
 
 export type SupervisorSpawnDescriptor<Return> = SpawnDescriptor<Return>;
 
-export const supervisorScopeSpec = (
-  _options?: SupervisorScopeSpecOptions,
-): SupervisorScopeSpec => ({
-  role: "supervisor",
-});
+export function supervisorScopeSpec(_options?: SupervisorScopeSpecOptions): SupervisorScopeSpec {
+  return {
+    role: "supervisor",
+  };
+}

@@ -5,6 +5,8 @@ export interface StandardScopeSpec extends ScopeSpec {
   readonly role: "standard";
 }
 
-export const standardScopeSpec = (_options?: StandardScopeSpecOptions): StandardScopeSpec => ({
-  role: "standard",
-});
+export function standardScopeSpec(_options?: StandardScopeSpecOptions): StandardScopeSpec {
+  return {
+    role: "standard",
+  };
+}

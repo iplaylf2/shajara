@@ -11,6 +11,8 @@ export interface IngressScopeSpec extends ScopeSpec {
   readonly role: "ingress";
 }
 
-export const ingressScopeSpec = (_options?: IngressScopeSpecOptions): IngressScopeSpec => ({
-  role: "ingress",
-});
+export function ingressScopeSpec(_options?: IngressScopeSpecOptions): IngressScopeSpec {
+  return {
+    role: "ingress",
+  };
+}

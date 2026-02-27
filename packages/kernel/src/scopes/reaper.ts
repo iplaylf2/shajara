@@ -5,6 +5,8 @@ export interface ReaperScopeSpec extends ScopeSpec {
   readonly role: "reaper";
 }
 
-export const reaperScopeSpec = (_options?: ReaperScopeSpecOptions): ReaperScopeSpec => ({
-  role: "reaper",
-});
+export function reaperScopeSpec(_options?: ReaperScopeSpecOptions): ReaperScopeSpec {
+  return {
+    role: "reaper",
+  };
+}

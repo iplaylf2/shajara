@@ -5,6 +5,8 @@ export interface SchedulerScopeSpec extends ScopeSpec {
   readonly role: "scheduler";
 }
 
-export const schedulerScopeSpec = (_options?: SchedulerScopeSpecOptions): SchedulerScopeSpec => ({
-  role: "scheduler",
-});
+export function schedulerScopeSpec(_options?: SchedulerScopeSpecOptions): SchedulerScopeSpec {
+  return {
+    role: "scheduler",
+  };
+}

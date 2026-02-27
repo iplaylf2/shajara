@@ -72,11 +72,11 @@ export function runtimeLaunch<Return>(
       return yield* runtimeBlueprint();
     }
 
-    const onAbort = (): void => {
+    function onAbort(): void {
       if (execution.state() === "open") {
         executor.terminate(execution.ref);
       }
-    };
+    }
 
     if (signal.aborted) {
       onAbort();

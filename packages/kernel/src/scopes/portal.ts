@@ -5,6 +5,8 @@ export interface PortalScopeSpec extends ScopeSpec {
   readonly role: "portal";
 }
 
-export const portalScopeSpec = (_options?: PortalScopeSpecOptions): PortalScopeSpec => ({
-  role: "portal",
-});
+export function portalScopeSpec(_options?: PortalScopeSpecOptions): PortalScopeSpec {
+  return {
+    role: "portal",
+  };
+}

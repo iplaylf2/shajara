@@ -3,6 +3,8 @@ import type { SelfDescriptor } from "@khora/kernel";
 import { self as kernelSelf } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 
-export const self = <
+export function self<
   Descriptor extends SelfDescriptor = SelfDescriptor,
->(): RuntimePlan<Descriptor> => liftPlan(kernelSelf<Descriptor>());
+>(): RuntimePlan<Descriptor> {
+  return liftPlan(kernelSelf<Descriptor>());
+}
