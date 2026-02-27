@@ -1,9 +1,6 @@
+import type { ScopeRef, ScopeRefReturn } from "#src/contracts/scope";
 import type { KhoraFailure } from "#src/contracts/failure";
-import type { ScopeRef } from "#src/contracts/scope";
 import type { Syscall } from "#src/contracts/syscall";
-
-type ScopeReturn<Scope extends ScopeRef<unknown>> =
-  Scope extends ScopeRef<infer Return> ? Return : never;
 
 export type AwaitScopeExit<Return> =
   | { readonly kind: "completed"; readonly value: Return }
@@ -13,7 +10,7 @@ export type AwaitScopeExit<Return> =
 export interface AwaitScopeSyscall<Scope extends ScopeRef<unknown>> extends Syscall {
   readonly kind: "await-scope";
   readonly scope: Scope;
-  readonly return?: readonly [AwaitScopeExit<ScopeReturn<Scope>>];
+  readonly return?: readonly [AwaitScopeExit<ScopeRefReturn<Scope>>];
 }
 
 export function awaitScope<Scope extends ScopeRef<unknown>>(

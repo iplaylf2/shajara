@@ -1,10 +1,13 @@
 import type { KhoraFailure } from "./failure";
-const PROCESS_REF_TOKEN: unique symbol = Symbol("process-ref");
+import { REF_TOKEN } from "#src/utils/ref";
 
 export interface ProcessRef<Return> {
-  readonly [PROCESS_REF_TOKEN]: "process-ref";
-  readonly _return?: Return;
+  readonly [REF_TOKEN]: "process";
+  readonly return?: readonly [Return];
 }
+
+export type ProcessRefReturn<Ref extends ProcessRef<unknown>> =
+  Ref extends ProcessRef<infer Return> ? Return : never;
 
 export type ProcessExit<Return> =
   | { readonly kind: "completed"; readonly value: Return }

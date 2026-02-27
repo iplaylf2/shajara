@@ -1,15 +1,17 @@
 import type { KhoraFailure } from "./failure";
-
-const SCOPE_REF_TOKEN: unique symbol = Symbol("scope-ref");
+import { REF_TOKEN } from "#src/utils/ref";
 
 export interface ScopeRef<Return> {
-  readonly [SCOPE_REF_TOKEN]: "scope-ref";
-  readonly _return?: Return;
+  readonly [REF_TOKEN]: "scope";
+  readonly return?: readonly [Return];
 }
 
 export interface ScopeSpec {
   readonly role: string;
 }
+
+export type ScopeRefReturn<Ref extends ScopeRef<unknown>> =
+  Ref extends ScopeRef<infer Return> ? Return : never;
 
 export interface ScopeTerminatedFailure extends KhoraFailure {
   readonly kind: "scope-terminated";
