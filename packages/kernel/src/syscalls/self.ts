@@ -3,8 +3,8 @@ import type { ScopeRef } from "#src/contracts/scope";
 import type { Syscall } from "#src/contracts/syscall";
 
 export interface SelfDescriptor {
-  readonly scopeRef: ScopeRef;
-  readonly processRef: ProcessRef;
+  readonly scopeRef: ScopeRef<unknown>;
+  readonly processRef: ProcessRef<unknown>;
 }
 
 export interface SelfSyscall extends Syscall {

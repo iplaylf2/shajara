@@ -25,6 +25,8 @@
 - 这两类后缀不可混用：生命周期终态类型不得命名为 `*Return`，普通调用返回载荷类型不得命名为 `*Exit`。
 - 返回类型相关泛型参数统一命名为 `Return`（复数为 `Returns`）；运行时值字段统一命名为 `value`。
 
+泛型默认值约束固定为：kernel 契约与 syscall/primitives 的公开类型参数不使用“语义兜底型”默认值（如 `= unknown`、`= string`）来隐式放宽调用点约束；若确有稳定语义默认值，需在对应契约文档中显式声明其语义来源与边界。
+
 作用域引用约束固定为：`ScopeRef` 与 `ScopeSpec` 基础类型定义在 `packages/kernel/src/contracts/scope.ts`；`IngressScopeRef` 定义在 `packages/kernel/src/scopes/ingress.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 
 依赖方向约束固定为：`executor -> contracts/syscalls`。`syscalls/contracts` 不反向依赖 `executor` 承载共同约束类型。

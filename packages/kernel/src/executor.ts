@@ -7,11 +7,11 @@ import { notImplemented } from "./internal/not-implemented";
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
 const LAUNCH_REF_TOKEN: unique symbol = Symbol("launch-ref");
 
-export interface ExecutionScopeRootRef extends ScopeRef {
+export interface ExecutionScopeRootRef extends ScopeRef<unknown> {
   readonly [ROOT_SCOPE_REF_TOKEN]: "root-scope-ref";
 }
 
-export interface ExecutionScopeRef extends ScopeRef {
+export interface ExecutionScopeRef extends ScopeRef<unknown> {
   readonly [LAUNCH_REF_TOKEN]: "launch-ref";
 }
 
@@ -30,7 +30,7 @@ export interface LaunchFuture<Return> {
   onResult(listener: (result: LaunchResult<Return>) => void): void;
 }
 
-export interface LaunchHandle<Return = void> {
+export interface LaunchHandle<Return> {
   readonly ref: ExecutionScopeRef;
   readonly result: LaunchFuture<Return>;
   state(): LaunchState;

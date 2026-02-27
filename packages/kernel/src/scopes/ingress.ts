@@ -3,7 +3,7 @@ import { createScopeSpec } from "#src/scopes-kit/factory";
 
 const INGRESS_SCOPE_REF_TOKEN: unique symbol = Symbol("ingress-scope-ref");
 
-export interface IngressScopeRef extends ScopeRef {
+export interface IngressScopeRef extends ScopeRef<unknown> {
   readonly [INGRESS_SCOPE_REF_TOKEN]: "ingress-scope-ref";
 }
 

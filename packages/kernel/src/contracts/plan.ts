@@ -1,18 +1,18 @@
 import type { Syscall, SyscallReturn } from "./syscall";
 
-export type Blueprint<Result = unknown> = () => Plan<Result>;
-export type Plan<Result = unknown> = ImpurePlan<Syscall, Result, unknown> | PurePlan<Result>;
+export type Blueprint<Result> = () => Plan<Result>;
+export type Plan<Result> = ImpurePlan<Syscall, Result> | PurePlan<Result>;
 
-export interface PurePlan<Result = unknown> {
+export interface PurePlan<Result> {
   readonly kind: "pure";
   readonly value: Result;
 }
 
 // oxlint-disable-next-line id-length
-export interface ImpurePlan<S extends Syscall = Syscall, Result = unknown, Else = Result> {
+export interface ImpurePlan<S extends Syscall, Result> {
   readonly kind: "impure";
   readonly syscall: S;
-  readonly terminate: () => Plan<Else>;
+  readonly terminate: () => Plan<unknown>;
   readonly then: (returnValue: SyscallReturn<S>) => Plan<Result>;
 }
 
@@ -21,10 +21,10 @@ export function purePlan<Result>(value: Result): PurePlan<Result> {
 }
 
 // oxlint-disable-next-line id-length
-export function impurePlan<S extends Syscall, Result, Else>(
+export function impurePlan<S extends Syscall, Result>(
   syscall: S,
   then: (returnValue: SyscallReturn<S>) => Plan<Result>,
-  terminate: () => Plan<Else>,
-): ImpurePlan<S, Result, Else> {
+  terminate: () => Plan<unknown>,
+): ImpurePlan<S, Result> {
   return { kind: "impure", syscall, terminate, then };
 }

@@ -7,10 +7,10 @@ import { notImplemented } from "#src/internal/not-implemented";
 export type ResumableErrorHandler<CaughtValue> = (error: Error) => Plan<CaughtValue>;
 export interface ScopedOptions<CaughtValue> {
   readonly onResumableError?: ResumableErrorHandler<CaughtValue>;
-  readonly spec?: ScopeSpec;
+  readonly spec?: ScopeSpec<string>;
 }
 
-export function scoped<Return, CaughtValue = never>(
+export function scoped<Return, CaughtValue>(
   _plan: Plan<Return>,
   _options?: ScopedOptions<CaughtValue>,
 ): Plan<Either<KhoraFailure, Return | CaughtValue>> {

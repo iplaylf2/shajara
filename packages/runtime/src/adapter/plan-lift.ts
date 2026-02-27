@@ -2,7 +2,7 @@ import type { ImpurePlan, Plan, Syscall } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 
 function* continueFromImpure<Return>(
-  impurePlan: ImpurePlan<Syscall, Return, unknown>,
+  impurePlan: ImpurePlan<Syscall, Return>,
 ): RuntimePlan<Plan<Return>> {
   let nextPlan: Plan<Return> | null = null;
 

@@ -3,22 +3,22 @@ import type { KhoraFailure } from "./failure";
 const SCOPE_REF_TOKEN: unique symbol = Symbol("scope-ref");
 const SCOPE_SPEC_TOKEN: unique symbol = Symbol("scope-spec");
 
-export interface ScopeRef<Return = unknown> {
+export interface ScopeRef<Return> {
   readonly [SCOPE_REF_TOKEN]: "scope-ref";
   readonly _return?: Return;
 }
 
-export interface ScopeSpec<Role extends string = string> {
+export interface ScopeSpec<Role extends string> {
   readonly role: Role;
   readonly [SCOPE_SPEC_TOKEN]: "scope-spec";
 }
 
 export interface ScopeTerminatedFailure extends KhoraFailure {
   readonly kind: "scope-terminated";
-  readonly scopeRef: ScopeRef;
+  readonly scopeRef: ScopeRef<unknown>;
 }
 
-export function scopeTerminated(scopeRef: ScopeRef): ScopeTerminatedFailure {
+export function scopeTerminated(scopeRef: ScopeRef<unknown>): ScopeTerminatedFailure {
   return {
     kind: "scope-terminated",
     message(): string {
