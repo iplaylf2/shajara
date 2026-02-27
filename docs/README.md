@@ -35,8 +35,9 @@
 runtime API 或语义变更时，按以下顺序确认联动一致性：
 
 1. 先更新 `docs/api.md` 与 `docs/runtime.md`，确保对外表面和边界语义描述一致。
-2. 同步调整 `apps/example`，保证示例仅使用当前公开 API（避免引用已移除或重命名能力）。
-3. 在仓库根目录执行 `yarn typecheck` 与 `yarn build`，以 `@khora/example` 作为 runtime 对外契约回归样例。
+2. 更新 `docs/execution.md`，只记录本轮实现现实与证据（不重复稳定设计正文）。
+3. 同步调整 `apps/example`，保证示例仅使用当前公开 API（避免引用已移除或重命名能力）。
+4. 在仓库根目录执行 `yarn typecheck` 与 `yarn build`，以 `@khora/example` 作为 runtime 对外契约回归样例。
 
 ## 6. Kernel 子路径命名
 

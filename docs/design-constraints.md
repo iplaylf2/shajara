@@ -66,7 +66,7 @@ runtime 在宿主输入投递点消费 `IngressScopeRef` 约束；必要的局�
 
 kernel 中 `Fork` 属于 syscall 语义，编排层不直接暴露 `fork` 原语；创建并发流程统一经 `spawn` 进入可控 `Scope`。`resource` 属于编排层资源作用域构造原语，调用方等待 `provide(value)` 返回首个值，资源作用域在 `provide` 后继续挂起并在父 scope 回收时清理。
 
-用户侧生命周期控制粒度固定为 `Scope`，process 级句柄与 `awaitProcess` 不进入编排层公开表面。`spawn` 返回值作为编排层唯一的作用域控制句柄，不在公开 API 暴露其内部结构字段（如 `scope`）。作用域等待/控制 API 采用 `join/terminate` 对称命名，`join` 仅返回成功值，失败通过异常传播。`suspend` 表达持续挂起语义，恢复路径由父 scope 回收清理阶段触发，且以失败传播进入清理流程。
+用户侧生命周期控制粒度固定为 `Scope`，process 级句柄与 `awaitProcess` 不进入编排层公开表面。`spawn` 返回值作为编排层唯一的作用域控制句柄，不在公开 API 暴露其内部结构字段（如 `scope`）。作用域等待由 `join` 承载，生命周期控制由 `halt` 承载；`join` 仅返回成功值，失败通过异常传播。`suspend` 表达持续挂起语义，恢复路径由父 scope 回收清理阶段触发，且以失败传播进入清理流程。
 
 结构性监督语义通过 `SupervisorScope + scoped + resumable` 建模，不再以 `supervise` 作为公开编排原语。`scoped` 的第二参数是 `resumable` 路径异常的捕获 handler，不表示 `scoped` 对任意异常的本地兜底。编排层公开原语暂不包含输入读取能力（`receive` 不在公开 primitives 表面）。
 
