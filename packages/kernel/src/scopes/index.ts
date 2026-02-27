@@ -14,5 +14,3 @@ export type {
   SupervisorScopeSpecOptions,
   SupervisorSpawnDescriptor,
 } from "./supervisor";
-
-export type { ScopeSpec } from "#src/contracts/scope";

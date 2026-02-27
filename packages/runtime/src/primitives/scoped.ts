@@ -1,6 +1,6 @@
 import type { ResumableErrorHandler, ScopedOptions } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import type { ScopeSpec } from "@khora/kernel/scopes";
+import type { ScopeSpec } from "@khora/kernel";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";

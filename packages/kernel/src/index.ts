@@ -1,4 +1,5 @@
 export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./contracts/plan";
+export type { ProcessExit, ProcessRef } from "./contracts/process";
 export type { KhoraFailure } from "./contracts/failure";
 export type { ScopeTerminatedFailure } from "./failures";
 
@@ -49,8 +50,6 @@ export type {
   PollProcessSyscall,
   PollScopeResult,
   PollScopeSyscall,
-  ProcessExit,
-  ProcessRef,
   ReceiveSyscall,
   ScopeStatus,
   SelfDescriptor,

@@ -19,23 +19,9 @@ export type { CedeSyscall } from "./cede";
 export type { ForkSyscall } from "./fork";
 export type { HaltSyscall } from "./halt";
 export type { LookupSyscall } from "./lookup";
-export type { PollProcessResult } from "./poll-process";
-export type { PollProcessSyscall } from "./poll-process";
-export type { PollScopeResult } from "./poll-scope";
-export type { PollScopeSyscall } from "./poll-scope";
-export type { ScopeStatus } from "./poll-scope";
-export type { ProcessExit } from "#src/contracts/process";
-export type {
-  ScopeCompletedExit,
-  ScopeExit,
-  ScopeFailedExit,
-  ScopeTerminatedExit,
-} from "#src/contracts/scope";
-export type { ProcessRef } from "#src/contracts/process";
+export type { PollProcessResult, PollProcessSyscall } from "./poll-process";
+export type { PollScopeResult, PollScopeSyscall, ScopeStatus } from "./poll-scope";
 export type { ReceiveSyscall } from "./receive";
-export type { SelfDescriptor } from "./self";
-export type { SelfSyscall } from "./self";
-export type { SpawnDescriptor } from "./spawn";
-export type { SpawnRef } from "./spawn";
-export type { SpawnSyscall } from "./spawn";
+export type { SelfDescriptor, SelfSyscall } from "./self";
+export type { SpawnDescriptor, SpawnRef, SpawnSyscall } from "./spawn";
 export type { TerminateSyscall } from "./terminate";
