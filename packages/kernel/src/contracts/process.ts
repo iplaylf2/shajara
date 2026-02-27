@@ -9,7 +9,21 @@ export interface ProcessRef<Return> {
 export type ProcessRefReturn<Ref extends ProcessRef<unknown>> =
   Ref extends ProcessRef<infer Return> ? Return : never;
 
+export interface ProcessCompletedExit<Return> {
+  readonly kind: "completed";
+  readonly value: Return;
+}
+
+export interface ProcessFailedExit {
+  readonly kind: "failed";
+  readonly fault: KhoraFailure;
+}
+
+export interface ProcessTerminatedExit {
+  readonly kind: "terminated";
+}
+
 export type ProcessExit<Return> =
-  | { readonly kind: "completed"; readonly value: Return }
-  | { readonly kind: "failed"; readonly fault: KhoraFailure }
-  | { readonly kind: "terminated" };
+  | ProcessCompletedExit<Return>
+  | ProcessFailedExit
+  | ProcessTerminatedExit;

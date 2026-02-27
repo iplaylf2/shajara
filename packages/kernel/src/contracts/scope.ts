@@ -13,17 +13,18 @@ export interface ScopeSpec {
 export type ScopeRefReturn<Ref extends ScopeRef<unknown>> =
   Ref extends ScopeRef<infer Return> ? Return : never;
 
-export interface ScopeTerminatedFailure extends KhoraFailure {
-  readonly kind: "scope-terminated";
-  readonly scopeRef: ScopeRef<unknown>;
+export interface ScopeCompletedExit<Return> {
+  readonly kind: "completed";
+  readonly value: Return;
 }
 
-export function scopeTerminated(scopeRef: ScopeRef<unknown>): ScopeTerminatedFailure {
-  return {
-    kind: "scope-terminated",
-    message(): string {
-      return "Scope terminated before completion";
-    },
-    scopeRef,
-  };
+export interface ScopeFailedExit {
+  readonly kind: "failed";
+  readonly fault: KhoraFailure;
 }
+
+export interface ScopeTerminatedExit {
+  readonly kind: "terminated";
+}
+
+export type ScopeExit<Return> = ScopeCompletedExit<Return> | ScopeFailedExit | ScopeTerminatedExit;

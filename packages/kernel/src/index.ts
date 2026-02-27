@@ -1,5 +1,6 @@
 export type { Blueprint, ImpurePlan, Plan, PurePlan } from "./contracts/plan";
 export type { KhoraFailure } from "./contracts/failure";
+export type { ScopeTerminatedFailure } from "./failures";
 
 export { ensureExecutor } from "./executor";
 export type {
@@ -11,7 +12,14 @@ export type {
   LaunchResult,
   LaunchState,
 } from "./executor";
-export type { ScopeRef, ScopeSpec } from "./contracts/scope";
+export type {
+  ScopeCompletedExit,
+  ScopeExit,
+  ScopeFailedExit,
+  ScopeRef,
+  ScopeSpec,
+  ScopeTerminatedExit,
+} from "./contracts/scope";
 export type { IngressScopeRef } from "./scopes";
 
 export {
@@ -31,7 +39,6 @@ export {
 } from "./syscalls";
 export type {
   AwaitProcessSyscall,
-  AwaitScopeExit,
   AwaitScopeSyscall,
   BindSyscall,
   CedeSyscall,

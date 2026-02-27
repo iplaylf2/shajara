@@ -13,7 +13,6 @@ export { spawn } from "./spawn";
 export { terminate } from "./terminate";
 
 export type { AwaitProcessSyscall } from "./await-process";
-export type { AwaitScopeExit } from "./await-scope";
 export type { AwaitScopeSyscall } from "./await-scope";
 export type { BindSyscall } from "./bind";
 export type { CedeSyscall } from "./cede";
@@ -26,6 +25,12 @@ export type { PollScopeResult } from "./poll-scope";
 export type { PollScopeSyscall } from "./poll-scope";
 export type { ScopeStatus } from "./poll-scope";
 export type { ProcessExit } from "#src/contracts/process";
+export type {
+  ScopeCompletedExit,
+  ScopeExit,
+  ScopeFailedExit,
+  ScopeTerminatedExit,
+} from "#src/contracts/scope";
 export type { ProcessRef } from "#src/contracts/process";
 export type { ReceiveSyscall } from "./receive";
 export type { SelfDescriptor } from "./self";

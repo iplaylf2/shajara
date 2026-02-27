@@ -6,7 +6,7 @@ import type { ScopeRef } from "#src/contracts/scope";
 import { awaitScope } from "#src/syscalls";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp/plan";
-import { scopeTerminated } from "#src/contracts/scope";
+import { scopeTerminated } from "#src/failures";
 import { unreachable } from "#src/utils/unreachable";
 
 export function awaitScopeConverged<Return>(
