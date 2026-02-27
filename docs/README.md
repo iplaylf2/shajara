@@ -45,4 +45,4 @@ runtime API 或语义变更时，按以下顺序确认联动一致性：
 
 ## 7. 失败语义分层
 
-`kernel` 包应定义并维护共享失败契约（当前为 `KhoraFailure`），供 `scope/process` 与 primitives 签名复用；runtime 作为宿主边界层，负责把 `KhoraFailure` 映射或包装为符合 TS 使用习惯的 `Error` 对象（如 `RuntimeKhoraFailureError`），避免将宿主异常语义反向渗透到 kernel 语义层。
+`kernel` 包应定义并维护共享失败契约（当前为 `KhoraFailure`），供 `scope/process` 与 primitives 签名复用；runtime 作为宿主边界层，负责把 `KhoraFailure` 映射或包装为符合 TS 使用习惯的 `Error` 对象（如 `RuntimeKhoraError`），避免将宿主异常语义反向渗透到 kernel 语义层。

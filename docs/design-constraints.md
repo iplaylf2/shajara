@@ -68,7 +68,7 @@ kernel 中 `Fork` 属于 syscall 语义，编排层不直接暴露 `fork` 原语
 
 用户侧生命周期控制粒度固定为 `Scope`，process 级句柄与 `awaitProcess` 不进入编排层公开表面。`spawn` 返回值作为编排层唯一的作用域控制句柄，不在公开 API 暴露其内部结构字段（如 `scope`）。作用域等待由 `join` 承载，生命周期控制由 `halt` 承载；`join` 仅返回成功值，失败通过异常传播。`suspend` 表达持续挂起语义，恢复路径由父 scope 回收清理阶段触发，且以失败传播进入清理流程。
 
-结构性监督语义通过 `SupervisorScope + scoped + resumable` 建模，不再以 `supervise` 作为公开编排原语。`scoped` 的第二参数是 `resumable` 路径失败的捕获 handler，不表示 `scoped` 对任意异常的本地兜底；kernel 与 runtime 的失败对象映射由 runtime 边界负责，handler 返回用于副作用推进（不改写 `scoped` 成功返回类型）。编排层公开原语暂不包含输入读取能力（`receive` 不在公开 primitives 表面）。
+结构性监督语义通过 `SupervisorScope + scoped + resumable` 建模，不再以 `supervise` 作为公开编排原语。`scoped` 的第二参数是 `resumable` 路径后代失败的捕获 handler（选项名为 `onResumableBranchFailure`），不表示 `scoped` 对任意异常的本地兜底；kernel 与 runtime 的失败对象映射由 runtime 边界负责，handler 返回用于副作用推进（不改写 `scoped` 成功返回类型）。编排层公开原语暂不包含输入读取能力（`receive` 不在公开 primitives 表面）。
 
 ## 6. example 约束
 

@@ -1,2 +1,2 @@
-export { RuntimeKhoraFailureError } from "./runtime-khora-failure";
-export { RuntimeScopeTerminatedError } from "./runtime-scope-terminated";
+export * from "./runtime-khora-failure";
+export * from "./runtime-scope-terminated";

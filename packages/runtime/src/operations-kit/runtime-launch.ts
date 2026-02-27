@@ -6,7 +6,7 @@ import type {
   LaunchResult,
   LaunchState,
 } from "@khora/kernel";
-import { RuntimeKhoraFailureError, RuntimeScopeTerminatedError } from "#src/errors";
+import { RuntimeKhoraError, RuntimeScopeTerminatedError } from "#src/errors";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
@@ -31,7 +31,7 @@ function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Retu
           resolve(result.value);
           break;
         case "failure":
-          reject(new RuntimeKhoraFailureError(result.reason));
+          reject(new RuntimeKhoraError(result.reason));
           break;
         case "terminated":
           reject(new RuntimeScopeTerminatedError());

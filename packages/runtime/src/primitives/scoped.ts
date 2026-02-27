@@ -1,7 +1,7 @@
 import type { KhoraFailure, ScopeSpec } from "@khora/kernel";
 import type { ResumableFailureHandler, ScopedOptions } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { RuntimeKhoraFailureError } from "#src/errors";
+import { RuntimeKhoraError, khoraFailureFromRuntimeUnknown } from "#src/errors";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
@@ -16,10 +16,10 @@ export function* scoped<Return>(
 }
 
 export type RuntimeResumableFailureHandler = (
-  error: RuntimeKhoraFailureError,
+  error: RuntimeKhoraError,
 ) => RuntimePlan<unknown>;
 export interface RuntimeScopedOptions {
-  readonly onResumableFailure?: RuntimeResumableFailureHandler;
+  readonly onResumableBranchFailure?: RuntimeResumableFailureHandler;
   readonly spec?: ScopeSpec;
 }
 
@@ -28,7 +28,8 @@ function scopedKernelPrimitive<Return>(
   options?: RuntimeScopedOptions,
 ) {
   const plan = lowerPlan(runtimeBlueprint());
-  const kernelOnResumableFailure = toKernelOnResumableFailure(options?.onResumableFailure);
+  const runtimeResumableFailureHandler = options?.onResumableBranchFailure;
+  const kernelOnResumableFailure = toKernelOnResumableFailure(runtimeResumableFailureHandler);
   const kernelOptions = toKernelScopedOptions(options?.spec, kernelOnResumableFailure);
   return kernelScoped<Return>(plan, kernelOptions);
 }
@@ -40,7 +41,27 @@ function toKernelOnResumableFailure(
     return;
   }
   return (failure: KhoraFailure) =>
-    lowerPlan(runtimeOnResumableFailure(new RuntimeKhoraFailureError(failure)));
+    lowerPlan(
+      runtimeResumableReplacementAsEither(
+        runtimeOnResumableFailure,
+        new RuntimeKhoraError(failure),
+      ),
+    );
+}
+
+function* runtimeResumableReplacementAsEither(
+  runtimeOnResumableFailure: RuntimeResumableFailureHandler,
+  error: RuntimeKhoraError,
+): RuntimePlan<
+  | { readonly _tag: "Left"; readonly left: KhoraFailure }
+  | { readonly _tag: "Right"; readonly right: unknown }
+> {
+  try {
+    const replacement = yield* runtimeOnResumableFailure(error);
+    return { _tag: "Right", right: replacement };
+  } catch (caught) {
+    return { _tag: "Left", left: khoraFailureFromRuntimeUnknown(caught) };
+  }
 }
 
 function toKernelScopedOptions(
@@ -48,13 +69,13 @@ function toKernelScopedOptions(
   onResumableFailure: ResumableFailureHandler | undefined,
 ): ScopedOptions {
   if (spec && onResumableFailure) {
-    return { onResumableFailure, spec };
+    return { onResumableBranchFailure: onResumableFailure, spec };
   }
   if (spec) {
     return { spec };
   }
   if (onResumableFailure) {
-    return { onResumableFailure };
+    return { onResumableBranchFailure: onResumableFailure };
   }
   return {};
 }

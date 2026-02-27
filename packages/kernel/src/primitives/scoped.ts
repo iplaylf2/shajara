@@ -2,9 +2,11 @@ import type { KhoraFailure, Plan, ScopeSpec } from "#src/contracts";
 import type { Either } from "fp-ts/Either";
 import { notImplemented } from "#src/internal/not-implemented";
 
-export type ResumableFailureHandler = (failure: KhoraFailure) => Plan<unknown>;
+export type ResumableFailureHandler = (
+  failure: KhoraFailure,
+) => Plan<Either<KhoraFailure, unknown>>;
 export interface ScopedOptions {
-  readonly onResumableFailure?: ResumableFailureHandler;
+  readonly onResumableBranchFailure?: ResumableFailureHandler;
   readonly spec?: ScopeSpec;
 }
 

@@ -6,16 +6,16 @@ Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` �
 
 ## 2. 当前现实与证据（Build）
 
-1. 执行入口结果词已统一为 `success | failure | terminated`，runtime 收敛链同步到 `RuntimeKhoraFailureError / RuntimeScopeTerminatedError`。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`。
+1. 执行入口结果词已统一为 `success | failure | terminated`，runtime 收敛链同步到 `RuntimeKhoraError / RuntimeScopeTerminatedError`。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`。
 2. `Scope` 过程态名称已统一为 `Closing`，`PollScope` 枚举与语义文档一致，不再使用 `Terminating`。Evidence: `packages/kernel/src/syscalls/poll-scope.ts`, `docs/semantics.md`。
 3. `AwaitScope` 已升级为可观察终态通道（`completed | failed | terminated`），不再暴露 `pruned_to_limbo` 分支。Evidence: `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`。
 4. kernel “收敛型 primitive” 的失败通道签名已统一为带内 `Either<KhoraFailure, T>`：`all/join/race/scoped/resource/resumable` 均采用该返回形状；其中 `all` 已通过 `awaitScope` 在 kit 中显式收敛为 `Either`。当前该组 primitive 仍处于“接口已统一、执行实现待补全”状态。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/kernel/src/internal/not-implemented.ts`。
-5. runtime 对应 primitive 已统一通过解包器收敛 kernel `Either`，并将 `Left` 映射为 `RuntimeKhoraFailureError`，维持用户侧“成功返回/失败抛错”模型。Evidence: `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/join.ts`, `packages/runtime/src/primitives/race.ts`, `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/primitives/resource.ts`, `packages/runtime/src/primitives/resumable.ts`。
+5. runtime 对应 primitive 已统一通过解包器收敛 kernel `Either`，并将 `Left` 映射为 `RuntimeKhoraError`，维持用户侧“成功返回/失败抛错”模型。Evidence: `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/join.ts`, `packages/runtime/src/primitives/race.ts`, `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/primitives/resource.ts`, `packages/runtime/src/primitives/resumable.ts`。
 6. `kernel` 执行器实现仍未落地：`ensureExecutor()` 当前返回占位实现，端到端运行闭环尚未建立。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
 7. 本轮代码检查结果：`@khora/kernel` 与 `@khora/runtime` 的 typecheck 通过，仓库 lint 通过。Evidence: `yarn workspace @khora/kernel typecheck`, `yarn workspace @khora/runtime typecheck`, `yarn lint`。
 8. runtime 宿主桥接入口保持一致：`run/createScope` 均通过 `runtimeLaunch` 收敛 `LaunchResult`，`action` 通过 `IngressScopeRef + executor.post` 完成宿主结算投递，未引入绕过执行入口的新通道。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/operations/action.ts`, `packages/kernel/src/executor.ts`。
 9. “可选参数/默认参数”治理已从盘点进入落地：`kernel` 侧 `Plan/Scope/Process` 合约与多处 syscall/primitives 的默认泛型已移除；`ScopeRef/ScopeSpec/ProcessRef` 引用位已补全显式类型参数，避免通过默认值静默降级为弱约束。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`。
-10. `scoped` 的失败 handler 在 runtime 边界已收敛为错误对象消费：kernel 仍以 `KhoraFailure` 为内部失败契约，runtime `onResumableFailure` 入参映射为 `RuntimeKhoraFailureError`；example 调用侧已切回直接使用 runtime 错误类型（不再暴露 kernel 失败契约细节）。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
+10. `scoped` 的失败 handler 在 runtime 边界已收敛为错误对象消费：kernel 仍以 `KhoraFailure` 为内部失败契约，runtime `onResumableBranchFailure` 入参映射为 `RuntimeKhoraError`；example 调用侧已切回直接使用 runtime 错误类型（不再暴露 kernel 失败契约细节）。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
 
 ## 3. 相对设计基线增量（仅记录 delta）
 
@@ -29,7 +29,7 @@ Impact: `AwaitScopeExit` 现在承载终态结果（`completed/failed/terminated
 
 ### 3.3 delta：收敛型 primitive 失败通道完成一轮统一
 
-Impact: `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Either<KhoraFailure, T>`，runtime 层统一在 primitive 边界收敛 `Left -> RuntimeKhoraFailureError`；该组 primitive 当前完成的是“失败通道契约与边界收敛”，执行行为仍受 Build 主阻塞影响。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/kernel/src/internal/not-implemented.ts`。
+Impact: `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Either<KhoraFailure, T>`，runtime 层统一在 primitive 边界收敛 `Left -> RuntimeKhoraError`；该组 primitive 当前完成的是“失败通道契约与边界收敛”，执行行为仍受 Build 主阻塞影响。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/kernel/src/internal/not-implemented.ts`。
 
 ### 3.4 delta：Build 主阻塞未变
 
@@ -45,7 +45,7 @@ Impact: kernel 合约与核心 syscall/primitives 的默认泛型已移除，类
 
 ### 3.7 delta：`scoped` 失败 handler 的 runtime 消费面完成边界收敛
 
-Impact: 用户侧 `onResumableFailure` 已直接消费 `RuntimeKhoraFailureError`，不再暴露 kernel `KhoraFailure`；`docs/api.md` 与 `docs/design-constraints.md` 的职责分工已回到“API 只写用户可见签名、约束文档只写边界规则”。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
+Impact: 用户侧 `onResumableBranchFailure` 已直接消费 `RuntimeKhoraError`，不再暴露 kernel `KhoraFailure`；`docs/api.md` 与 `docs/design-constraints.md` 的职责分工已回到“API 只写用户可见签名、约束文档只写边界规则”。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
 
 ## 4. 当前阶段执行切片（Build）
 

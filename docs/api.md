@@ -26,7 +26,7 @@
 
 ### 3.1 run
 
-`run` 启动一段 `RuntimeBlueprint` 并返回 stateful promise 形状（`PromiseLike<T> & { state(): LaunchState }`）。`run` 支持可选参数 `{ signal?: AbortSignal }`；当 `signal` 触发 abort 时，runtime 终止对应执行作用域。`run` 的运行作用域挂载在全局 `root scope` 下；成功时返回结果值，终止时抛出 `RuntimeScopeTerminatedError`，失败时抛出 `RuntimeKhoraFailureError`，`root scope` 继续作为生命周期锚点。
+`run` 启动一段 `RuntimeBlueprint` 并返回 stateful promise 形状（`PromiseLike<T> & { state(): LaunchState }`）。`run` 支持可选参数 `{ signal?: AbortSignal }`；当 `signal` 触发 abort 时，runtime 终止对应执行作用域。`run` 的运行作用域挂载在全局 `root scope` 下；成功时返回结果值，终止时抛出 `RuntimeScopeTerminatedError`，失败时抛出 `RuntimeKhoraError`，`root scope` 继续作为生命周期锚点。
 
 ### 3.2 action
 
@@ -42,7 +42,7 @@
 
 ### 3.5 createScope
 
-`createScope` 创建一个宿主侧托管作用域句柄，返回 `{ run, halt, state, closed, [Symbol.asyncDispose] }`。托管作用域本身挂载在全局 `root scope` 下；`scope.run(blueprint, options?)` 在该托管作用域下启动一次 `RuntimeBlueprint` 并返回与 `run` 一致的 stateful promise 形状；`scope.halt()` 触发该托管作用域的关闭流程并等待收敛；`scope.state` 提供同步状态快照（`open | closing | closed`）；`scope.closed` 在托管作用域真正完成清理后 `resolve(void)`，终止时抛出 `RuntimeScopeTerminatedError`，失败时抛出 `RuntimeKhoraFailureError`；`scope[Symbol.asyncDispose]()` 等价于 `scope.halt()`。`scope.run(...)` 与 `run(...)` 一致：成功返回值，终止抛 `RuntimeScopeTerminatedError`，失败抛 `RuntimeKhoraFailureError`。托管作用域生命周期由 `scope.halt()` 或 async dispose 约定治理。
+`createScope` 创建一个宿主侧托管作用域句柄，返回 `{ run, halt, state, closed, [Symbol.asyncDispose] }`。托管作用域本身挂载在全局 `root scope` 下；`scope.run(blueprint, options?)` 在该托管作用域下启动一次 `RuntimeBlueprint` 并返回与 `run` 一致的 stateful promise 形状；`scope.halt()` 触发该托管作用域的关闭流程并等待收敛；`scope.state` 提供同步状态快照（`open | closing | closed`）；`scope.closed` 在托管作用域真正完成清理后 `resolve(void)`，终止时抛出 `RuntimeScopeTerminatedError`，失败时抛出 `RuntimeKhoraError`；`scope[Symbol.asyncDispose]()` 等价于 `scope.halt()`。`scope.run(...)` 与 `run(...)` 一致：成功返回值，终止抛 `RuntimeScopeTerminatedError`，失败抛 `RuntimeKhoraError`。托管作用域生命周期由 `scope.halt()` 或 async dispose 约定治理。
 
 ## 4. 编排原语 API
 
@@ -54,8 +54,8 @@
 - `resource` 创建资源作用域；调用方等待 `provide(value)` 的首个值作为返回，资源作用域在 `provide` 后继续挂起并等待父 scope 回收。
 - `all` 聚合等待多个分支。
 - `race` 选择最先完成者，并触发其余分支收敛。
-- `scoped(blueprint, options?)` 创建子 `Scope` 并立即等待其收敛；`options` 可包含 `spec` 与 `onResumableFailure`。`onResumableFailure` 是 `resumable` 路径捕获 handler，不是 `scoped` 自身异常兜底；其入参类型为 `RuntimeKhoraFailureError`，返回 `RuntimePlan<unknown>`，不改写 `scoped` 的成功返回类型；等待 syscall 的观察语义与终态传播规则见 `docs/semantics.md`。
-- `resumable` 在 `scoped` body 中声明可恢复边界；只有被 `resumable` 标记的子孙作用域失败会进入祖先 `scoped` 的 `onResumableFailure` 路径。
+- `scoped(blueprint, options?)` 创建子 `Scope` 并立即等待其收敛；`options` 可包含 `spec` 与 `onResumableBranchFailure`。`onResumableBranchFailure` 是 `resumable` 路径后代失败捕获 handler，不是 `scoped` 自身异常兜底；其入参类型为 `RuntimeKhoraError`，返回 `RuntimePlan<unknown>`，不改写 `scoped` 的成功返回类型；等待 syscall 的观察语义与终态传播规则见 `docs/semantics.md`。
+- `resumable` 在 `scoped` body 中声明可恢复边界；只有被 `resumable` 标记的子孙作用域失败会进入祖先 `scoped` 的 `onResumableBranchFailure` 路径。
 
 ### 4.2 基础原语
 

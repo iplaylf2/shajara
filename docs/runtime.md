@@ -58,4 +58,4 @@ runtime 执行入口以 `runtimeLaunch` 为收敛锚点：该入口负责 `launc
 
 失败通道职责分层固定为：kernel primitive 应优先通过显式、可类型化语义通道表达失败（如生命周期终态或代数结果），而不是依赖宿主异常；runtime 在宿主边界负责把该失败语义收敛为 TS 生态可消费形态（例如抛出错误对象）。该分层用于保持 kernel 语义可组合与可推理，同时维持 runtime API 的使用习惯。
 
-当前编排原语中，“等待并收敛子执行结果”的一组 primitive（`all/join/race/scoped/resource/resumable`）在 kernel 侧以 `Either<KhoraFailure, T>` 表达带内失败；该 `Either` 的来源语义由 kernel `Scope` 角色与 syscall 语义定义（见 `docs/semantics.md`）。runtime primitives 侧通过统一解包步骤把 `Left` 收敛为 `RuntimeKhoraFailureError` 抛出，对用户侧继续维持“成功返回值、失败抛异常”的使用模型。
+当前编排原语中，“等待并收敛子执行结果”的一组 primitive（`all/join/race/scoped/resource/resumable`）在 kernel 侧以 `Either<KhoraFailure, T>` 表达带内失败；该 `Either` 的来源语义由 kernel `Scope` 角色与 syscall 语义定义（见 `docs/semantics.md`）。runtime primitives 侧通过统一解包步骤把 `Left` 收敛为 `RuntimeKhoraError` 抛出，对用户侧继续维持“成功返回值、失败抛异常”的使用模型。
