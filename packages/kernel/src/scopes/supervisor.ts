@@ -6,7 +6,7 @@ export interface SupervisorScopeSpec extends ScopeSpec {
   readonly role: "supervisor";
 }
 
-export type SupervisorSpawnDescriptor<Return> = SpawnDescriptor<Return>;
+export type SupervisorSpawnDescriptor<Return> = SpawnDescriptor<Return, ScopeSpec>;
 
 export function supervisorScopeSpec(_options?: SupervisorScopeSpecOptions): SupervisorScopeSpec {
   return {

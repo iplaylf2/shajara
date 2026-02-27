@@ -1,9 +1,10 @@
 import type { KhoraFailure, Syscall } from "#src/contracts";
+import type { RETURN_TOKEN } from "#src/utils";
 
 export interface HaltSyscall extends Syscall {
   readonly fault?: KhoraFailure;
   readonly kind: "halt";
-  readonly return?: readonly [never];
+  readonly [RETURN_TOKEN]?: readonly [never];
 }
 
 export function halt(fault?: KhoraFailure): HaltSyscall {

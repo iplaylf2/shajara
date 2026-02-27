@@ -1,4 +1,5 @@
 import type { ProcessRef, ScopeRef, Syscall } from "#src/contracts";
+import type { RETURN_TOKEN } from "#src/utils";
 
 export interface SelfDescriptor {
   readonly scopeRef: ScopeRef<unknown>;
@@ -7,7 +8,7 @@ export interface SelfDescriptor {
 
 export interface SelfSyscall extends Syscall {
   readonly kind: "self";
-  readonly return?: readonly [SelfDescriptor];
+  readonly [RETURN_TOKEN]?: readonly [SelfDescriptor];
 }
 
 export function self(): SelfSyscall {

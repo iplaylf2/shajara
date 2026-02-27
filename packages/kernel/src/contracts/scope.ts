@@ -1,9 +1,12 @@
+import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
 import type { KhoraFailure } from "./failure";
-import { REF_TOKEN } from "#src/utils";
 
-export interface ScopeRef<Return> {
+declare const SCOPE_SPEC_TOKEN: unique symbol;
+
+export interface ScopeRef<Return, Spec extends ScopeSpec = ScopeSpec> {
   readonly [REF_TOKEN]: "scope";
-  readonly return?: readonly [Return];
+  readonly [SCOPE_SPEC_TOKEN]?: readonly [Spec];
+  readonly [RETURN_TOKEN]?: readonly [Return];
 }
 
 export interface ScopeSpec {
@@ -11,7 +14,7 @@ export interface ScopeSpec {
 }
 
 export type ScopeRefReturn<Ref extends ScopeRef<unknown>> =
-  Ref extends ScopeRef<infer Return> ? Return : never;
+  Ref extends ScopeRef<infer Return, infer _Spec> ? Return : never;
 
 export interface ScopeCompletedExit<Return> {
   readonly kind: "completed";

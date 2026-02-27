@@ -1,4 +1,4 @@
-import type { IngressScopeRef, SpawnRef } from "@khora/kernel";
+import type { IngressScopeRef, ScopeRef } from "@khora/kernel";
 import type { RejectedSettlement, ResolvedSettlement, Settlement } from "#src/operations-kit";
 import type { RuntimePlan } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
@@ -8,7 +8,7 @@ import { liftPlan } from "#src/adapter/plan-lift";
 import { spawn } from "#src/primitives";
 
 export interface RuntimeAction<Return> {
-  readonly scope: SpawnRef<Return>;
+  readonly scope: ScopeRef<Return>;
   resolve(value: Return): void;
   reject(reason: unknown): void;
 }

@@ -1,9 +1,10 @@
 import type { ProcessExit, ProcessRef, ProcessRefReturn, Syscall } from "#src/contracts";
+import type { RETURN_TOKEN } from "#src/utils";
 
 export interface AwaitProcessSyscall<Process extends ProcessRef<unknown>> extends Syscall {
   readonly kind: "await-process";
   readonly process: Process;
-  readonly return?: readonly [ProcessExit<ProcessRefReturn<Process>>];
+  readonly [RETURN_TOKEN]?: readonly [ProcessExit<ProcessRefReturn<Process>>];
 }
 
 export function awaitProcess<Process extends ProcessRef<unknown>>(

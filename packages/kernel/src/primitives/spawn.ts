@@ -1,7 +1,15 @@
-import type { Plan, ScopeSpec } from "#src/contracts";
-import type { SpawnRef as SpawnScopeRef } from "#src/syscalls";
-import { notImplemented } from "#src/internal/not-implemented";
+import type { Plan, ScopeRef, ScopeSpec } from "#src/contracts";
+import { pipe } from "fp-ts/function";
+import { plan } from "#src/internal/fp";
+import { spawn as spawnSyscall } from "#src/syscalls";
 
-export function spawn<Return>(_plan: Plan<Return>, _spec?: ScopeSpec): Plan<SpawnScopeRef<Return>> {
-  return notImplemented("kernel primitive 'spawn'");
+export function spawn<Return, Spec extends ScopeSpec>(
+  spawnedPlan: Plan<Return>,
+  spec?: Spec,
+): Plan<ScopeRef<Return, Spec>> {
+  return pipe(
+    spawnSyscall(() => spawnedPlan, spec),
+    plan.liftF,
+    plan.map(({ scopeRef }) => scopeRef),
+  );
 }

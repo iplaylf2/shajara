@@ -1,4 +1,5 @@
 import type { ProcessExit, ProcessRef, ProcessRefReturn, Syscall } from "#src/contracts";
+import type { RETURN_TOKEN } from "#src/utils";
 
 export type PollProcessResult<Return> =
   | { readonly exited: false }
@@ -7,7 +8,7 @@ export type PollProcessResult<Return> =
 export interface PollProcessSyscall<Process extends ProcessRef<unknown>> extends Syscall {
   readonly kind: "poll-process";
   readonly process: Process;
-  readonly return?: readonly [PollProcessResult<ProcessRefReturn<Process>>];
+  readonly [RETURN_TOKEN]?: readonly [PollProcessResult<ProcessRefReturn<Process>>];
 }
 
 export function pollProcess<Process extends ProcessRef<unknown>>(
