@@ -28,3 +28,8 @@ export function impurePlan<S extends Syscall, Result>(
 ): ImpurePlan<S, Result> {
   return { kind: "impure", syscall, terminate, then };
 }
+
+// oxlint-disable-next-line id-length
+export function liftSyscall<S extends Syscall>(syscall: S): Plan<SyscallReturn<S>> {
+  return impurePlan(syscall, purePlan, () => purePlan(null));
+}

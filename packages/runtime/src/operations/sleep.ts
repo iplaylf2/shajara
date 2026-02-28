@@ -1,9 +1,8 @@
+import { ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
 import { scoped, self } from "#src/primitives";
 import type { IngressScopeRef } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
-import { ensureExecutor } from "@khora/kernel";
 import { ingressScopeSpec } from "@khora/kernel/scopes";
-import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 
 export function* sleep(milliseconds: number): RuntimePlan<void> {
@@ -17,7 +16,7 @@ export function* sleep(milliseconds: number): RuntimePlan<void> {
       }, milliseconds);
 
       try {
-        yield* liftPlan(kernelReceive<null>());
+        yield* liftPlan(liftSyscall(receiveSyscall<null>()));
       } finally {
         globalThis.clearTimeout(timeoutId);
       }

@@ -31,7 +31,7 @@
   "scripts": {
     "build": "vite build",
     "lint": "oxlint",
-    "typecheck": "yarn run -T tsc"
+    "typecheck": "yarn run -T tsc --noEmit"
   },
   "dependencies": {
     "fp-ts": "^2.16.11"

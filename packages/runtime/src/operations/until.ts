@@ -1,10 +1,9 @@
+import { ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
 import { scoped, self } from "#src/primitives";
 import type { IngressScopeRef } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
-import { ensureExecutor } from "@khora/kernel";
 import { ingressScopeSpec } from "@khora/kernel/scopes";
-import { receive as kernelReceive } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 
 export type RuntimeUntilThunk<Return> = () => PromiseLike<Return>;
@@ -20,7 +19,9 @@ export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Re
         (reason: unknown) => executor.post(scopeRef, { reason, status: "rejected" }),
       );
 
-      const settlement = yield* liftPlan(kernelReceive<Settlement<Return>>());
+      const { value: settlement } = yield* liftPlan(
+        liftSyscall(receiveSyscall<Settlement<Return>>()),
+      );
       switch (settlement.status) {
         case "resolved":
           return settlement.value;

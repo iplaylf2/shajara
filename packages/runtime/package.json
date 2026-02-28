@@ -21,7 +21,7 @@
   "scripts": {
     "build": "vite build",
     "lint": "oxlint",
-    "typecheck": "yarn run -T tsc"
+    "typecheck": "yarn run -T tsc --noEmit"
   },
   "dependencies": {
     "@khora/kernel": "workspace:^"

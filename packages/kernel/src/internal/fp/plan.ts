@@ -2,7 +2,7 @@
 import type { Plan, Syscall } from "#src/contracts";
 import type { applicative, apply, functor, monad, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
-import { impurePlan, purePlan } from "#src/contracts";
+import { impurePlan, liftSyscall, purePlan } from "#src/contracts";
 import { lifting } from "./lifting";
 import type { syscall } from "./syscall";
 
@@ -72,7 +72,7 @@ export namespace plan {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,
-    liftF: (fa) => impure(fa, pure, () => Do),
+    liftF: liftSyscall,
     map: Functor.map,
   };
 

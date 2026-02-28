@@ -5,7 +5,6 @@ export * from "./halt";
 export * from "./join";
 export * from "./lookup";
 export * from "./race";
-export * from "./receive";
 export * from "./resource";
 export * from "./resumable";
 export * from "./scoped";

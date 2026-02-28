@@ -1,9 +1,14 @@
+import type { ScopeRef, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
-import type { Syscall } from "#src/contracts";
+
+export interface ReceiveResult<ReceiveValue> {
+  readonly value: ReceiveValue;
+  readonly from: ScopeRef<unknown>;
+}
 
 export interface ReceiveSyscall<ReceiveValue> extends Syscall {
   readonly kind: "receive";
-  readonly [RETURN_TOKEN]?: readonly [ReceiveValue];
+  readonly [RETURN_TOKEN]?: readonly [ReceiveResult<ReceiveValue>];
 }
 
 export function receive<ReceiveValue>(): ReceiveSyscall<ReceiveValue> {
