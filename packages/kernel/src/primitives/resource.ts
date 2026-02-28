@@ -1,5 +1,5 @@
 import type { KhoraFailure, Plan } from "#src/contracts";
-import type { Either } from "fp-ts/Either";
+import type { Either } from "#src/utils";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Plan<never>;

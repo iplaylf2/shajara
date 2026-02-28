@@ -1,7 +1,7 @@
 import type { Blueprint, KhoraFailure, Plan } from "#src/contracts";
 import { awaitScopeConverged, awaitSupervisedScope } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
-import type { Either } from "fp-ts/Either";
+import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
 import { plan } from "#src/internal/fp";

@@ -2,6 +2,8 @@ import type { KhoraFailure, ScopeSpec } from "@khora/kernel";
 import type { ResumableFailureHandler, ScopedOptions } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
 import { RuntimeKhoraError, khoraFailureFromRuntimeUnknown } from "#src/errors";
+import { left, right } from "@khora/kernel/utils";
+import type { Either } from "@khora/kernel/utils";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
@@ -15,9 +17,7 @@ export function* scoped<Return>(
   return unwrapEither(either);
 }
 
-export type RuntimeResumableFailureHandler = (
-  error: RuntimeKhoraError,
-) => RuntimePlan<unknown>;
+export type RuntimeResumableFailureHandler = (error: RuntimeKhoraError) => RuntimePlan<unknown>;
 export interface RuntimeScopedOptions {
   readonly onResumableBranchFailure?: RuntimeResumableFailureHandler;
   readonly spec?: ScopeSpec;
@@ -52,15 +52,12 @@ function toKernelOnResumableFailure(
 function* runtimeResumableReplacementAsEither(
   runtimeOnResumableFailure: RuntimeResumableFailureHandler,
   error: RuntimeKhoraError,
-): RuntimePlan<
-  | { readonly _tag: "Left"; readonly left: KhoraFailure }
-  | { readonly _tag: "Right"; readonly right: unknown }
-> {
+): RuntimePlan<Either<KhoraFailure, unknown>> {
   try {
     const replacement = yield* runtimeOnResumableFailure(error);
-    return { _tag: "Right", right: replacement };
+    return right(replacement);
   } catch (caught) {
-    return { _tag: "Left", left: khoraFailureFromRuntimeUnknown(caught) };
+    return left(khoraFailureFromRuntimeUnknown(caught));
   }
 }
 

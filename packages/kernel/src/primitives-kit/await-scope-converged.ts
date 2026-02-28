@@ -1,11 +1,10 @@
 import type { KhoraFailure, Plan, ScopeRef } from "#src/contracts";
-import { left, right } from "fp-ts/Either";
-import type { Either } from "fp-ts/Either";
+import { left, right, unreachable } from "#src/utils";
+import type { Either } from "#src/utils";
 import { awaitScope } from "#src/syscalls";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 import { scopeTerminated } from "#src/failures";
-import { unreachable } from "#src/utils";
 
 export function awaitScopeConverged<Return>(
   scopeRef: ScopeRef<Return>,
