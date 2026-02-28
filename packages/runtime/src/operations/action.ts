@@ -9,7 +9,7 @@ import { spawn } from "#src/primitives";
 export interface RuntimeAction<Return> {
   readonly scope: IngressScopeRef<Return>;
   resolve(value: Return): void;
-  reject(reason: unknown): void;
+  reject(reason: Error): void;
 }
 
 export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
@@ -27,7 +27,7 @@ export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
   const executor = ensureExecutor();
 
   return {
-    reject(reason: unknown): void {
+    reject(reason: Error): void {
       executor.post(scope, {
         reason,
         status: "rejected",
