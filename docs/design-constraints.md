@@ -14,7 +14,7 @@
 
 作用域角色分层、执行入口能力语义与 syscall 语义定义以 `docs/semantics.md` 为单源；本文件不重复语义正文，只保留跨文档稳定约束。
 
-边界引用类型（如 `ExecutionScopeRootRef`、`ExecutionScopeRef`、`ScopeRef`、`IngressScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
+边界引用类型（如 `ExecutionScopeRootRef`、`ExecutionScopeRef`、`ScopeRef`、`SpawnRef`、`SelfDescriptor`）由 `kernel` 单源定义并导出。runtime 直接消费这些类型，不在 runtime 侧重复定义同语义包装类型。
 
 命名约束固定为：语义角色使用 `*Scope`（不带 `Ref`），控制面能力句柄使用 `*Ref`。
 
@@ -27,11 +27,11 @@
 
 泛型默认值约束固定为：kernel 契约与 syscall/primitives 的公开类型参数不使用“语义兜底型”默认值（如 `= unknown`、`= string`）来隐式放宽调用点约束；若确有稳定语义默认值，需在对应契约文档中显式声明其语义来源与边界。
 
-作用域引用约束固定为：`ScopeRef` 与 `ScopeSpec` 基础类型定义在 `packages/kernel/src/contracts/scope.ts`；`IngressScopeRef` 定义在 `packages/kernel/src/scopes/ingress.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
+作用域引用约束固定为：`ScopeRef` 与 `ScopeSpec` 基础类型定义在 `packages/kernel/src/contracts/scope.ts`；`Signal` 定义在 `packages/kernel/src/contracts/signal.ts`；`ExecutionScopeRootRef` 与 `ExecutionScopeRef` 作为执行入口控制引用类型定义在 `packages/kernel/src/executor.ts`。
 
 依赖方向约束固定为：`executor -> contracts/syscalls`。`syscalls/contracts` 不反向依赖 `executor` 承载共同约束类型。
 
-执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值（`ExecutionScopeRootRef`）；`launch` 接受 `ExecutionScopeRootRef | ExecutionScopeRef` 并返回 `LaunchHandle<T>`（含 `LaunchHandle<never>`）；`post` 的目标类型为 `IngressScopeRef`，`terminate` 的目标类型为 `ExecutionScopeRef`。`LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`；`LaunchResult<T>` 采用三态 sum type（`success | failure | terminated`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
+执行入口契约固定为：`Executor.rootScope` 是只读 root 锚点值（`ExecutionScopeRootRef`）；`launch` 接受 `ExecutionScopeRootRef | ExecutionScopeRef` 并返回 `LaunchHandle<T>`（含 `LaunchHandle<never>`）；`post` 的目标类型为 `ScopeRef`，并以 `Signal<T>` 令牌标识通道类型，`terminate` 的目标类型为 `ExecutionScopeRef`。`LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`；`LaunchResult<T>` 采用三态 sum type（`success | failure | terminated`），runtime 通过 `result.onResult(...)` 做结果收敛，不把该 future 协议退化为 `PromiseLike` 绑定。
 
 作用域与执行器解耦约束固定为：`Scope` 是语义对象，不以内核执行器实现形态命名。设计允许存在多个 executor 实例，只要 `ScopeRef`/`ExecutionScopeRef` 的身份与可见性规则保持一致。
 
@@ -60,7 +60,7 @@ kernel primitive 的失败语义约束固定为：实现不得直接依赖宿主
 runtime 对外导出 runtime 语义类型（如 `RuntimeBlueprint`、`RuntimePlan`、`RuntimeScope`）与公开宿主入口（`run`、`createScope`），但不引导用户直接构造 kernel 层细节。输入投递能力与 resolver 组装属于 runtime 内部宿主适配层，不作为用户直接调用 API。
 
 宿主输入投递与等待配对通过 runtime 内部适配完成（`post` 注入与 `receive` 等待），不在 runtime 公开 primitives 表面额外暴露输入读取入口。
-runtime 在宿主输入投递点消费 `IngressScopeRef` 约束；必要的局部类型收敛只允许出现在 runtime 内部适配层，不外溢到用户侧 API。
+runtime 在宿主输入投递点消费 `Signal<T>` 令牌约束；必要的局部类型收敛只允许出现在 runtime 内部适配层，不外溢到用户侧 API。
 
 宿主入口 `run/createScope` 的作用域挂载在全局 root 锚点下；`yield*` 语境中的上下文敏感入口沿当前执行上下文作用域分支绑定。`action` 作为上下文敏感宿主入口，以 `yield* action<T>()` 返回 `RuntimeAction<T>`，不作为顶级直接调用能力。
 

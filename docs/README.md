@@ -28,7 +28,7 @@
 
 ## 4. Scope 语义入口
 
-`Scope` 角色分层（kernel 原生：`StandardScope` / `SupervisorScope`；executor 衍生：`SchedulerScope` / `ReaperScope` / `IngressScope` / `ExecutionScope` / `LimboScope`）与执行入口能力视图（`ExecutionScopeRoot` / `ExecutionScope`）定义以 `docs/semantics.md` 为单源；跨文档稳定约束见 `docs/design-constraints.md`。
+`Scope` 角色分层（kernel 原生：`StandardScope` / `SupervisorScope`；executor 衍生：`SchedulerScope` / `ReaperScope` / `ExecutionScope` / `LimboScope`）与执行入口能力视图（`ExecutionScopeRoot` / `ExecutionScope`）定义以 `docs/semantics.md` 为单源；跨文档稳定约束见 `docs/design-constraints.md`。
 
 ## 5. Runtime 变更后的联动校验
 

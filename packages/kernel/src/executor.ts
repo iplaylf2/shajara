@@ -1,7 +1,7 @@
 import type { Blueprint } from "./contracts/plan";
-import type { IngressScopeRef } from "./scopes";
 import type { KhoraFailure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
+import type { Signal } from "./contracts/signal";
 import { notImplemented } from "./internal/not-implemented";
 
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
@@ -49,9 +49,13 @@ export interface Executor {
     blueprint: Blueprint<Return>,
   ): LaunchHandle<Return>;
   /**
-   * Post an input value into the target runtime ingress channel.
+   * Post a value into the target scope's signal channel.
    */
-  post<PostedValue>(scope: IngressScopeRef<unknown>, value: PostedValue): void;
+  post<PostedValue>(
+    scope: ScopeRef<unknown>,
+    signal: Signal<PostedValue>,
+    value: PostedValue,
+  ): void;
   /**
    * Terminate a host/runtime-controllable scope.
    */

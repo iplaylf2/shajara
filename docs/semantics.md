@@ -42,11 +42,10 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 - `SchedulerScope`：调度编排角色（`Scheduler` 职责）。
 - `ReaperScope`：终止收敛仲裁角色（`Reaper` 职责）。
-- `IngressScope`：宿主输入通道标记（executor 层策略角色）。
 - `ExecutionScope`：执行入口能力角色（`launch + terminate` 语义，见 1.4）。
 - `LimboScope`：结构性修剪承接角色（全局单例，见 1.8）。
 
-创建约束：`StandardScope`、`SupervisorScope`、`SchedulerScope`、`ReaperScope`、`IngressScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。syscall 能否创建某角色由 executor 解释决定，上述约束反映的是当前设计期待。
+创建约束：`StandardScope`、`SupervisorScope`、`SchedulerScope`、`ReaperScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。syscall 能否创建某角色由 executor 解释决定，上述约束反映的是当前设计期待。
 
 ### 1.4 执行入口能力视图与依赖方向
 
@@ -78,11 +77,15 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 ### 1.7 Signal 与 Post
 
-每个 `Scope` 持有一个 `Signal`，作为广播 rendezvous 点，不缓冲值。`Post` 到达时唤醒 Scope 内所有当前阻塞在 `Receive()` 的进程，每人各收到一份副本（fan-out）；若无等待者则值被丢弃。单 Processor 协作调度天然保证接收方先于发送方阻塞：`Receive()` 让出 `Processor` 后，发送方才能运行并 `Post`。
+`Signal<T>` 是 phantom-typed 不透明令牌，由 `signal<T>()` 创建。一个 `Signal` 实例标识一条类型化通信通道，不绑定特定 `Scope`。`Post` 和 `Receive` 均以 `Signal` 令牌为匹配键：`Post(scopeRef, signal, value)` 向目标 `Scope` 投递一个值，`Receive(signal)` 在调用方 `Scope` 上等待匹配该 `Signal` 的下一次投递。
 
-`Post(scopeRef, value)` 是 kernel syscall（见 5.3），允许进程向可见子 Scope 的 `Signal` 广播值；可见性约束与 `AwaitScope` 对称。
+投递到达时唤醒目标 `Scope` 内所有当前阻塞在相同 `Signal` 上的 `Receive` 的进程，每人各收到一份副本（fan-out）；若无等待者则值被丢弃。不缓冲值。单 Processor 协作调度天然保证接收方先于发送方阻塞：`Receive(signal)` 让出 `Processor` 后，发送方才能运行并 `Post`。
 
-`Receive()` 在调用方 Scope 的 `Signal` 上等待下一次广播，返回 `{ value, from: ScopeRef }`（见 5.3）。`from` 为调用方 Scope，即发出 `Post` 的进程所属 Scope。调用方可凭 `from` 实现 Scope 间 request/response 等组合模式，无需在 payload 中手动携带地址。
+`Post(scopeRef, signal, value)` 是 kernel syscall（见 5.3），允许进程向可见 `Scope` 的匹配 `Signal` 投递值；可见性约束与 `AwaitScope` 对称。
+
+`Receive(signal)` 在调用方 `Scope` 上等待匹配该 `Signal` 的下一次投递，返回 `{ value, from: ScopeRef }`（见 5.3）。`from` 为发出 `Post` 的进程所属 `Scope`。调用方可凭 `from` 实现 `Scope` 间 request/response 等组合模式，无需在 payload 中手动携带地址。
+
+持有 `Signal` 令牌即具备向对应通道投递或接收的能力；该 capability 模型取代了此前由角色标记（如 `IngressScope`）门控的权限设计。
 
 ### 1.8 Limbo 与孤儿 Scope
 
@@ -327,21 +330,21 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 `InLimbo` 属于结构状态，不作为 `AwaitScope` 的直接返回分支暴露；目标若进入 `InLimbo`，其可观察结果仍按 `failed/terminated` 终态收敛。
 `AwaitScope` 不改变失败上传语义；是否向祖先传播或被本地收敛由父 `Scope` 角色（含 `SupervisorScope`）决定。
 
-#### Post(scopeRef, value) -> void [Non-Blocking]
+#### Post(scopeRef, signal, value) -> void [Non-Blocking]
 
-向可见子 Scope 的 `Signal` 广播一个值。
+向目标 `Scope` 投递一个值，以 `Signal` 令牌为匹配键。
 
 - 前置条件：`scopeRef` 对调用方可见（与 `AwaitScope` 一致）
 - 效果：
-  - 若目标 Scope 内有进程阻塞在 `Receive()`：唤醒全部等待者，每人各收到一份副本
-  - 若无等待者：值被丢弃
+  - 若目标 `Scope` 内有进程阻塞在 `Receive(signal)`（相同 `Signal`）：唤醒全部等待者，每人各收到一份副本
+  - 若无匹配等待者：值被丢弃
 
-#### Receive() -> { value, from: ScopeRef } [Blocking]
+#### Receive(signal) -> { value, from: ScopeRef } [Blocking]
 
-在调用方 Scope 的 `Signal` 上等待下一次广播。
+在调用方 `Scope` 上等待匹配该 `Signal` 的下一次投递。
 
-- 阻塞，直到下一次 `Post` 到达该 Scope 时被唤醒。
-- 返回结构体：`value` 为广播值，`from` 为发送方所在 Scope 的 `ScopeRef`。
+- 阻塞，直到下一次匹配该 `Signal` 的 `Post` 到达调用方 `Scope` 时被唤醒。
+- 返回结构体：`value` 为投递值，`from` 为发送方所在 `Scope` 的 `ScopeRef`。
 
 #### Yield() -> void [Blocking]
 

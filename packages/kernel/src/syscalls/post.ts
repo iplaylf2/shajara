@@ -1,17 +1,23 @@
-import type { ScopeRef, Syscall } from "#src/contracts";
+import type { ScopeRef, Signal, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
-export interface PostSyscall extends Syscall {
+export interface PostSyscall<Value> extends Syscall {
   readonly kind: "post";
   readonly scope: ScopeRef<unknown>;
-  readonly value: unknown;
+  readonly signal: Signal<Value>;
+  readonly value: Value;
   readonly [RETURN_TOKEN]?: readonly [void];
 }
 
-export function post(scope: ScopeRef<unknown>, value: unknown): PostSyscall {
+export function post<Value>(
+  scope: ScopeRef<unknown>,
+  signal: Signal<Value>,
+  value: Value,
+): PostSyscall<Value> {
   return {
     kind: "post",
     scope,
+    signal,
     value,
   };
 }
