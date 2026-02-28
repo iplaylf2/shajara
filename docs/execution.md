@@ -1,86 +1,45 @@
-# khora Execution Doc
+# 实现状态
 
-## 1. 当前快照
+当前阶段：**Build — Make it work**。
 
-Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` 执行器实现未落地（`ensureExecutor` 仍为占位实现）；原语失败通道与 runtime 收敛链已完成一轮签名/边界统一，当前处于“接口已收敛、执行实现待补全”的状态。
+---
 
-## 2. 当前现实与证据（Build）
+## 1. 主阻塞
 
-1. 执行入口结果词已统一为 `success | failure | terminated`，runtime 收敛链同步到 `RuntimeKhoraError / RuntimeScopeTerminatedError`。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`。
-2. `Scope` 过程态名称已统一为 `Closing`，`PollScope` 枚举与语义文档一致，不再使用 `Terminating`。Evidence: `packages/kernel/src/syscalls/poll-scope.ts`, `docs/semantics.md`。
-3. `AwaitScope` 已升级为可观察终态通道（`completed | failed | terminated`），不再暴露 `pruned_to_limbo` 分支。Evidence: `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`。
-4. kernel “收敛型 primitive” 的失败通道签名已统一为带内 `Either<KhoraFailure, T>`：`all/join/race/scoped/resource/resumable` 均采用该返回形状；其中 `all` 已通过 `awaitScope` 在 kit 中显式收敛为 `Either`。当前该组 primitive 仍处于“接口已统一、执行实现待补全”状态。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/kernel/src/internal/not-implemented.ts`。
-5. runtime 对应 primitive 已统一通过解包器收敛 kernel `Either`，并将 `Left` 映射为 `RuntimeKhoraError`，维持用户侧“成功返回/失败抛错”模型。Evidence: `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/runtime/src/primitives/all.ts`, `packages/runtime/src/primitives/join.ts`, `packages/runtime/src/primitives/race.ts`, `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/primitives/resource.ts`, `packages/runtime/src/primitives/resumable.ts`。
-6. `kernel` 执行器实现仍未落地：`ensureExecutor()` 当前返回占位实现，端到端运行闭环尚未建立。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
-7. 本轮代码检查结果：`@khora/kernel` 与 `@khora/runtime` 的 typecheck 通过，仓库 lint 通过。Evidence: `yarn workspace @khora/kernel typecheck`, `yarn workspace @khora/runtime typecheck`, `yarn lint`。
-8. runtime 宿主桥接入口保持一致：`run/createScope` 均通过 `runtimeLaunch` 收敛 `LaunchResult`，`action` 通过 `ScopeRef + Signal<T> + executor.post` 完成宿主结算投递，未引入绕过执行入口的新通道。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/operations/action.ts`, `packages/kernel/src/executor.ts`。
-9. “可选参数/默认参数”治理已从盘点进入落地：`kernel` 侧 `Plan/Scope/Process` 合约与多处 syscall/primitives 的默认泛型已移除；`ScopeRef/ScopeSpec/ProcessRef` 引用位已补全显式类型参数，避免通过默认值静默降级为弱约束。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`。
-10. `scoped` 的失败 handler 在 runtime 边界已收敛为错误对象消费：kernel 仍以 `KhoraFailure` 为内部失败契约，runtime `onResumableBranchFailure` 入参映射为 `RuntimeKhoraError`；example 调用侧已切回直接使用 runtime 错误类型（不再暴露 kernel 失败契约细节）。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
-11. `Signal` 已重构为类型化令牌（`Signal<T>`），`Post/Receive` syscall 已同步为以 `Signal` 为匹配键的签名；`IngressScope` 已退役（文件删除、导出移除），其门控职责由 `Signal` capability 取代；`race` 已实现为基于双 Signal 的调用者直接接收架构。Evidence: `packages/kernel/src/contracts/signal.ts`, `packages/kernel/src/syscalls/post.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/scopes/index.ts`, `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`。
+kernel 执行器实现未落地——`ensureExecutor()` 仍返回占位实现，端到端运行闭环尚未建立。
 
-## 3. 相对设计基线增量（仅记录 delta）
+## 2. 已完成
 
-### 3.1 delta：终态/过程态命名统一完成一轮收敛
+| 切片                       | 产出                                                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 终态/过程态命名统一        | `terminated` 为终态词、`Closing` 为过程态词，跨 kernel/runtime/docs 对齐。                                                       |
+| `AwaitScope` 观察语义统一  | `AwaitScopeExit` 承载终态结果（`completed/failed/terminated`），`InLimbo` 不作为返回分支。                                       |
+| 原语失败通道统一           | `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Either<KhoraFailure, T>`，runtime 统一解包为 `RuntimeKhoraError`。 |
+| runtime 收敛链同步         | `LaunchResult` 三态对齐，错误类型统一。                                                                                          |
+| 可选/默认参数治理          | kernel 合约与核心 syscall/primitives 默认泛型已移除。                                                                            |
+| `scoped` 失败 handler 收敛 | `onResumableBranchFailure` 消费 `RuntimeKhoraError`，不暴露 kernel `KhoraFailure`。                                              |
+| Signal 令牌化              | `Signal<T>` 重构为 phantom-typed 令牌，`IngressScope` 退役，`Post/Receive` 以 Signal 为匹配键。                                  |
+| `race` 实现                | 基于双 Signal 的调用者直接接收架构。                                                                                             |
 
-Impact: `terminated` 作为终态词、`Closing` 作为过程态词，跨 kernel/runtime/docs 对齐，降低“过程态误读为终态”的歧义。Evidence: `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `docs/semantics.md`, `docs/runtime.md`, `docs/api.md`。
+## 3. 进行中
 
-### 3.2 delta：`AwaitScope` 观测语义从“结构状态”收敛到“终态结果”
+| 切片                       | 状态                                              |
+| -------------------------- | ------------------------------------------------- |
+| kernel 执行器实现（B1）    | 执行入口契约稳定，执行器仍为占位实现。            |
+| runtime 宿主入口闭环（B5） | `run/createScope` 类型接线稳定，运行闭环依赖 B1。 |
 
-Impact: `AwaitScopeExit` 现在承载终态结果（`completed/failed/terminated`）；`InLimbo` 仍为结构事实，但不作为该 syscall 的直接返回分支。Evidence: `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`。
+## 4. 后续方向
 
-### 3.3 delta：收敛型 primitive 失败通道完成一轮统一
+1. **B1**：`ensureExecutor()` 落地，具备可运行的 kernel 执行器。
+2. **B5**：`run/createScope` 覆盖 success/failure/terminated 三态端到端运行。
+3. **Prove**：Build 闭环后补充 terminate、作用域状态转换、失败传播与结构性收敛验证。
 
-Impact: `all/join/race/scoped/resource/resumable` 在 kernel 层统一为 `Either<KhoraFailure, T>`，runtime 层统一在 primitive 边界收敛 `Left -> RuntimeKhoraError`；该组 primitive 当前完成的是“失败通道契约与边界收敛”，执行行为仍受 Build 主阻塞影响。Evidence: `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/kernel/src/internal/not-implemented.ts`。
+## 5. 验证
 
-### 3.4 delta：Build 主阻塞未变
+```sh
+yarn typecheck   # @khora/kernel + @khora/runtime 类型检查
+yarn build        # 全量构建
+yarn lint         # 代码风格
+```
 
-Impact: API/桥接/语义命名持续推进，但端到端运行能力仍受 `ensureExecutor` 占位实现阻塞。Evidence: `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`。
-
-### 3.5 delta：`spawn/awaitScope` 契约完成一轮解耦收敛
-
-Impact: `spawn` syscall 返回契约不再随 `SupervisorScope` 变化；`awaitScope` 泛型由 `ScopeRef` 单源推导；`all` 通过 `awaitScope` 观察并显式构造 `Either`，同时新增 scope 终止失败构造与 `unreachable` 占位工具，减少局部重复与不安全兜底。Evidence: `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/utils/unreachable.ts`。
-
-### 3.6 delta：可选参数/默认参数治理已完成 kernel 主路径落地
-
-Impact: kernel 合约与核心 syscall/primitives 的默认泛型已移除，类型约束从“隐式默认”转为“调用点显式”；该变化降低了 `unknown` 默认外溢与契约误读风险。当前剩余默认泛型位于 runtime 内部实现细节，后续可按需要继续收敛。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/primitives/scoped.ts`。
-
-### 3.7 delta：`scoped` 失败 handler 的 runtime 消费面完成边界收敛
-
-Impact: 用户侧 `onResumableBranchFailure` 已直接消费 `RuntimeKhoraError`，不再暴露 kernel `KhoraFailure`；`docs/api.md` 与 `docs/design-constraints.md` 的职责分工已回到“API 只写用户可见签名、约束文档只写边界规则”。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
-
-### 3.8 delta：Scope 角色分层重构与 Post syscall 引入
-
-Impact: 角色集合从平列改为两层（kernel 原生 vs executor 衍生）；`PortalScope` 从设计移除；`Post(scopeRef, signal, value)` syscall 加入设计集合并完成代码同步。Evidence: `docs/semantics.md`, `docs/README.md`, `docs/runtime.md`, `packages/kernel/src/syscalls/post.ts`, `packages/kernel/src/primitives/race.ts`。
-
-### 3.9 delta：Signal 取代 Sink，语义确立为广播 rendezvous
-
-Impact: `Sink` 概念移除，以 `Signal` 替代，直接表达广播 rendezvous 语义。`Signal` 不缓冲值；`Post` 唤醒全部当前等待者（fan-out），无等待者时值被丢弃。`Receive()` 语义为“等待下一次广播”。单 Processor 协作调度保证时序安全：`Receive()` 先阻塞让出 `Processor`，`Post` 才能运行，丢弃风险仅在调用方未提前等待时出现。该变更使 Scope 内多个并发 `Receive()` 调用的行为可预测（各自独立收到副本，而非竞争消费），也为 `race` 的 `awaitFirstExited` 提供正确的语义基础。Evidence: `docs/semantics.md`, `docs/runtime.md`。
-
-### 3.10 delta：Signal 令牌化，IngressScope 退役，race 实现
-
-Impact: `Signal` 从“每个 Scope 持有的广播点”重构为“phantom-typed 不透明令牌 `Signal<T>`”，由 `signal<T>()` 创建，不绑定特定 Scope。`Post(scopeRef, signal, value)` 与 `Receive(signal)` 均以 Signal 令牌为匹配键，实现类型安全的跨 Scope 通信。`IngressScope` 已退役（`ingress.ts` 删除、导出移除），其门控职责由 Signal capability 取代——持有令牌即具备投递/接收能力。`Executor.post` 的目标类型从 `IngressScopeRef` 变为 `ScopeRef + Signal<T>`。runtime 侧 `action/sleep/until` 已迁移为模块级 Signal 令牌、无需 `ingressScopeSpec`。`race` 已完整实现：双 Signal（`raceSignal` + `haltSignal`）、调用者直接接收、无外层 spawn。Evidence: `packages/kernel/src/contracts/signal.ts`, `packages/kernel/src/syscalls/post.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/scopes/index.ts`, `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`。
-
-## 4. 当前阶段执行切片（Build）
-
-| Slice                                | Status      | Output                                                                                      | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| B1 kernel 执行器实现                 | In Progress | 执行入口契约稳定，执行器仍为占位实现。                                                      | `packages/kernel/src/executor.ts`, `packages/kernel/src/internal/not-implemented.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| B2 终态/过程态命名与契约收敛         | Completed   | `terminated`/`Closing` 命名统一，`AwaitScope` 结果语义统一。                                | `packages/kernel/src/executor.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `docs/semantics.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| B3 runtime 收敛链同步                | Completed   | runtime 错误类型和 `LaunchResult` 三态对齐。                                                | `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/errors/runtime-scope-terminated.ts`, `docs/runtime.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| B4 原语失败通道收敛                  | Completed   | 收敛型 primitive 的失败通道契约已统一，runtime 边界解包已统一；执行实现仍依赖 B1。          | `packages/kernel/src/primitives/all.ts`, `packages/kernel/src/primitives-kit/await-scope-converged.ts`, `packages/kernel/src/primitives/join.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/resource.ts`, `packages/kernel/src/primitives/resumable.ts`, `packages/runtime/src/primitives-kit/unwrap-either.ts`, `packages/kernel/src/internal/not-implemented.ts`                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| B5 runtime 宿主入口闭环              | In Progress | `run/createScope` 类型接线稳定，运行闭环仍依赖 B1。                                         | `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/kernel/src/executor.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| B6 可选/默认参数治理落地             | Completed   | kernel 合约与核心 syscall/primitives 默认泛型移除完成；runtime 剩余点已收敛为局部实现细节。 | `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/primitives/scoped.ts` |
-| B7 Signal 令牌化与 IngressScope 退役 | Completed   | `Signal<T>` 令牌化完成，`Post/Receive` 签名已同步，`IngressScope` 已退役，`race` 已实现。   | `packages/kernel/src/contracts/signal.ts`, `packages/kernel/src/syscalls/post.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/primitives/race.ts`, `packages/kernel/src/scopes/index.ts`（ingress 已移除）, `packages/kernel/src/executor.ts`, `packages/runtime/src/operations/action.ts`, `packages/runtime/src/operations/sleep.ts`, `packages/runtime/src/operations/until.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-
-## 5. 后续方向
-
-Build 阶段继续按 `B1 -> B5 -> Prove` 推进：
-
-1. `B1`
-   出口条件：`ensureExecutor()` 不再占位，具备可运行的 kernel 执行器实现。
-2. `B5`
-   出口条件：`run/createScope` 覆盖成功、失败、终止三态的端到端运行。
-3. Prove 入口条件
-   Build 主链闭环后补充 `terminate`、作用域状态转换、失败传播与结构性收敛验证。
-4. B6 后续收敛入口
-   在不改变用户侧公开语义前提下，按需继续移除 runtime 内部残余默认泛型（当前集中在 PromiseLike `then<TResult...>`）。
+`@khora/example` 作为 runtime 对外契约回归样例。
