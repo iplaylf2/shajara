@@ -24,25 +24,29 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Fault` 为带外终止事件。发生 `Fault` 时，目标 `Process` 立即退出，后续 continuation 不再执行。
 错误编码与失败值形状由具体 syscall 语义定义。
-`Failed(fault)` 在 `Scope` 树上的上传策略由父 `Scope` 角色语义决定；默认角色沿父链传播，`SupervisorScope` 可将后代终态收敛为带内结果（见 3.5）。
+`Failed(fault)` 在 `Scope` 树上的上传策略由父 `Scope` 角色语义决定；`SupervisorScope` 以外的角色沿父链传播失败终态，`SupervisorScope` 将后代终态收敛为带内结果（见 3.5）。
 
 ### 1.3 Scope（统一对象与角色分层）
 
 `Scope` 是生命周期、身份与上下文的统一载体，承载父子关系、上下文边界与 `Process` 归属。
 每个 `Scope` 都有唯一 `ScopeRef`，且 `Scope` 构成严格树（除根以外每个 `Scope` 恰有一个父 `Scope`）。`ScopeRef` 是控制面引用（capability handle）。
 
-当前角色集合：
+角色按语义来源分为两层：
+
+**kernel 原生角色**（语义由 kernel 直接定义）：
 
 - `StandardScope`：普通编排角色，承载大多数业务流程与默认并发分支。
+- `SupervisorScope`：终态收敛角色，用于把后代失败/终止收敛为带内结果（见 3.5）。
+
+**executor 衍生角色**（因 executor 架构需要而存在，语义与 executor 运作绑定）：
+
 - `SchedulerScope`：调度编排角色（`Scheduler` 职责）。
 - `ReaperScope`：终止收敛仲裁角色（`Reaper` 职责）。
-- `SupervisorScope`：终态收敛角色，用于把后代失败/终止收敛为带内结果（见 3.5）。
-- `IngressScope`：输入通道角色（`Sink/PostFn` 语义）。
-- `PortalScope`：能力投放角色（`Capability -> Portal` 触发任务）。
+- `IngressScope`：宿主输入通道标记（executor 层策略角色，见 1.7）。
 - `ExecutionScope`：执行入口能力角色（`launch + terminate` 语义，见 1.4）。
 - `LimboScope`：结构性修剪承接角色（全局单例，见 1.8）。
 
-创建约束：`StandardScope`、`SchedulerScope`、`ReaperScope`、`SupervisorScope`、`IngressScope`、`PortalScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。
+创建约束：`StandardScope`、`SupervisorScope`、`SchedulerScope`、`ReaperScope`、`IngressScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 由系统语义保留，不作为 syscall 创建目标。syscall 能否创建某角色由 executor 解释决定，上述约束反映的是当前设计期待。
 
 ### 1.4 执行入口能力视图与依赖方向
 
@@ -72,9 +76,17 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Processor` 是系统中唯一的逻辑原子执行权令牌，`EventQueue` 是微内核内部队列，用于存放可运行的 `Process`。
 
-### 1.7 Portal、Capability、Sink、PostFn
+### 1.7 Sink、PostFn 与 Post
 
-`Portal` 是 `Scope` 所拥有的入口映射（`{ methodName: Blueprint<any> }`）。`Capability` 是不可伪造令牌，绑定到某个 `Scope` 的 `Portal`。具备 `Portal + Capability` 投放面的 `Scope` 在角色上属于 `PortalScope`。`Sink` 是 `Scope` 的 `IngressScope` 通道（FIFO 值缓冲），`PostFn` 是宿主可调用函数，用于把值入队到某个 `Scope` 的 `IngressScope`。`IngressScope` 语义只覆盖该输入通道与 `post` 投递配对，不覆盖 `terminate` 生命周期控制。
+每个 `Scope` 持有一个 `Sink`（FIFO 值缓冲）。
+
+`PostFn` 是宿主可调用函数，由 executor 向外暴露，用于把值投入目标 Scope 的 `Sink`。executor 将此能力限制为 `IngressScope` 目标；该约束属于 executor 层策略，不属于 kernel `Sink` 语义本身。
+
+`Post(scopeRef, value)` 是 kernel syscall（见 5.3），允许进程向可见子 Scope 的 `Sink` 写入值；可见性约束与 `AwaitScope` 对称。
+
+`Receive()` 从调用方 Scope 的 `Sink` 取值（见 5.3）。
+
+`Sink` 条目是否携带发送方 `ScopeRef` 属于待定项：`Post` 总是来自某个可见的 Scope 节点，`PostFn` 来自宿主边界，两者均有明确来源，是否在条目中暴露该信息由后续设计决定。
 
 ### 1.8 Limbo 与孤儿 Scope
 
@@ -177,7 +189,7 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 随后，子 `Scope` 终态向父 `Scope` 的上传按父角色语义处理：
 
-- 默认角色（当前包括 `StandardScope`、`SchedulerScope`、`ReaperScope`、`IngressScope`、`PortalScope`）对后代 `{ kind: "failed", fault }` 采用传播策略：父 `Scope` 进入 `Closing` 并确定终态为 `Failed`，然后继续按祖先链传播。
+- `SupervisorScope` 以外的所有角色对后代 `{ kind: "failed", fault }` 采用传播策略：父 `Scope` 进入 `Closing` 并确定终态为 `Failed`，然后继续按祖先链传播。
 - `SupervisorScope` 对后代终态采用收敛策略：后代 `failed/terminated` 不再升级为祖先失败，而是由 `SupervisorScope` 本地收敛为可观察带内结果。
 
 `terminated` 与 `failed` 语义分离：后代 `terminated` 不会被重写为祖先 `failed`。`terminated` 表示终止级联结果，`failed` 表示 fault 失败结果。
@@ -254,9 +266,7 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 
 #### 创建治理/收敛 Scope（调度/裁决/监督）[Non-Blocking]
 
-内核支持通过 syscall 创建治理/收敛 `Scope`（`SchedulerScope`、`ReaperScope` 与 `SupervisorScope`），并建立其治理子树边界。该能力用于控制面编排，不等同于业务 `Spawn`。
-
-该类 syscall 的具体命名、入参与可见性细则当前仍属待定项；稳定约束仅包括：
+内核支持通过 syscall 创建治理/收敛 `Scope`（`SchedulerScope`、`ReaperScope` 与 `SupervisorScope`），并建立其治理子树边界。`SupervisorScope` 通过 `Spawn(blueprint, spec)` 创建（`spec.role = "supervisor"`），创建路径与 `StandardScope` 相同，仅角色语义不同。`SchedulerScope` 与 `ReaperScope` 的具体创建 syscall 命名、入参与可见性细则当前仍属待定项；稳定约束仅包括：
 
 - 创建后的基础治理层级需满足 `ReaperScope -> SchedulerScope -> 执行子树根 Scope`。
 
@@ -321,9 +331,16 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 `InLimbo` 属于结构状态，不作为 `AwaitScope` 的直接返回分支暴露；目标若进入 `InLimbo`，其可观察结果仍按 `failed/terminated` 终态收敛。
 `AwaitScope` 不改变失败上传语义；是否向祖先传播或被本地收敛由父 `Scope` 角色（含 `SupervisorScope`）决定。
 
+#### Post(scopeRef, value) -> void [Non-Blocking]
+
+向可见子 Scope 的 `Sink` 投递一个值。
+
+- 前置条件：`scopeRef` 对调用方可见（与 `AwaitScope` 一致）
+- 效果：将 `value` 入队到目标 Scope 的 `Sink`；若有进程在 `Receive` 上阻塞则立即唤醒
+
 #### Receive() -> value [Blocking]
 
-`Receive` 的语义为：从调用方 `Scope` 的 `Sink` 接收一个值。
+从调用方 Scope 的 `Sink` 接收一个值。来源信息见 1.7。
 
 - 若 `Sink` 非空：出队一个值并返回该值。
 - 若 `Sink` 为空：阻塞，直到有值入队后恢复并返回该值。
