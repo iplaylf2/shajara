@@ -104,6 +104,16 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 微内核以迭代方式推进执行，每轮包含两相：反应相与策略相。
 
+### 2.0 调度原则：广度优先推进
+
+微内核以广度优先推进执行：当前持有 `Processor` 的 `Process` 连续解释其 `Plan`，直到遇到 `[Blocking]` syscall 或退出；`[Non-Blocking]` syscall（如 `Spawn`、`Fork`）创建的新 `Process` 进入 `EventQueue` 末端，不中断当前 `Process` 的执行。
+
+该原则的直接推论：
+
+- 同一 `Process` 内的连续 `[Non-Blocking]` syscall 序列在一次 `Processor` 持有期间原子完成，中间不会插入其他 `Process` 的执行。
+- `Spawn` 与 `Fork` 的语义是"注册一个将来要执行的 `Process`"，不是把控制权转移给新 `Process`。
+- `Signal` 时序安全以此为根因：`Receive(signal)` 让出 `Processor` 后，发送方（子 `Process`）才能从 `EventQueue` 出队并 `Post`。若为深度优先（`Spawn` 立即执行子 `Process`），该时序保证不成立。
+
 ### 2.1 反应相（Drain）
 
 当 `EventQueue` 非空时重复：
