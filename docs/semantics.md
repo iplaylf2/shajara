@@ -66,14 +66,20 @@ Process 是 Plan 的动态实例。每个 Process 拥有唯一 `ProcessRef`，�
 
 `Processor` 是系统唯一的逻辑原子执行权令牌。`EventQueue` 存放可运行的 Process。
 
-### 1.7 Signal 与消息传递
+### 1.7 消息传递
 
-`Signal<T>` 是 phantom-typed 不透明令牌，由 `signal<T>()` 创建，标识一条类型化通信通道，不绑定特定 Scope。持有令牌即具备投递或接收能力（capability 模型）。
+`Channel<T>` 是 phantom-typed 不透明令牌，由 `channel<T>()` 创建，标识一条类型化消息通道，不绑定特定 Scope。持有令牌即具备发送或接收能力（capability 模型）。
 
-- **Post(scopeRef, signal, value)**：向目标 Scope 投递值，以 Signal 令牌为匹配键。投递到达时唤醒该 Scope 内所有阻塞在相同 Signal 上的 Receive 进程，每人各收到一份副本（fan-out）；无等待者则丢弃。不缓冲值。
-- **Receive(signal)**：在调用方 Scope 上等待下一次匹配投递，返回 `{ value, from: ScopeRef }`。`from` 为发送方进程所属 Scope，调用方可据此实现 request/response 等组合模式。
+每个 `(Scope, Channel)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
 
-单 Processor 协作调度天然保证时序安全：`Receive(signal)` 让出 Processor 后，发送方才能运行并 Post。
+- **Send(scopeRef, channel, value)**：向目标 Scope 的 `(scope, channel)` buffer 追加消息。若有 Process 阻塞在 `Receive(channel)`，最早的等待者出队并恢复，消息由该接收者独占。`[Non-Blocking]`
+- **Receive(channel)**：在调用方 Scope 上接收匹配 Channel 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞直至下次匹配 Send。返回 `{ value, from: ScopeRef }`，`from` 为发送方进程所属 Scope。`[Blocking]`
+
+每条消息恰好投递给一个接收者（单消费者语义）。多个 Process 阻塞在同一 `(Scope, Channel)` 时，最早阻塞的 Process 优先获得下一条消息。
+
+消息队列在 kernel 语义层为逻辑无界；executor 实现可施加容量约束（超限触发 fault），此为实现策略而非语义定义。
+
+消息传递协议的正确性不依赖调度顺序——Send 在 Receive 到达前执行时，值入 buffer 而非丢弃；Receive 在 Send 到达前执行时，阻塞等待。任意 Processor 数量与调度策略下行为一致。
 
 ### 1.8 Limbo
 
@@ -97,7 +103,6 @@ Process 是 Plan 的动态实例。每个 Process 拥有唯一 `ProcessRef`，�
 
 - 同一 Process 内的连续 Non-Blocking syscall 序列在一次 Processor 持有期间原子完成。
 - Spawn/Fork 语义是"注册将来执行的 Process"，不是立即转移控制权。
-- Signal 时序安全以此为根因：Receive 让出 Processor 后，发送方才能出队并 Post。
 
 ### 2.2 反应相（Drain）
 
@@ -258,15 +263,15 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 `InLimbo` 为结构状态，不作为返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。不改变失败上传语义。
 
-#### Post(scopeRef, signal, value) → void `[Non-Blocking]`
+#### Send(scopeRef, channel, value) → void `[Non-Blocking]`
 
-向目标 Scope 投递值，以 Signal 令牌为匹配键。若有进程阻塞在 `Receive(signal)`，唤醒全部等待者（fan-out）；无匹配者则丢弃。
+向目标 Scope 的 `(scope, channel)` buffer 追加消息。若有 Process 阻塞在 `Receive(channel)`，最早的等待者出队并恢复，消息由该接收者独占。
 
 - 前置：scopeRef 对调用方可见。
 
-#### Receive(signal) → { value, from } `[Blocking]`
+#### Receive(channel) → { value, from } `[Blocking]`
 
-在调用方 Scope 上等待匹配 Signal 的下一次投递。`from` 为发送方所属 Scope 的 ScopeRef。
+在调用方 Scope 上接收匹配 Channel 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞。`from` 为发送方所属 Scope 的 ScopeRef。
 
 #### Cede() → void `[Blocking]`
 
@@ -334,10 +339,10 @@ primitive 不等于 syscall：
 选择最先完成者，触发其余分支收敛。组合方式：
 
 1. 创建 `SupervisorScope`（arena）。
-2. arena 内部为每个 branch 创建子 Scope；每个 branch 完成后通过 `Post(raceSignal)` 向调用方发送结果，并以 `Post(haltSignal)` 通知 arena 终止。
-3. arena 通过 `Receive(haltSignal)` 等待首个信号后执行 `Halt`，触发剩余分支级联终止。
-4. 调用方 Fork 一个后备 Process 等待 arena 收敛——若所有 branch 均失败（无人成功 Post），后备 Process 将 arena 的失败终态转发给调用方。
-5. 调用方通过 `Receive(raceSignal)` 取得首个结果。
+2. arena 内部为每个 branch 创建子 Scope；每个 branch 完成后通过 `Send(raceChannel)` 向调用方发送结果，并以 `Send(haltChannel)` 通知 arena 终止。
+3. arena 通过 `Receive(haltChannel)` 等待首个消息后执行 `Halt`，触发剩余分支级联终止。
+4. 调用方 Fork 一个后备 Process 等待 arena 收敛——若所有 branch 均失败（无人成功 Send），后备 Process 将 arena 的失败终态转发给调用方。
+5. 调用方通过 `Receive(raceChannel)` 取得首个结果。
 
 #### scoped(plan, options?) → Plan\<Either\<KhoraFailure, T\>\>
 

@@ -1,7 +1,7 @@
 import type { Blueprint } from "./contracts/plan";
+import type { Channel } from "./contracts/channel";
 import type { KhoraFailure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
-import type { Signal } from "./contracts/signal";
 import { notImplemented } from "./internal/not-implemented";
 
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
@@ -49,13 +49,9 @@ export interface Executor {
     blueprint: Blueprint<Return>,
   ): LaunchHandle<Return>;
   /**
-   * Post a value into the target scope's signal channel.
+   * Send a value into the target scope's channel message queue.
    */
-  post<PostedValue>(
-    scope: ScopeRef<unknown>,
-    signal: Signal<PostedValue>,
-    value: PostedValue,
-  ): void;
+  send<Value>(scope: ScopeRef<unknown>, channel: Channel<Value>, value: Value): void;
   /**
    * Terminate a host/runtime-controllable scope.
    */

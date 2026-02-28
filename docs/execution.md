@@ -18,8 +18,8 @@ kernel 执行器实现未落地——`ensureExecutor()` 仍返回占位实现，
 | runtime 收敛链同步         | `LaunchResult` 三态对齐，错误类型统一。                                                                                          |
 | 可选/默认参数治理          | kernel 合约与核心 syscall/primitives 默认泛型已移除。                                                                            |
 | `scoped` 失败 handler 收敛 | `onResumableBranchFailure` 消费 `RuntimeKhoraError`，不暴露 kernel `KhoraFailure`。                                              |
-| Signal 令牌化              | `Signal<T>` 重构为 phantom-typed 令牌，`IngressScope` 退役，`Post/Receive` 以 Signal 为匹配键。                                  |
-| `race` 实现                | 基于双 Signal 的调用者直接接收架构。                                                                                             |
+| Channel 消息队列           | `Channel<T>` 为 phantom-typed 令牌，`Send/Receive` 以 Channel 为匹配键，per-(scope, channel) FIFO 队列缓存消息。                 |
+| `race` 实现                | 基于双 Channel 的调用者直接接收架构。                                                                                            |
 
 ## 3. 进行中
 

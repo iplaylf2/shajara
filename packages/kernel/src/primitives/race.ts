@@ -2,20 +2,20 @@
 import type { ArrayValues, UnknownArray } from "type-fest";
 import type { Blueprint, KhoraFailure, Plan } from "#src/contracts";
 import { either, readonlyArray } from "fp-ts";
-import { fork, halt, post, receive, self, spawn } from "#src/syscalls";
+import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
 import { awaitScopeConverged } from "#src/primitives-kit";
+import { channel } from "#src/contracts";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
-import { signal } from "#src/contracts";
 import { supervisorScopeSpec } from "#src/scopes";
 
 type RaceBranches<BranchReturns extends UnknownArray> = {
   readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
 };
 
-const raceSignal = signal<Either<KhoraFailure, unknown>>();
-const haltSignal = signal<null>();
+const raceChannel = channel<Either<KhoraFailure, unknown>>();
+const haltChannel = channel<null>();
 
 export function race<BranchReturns extends UnknownArray>(
   branches: RaceBranches<BranchReturns>,
@@ -38,8 +38,8 @@ export function race<BranchReturns extends UnknownArray>(
                       spawn(() =>
                         pipe(
                           branch(),
-                          plan.chainF((value) => post(callerRef, raceSignal, either.right(value))),
-                          plan.chainF(() => post(arenaRef, haltSignal, null)),
+                          plan.chainF((value) => send(callerRef, raceChannel, either.right(value))),
+                          plan.chainF(() => send(arenaRef, haltChannel, null)),
                         ),
                       ),
                       plan.liftF,
@@ -49,7 +49,7 @@ export function race<BranchReturns extends UnknownArray>(
                 ),
               ),
             ),
-            plan.chainF(() => receive(haltSignal)),
+            plan.chainF(() => receive(haltChannel)),
             plan.chainF(() => halt()),
           ),
         supervisorScopeSpec(),
@@ -60,11 +60,11 @@ export function race<BranchReturns extends UnknownArray>(
         pipe(
           arenaRef,
           awaitScopeConverged,
-          plan.chainF((value) => post(callerRef, raceSignal, value)),
+          plan.chainF((value) => send(callerRef, raceChannel, value)),
         ),
       ),
     ),
-    plan.chainF(() => receive(raceSignal)),
+    plan.chainF(() => receive(raceChannel)),
     plan.map(({ value }) => value),
   );
 }

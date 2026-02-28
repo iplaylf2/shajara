@@ -1,4 +1,4 @@
-import { ensureExecutor, liftSyscall, receive as receiveSyscall, signal } from "@khora/kernel";
+import { channel, ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
 import { scoped, self } from "#src/primitives";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
@@ -6,7 +6,7 @@ import { liftPlan } from "#src/adapter/plan-lift";
 
 export type RuntimeUntilThunk<Return> = () => PromiseLike<Return>;
 
-const settlementSignal = signal<Settlement<unknown>>();
+const settlementChannel = channel<Settlement<unknown>>();
 
 export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Return> {
   const executor = ensureExecutor();
@@ -14,12 +14,12 @@ export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Re
     const { scopeRef } = yield* self();
 
     thunk().then(
-      (value: Return) => executor.post(scopeRef, settlementSignal, { status: "resolved", value }),
+      (value: Return) => executor.send(scopeRef, settlementChannel, { status: "resolved", value }),
       (reason: unknown) =>
-        executor.post(scopeRef, settlementSignal, { reason, status: "rejected" }),
+        executor.send(scopeRef, settlementChannel, { reason, status: "rejected" }),
     );
 
-    const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementSignal)));
+    const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementChannel)));
     switch (settlement.status) {
       case "resolved":
         return settlement.value as Return;

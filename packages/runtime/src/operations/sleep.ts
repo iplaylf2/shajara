@@ -1,9 +1,9 @@
-import { ensureExecutor, liftSyscall, receive as receiveSyscall, signal } from "@khora/kernel";
+import { channel, ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
 import { scoped, self } from "#src/primitives";
 import type { RuntimePlan } from "#src/contracts";
 import { liftPlan } from "#src/adapter/plan-lift";
 
-const wakeSignal = signal<null>();
+const wakeChannel = channel<null>();
 
 export function* sleep(milliseconds: number): RuntimePlan<void> {
   const executor = ensureExecutor();
@@ -11,11 +11,11 @@ export function* sleep(milliseconds: number): RuntimePlan<void> {
   return yield* scoped(function* sleepBlueprint(): RuntimePlan<void> {
     const { scopeRef } = yield* self();
     const timeoutId = globalThis.setTimeout(() => {
-      executor.post(scopeRef, wakeSignal, null);
+      executor.send(scopeRef, wakeChannel, null);
     }, milliseconds);
 
     try {
-      yield* liftPlan(liftSyscall(receiveSyscall(wakeSignal)));
+      yield* liftPlan(liftSyscall(receiveSyscall(wakeChannel)));
     } finally {
       globalThis.clearTimeout(timeoutId);
     }

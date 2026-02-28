@@ -41,26 +41,26 @@
 - `LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`。
 - `LaunchResult<T>` 为三态 sum type（`success | failure | terminated`）。
 - runtime 通过 `result.onResult(...)` 做结果收敛，不退化为 `PromiseLike` 绑定。
-- `post` 目标为 `ScopeRef` + `Signal<T>`；`terminate` 目标为 `ExecutionScopeRef`。
+- `send` 目标为 `ScopeRef` + `Channel<T>`；`terminate` 目标为 `ExecutionScopeRef`。
 
 ## 6. 目录结构
 
-| 路径                             | 职责                           |
-| -------------------------------- | ------------------------------ |
-| `kernel/src/contracts/`          | 核心类型契约                   |
-| `kernel/src/contracts/plan.ts`   | `Plan/Blueprint` 单源          |
-| `kernel/src/contracts/scope.ts`  | `ScopeRef/ScopeSpec` 单源      |
-| `kernel/src/contracts/signal.ts` | `Signal` 单源                  |
-| `kernel/src/syscalls/`           | syscall 声明 + index           |
-| `kernel/src/primitives/`         | 原语 + index                   |
-| `kernel/src/scopes/`             | 角色条目                       |
-| `kernel/src/executor.ts`         | 执行入口契约与作用域执行状态   |
-| `runtime/src/contracts.ts`       | `RuntimePlan/RuntimeBlueprint` |
-| `runtime/src/primitives/`        | 原语 + index                   |
-| `runtime/src/operations/`        | 宿主操作 + index               |
-| `runtime/src/operations-kit/`    | 操作共享支撑                   |
-| `runtime/src/adapter/`           | `liftPlan/lowerPlan`           |
-| `runtime/src/errors/`            | 错误类型                       |
+| 路径                              | 职责                           |
+| --------------------------------- | ------------------------------ |
+| `kernel/src/contracts/`           | 核心类型契约                   |
+| `kernel/src/contracts/plan.ts`    | `Plan/Blueprint` 单源          |
+| `kernel/src/contracts/scope.ts`   | `ScopeRef/ScopeSpec` 单源      |
+| `kernel/src/contracts/channel.ts` | `Channel` 单源                 |
+| `kernel/src/syscalls/`            | syscall 声明 + index           |
+| `kernel/src/primitives/`          | 原语 + index                   |
+| `kernel/src/scopes/`              | 角色条目                       |
+| `kernel/src/executor.ts`          | 执行入口契约与作用域执行状态   |
+| `runtime/src/contracts.ts`        | `RuntimePlan/RuntimeBlueprint` |
+| `runtime/src/primitives/`         | 原语 + index                   |
+| `runtime/src/operations/`         | 宿主操作 + index               |
+| `runtime/src/operations-kit/`     | 操作共享支撑                   |
+| `runtime/src/adapter/`            | `liftPlan/lowerPlan`           |
+| `runtime/src/errors/`             | 错误类型                       |
 
 kernel 对外导出采用根入口分组导出，`@khora/kernel/scopes` 为 scope spec 公开子路径。
 

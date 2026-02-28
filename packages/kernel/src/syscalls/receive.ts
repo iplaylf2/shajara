@@ -1,4 +1,4 @@
-import type { ScopeRef, Signal, Syscall } from "#src/contracts";
+import type { Channel, ScopeRef, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
 export interface ReceiveResult<ReceiveValue> {
@@ -8,13 +8,15 @@ export interface ReceiveResult<ReceiveValue> {
 
 export interface ReceiveSyscall<ReceiveValue> extends Syscall {
   readonly kind: "receive";
-  readonly signal: Signal<ReceiveValue>;
+  readonly channel: Channel<ReceiveValue>;
   readonly [RETURN_TOKEN]?: readonly [ReceiveResult<ReceiveValue>];
 }
 
-export function receive<ReceiveValue>(signal: Signal<ReceiveValue>): ReceiveSyscall<ReceiveValue> {
+export function receive<ReceiveValue>(
+  channel: Channel<ReceiveValue>,
+): ReceiveSyscall<ReceiveValue> {
   return {
+    channel,
     kind: "receive",
-    signal,
   };
 }

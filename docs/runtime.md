@@ -51,13 +51,13 @@ runtime 以 `runtimeLaunch` 为统一收敛锚点：
 
 ## 5. 宿主桥接
 
-`action`、`sleep`、`until` 等宿主操作在内部利用 `Signal<T>` 令牌完成宿主回调到 kernel 的投递闭环：
+`action`、`sleep`、`until` 等宿主操作在内部利用 `Channel<T>` 令牌完成宿主回调到 kernel 的消息投递闭环：
 
-- 模块级创建 `Signal<T>` 令牌。
-- runtime 内部通过 `executor.post(scope, signal, value)` 注入宿主输入。
-- kernel 侧由 `receive(signal)` 等待并收敛。
+- 模块级创建 `Channel<T>` 令牌。
+- runtime 内部通过 `executor.send(scope, channel, value)` 注入宿主输入。
+- kernel 侧由 `receive(channel)` 等待并收敛。
 
-该适配在 runtime 内部完成局部类型收敛，不向用户侧暴露 Signal 令牌。
+该适配在 runtime 内部完成局部类型收敛，不向用户侧暴露 Channel 令牌。
 
 ## 6. 边界引用类型
 
@@ -75,4 +75,4 @@ runtime 直接消费 kernel 导出的引用类型，不重复定义同语义包�
 
 ## 7. 内核索引
 
-运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Plan、退出信息与等待者）、等待登记（Receive、AwaitProcess、AwaitScope），以及各 Scope 上按 Signal 令牌分组的等待者登记。runtime 仅消费这些能力，不复制维护状态机。
+运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Plan、退出信息与等待者）、等待登记（Receive、AwaitProcess、AwaitScope），以及各 Scope 上按 Channel 令牌分组的消息队列与等待者登记。runtime 仅消费这些能力，不复制维护状态机。

@@ -1,5 +1,5 @@
 import type { RejectedSettlement, ResolvedSettlement, Settlement } from "#src/operations-kit";
-import { ensureExecutor, liftSyscall, receive as receiveSyscall, signal } from "@khora/kernel";
+import { channel, ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 import type { ScopeRef } from "@khora/kernel";
 import { liftPlan } from "#src/adapter/plan-lift";
@@ -11,11 +11,11 @@ export interface RuntimeAction<Return> {
   reject(reason: Error): void;
 }
 
-const settlementSignal = signal<Settlement<unknown>>();
+const settlementChannel = channel<Settlement<unknown>>();
 
 export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
   const scope = yield* spawn(function* actionBlueprint(): RuntimePlan<Return> {
-    const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementSignal)));
+    const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementChannel)));
     switch (settlement.status) {
       case "resolved":
         return settlement.value as Return;
@@ -27,13 +27,13 @@ export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
 
   return {
     reject(reason: Error): void {
-      executor.post(scope, settlementSignal, {
+      executor.send(scope, settlementChannel, {
         reason,
         status: "rejected",
       } satisfies RejectedSettlement);
     },
     resolve(value: Return): void {
-      executor.post(scope, settlementSignal, {
+      executor.send(scope, settlementChannel, {
         status: "resolved",
         value,
       } satisfies ResolvedSettlement<Return>);
