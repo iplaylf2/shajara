@@ -16,7 +16,7 @@ Current Phase 为 **Build — Make it work**。当前主阻塞仍是 `kernel` �
 8. runtime 宿主桥接入口保持一致：`run/createScope` 均通过 `runtimeLaunch` 收敛 `LaunchResult`，`action` 通过 `IngressScopeRef + executor.post` 完成宿主结算投递，未引入绕过执行入口的新通道。Evidence: `packages/runtime/src/operations/run.ts`, `packages/runtime/src/operations/create-scope.ts`, `packages/runtime/src/operations-kit/runtime-launch.ts`, `packages/runtime/src/operations/action.ts`, `packages/kernel/src/executor.ts`。
 9. “可选参数/默认参数”治理已从盘点进入落地：`kernel` 侧 `Plan/Scope/Process` 合约与多处 syscall/primitives 的默认泛型已移除；`ScopeRef/ScopeSpec/ProcessRef` 引用位已补全显式类型参数，避免通过默认值静默降级为弱约束。Evidence: `packages/kernel/src/contracts/plan.ts`, `packages/kernel/src/contracts/scope.ts`, `packages/kernel/src/contracts/process.ts`, `packages/kernel/src/syscalls/lookup.ts`, `packages/kernel/src/syscalls/receive.ts`, `packages/kernel/src/syscalls/await-process.ts`, `packages/kernel/src/syscalls/poll-process.ts`, `packages/kernel/src/syscalls/fork.ts`, `packages/kernel/src/syscalls/await-scope.ts`, `packages/kernel/src/syscalls/poll-scope.ts`, `packages/kernel/src/syscalls/terminate.ts`, `packages/kernel/src/syscalls/bind.ts`, `packages/kernel/src/syscalls/spawn.ts`, `packages/kernel/src/primitives/receive.ts`, `packages/kernel/src/primitives/scoped.ts`, `packages/kernel/src/primitives/self.ts`, `packages/kernel/src/executor.ts`。
 10. `scoped` 的失败 handler 在 runtime 边界已收敛为错误对象消费：kernel 仍以 `KhoraFailure` 为内部失败契约，runtime `onResumableBranchFailure` 入参映射为 `RuntimeKhoraError`；example 调用侧已切回直接使用 runtime 错误类型（不再暴露 kernel 失败契约细节）。Evidence: `packages/runtime/src/primitives/scoped.ts`, `packages/runtime/src/errors/runtime-khora-failure.ts`, `apps/example/src/scenarios.ts`, `docs/api.md`, `docs/design-constraints.md`。
-11. Scope 角色分层已重构为两层（kernel 原生：`StandardScope`/`SupervisorScope`；executor 衍生：`SchedulerScope`/`ReaperScope`/`IngressScope`/`ExecutionScope`/`LimboScope`）；`PortalScope` 从设计移除；`Sink` 泛化为每个 Scope 持有，`IngressScope` 降级为 executor 层策略标记；`Post` syscall 进入 syscall 设计集合。文档已对齐，代码尚未同步。Evidence: `docs/semantics.md`, `docs/README.md`, `docs/runtime.md`。
+11. Scope 角色分层已重构为两层（kernel 原生：`StandardScope`/`SupervisorScope`；executor 衍生：`SchedulerScope`/`ReaperScope`/`IngressScope`/`ExecutionScope`/`LimboScope`）；`PortalScope` 从设计移除；`Signal` 泛化为每个 Scope 持有，`IngressScope` 降级为 executor 层策略标记；`Post` syscall 进入 syscall 设计集合。文档已对齐，代码尚未同步。Evidence: `docs/semantics.md`, `docs/README.md`, `docs/runtime.md`。
 
 ## 3. 相对设计基线增量（仅记录 delta）
 
@@ -50,7 +50,11 @@ Impact: 用户侧 `onResumableBranchFailure` 已直接消费 `RuntimeKhoraError`
 
 ### 3.8 delta：Scope 角色分层重构与 Post syscall 引入
 
-Impact: 角色集合从平列改为两层（kernel 原生 vs executor 衍生），澄清 `IngressScope` 定位（executor 层策略标记，非 kernel 固有角色，`Sink` 的对外开放权属于 executor）；`PortalScope` 从设计移除；`Post(scopeRef, value)` syscall 加入设计集合，为 `race` 的 `awaitFirstExited` 提供进程间通信基础（`Post + Receive` 组合取代轮询方案）。当前文档已对齐，代码同步待完成：`PortalScope` 文件待移除，`Post` syscall 待实现，`race.awaitFirstExited` 仍为 `notImplemented`。Evidence: `docs/semantics.md`, `docs/README.md`, `docs/runtime.md`, `packages/kernel/src/primitives/race.ts`。
+Impact: 角色集合从平列改为两层（kernel 原生 vs executor 衍生），澄清 `IngressScope` 定位（executor 层策略标记，非 kernel 固有角色，`Signal` 的对外开放权属于 executor）；`PortalScope` 从设计移除；`Post(scopeRef, value)` syscall 加入设计集合，为 `race` 的 `awaitFirstExited` 提供进程间通信基础（`Post + Receive` 组合取代轮询方案）。当前文档已对齐，代码同步待完成：`PortalScope` 文件待移除，`Post` syscall 待实现，`race.awaitFirstExited` 仍为 `notImplemented`。Evidence: `docs/semantics.md`, `docs/README.md`, `docs/runtime.md`, `packages/kernel/src/primitives/race.ts`。
+
+### 3.9 delta：Signal 取代 Sink，语义确立为广播 rendezvous
+
+Impact: `Sink` 概念移除，以 `Signal` 替代，直接表达广播 rendezvous 语义。`Signal` 不缓冲值；`Post` 唤醒全部当前等待者（fan-out），无等待者时值被丢弃。`Receive()` 语义为"等待下一次广播"。单 Processor 协作调度保证时序安全：`Receive()` 先阻塞让出 `Processor`，`Post` 才能运行，丢弃风险仅在调用方未提前等待时出现。该变更使 Scope 内多个并发 `Receive()` 调用的行为可预测（各自独立收到副本，而非竞争消费），也为 `race` 的 `awaitFirstExited` 提供正确的语义基础。Evidence: `docs/semantics.md`, `docs/runtime.md`。
 
 ## 4. 当前阶段执行切片（Build）
 

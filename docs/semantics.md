@@ -76,17 +76,17 @@ syscall 的成功恢复值由 `then(value)` 承接。本文档不定义统一失
 
 `Processor` 是系统中唯一的逻辑原子执行权令牌，`EventQueue` 是微内核内部队列，用于存放可运行的 `Process`。
 
-### 1.7 Sink、PostFn 与 Post
+### 1.7 Signal、PostFn 与 Post
 
-每个 `Scope` 持有一个 `Sink`（FIFO 值缓冲）。
+每个 `Scope` 持有一个 `Signal`，作为广播 rendezvous 点，不缓冲值。`Post` 到达时唤醒 Scope 内所有当前阻塞在 `Receive()` 的进程，每人各收到一份副本（fan-out）；若无等待者则值被丢弃。单 Processor 协作调度天然保证接收方先于发送方阻塞：`Receive()` 让出 `Processor` 后，发送方才能运行并 `Post`。
 
-`PostFn` 是宿主可调用函数，由 executor 向外暴露，用于把值投入目标 Scope 的 `Sink`。executor 将此能力限制为 `IngressScope` 目标；该约束属于 executor 层策略，不属于 kernel `Sink` 语义本身。
+`PostFn` 是宿主可调用函数，由 executor 向外暴露，用于把值广播到目标 Scope 的 `Signal`。executor 将此能力限制为 `IngressScope` 目标；该约束属于 executor 层策略，不属于 kernel `Signal` 语义本身。
 
-`Post(scopeRef, value)` 是 kernel syscall（见 5.3），允许进程向可见子 Scope 的 `Sink` 写入值；可见性约束与 `AwaitScope` 对称。
+`Post(scopeRef, value)` 是 kernel syscall（见 5.3），允许进程向可见子 Scope 的 `Signal` 广播值；可见性约束与 `AwaitScope` 对称。
 
-`Receive()` 从调用方 Scope 的 `Sink` 取值（见 5.3）。
+`Receive()` 在调用方 Scope 的 `Signal` 上等待下一次广播（见 5.3）。
 
-`Sink` 条目是否携带发送方 `ScopeRef` 属于待定项：`Post` 总是来自某个可见的 Scope 节点，`PostFn` 来自宿主边界，两者均有明确来源，是否在条目中暴露该信息由后续设计决定。
+`Signal` 是否携带发送方 `ScopeRef` 属于待定项：`Post` 总是来自某个可见的 Scope 节点，`PostFn` 来自宿主边界，两者均有明确来源，是否在广播时暴露该信息由后续设计决定。
 
 ### 1.8 Limbo 与孤儿 Scope
 
@@ -333,17 +333,18 @@ syscall 对象本身不具备解释执行能力，也不直接修改系统状态
 
 #### Post(scopeRef, value) -> void [Non-Blocking]
 
-向可见子 Scope 的 `Sink` 投递一个值。
+向可见子 Scope 的 `Signal` 广播一个值。
 
 - 前置条件：`scopeRef` 对调用方可见（与 `AwaitScope` 一致）
-- 效果：将 `value` 入队到目标 Scope 的 `Sink`；若有进程在 `Receive` 上阻塞则立即唤醒
+- 效果：
+  - 若目标 Scope 内有进程阻塞在 `Receive()`：唤醒全部等待者，每人各收到一份副本
+  - 若无等待者：值被丢弃
 
 #### Receive() -> value [Blocking]
 
-从调用方 Scope 的 `Sink` 接收一个值。来源信息见 1.7。
+在调用方 Scope 的 `Signal` 上等待下一次广播。来源信息见 1.7。
 
-- 若 `Sink` 非空：出队一个值并返回该值。
-- 若 `Sink` 为空：阻塞，直到有值入队后恢复并返回该值。
+- 阻塞，直到下一次 `Post` 到达该 Scope 时被唤醒，返回广播值。
 
 #### Yield() -> void [Blocking]
 

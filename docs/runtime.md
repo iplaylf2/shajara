@@ -20,7 +20,7 @@ runtime 由适配层与宿主桥接层构成。`kernel` 作为执行语义单源
 
 ## 5. 运行期索引
 
-运行期索引由 `kernel` 维护：Scope 树索引（父子关系与状态）、Process 表（当前 `Plan`、退出信息与等待者）、等待登记（`Receive`、`AwaitProcess`、`AwaitScope`）、以及各 Scope 的输入缓冲 `Sink` 与其等待队列。runtime 仅消费这些语义能力，不复制维护同构状态机。
+运行期索引由 `kernel` 维护：Scope 树索引（父子关系与状态）、Process 表（当前 `Plan`、退出信息与等待者）、等待登记（`Receive`、`AwaitProcess`、`AwaitScope`）、以及各 Scope 的广播 rendezvous `Signal` 与其当前等待者登记。runtime 仅消费这些语义能力，不复制维护同构状态机。
 
 ## 6. Scope 树锚点与术语
 
