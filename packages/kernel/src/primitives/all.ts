@@ -13,22 +13,25 @@ type AllBranches<BranchReturns extends UnknownArray> = {
   readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
 };
 
+function allSupervisor<BranchReturns extends UnknownArray>(
+  branches: AllBranches<BranchReturns>,
+): Blueprint<BranchReturns> {
+  return () =>
+    pipe(
+      branches,
+      readonlyArray.map(flow(spawn, plan.liftF)),
+      plan.sequence,
+      plan.map(readonlyArray.map(({ scopeRef }) => awaitSupervisedScope(scopeRef))),
+      plan.chain(plan.sequence),
+      plan.map(narrowArrayAs<BranchReturns>()),
+    );
+}
+
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
 ): Plan<Either<KhoraFailure, BranchReturns>> {
   return pipe(
-    spawn(
-      () =>
-        pipe(
-          branches,
-          readonlyArray.map(flow(spawn, plan.liftF)),
-          plan.sequence,
-          plan.map(readonlyArray.map(({ scopeRef }) => awaitSupervisedScope(scopeRef))),
-          plan.chain(plan.sequence),
-          plan.map(narrowArrayAs<BranchReturns>()),
-        ),
-      supervisorScopeSpec(),
-    ),
+    spawn(allSupervisor(branches), supervisorScopeSpec()),
     plan.liftF,
     plan.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
   );
