@@ -7,6 +7,7 @@ export * from "./halt";
 export * from "./lookup";
 export * from "./poll-process";
 export * from "./poll-scope";
+export * from "./post";
 export * from "./receive";
 export * from "./self";
 export * from "./spawn";
