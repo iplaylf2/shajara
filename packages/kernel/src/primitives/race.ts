@@ -10,25 +10,26 @@ import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 import { supervisorScopeSpec } from "#src/scopes";
 
+export function race<BranchReturns extends UnknownArray>(
+  branches: RaceBranches<BranchReturns>,
+): Plan<Either<KhoraFailure, ArrayValues<BranchReturns>>> {
+  return pipe(
+    plan.Do,
+    plan.bindF("callerSelf", self),
+    plan.bindF("arenaSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
+      spawn(raceArena(branches, callerRef), supervisorScopeSpec()),
+    ),
+    plan.chainF(({ arenaSelf: { scopeRef: arenaRef }, callerSelf: { scopeRef: callerRef } }) =>
+      fork(arenaFailureRelay(arenaRef, callerRef)),
+    ),
+    plan.chainF(() => receive(raceChannel)),
+    plan.map(({ value }) => value),
+  );
+}
+
 type RaceBranches<BranchReturns extends UnknownArray> = {
   readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
 };
-
-const raceChannel = channel<Either<KhoraFailure, unknown>>();
-const haltChannel = channel<null>();
-
-function branchRunner(
-  branch: Blueprint<unknown>,
-  callerRef: ScopeRef<unknown>,
-  arenaRef: ScopeRef<unknown>,
-): Blueprint<void> {
-  return () =>
-    pipe(
-      branch(),
-      plan.chainF((value) => send(callerRef, raceChannel, either.right(value))),
-      plan.chainF(() => send(arenaRef, haltChannel, null)),
-    );
-}
 
 function raceArena(
   branches: ReadonlyArray<Blueprint<unknown>>,
@@ -64,19 +65,18 @@ function arenaFailureRelay(
     );
 }
 
-export function race<BranchReturns extends UnknownArray>(
-  branches: RaceBranches<BranchReturns>,
-): Plan<Either<KhoraFailure, ArrayValues<BranchReturns>>> {
-  return pipe(
-    plan.Do,
-    plan.bindF("callerSelf", self),
-    plan.bindF("arenaSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
-      spawn(raceArena(branches, callerRef), supervisorScopeSpec()),
-    ),
-    plan.chainF(({ arenaSelf: { scopeRef: arenaRef }, callerSelf: { scopeRef: callerRef } }) =>
-      fork(arenaFailureRelay(arenaRef, callerRef)),
-    ),
-    plan.chainF(() => receive(raceChannel)),
-    plan.map(({ value }) => value),
-  );
+function branchRunner(
+  branch: Blueprint<unknown>,
+  callerRef: ScopeRef<unknown>,
+  arenaRef: ScopeRef<unknown>,
+): Blueprint<void> {
+  return () =>
+    pipe(
+      branch(),
+      plan.chainF((value) => send(callerRef, raceChannel, either.right(value))),
+      plan.chainF(() => send(arenaRef, haltChannel, null)),
+    );
 }
+
+const raceChannel = channel<Either<KhoraFailure, unknown>>();
+const haltChannel = channel<null>();

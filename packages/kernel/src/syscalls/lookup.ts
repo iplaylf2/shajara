@@ -1,15 +1,15 @@
 import type { RETURN_TOKEN } from "#src/utils";
 import type { Syscall } from "#src/contracts";
 
-export interface LookupSyscall<Value> extends Syscall {
-  readonly kind: "lookup";
-  readonly key: string;
-  readonly [RETURN_TOKEN]?: readonly [Value];
-}
-
 export function lookup<Value>(key: string): LookupSyscall<Value> {
   return {
     key,
     kind: "lookup",
   };
+}
+
+export interface LookupSyscall<Value> extends Syscall {
+  readonly kind: "lookup";
+  readonly key: string;
+  readonly [RETURN_TOKEN]?: readonly [Value];
 }

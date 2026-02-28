@@ -3,8 +3,6 @@ import { scoped, self } from "#src/primitives";
 import type { RuntimePlan } from "#src/contracts";
 import { liftPlan } from "#src/adapter/plan-lift";
 
-const wakeChannel = channel<null>();
-
 export function* sleep(milliseconds: number): RuntimePlan<void> {
   const executor = ensureExecutor();
 
@@ -21,3 +19,5 @@ export function* sleep(milliseconds: number): RuntimePlan<void> {
     }
   });
 }
+
+const wakeChannel = channel<null>();

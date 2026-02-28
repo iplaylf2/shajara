@@ -17,11 +17,12 @@ export function* scoped<Return>(
   return unwrapEither(either);
 }
 
-export type RuntimeResumableFailureHandler = (error: RuntimeKhoraError) => RuntimePlan<unknown>;
 export interface RuntimeScopedOptions {
   readonly onResumableBranchFailure?: RuntimeResumableFailureHandler;
   readonly spec?: ScopeSpec;
 }
+
+export type RuntimeResumableFailureHandler = (error: RuntimeKhoraError) => RuntimePlan<unknown>;
 
 function scopedKernelPrimitive<Return>(
   runtimeBlueprint: RuntimeBlueprint<Return>,
@@ -49,18 +50,6 @@ function toKernelOnResumableFailure(
     );
 }
 
-function* runtimeResumableReplacementAsEither(
-  runtimeOnResumableFailure: RuntimeResumableFailureHandler,
-  error: RuntimeKhoraError,
-): RuntimePlan<Either<KhoraFailure, unknown>> {
-  try {
-    const replacement = yield* runtimeOnResumableFailure(error);
-    return right(replacement);
-  } catch (caught) {
-    return left(khoraFailureFromRuntimeUnknown(caught));
-  }
-}
-
 function toKernelScopedOptions(
   spec: RuntimeScopedOptions["spec"],
   onResumableFailure: ResumableFailureHandler | undefined,
@@ -75,4 +64,16 @@ function toKernelScopedOptions(
     return { onResumableBranchFailure: onResumableFailure };
   }
   return {};
+}
+
+function* runtimeResumableReplacementAsEither(
+  runtimeOnResumableFailure: RuntimeResumableFailureHandler,
+  error: RuntimeKhoraError,
+): RuntimePlan<Either<KhoraFailure, unknown>> {
+  try {
+    const replacement = yield* runtimeOnResumableFailure(error);
+    return right(replacement);
+  } catch (caught) {
+    return left(khoraFailureFromRuntimeUnknown(caught));
+  }
 }

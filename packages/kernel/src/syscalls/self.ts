@@ -2,9 +2,12 @@ import type { ProcessRef, ScopeRef, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 import type { StandardScopeRef } from "#src/scopes";
 
-export interface SelfDescriptor<Scope extends ScopeRef<unknown> = StandardScopeRef<unknown>> {
-  readonly scopeRef: Scope;
-  readonly processRef: ProcessRef<unknown>;
+export function self<
+  Scope extends ScopeRef<unknown> = StandardScopeRef<unknown>,
+>(): SelfSyscall<Scope> {
+  return {
+    kind: "self",
+  };
 }
 
 export interface SelfSyscall<
@@ -14,10 +17,7 @@ export interface SelfSyscall<
   readonly [RETURN_TOKEN]?: readonly [SelfDescriptor<Scope>];
 }
 
-export function self<
-  Scope extends ScopeRef<unknown> = StandardScopeRef<unknown>,
->(): SelfSyscall<Scope> {
-  return {
-    kind: "self",
-  };
+export interface SelfDescriptor<Scope extends ScopeRef<unknown> = StandardScopeRef<unknown>> {
+  readonly scopeRef: Scope;
+  readonly processRef: ProcessRef<unknown>;
 }

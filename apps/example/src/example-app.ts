@@ -2,16 +2,6 @@ import { createScope, run } from "@khora/runtime";
 import type { ExampleScenarioName } from "./scenarios";
 import { getExampleScenario } from "./scenarios";
 
-interface ExampleAppOptions {
-  readonly execute: boolean;
-  readonly scenario: ExampleScenarioName;
-}
-
-const DEFAULT_EXAMPLE_APP_OPTIONS: ExampleAppOptions = {
-  execute: false,
-  scenario: "run",
-};
-
 async function startExampleApp(
   options: ExampleAppOptions = DEFAULT_EXAMPLE_APP_OPTIONS,
 ): Promise<unknown> {
@@ -23,13 +13,6 @@ async function startExampleApp(
   return await run(selectedScenario);
 }
 
-async function runInManagedScope(
-  selectedScenario: ReturnType<typeof getExampleScenario>,
-): Promise<unknown> {
-  await using scope = createScope();
-  return await scope.run(selectedScenario);
-}
-
 function startExampleAppWithManagedScope(
   options: ExampleAppOptions = DEFAULT_EXAMPLE_APP_OPTIONS,
 ): Promise<unknown> {
@@ -39,6 +22,23 @@ function startExampleAppWithManagedScope(
 
   const selectedScenario = getExampleScenario(options.scenario);
   return runInManagedScope(selectedScenario);
+}
+
+const DEFAULT_EXAMPLE_APP_OPTIONS: ExampleAppOptions = {
+  execute: false,
+  scenario: "run",
+};
+
+interface ExampleAppOptions {
+  readonly execute: boolean;
+  readonly scenario: ExampleScenarioName;
+}
+
+async function runInManagedScope(
+  selectedScenario: ReturnType<typeof getExampleScenario>,
+): Promise<unknown> {
+  await using scope = createScope();
+  return await scope.run(selectedScenario);
 }
 
 export { DEFAULT_EXAMPLE_APP_OPTIONS, startExampleApp, startExampleAppWithManagedScope };

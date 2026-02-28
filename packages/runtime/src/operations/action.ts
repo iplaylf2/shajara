@@ -5,14 +5,6 @@ import type { ScopeRef } from "@khora/kernel";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { spawn } from "#src/primitives";
 
-export interface RuntimeAction<Return> {
-  readonly scope: ScopeRef<Return>;
-  resolve(value: Return): void;
-  reject(reason: Error): void;
-}
-
-const settlementChannel = channel<Settlement<unknown>>();
-
 export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
   const scope = yield* spawn(function* actionBlueprint(): RuntimePlan<Return> {
     const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementChannel)));
@@ -41,3 +33,11 @@ export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
     scope,
   };
 }
+
+export interface RuntimeAction<Return> {
+  readonly scope: ScopeRef<Return>;
+  resolve(value: Return): void;
+  reject(reason: Error): void;
+}
+
+const settlementChannel = channel<Settlement<unknown>>();

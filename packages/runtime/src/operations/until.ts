@@ -4,10 +4,6 @@ import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
 import { liftPlan } from "#src/adapter/plan-lift";
 
-export type RuntimeUntilThunk<Return> = () => PromiseLike<Return>;
-
-const settlementChannel = channel<Settlement<unknown>>();
-
 export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Return> {
   const executor = ensureExecutor();
   return yield* scoped(function* untilBlueprint(): RuntimePlan<Return> {
@@ -28,3 +24,7 @@ export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Re
     }
   });
 }
+
+export type RuntimeUntilThunk<Return> = () => PromiseLike<Return>;
+
+const settlementChannel = channel<Settlement<unknown>>();

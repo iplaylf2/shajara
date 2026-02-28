@@ -1,9 +1,13 @@
 import type { Channel, ScopeRef, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
-export interface ReceiveResult<ReceiveValue> {
-  readonly value: ReceiveValue;
-  readonly from: ScopeRef<unknown>;
+export function receive<ReceiveValue>(
+  channel: Channel<ReceiveValue>,
+): ReceiveSyscall<ReceiveValue> {
+  return {
+    channel,
+    kind: "receive",
+  };
 }
 
 export interface ReceiveSyscall<ReceiveValue> extends Syscall {
@@ -12,11 +16,7 @@ export interface ReceiveSyscall<ReceiveValue> extends Syscall {
   readonly [RETURN_TOKEN]?: readonly [ReceiveResult<ReceiveValue>];
 }
 
-export function receive<ReceiveValue>(
-  channel: Channel<ReceiveValue>,
-): ReceiveSyscall<ReceiveValue> {
-  return {
-    channel,
-    kind: "receive",
-  };
+export interface ReceiveResult<ReceiveValue> {
+  readonly value: ReceiveValue;
+  readonly from: ScopeRef<unknown>;
 }

@@ -5,19 +5,6 @@ import { ensureExecutor } from "@khora/kernel";
 import { runtimeLaunch } from "#src/operations-kit";
 import { suspend } from "#src/primitives";
 
-export interface RuntimeScope {
-  run<Return>(
-    runtimeBlueprint: RuntimeBlueprint<Return>,
-    options?: RunOptions,
-  ): StatefulPromise<Return>;
-  halt(): Promise<void>;
-  readonly state: RuntimeScopeState;
-  readonly closed: Promise<void>;
-  [Symbol.asyncDispose](): Promise<void>;
-}
-
-export type RuntimeScopeState = LaunchState;
-
 export function createScope(): RuntimeScope {
   const executor = ensureExecutor();
   const launchedScope = runtimeLaunch(executor, executor.rootScope, suspend);
@@ -47,3 +34,16 @@ export function createScope(): RuntimeScope {
     await closed;
   }
 }
+
+export interface RuntimeScope {
+  run<Return>(
+    runtimeBlueprint: RuntimeBlueprint<Return>,
+    options?: RunOptions,
+  ): StatefulPromise<Return>;
+  halt(): Promise<void>;
+  readonly state: RuntimeScopeState;
+  readonly closed: Promise<void>;
+  [Symbol.asyncDispose](): Promise<void>;
+}
+
+export type RuntimeScopeState = LaunchState;

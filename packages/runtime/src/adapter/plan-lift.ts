@@ -1,6 +1,19 @@
 import type { ImpurePlan, Plan, Syscall } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 
+export function* liftPlan<Return>(plan: Plan<Return>): RuntimePlan<Return> {
+  return yield* liftStep(plan);
+}
+
+function* liftStep<Return>(plan: Plan<Return>): RuntimePlan<Return> {
+  if (plan.kind === "pure") {
+    return plan.value;
+  }
+
+  const nextPlan: Plan<Return> = yield* continueFromImpure(plan);
+  return yield* liftStep(nextPlan);
+}
+
 function* continueFromImpure<Return>(
   impurePlan: ImpurePlan<Syscall, Return>,
 ): RuntimePlan<Plan<Return>> {
@@ -17,17 +30,4 @@ function* continueFromImpure<Return>(
   }
 
   return nextPlan;
-}
-
-function* liftStep<Return>(plan: Plan<Return>): RuntimePlan<Return> {
-  if (plan.kind === "pure") {
-    return plan.value;
-  }
-
-  const nextPlan: Plan<Return> = yield* continueFromImpure(plan);
-  return yield* liftStep(nextPlan);
-}
-
-export function* liftPlan<Return>(plan: Plan<Return>): RuntimePlan<Return> {
-  return yield* liftStep(plan);
 }
