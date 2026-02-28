@@ -1,6 +1,6 @@
 import { ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
 import { scoped, self } from "#src/primitives";
-import type { IngressScopeRef } from "@khora/kernel";
+import type { IngressScopeRef } from "@khora/kernel/scopes";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
 import { ingressScopeSpec } from "@khora/kernel/scopes";
