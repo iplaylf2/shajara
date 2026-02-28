@@ -1,6 +1,8 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
     "exactOptionalPropertyTypes": true,
     "isolatedModules": true,
     "moduleDetection": "force",
