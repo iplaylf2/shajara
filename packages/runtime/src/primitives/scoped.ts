@@ -1,38 +1,31 @@
-import type { Failure, ScopeSpec } from "@khora/kernel";
-import type { ResumableFailureHandler, ScopedOptions } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
 import { fromFailure, toFailureUnknown, unwrapEither } from "#src/primitives-kit";
 import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";
+import type { Failure } from "@khora/kernel";
 import { KhoraError } from "#src/contracts";
+import type { ResumableFailureHandler } from "@khora/kernel/primitives";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
 export function* scoped<Return>(
   blueprint: RuntimeBlueprint<Return>,
-  options?: RuntimeScopedOptions,
+  onResumableBranchFailure?: RuntimeResumableFailureHandler,
 ): RuntimePlan<Return> {
-  const either = yield* liftPlan(scopedKernelPrimitive(blueprint, options));
+  const either = yield* liftPlan(scopedKernelPrimitive(blueprint, onResumableBranchFailure));
   return unwrapEither(either);
-}
-
-export interface RuntimeScopedOptions {
-  readonly onResumableBranchFailure?: RuntimeResumableFailureHandler;
-  readonly spec?: ScopeSpec;
 }
 
 export type RuntimeResumableFailureHandler = (error: KhoraError) => RuntimePlan<unknown>;
 
 function scopedKernelPrimitive<Return>(
   blueprint: RuntimeBlueprint<Return>,
-  options?: RuntimeScopedOptions,
+  onResumableBranchFailure?: RuntimeResumableFailureHandler,
 ) {
   const plan = lowerPlan(blueprint());
-  const resumableFailureHandler = options?.onResumableBranchFailure;
-  const kernelOnResumableFailure = toKernelOnResumableFailure(resumableFailureHandler);
-  const kernelOptions = toKernelScopedOptions(options?.spec, kernelOnResumableFailure);
-  return kernelScoped<Return>(plan, kernelOptions);
+  const kernelOnResumableFailure = toKernelOnResumableFailure(onResumableBranchFailure);
+  return kernelScoped<Return>(plan, kernelOnResumableFailure);
 }
 
 function toKernelOnResumableFailure(
@@ -43,22 +36,6 @@ function toKernelOnResumableFailure(
   }
   return (failure: Failure) =>
     lowerPlan(runtimeResumableReplacementAsEither(onResumableFailure, fromFailure(failure)));
-}
-
-function toKernelScopedOptions(
-  spec: RuntimeScopedOptions["spec"],
-  onResumableFailure: ResumableFailureHandler | undefined,
-): ScopedOptions {
-  if (spec && onResumableFailure) {
-    return { onResumableBranchFailure: onResumableFailure, spec };
-  }
-  if (spec) {
-    return { spec };
-  }
-  if (onResumableFailure) {
-    return { onResumableBranchFailure: onResumableFailure };
-  }
-  return {};
 }
 
 function* runtimeResumableReplacementAsEither(
