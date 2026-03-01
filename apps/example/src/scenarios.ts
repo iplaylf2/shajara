@@ -1,4 +1,4 @@
-import type { RuntimeBlueprint, RuntimeKhoraError, RuntimePlan } from "@khora/runtime";
+import type { KhoraError, RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
 import { action, sleep, until } from "@khora/runtime";
 import {
   all,
@@ -62,7 +62,7 @@ function* scopedBodyBlueprint(): RuntimePlan<string> {
   return bodyResult;
 }
 
-function* onResumableBranchFailure(error: RuntimeKhoraError): RuntimePlan<unknown> {
+function* onResumableBranchFailure(error: KhoraError): RuntimePlan<unknown> {
   consume(error.message);
   yield* cede();
   return "scoped fallback";

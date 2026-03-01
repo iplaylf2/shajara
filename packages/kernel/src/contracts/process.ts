@@ -1,5 +1,5 @@
 import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
-import type { KhoraFailure } from "./failure";
+import type { Failure } from "./failure";
 
 export type ProcessRefReturn<Ref extends ProcessRef<unknown>> =
   Ref extends ProcessRef<infer Return> ? Return : never;
@@ -21,7 +21,7 @@ export interface ProcessCompletedExit<Return> {
 
 export interface ProcessFailedExit {
   readonly kind: "failed";
-  readonly fault: KhoraFailure;
+  readonly fault: Failure;
 }
 
 export interface ProcessTerminatedExit {

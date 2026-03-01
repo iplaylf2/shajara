@@ -1,4 +1,4 @@
-import type { Blueprint, KhoraFailure, Plan } from "#src/contracts";
+import type { Blueprint, Failure, Plan } from "#src/contracts";
 import { awaitScopeConverged, awaitSupervisedScope } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
 import type { Either } from "#src/utils";
@@ -11,7 +11,7 @@ import { supervisorScopeSpec } from "#src/scopes";
 
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
-): Plan<Either<KhoraFailure, BranchReturns>> {
+): Plan<Either<Failure, BranchReturns>> {
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     plan.liftF,

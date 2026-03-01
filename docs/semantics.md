@@ -319,13 +319,13 @@ primitive 不等于 syscall：
 
 ### 6.2 失败通道
 
-涉及子 Scope 生命周期等待的 primitive 统一以 `Either<KhoraFailure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(fault)`，`terminated → Left(scopeTerminated)`。
+涉及子 Scope 生命周期等待的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(fault)`，`terminated → Left(scopeTerminated)`。
 
 这一分层使 kernel 层的失败保持可组合、可推理，而不依赖宿主异常机制。runtime 在适配边界统一解包 Either，将 Left 收敛为异常抛出。
 
 ### 6.3 并发构造 primitives
 
-#### all(branches) → Plan\<Either\<KhoraFailure, T\>\>
+#### all(branches) → Plan\<Either\<Failure, T\>\>
 
 聚合等待多个分支。组合方式：
 
@@ -334,7 +334,7 @@ primitive 不等于 syscall：
 3. 对每个子 Scope 调用 `AwaitScope` 等待终态（supervisor 内部直接 narrow 为 completed）。
 4. 整体通过 `awaitScopeConverged` 收敛外层 supervisor 的终态为 Either。
 
-#### race(branches) → Plan\<Either\<KhoraFailure, ArrayValues\<T\>\>\>
+#### race(branches) → Plan\<Either\<Failure, ArrayValues\<T\>\>\>
 
 选择最先完成者，触发其余分支收敛。组合方式：
 
@@ -344,15 +344,15 @@ primitive 不等于 syscall：
 4. 调用方 Fork 一个后备 Process 等待 arena 收敛——若所有 branch 均失败（无人成功 Send），后备 Process 将 arena 的失败终态转发给调用方。
 5. 调用方通过 `Receive(raceChannel)` 取得首个结果。
 
-#### scoped(plan, options?) → Plan\<Either\<KhoraFailure, T\>\>
+#### scoped(plan, options?) → Plan\<Either\<Failure, T\>\>
 
 创建子 Scope 并立即等待其收敛。可选 `spec` 指定角色，可选 `onResumableBranchFailure` 提供 resumable 路径后代失败的捕获 handler。
 
-#### resource(body) → Plan\<Either\<KhoraFailure, T\>\>
+#### resource(body) → Plan\<Either\<Failure, T\>\>
 
 创建资源作用域。body 接收 `provide: (value) → Plan<never>`；调用方等待 provide 的首个值作为返回，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。
 
-#### resumable(plan) → Plan\<Either\<KhoraFailure, T\>\>
+#### resumable(plan) → Plan\<Either\<Failure, T\>\>
 
 在 scoped body 内声明可恢复边界。仅被 resumable 标记的子孙 Scope 失败会进入祖先 scoped 的 onResumableBranchFailure 路径。
 
@@ -362,7 +362,7 @@ primitive 不等于 syscall：
 
 封装 Spawn syscall，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。默认 StandardScope，可通过 spec 指定角色。
 
-#### join(scopeRef) → Plan\<Either\<KhoraFailure, T\>\>
+#### join(scopeRef) → Plan\<Either\<Failure, T\>\>
 
 等待目标 Scope 终态并收敛为 Either。
 

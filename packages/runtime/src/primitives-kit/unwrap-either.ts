@@ -1,12 +1,12 @@
 import type { Either } from "@khora/kernel/utils";
-import type { KhoraFailure } from "@khora/kernel";
-import { RuntimeKhoraError } from "#src/errors";
+import type { Failure } from "@khora/kernel";
+import { KhoraError } from "#src/errors";
 import { matchEither } from "@khora/kernel/utils";
 
-export function unwrapEither<Return>(either: Either<KhoraFailure, Return>): Return {
+export function unwrapEither<Return>(either: Either<Failure, Return>): Return {
   return matchEither(
-    (failure: KhoraFailure) => {
-      throw new RuntimeKhoraError(failure);
+    (failure: Failure) => {
+      throw new KhoraError(failure);
     },
     (value: Return) => value,
   )(either);

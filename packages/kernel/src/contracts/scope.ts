@@ -1,5 +1,5 @@
 import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
-import type { KhoraFailure } from "./failure";
+import type { Failure } from "./failure";
 
 declare const SCOPE_SPEC_TOKEN: unique symbol;
 
@@ -23,7 +23,7 @@ export interface ScopeCompletedExit<Return> {
 
 export interface ScopeFailedExit {
   readonly kind: "failed";
-  readonly fault: KhoraFailure;
+  readonly fault: Failure;
 }
 
 export interface ScopeTerminatedExit {

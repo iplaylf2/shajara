@@ -1,2 +1,2 @@
-export * from "./runtime-khora-failure";
-export * from "./runtime-scope-terminated";
+export * from "./khora-error";
+export * from "./scope-terminated-error";

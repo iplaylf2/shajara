@@ -1,10 +1,10 @@
-import type { KhoraFailure, Plan } from "#src/contracts";
+import type { Failure, Plan } from "#src/contracts";
 import type { Either } from "#src/utils";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export function resource<ProvidedValue>(
   _body: ResourceBody<ProvidedValue>,
-): Plan<Either<KhoraFailure, ProvidedValue>> {
+): Plan<Either<Failure, ProvidedValue>> {
   return notImplemented("kernel primitive 'resource'");
 }
 

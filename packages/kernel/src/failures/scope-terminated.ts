@@ -1,4 +1,4 @@
-import type { KhoraFailure, ScopeRef } from "#src/contracts";
+import type { Failure, ScopeRef } from "#src/contracts";
 
 export function scopeTerminated(scopeRef: ScopeRef<unknown>): ScopeTerminatedFailure {
   return {
@@ -10,7 +10,7 @@ export function scopeTerminated(scopeRef: ScopeRef<unknown>): ScopeTerminatedFai
   };
 }
 
-export interface ScopeTerminatedFailure extends KhoraFailure {
+export interface ScopeTerminatedFailure extends Failure {
   readonly kind: "scope-terminated";
   readonly scopeRef: ScopeRef<unknown>;
 }

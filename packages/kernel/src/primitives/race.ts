@@ -1,6 +1,5 @@
-// oxlint-disable max-lines-per-function
 import type { ArrayValues, UnknownArray } from "type-fest";
-import type { Blueprint, KhoraFailure, Plan, ScopeRef } from "#src/contracts";
+import type { Blueprint, Failure, Plan, ScopeRef } from "#src/contracts";
 import { either, readonlyArray } from "fp-ts";
 import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
@@ -12,7 +11,7 @@ import { supervisorScopeSpec } from "#src/scopes";
 
 export function race<BranchReturns extends UnknownArray>(
   branches: RaceBranches<BranchReturns>,
-): Plan<Either<KhoraFailure, ArrayValues<BranchReturns>>> {
+): Plan<Either<Failure, ArrayValues<BranchReturns>>> {
   return pipe(
     plan.Do,
     plan.bindF("callerSelf", self),
@@ -39,7 +38,7 @@ function raceArena(
     pipe(
       self(),
       plan.liftF,
-      plan.chainF(({ scopeRef: arenaRef }) =>
+      plan.chain(({ scopeRef: arenaRef }) =>
         pipe(
           branches,
           readonlyArray.map((branch) =>
@@ -78,5 +77,5 @@ function branchRunner(
     );
 }
 
-const raceChannel = channel<Either<KhoraFailure, unknown>>();
+const raceChannel = channel<Either<Failure, unknown>>();
 const haltChannel = channel<null>();

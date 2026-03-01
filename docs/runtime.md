@@ -34,9 +34,9 @@ runtime 不引入第二执行循环，仅通过执行入口把降解后的 Bluep
 
 ## 3. 失败通道分层
 
-kernel 以代数容器 `Either<KhoraFailure, T>` 在 primitive 层表达失败，保持可组合与可推理。runtime 在 primitive 适配边界统一解包：`Right` 直接返回成功值，`Left` 映射为 `RuntimeKhoraError` 抛出。用户侧维持"成功返回值、失败抛异常"的标准模型。
+kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保持可组合与可推理。runtime 在 primitive 适配边界统一解包：`Right` 直接返回成功值，`Left` 映射为 `KhoraError` 抛出。用户侧维持"成功返回值、失败抛异常"的标准模型。
 
-`KhoraFailure`（kernel 共享失败契约）不向用户侧暴露；runtime 将其包装为 `RuntimeKhoraError`（继承 `Error`），`terminated` 映射为 `RuntimeScopeTerminatedError`。
+`Failure`（kernel 共享失败契约）不向用户侧暴露；runtime 将其包装为 `KhoraError`（继承 `Error`），`terminated` 映射为 `ScopeTerminatedError`。
 
 ## 4. 执行入口
 

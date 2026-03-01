@@ -30,8 +30,8 @@ run<T>(blueprint: RuntimeBlueprint<T>, options?: { signal?: AbortSignal }): Stat
 启动一段蓝图，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。运行作用域挂载在全局 root scope 下。
 
 - 成功 → 返回结果值。
-- 终止 → 抛出 `RuntimeScopeTerminatedError`。
-- 失败 → 抛出 `RuntimeKhoraError`。
+- 终止 → 抛出 `ScopeTerminatedError`。
+- 失败 → 抛出 `KhoraError`。
 
 当 `signal` 触发 abort 时，runtime 终止对应执行作用域。
 
@@ -98,7 +98,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `resource`  | `resource(body) → T`                 | 创建资源作用域；等待 `provide(value)` 返回首值，资源作用域在 provide 后挂起，父 scope 回收时清理。 |
 | `resumable` | `resumable(blueprint) → T`           | 在 `scoped` body 内声明可恢复边界。                                                                |
 
-`onResumableBranchFailure` 是 `resumable` 路径后代失败的捕获 handler，入参类型为 `RuntimeKhoraError`，返回 `RuntimePlan<unknown>`，不改写 `scoped` 的成功返回类型。
+`onResumableBranchFailure` 是 `resumable` 路径后代失败的捕获 handler，入参类型为 `KhoraError`，返回 `RuntimePlan<unknown>`，不改写 `scoped` 的成功返回类型。
 
 ### 4.2 基础
 
