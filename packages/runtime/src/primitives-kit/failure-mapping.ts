@@ -1,5 +1,10 @@
-import { ExternalError, ScopeHaltedError, ScopeTerminatedError } from "#src/errors";
-import type { Failure } from "@khora/kernel";
+import {
+  ContractViolatedError,
+  ExternalError,
+  ScopeHaltedError,
+  ScopeTerminatedError,
+} from "#src/errors";
+import type { ContractViolatedFailure, Failure } from "@khora/kernel";
 import { KhoraError } from "#src/contracts";
 import { externalFailure } from "@khora/kernel";
 
@@ -19,6 +24,10 @@ export function toFailureUnknown(caught: unknown): Failure {
 
 export function fromFailure(failure: Failure): KhoraError {
   switch (failure.kind) {
+    case "contract-violated": {
+      const contractFailure = failure as ContractViolatedFailure;
+      return new ContractViolatedError(contractFailure.subject, contractFailure.contract);
+    }
     case "scope-halted":
       return new ScopeHaltedError();
     case "scope-terminated":
