@@ -7,8 +7,8 @@ import { lowerPlan } from "#src/adapter/plan-lower";
 import { standardScopeSpec } from "@khora/kernel/scopes";
 
 export function spawn<Return, Spec extends ScopeSpec = StandardScopeSpec>(
-  blueprint: RuntimeBlueprint<Return>,
+  entry: RuntimeBlueprint<Return>,
   spec = standardScopeSpec() as Spec,
 ): RuntimePlan<ScopeRef<Return, Spec>> {
-  return liftPlan(kernelSpawn(lowerPlan(blueprint()), spec));
+  return liftPlan(kernelSpawn(() => lowerPlan(entry()), spec));
 }
