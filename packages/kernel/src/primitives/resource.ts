@@ -1,10 +1,10 @@
 import type { Blueprint, Channel, Failure, Plan, ScopeRef } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
-import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
+import { fork, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
 import { channel } from "#src/contracts/channel";
-import { contractViolated } from "#src/failures";
 import { either } from "fp-ts";
+import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 import { supervisorScopeSpec } from "#src/scopes";
@@ -25,7 +25,8 @@ export function resource<ProvidedValue>(
       }) => fork(resourceFailureRelay(supervisorRef, callerRef, resourceChannel)),
     ),
     plan.chainF(() => receive(resourceChannel)),
-    plan.map(({ value }) => value as Either<Failure, ProvidedValue>),
+    plan.map(({ value }) => value),
+    plan.map(narrowAs<Either<Failure, ProvidedValue>>()),
   );
 }
 
@@ -49,7 +50,7 @@ function resourceSupervisor<ProvidedValue>(
           plan.chain(() => park()),
         ),
       ),
-      plan.chainF(() => halt(contractViolated("resource", "body completed before provide"))),
+      plan.chain(() => park()),
     );
 }
 
