@@ -19,7 +19,7 @@ export function awaitScopeConverged<Return>(
         case "failed":
           return either.left(scopeExit.fault);
         case "terminated":
-          return either.left(scopeTerminated(scopeRef));
+          return either.left(scopeTerminated());
         default:
           return unreachable();
       }

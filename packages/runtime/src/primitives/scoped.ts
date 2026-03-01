@@ -1,13 +1,13 @@
 import type { Failure, ScopeSpec } from "@khora/kernel";
-import { KhoraError, failureFromUnknown } from "#src/errors";
 import type { ResumableFailureHandler, ScopedOptions } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
+import { fromFailure, toFailureUnknown, unwrapEither } from "#src/primitives-kit";
 import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";
+import { KhoraError } from "#src/contracts";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
-import { unwrapEither } from "#src/primitives-kit";
 
 export function* scoped<Return>(
   blueprint: RuntimeBlueprint<Return>,
@@ -42,7 +42,7 @@ function toKernelOnResumableFailure(
     return;
   }
   return (failure: Failure) =>
-    lowerPlan(runtimeResumableReplacementAsEither(onResumableFailure, new KhoraError(failure)));
+    lowerPlan(runtimeResumableReplacementAsEither(onResumableFailure, fromFailure(failure)));
 }
 
 function toKernelScopedOptions(
@@ -69,6 +69,6 @@ function* runtimeResumableReplacementAsEither(
     const replacement = yield* onResumableFailure(error);
     return right(replacement);
   } catch (caught) {
-    return left(failureFromUnknown(caught));
+    return left(toFailureUnknown(caught));
   }
 }
