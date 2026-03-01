@@ -27,12 +27,14 @@ kernel 执行器实现未落地——`ensureExecutor()` 仍返回占位实现，
 | -------------------------- | ------------------------------------------------- |
 | kernel 执行器实现（B1）    | 执行入口契约稳定，执行器仍为占位实现。            |
 | runtime 宿主入口闭环（B5） | `run/createScope` 类型接线稳定，运行闭环依赖 B1。 |
+| cleanup 语义归属           | 待决：仅在 **kernel primitive 不再编排 `terminate` 路径** 的前提下，才考虑废弃 `Plan.terminate`，并由 executor 与 runtime adapter 提供 cleanup 能力。 |
 
 ## 4. 后续方向
 
 1. **B1**：`ensureExecutor()` 落地，具备可运行的 kernel 执行器。
 2. **B5**：`run/createScope` 覆盖 success/failure/terminated 三态端到端运行。
-3. **Prove**：Build 闭环后补充 terminate、作用域状态转换、失败传播与结构性收敛验证。
+3. **Cleanup 决策**：先确认前提（kernel primitive 是否继续编排 `terminate`）；仅此前提不成立时，才下沉 cleanup 到 executor/runtime adapter，并据此收敛 `Plan.terminate` 的去留。
+4. **Prove**：Build 闭环后补充 terminate、作用域状态转换、失败传播与结构性收敛验证。
 
 ## 5. 验证
 
