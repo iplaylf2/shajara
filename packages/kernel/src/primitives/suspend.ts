@@ -1,6 +1,6 @@
 import type { Plan } from "#src/contracts";
-import { notImplemented } from "#src/internal/not-implemented";
+import { park } from "#src/primitives-kit";
 
 export function suspend(): Plan<never> {
-  return notImplemented("kernel primitive 'suspend'");
+  return park();
 }
