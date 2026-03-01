@@ -4,46 +4,47 @@ import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";
 import type { Failure } from "@khora/kernel";
 import { KhoraError } from "#src/contracts";
-import type { ResumableFailureHandler } from "@khora/kernel/primitives";
+import type { ResumableRecoveryHandler } from "@khora/kernel/primitives";
 import { scoped as kernelScoped } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
 export function* scoped<Return>(
   blueprint: RuntimeBlueprint<Return>,
-  onResumableBranchFailure?: RuntimeResumableFailureHandler,
+  onResumableRecovery?: RuntimeResumableRecoveryHandler,
 ): RuntimePlan<Return> {
-  const either = yield* liftPlan(scopedKernelPrimitive(blueprint, onResumableBranchFailure));
+  const either = yield* liftPlan(scopedKernelPrimitive(blueprint, onResumableRecovery));
   return unwrapEither(either);
 }
 
-export type RuntimeResumableFailureHandler = (error: KhoraError) => RuntimePlan<unknown>;
+export type RuntimeResumableRecoveryHandler = (error: KhoraError) => RuntimePlan<unknown>;
 
 function scopedKernelPrimitive<Return>(
   blueprint: RuntimeBlueprint<Return>,
-  onResumableBranchFailure?: RuntimeResumableFailureHandler,
+  onResumableRecovery?: RuntimeResumableRecoveryHandler,
 ) {
-  const plan = lowerPlan(blueprint());
-  const kernelOnResumableFailure = toKernelOnResumableFailure(onResumableBranchFailure);
-  return kernelScoped<Return>(plan, kernelOnResumableFailure);
+  return kernelScoped<Return>(
+    () => lowerPlan(blueprint()),
+    toKernelOnResumableRecovery(onResumableRecovery),
+  );
 }
 
-function toKernelOnResumableFailure(
-  onResumableFailure: RuntimeResumableFailureHandler | undefined,
-): ResumableFailureHandler | undefined {
-  if (!onResumableFailure) {
+function toKernelOnResumableRecovery(
+  onResumableRecovery: RuntimeResumableRecoveryHandler | undefined,
+): ResumableRecoveryHandler | undefined {
+  if (!onResumableRecovery) {
     return;
   }
   return (failure: Failure) =>
-    lowerPlan(runtimeResumableReplacementAsEither(onResumableFailure, fromFailure(failure)));
+    lowerPlan(runtimeRecovery(onResumableRecovery, fromFailure(failure)));
 }
 
-function* runtimeResumableReplacementAsEither(
-  onResumableFailure: RuntimeResumableFailureHandler,
+function* runtimeRecovery(
+  onResumableRecovery: RuntimeResumableRecoveryHandler,
   error: KhoraError,
 ): RuntimePlan<Either<Failure, unknown>> {
   try {
-    const replacement = yield* onResumableFailure(error);
+    const replacement = yield* onResumableRecovery(error);
     return right(replacement);
   } catch (caught) {
     return left(toFailureUnknown(caught));

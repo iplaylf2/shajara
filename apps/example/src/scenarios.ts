@@ -42,7 +42,7 @@ const EXAMPLE_SCENARIOS = {
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
 function* scopedBlueprint(): RuntimePlan<void> {
-  const scopedResult = yield* scoped(scopedBodyBlueprint, onResumableBranchFailure);
+  const scopedResult = yield* scoped(scopedBodyBlueprint, onResumableRecovery);
   consume(scopedResult);
 }
 
@@ -62,7 +62,7 @@ function* scopedBodyBlueprint(): RuntimePlan<string> {
   return bodyResult;
 }
 
-function* onResumableBranchFailure(error: KhoraError): RuntimePlan<unknown> {
+function* onResumableRecovery(error: KhoraError): RuntimePlan<unknown> {
   consume(error.message);
   yield* cede();
   return "scoped fallback";
