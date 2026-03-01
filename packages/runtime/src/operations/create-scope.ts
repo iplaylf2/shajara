@@ -2,12 +2,12 @@ import type { RunOptions, StatefulPromise } from "#src/operations-kit";
 import type { LaunchState } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
-import { runtimeLaunch } from "#src/operations-kit";
+import { launch } from "#src/operations-kit";
 import { suspend } from "#src/primitives";
 
 export function createScope(): RuntimeScope {
   const executor = ensureExecutor();
-  const launchedScope = runtimeLaunch(executor, executor.rootScope, suspend);
+  const launchedScope = launch(executor, executor.rootScope, suspend);
   const closed: Promise<void> = Promise.resolve(launchedScope.settled);
 
   return {
@@ -17,10 +17,10 @@ export function createScope(): RuntimeScope {
     closed,
     halt: haltScope,
     run<Return>(
-      runtimeBlueprint: RuntimeBlueprint<Return>,
+      blueprint: RuntimeBlueprint<Return>,
       options?: RunOptions,
     ): StatefulPromise<Return> {
-      return runtimeLaunch(executor, launchedScope.scope, runtimeBlueprint, options).settled;
+      return launch(executor, launchedScope.scope, blueprint, options).settled;
     },
     get state(): RuntimeScopeState {
       return launchedScope.settled.state();
@@ -36,10 +36,7 @@ export function createScope(): RuntimeScope {
 }
 
 export interface RuntimeScope {
-  run<Return>(
-    runtimeBlueprint: RuntimeBlueprint<Return>,
-    options?: RunOptions,
-  ): StatefulPromise<Return>;
+  run<Return>(blueprint: RuntimeBlueprint<Return>, options?: RunOptions): StatefulPromise<Return>;
   halt(): Promise<void>;
   readonly state: RuntimeScopeState;
   readonly closed: Promise<void>;

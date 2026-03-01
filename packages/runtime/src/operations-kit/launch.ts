@@ -10,17 +10,17 @@ import { KhoraError, ScopeTerminatedError } from "#src/errors";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
-export function runtimeLaunch<Return>(
+export function launch<Return>(
   executor: Executor,
   scope: ExecutionScopeRootRef | ExecutionScopeRef,
-  runtimeBlueprint: RuntimeBlueprint<Return>,
+  blueprint: RuntimeBlueprint<Return>,
   options?: RunOptions,
 ): RuntimeLaunchResult<Return> {
   const signal = options?.signal;
 
-  function* wrappedRuntimeBlueprint(): ReturnType<RuntimeBlueprint<Return>> {
+  function* wrappedBlueprint(): ReturnType<RuntimeBlueprint<Return>> {
     if (!signal) {
-      return yield* runtimeBlueprint();
+      return yield* blueprint();
     }
 
     function onAbort(): void {
@@ -35,13 +35,13 @@ export function runtimeLaunch<Return>(
 
     signal.addEventListener("abort", onAbort, { once: true });
     try {
-      return yield* runtimeBlueprint();
+      return yield* blueprint();
     } finally {
       signal.removeEventListener("abort", onAbort);
     }
   }
 
-  const execution = executor.launch(scope, () => lowerPlan(wrappedRuntimeBlueprint()));
+  const execution = executor.launch(scope, () => lowerPlan(wrappedBlueprint()));
   const settled = asSettledPromise(execution);
 
   return {

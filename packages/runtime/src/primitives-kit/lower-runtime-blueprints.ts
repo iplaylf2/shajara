@@ -4,11 +4,11 @@ import type { RuntimeBlueprint } from "#src/contracts";
 import { lowerPlan } from "#src/adapter/plan-lower";
 
 export function lowerRuntimeBlueprints<Returns extends readonly unknown[]>(
-  runtimeBlueprints: RuntimeBlueprintTuple<Returns>,
+  blueprints: RuntimeBlueprintTuple<Returns>,
 ): {
   readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
 } {
-  return runtimeBlueprints.map((runtimeBlueprint) => () => lowerPlan(runtimeBlueprint())) as {
+  return blueprints.map((blueprint) => () => lowerPlan(blueprint())) as {
     readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
   };
 }
