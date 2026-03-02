@@ -1,5 +1,5 @@
 import type { KhoraError, RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
-import { action, sleep, until } from "@khora/runtime";
+import { action, contextKey, sleep, until } from "@khora/runtime";
 import {
   all,
   bind,
@@ -14,6 +14,7 @@ import {
   self,
   spawn,
   suspend,
+  unbind,
 } from "@khora/runtime/primitives";
 import type { RuntimeResourceProvide } from "@khora/runtime/primitives";
 
@@ -102,9 +103,10 @@ function* actionResolveBlueprint(): RuntimePlan<void> {
 }
 
 function* bindLookupBlueprint(): RuntimePlan<void> {
-  yield* bind("traceId", "request-1");
-  const traceId = yield* lookup<string>("traceId");
+  yield* bind(TRACE_ID_KEY, "request-1");
+  const traceId = yield* lookup(TRACE_ID_KEY);
   consume(traceId);
+  yield* unbind(TRACE_ID_KEY);
 }
 
 function* selfBlueprint(): RuntimePlan<void> {
@@ -141,6 +143,7 @@ function consume<Value>(value: Value): Value {
 }
 
 const EXAMPLE_SLEEP_MILLISECONDS = 10;
+const TRACE_ID_KEY = contextKey<string>();
 
 export { EXAMPLE_SCENARIOS, getExampleScenario };
 export type { ExampleScenarioName };

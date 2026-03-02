@@ -1,6 +1,8 @@
 import type { ContextKey, Plan } from "#src/contracts";
-import { notImplemented } from "#src/internal/not-implemented";
+import type { Option } from "#src/utils";
+import { lookup as lookupSyscall } from "#src/syscalls";
+import { plan } from "#src/internal/fp";
 
-export function lookup<Value>(_key: ContextKey<Value>): Plan<Value | undefined> {
-  return notImplemented("kernel primitive 'lookup'");
+export function lookup<Value>(key: ContextKey<Value>): Plan<Option<Value>> {
+  return plan.liftF(lookupSyscall(key));
 }

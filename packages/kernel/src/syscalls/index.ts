@@ -12,3 +12,4 @@ export * from "./receive";
 export * from "./self";
 export * from "./spawn";
 export * from "./terminate";
+export * from "./unbind";

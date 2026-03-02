@@ -11,3 +11,4 @@ export * from "./scoped";
 export * from "./self";
 export * from "./spawn";
 export * from "./suspend";
+export * from "./unbind";

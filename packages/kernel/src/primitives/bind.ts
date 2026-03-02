@@ -1,6 +1,7 @@
 import type { ContextKey, Plan } from "#src/contracts";
-import { notImplemented } from "#src/internal/not-implemented";
+import { bind as bindSyscall } from "#src/syscalls";
+import { plan } from "#src/internal/fp";
 
-export function bind<Value>(_key: ContextKey<Value>, _value: Value): Plan<void> {
-  return notImplemented("kernel primitive 'bind'");
+export function bind<Value>(key: ContextKey<Value>, value: Value): Plan<void> {
+  return plan.liftF(bindSyscall(key, value));
 }
