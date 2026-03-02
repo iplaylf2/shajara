@@ -281,11 +281,11 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 #### Bind(key, value) → void `[Non-Blocking]`
 
-在调用方 Scope 上下文中绑定值。
+`key` 为 phantom-typed 不透明令牌（`ContextKey<T>`，由 `contextKey<T>()` 创建）。在调用方 Scope 上下文中绑定值。
 
-#### Lookup(key) → value `[Non-Blocking]`
+#### Lookup(key) → value | undefined `[Non-Blocking]`
 
-沿调用方 Scope 到祖先链查找上下文绑定。
+沿调用方 Scope 到祖先链查找上下文绑定。未命中时返回 `undefined`。
 
 #### Self() → { scopeRef, processRef } `[Non-Blocking]`
 
@@ -382,11 +382,11 @@ primitive 不等于 syscall：
 
 #### bind(key, value) → Plan\<void\>
 
-在当前 Scope 绑定值。
+在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。
 
-#### lookup(key) → Plan\<T\>
+#### lookup(key) → Plan\<T | undefined\>
 
-沿祖先链查找值。
+沿祖先链查找值；未命中时返回 `undefined`。
 
 #### self() → Plan\<SelfDescriptor\>
 

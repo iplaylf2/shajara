@@ -1,7 +1,7 @@
+import type { ContextKey, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
-import type { Syscall } from "#src/contracts";
 
-export function lookup<Value>(key: string): LookupSyscall<Value> {
+export function lookup<Value>(key: ContextKey<Value>): LookupSyscall<Value> {
   return {
     key,
     kind: "lookup",
@@ -10,6 +10,6 @@ export function lookup<Value>(key: string): LookupSyscall<Value> {
 
 export interface LookupSyscall<Value> extends Syscall {
   readonly kind: "lookup";
-  readonly key: string;
-  readonly [RETURN_TOKEN]?: readonly [Value];
+  readonly key: ContextKey<Value>;
+  readonly [RETURN_TOKEN]?: readonly [Value | undefined];
 }

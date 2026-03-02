@@ -111,11 +111,11 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ### 4.3 上下文与自省
 
-| 原语     | 签名概要                  | 说明                         |
-| -------- | ------------------------- | ---------------------------- |
-| `bind`   | `bind(key, value) → void` | 在当前 Scope 绑定值。        |
-| `lookup` | `lookup(key) → T`         | 沿祖先链解析值。             |
-| `self`   | `self() → SelfDescriptor` | 读取当前执行实体的自省信息。 |
+| 原语     | 签名概要                                 | 说明                                       |
+| -------- | ---------------------------------------- | ------------------------------------------ |
+| `bind`   | `bind(ContextKey<T>, value) → void`      | 在当前 Scope 绑定值。                      |
+| `lookup` | `lookup(ContextKey<T>) → T \| undefined` | 沿祖先链解析值；未命中时返回 `undefined`。 |
+| `self`   | `self() → SelfDescriptor`                | 读取当前执行实体的自省信息。               |
 
 ---
 

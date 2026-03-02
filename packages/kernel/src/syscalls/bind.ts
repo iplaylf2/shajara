@@ -1,7 +1,7 @@
+import type { ContextKey, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
-import type { Syscall } from "#src/contracts";
 
-export function bind<Key extends string, Value>(key: Key, value: Value): BindSyscall<Key, Value> {
+export function bind<Value>(key: ContextKey<Value>, value: Value): BindSyscall<Value> {
   return {
     key,
     kind: "bind",
@@ -9,9 +9,9 @@ export function bind<Key extends string, Value>(key: Key, value: Value): BindSys
   };
 }
 
-export interface BindSyscall<Key extends string, Value> extends Syscall {
+export interface BindSyscall<Value> extends Syscall {
   readonly kind: "bind";
-  readonly key: Key;
+  readonly key: ContextKey<Value>;
   readonly [RETURN_TOKEN]?: readonly [void];
   readonly value: Value;
 }
