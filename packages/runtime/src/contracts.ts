@@ -1,5 +1,12 @@
 import type { Failure, Syscall } from "@khora/kernel";
-export { contextKey, type ContextKey } from "@khora/kernel";
+export {
+  channel,
+  contextKey,
+  type Channel,
+  type ContextKey,
+  type ReceiveResult,
+  type ScopeRef,
+} from "@khora/kernel";
 
 export type RuntimeBlueprint<Return> = () => RuntimePlan<Return>;
 

@@ -1,13 +1,12 @@
 import type { RejectedSettlement, ResolvedSettlement, Settlement } from "#src/operations-kit";
-import { channel, ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
-import type { RuntimePlan } from "#src/contracts";
-import type { ScopeRef } from "@khora/kernel";
-import { liftPlan } from "#src/adapter/plan-lift";
-import { spawn } from "#src/primitives";
+import type { RuntimePlan, ScopeRef } from "#src/contracts";
+import { channel, ensureExecutor } from "@khora/kernel";
+import { receive } from "#src/primitives/receive";
+import { spawn } from "#src/primitives/spawn";
 
 export function* action<Return>(): RuntimePlan<RuntimeAction<Return>> {
   const scope = yield* spawn(function* actionBlueprint(): RuntimePlan<Return> {
-    const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementChannel)));
+    const { value: settlement } = yield* receive(settlementChannel);
     switch (settlement.status) {
       case "resolved":
         return settlement.value as Return;

@@ -20,6 +20,7 @@ kernel 执行器实现未落地——`ensureExecutor()` 仍返回占位实现，
 | `scoped` 失败 handler 收敛 | `onResumableBranchFailure` 消费 `KhoraError`，不暴露 kernel `Failure`。                                              |
 | Channel 消息队列           | `Channel<T>` 为 phantom-typed 令牌，`Send/Receive` 以 Channel 为匹配键，per-(scope, channel) FIFO 队列缓存消息。     |
 | `race` 实现                | 基于双 Channel 的调用者直接接收架构。                                                                                |
+| `send/receive` 原语升格    | `kernel/runtime` 同步暴露 `send/receive` primitive，`example` 增加场景覆盖。                                         |
 
 ## 3. 进行中
 

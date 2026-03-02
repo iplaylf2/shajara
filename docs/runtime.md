@@ -57,7 +57,7 @@ runtime 以 `launch` 为统一收敛锚点：
 - runtime 内部通过 `executor.send(scope, channel, value)` 注入宿主输入。
 - kernel 侧由 `receive(channel)` 等待并收敛。
 
-该适配在 runtime 内部完成局部类型收敛，不向用户侧暴露 Channel 令牌。
+同一套 `send/receive/channel` 也作为 runtime 编排原语对用户暴露，宿主桥接路径仍由 runtime 内部封装。
 
 ## 6. 边界引用类型
 

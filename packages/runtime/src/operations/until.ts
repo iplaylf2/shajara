@@ -1,8 +1,7 @@
-import { channel, ensureExecutor, liftSyscall, receive as receiveSyscall } from "@khora/kernel";
-import { scoped, self } from "#src/primitives";
+import { channel, ensureExecutor } from "@khora/kernel";
+import { receive, scoped, self } from "#src/primitives";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
-import { liftPlan } from "#src/adapter/plan-lift";
 
 export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Return> {
   const executor = ensureExecutor();
@@ -15,7 +14,7 @@ export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Re
         executor.send(scopeRef, settlementChannel, { reason, status: "rejected" }),
     );
 
-    const { value: settlement } = yield* liftPlan(liftSyscall(receiveSyscall(settlementChannel)));
+    const { value: settlement } = yield* receive(settlementChannel);
     switch (settlement.status) {
       case "resolved":
         return settlement.value as Return;

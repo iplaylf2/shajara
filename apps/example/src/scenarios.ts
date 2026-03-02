@@ -1,5 +1,5 @@
-import type { KhoraError, RuntimeBlueprint, RuntimePlan } from "@khora/runtime";
-import { action, contextKey, sleep, until } from "@khora/runtime";
+import type { KhoraError, RuntimeBlueprint, RuntimePlan, ScopeRef } from "@khora/runtime";
+import { action, channel, contextKey, sleep, until } from "@khora/runtime";
 import {
   all,
   bind,
@@ -8,10 +8,12 @@ import {
   join,
   lookup,
   race,
+  receive,
   resource,
   resumable,
   scoped,
   self,
+  send,
   spawn,
   suspend,
   unbind,
@@ -34,6 +36,7 @@ const EXAMPLE_SCENARIOS = {
   run: runBlueprint,
   scoped: scopedBlueprint,
   self: selfBlueprint,
+  sendReceive: sendReceiveBlueprint,
   sleep: sleepBlueprint,
   spawn: spawnBlueprint,
   suspend: suspendBlueprint,
@@ -109,6 +112,15 @@ function* bindLookupBlueprint(): RuntimePlan<void> {
   yield* unbind(TRACE_ID_KEY);
 }
 
+function* sendReceiveBlueprint(): RuntimePlan<void> {
+  const { scopeRef: callerRef } = yield* self();
+  const spawned = yield* spawn(() => senderBlueprint(callerRef));
+  const { value } = yield* receive(EXAMPLE_MESSAGE_CHANNEL);
+  consume(value);
+  const joinedValue = yield* join(spawned);
+  consume(joinedValue);
+}
+
 function* selfBlueprint(): RuntimePlan<void> {
   const descriptor = yield* self();
   consume(descriptor);
@@ -128,6 +140,11 @@ function* runBlueprint(): RuntimePlan<string> {
   return "run done";
 }
 
+function* senderBlueprint(callerRef: ScopeRef<unknown>): RuntimePlan<"sent"> {
+  yield* send(callerRef, EXAMPLE_MESSAGE_CHANNEL, "message from child");
+  return "sent";
+}
+
 function* haltBlueprint(): RuntimePlan<never> {
   yield* halt();
   throw new Error("Not implemented: halt() never returns.");
@@ -144,6 +161,7 @@ function consume<Value>(value: Value): Value {
 
 const EXAMPLE_SLEEP_MILLISECONDS = 10;
 const TRACE_ID_KEY = contextKey<string>();
+const EXAMPLE_MESSAGE_CHANNEL = channel<string>();
 
 export { EXAMPLE_SCENARIOS, getExampleScenario };
 export type { ExampleScenarioName };
