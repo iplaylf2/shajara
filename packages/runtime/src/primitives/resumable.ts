@@ -5,6 +5,6 @@ import { lowerPlan } from "#src/adapter/plan-lower";
 import { unwrapEither } from "#src/primitives-kit";
 
 export function* resumable<Return>(blueprint: RuntimeBlueprint<Return>): RuntimePlan<Return> {
-  const either = yield* liftPlan(kernelResumable(lowerPlan(blueprint())));
+  const either = yield* liftPlan(kernelResumable(() => lowerPlan(blueprint())));
   return unwrapEither(either);
 }
