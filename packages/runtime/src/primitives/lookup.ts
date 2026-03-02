@@ -1,6 +1,5 @@
-import type { ContextKey } from "@khora/kernel";
+import type { ContextKey, RuntimePlan } from "#src/contracts";
 import { ExternalError } from "#src/errors";
-import type { RuntimePlan } from "#src/contracts";
 import { lookup as kernelLookup } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { unwrapOption } from "#src/primitives-kit";

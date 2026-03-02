@@ -1,5 +1,4 @@
-import type { ContextKey } from "@khora/kernel";
-import type { RuntimePlan } from "#src/contracts";
+import type { ContextKey, RuntimePlan } from "#src/contracts";
 import { unbind as kernelUnbind } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 
