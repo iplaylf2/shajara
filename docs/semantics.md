@@ -344,9 +344,9 @@ primitive 不等于 syscall：
 4. 调用方 Fork 一个后备 Process 等待 arena 收敛——若所有 branch 均失败（无人成功 Send），后备 Process 将 arena 的失败终态转发给调用方。
 5. 调用方通过 `Receive(raceChannel)` 取得首个结果。
 
-#### scoped(plan, options?) → Plan\<Either\<Failure, T\>\>
+#### scoped(plan) → Plan\<Either\<Failure, T\>\>
 
-创建子 Scope 并立即等待其收敛。可选 `spec` 指定角色，可选 `onResumableBranchFailure` 提供 resumable 路径后代失败的捕获 handler。
+创建 `SupervisorScope` 子 Scope 并立即等待其收敛。
 
 #### resource(body) → Plan\<Either\<Failure, T\>\>
 
@@ -354,7 +354,7 @@ primitive 不等于 syscall：
 
 #### resumable(plan) → Plan\<Either\<Failure, T\>\>
 
-在 scoped body 内声明可恢复边界。仅被 resumable 标记的子孙 Scope 失败会进入祖先 scoped 的 onResumableBranchFailure 路径。
+在 scoped body 内声明可恢复边界。`resumable` 失败处理方案待定：恢复处理点的注入形态与路由规则尚未定稿。
 
 ### 6.4 等待与控制 primitives
 

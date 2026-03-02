@@ -94,11 +94,11 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `spawn`     | `spawn(blueprint, spec?) → ScopeRef` | 创建子 Scope 并引入并行分支。`spec` 由 `@khora/kernel/scopes` 生成。                               |
 | `all`       | `all(blueprints) → T`                | 聚合等待多个分支。                                                                                 |
 | `race`      | `race(blueprints) → ArrayValues<T>`  | 选择最先完成者，触发其余分支收敛。                                                                 |
-| `scoped`    | `scoped(blueprint, options?) → T`    | 创建子 Scope 并立即等待收敛。`options` 可含 `spec` 与 `onResumableBranchFailure`。                 |
+| `scoped`    | `scoped(blueprint) → T`              | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                   |
 | `resource`  | `resource(body) → T`                 | 创建资源作用域；等待 `provide(value)` 返回首值，资源作用域在 provide 后挂起，父 scope 回收时清理。 |
 | `resumable` | `resumable(blueprint) → T`           | 在 `scoped` body 内声明可恢复边界。                                                                |
 
-`onResumableBranchFailure` 是 `resumable` 路径后代失败的捕获 handler，入参类型为 `KhoraError`，返回 `RuntimePlan<unknown>`，不改写 `scoped` 的成功返回类型。
+`resumable` 的失败处理方案待定：`scoped` 不接收恢复 handler，`onResumableBranchFailure` 的注入形态与路由规则尚未定稿。
 
 ### 4.2 基础
 

@@ -1,4 +1,4 @@
-import type { KhoraError, RuntimeBlueprint, RuntimePlan, ScopeRef } from "@khora/runtime";
+import type { RuntimeBlueprint, RuntimePlan, ScopeRef } from "@khora/runtime";
 import { action, channel, contextKey, sleep, until } from "@khora/runtime";
 import {
   all,
@@ -46,7 +46,7 @@ const EXAMPLE_SCENARIOS = {
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
 function* scopedBlueprint(): RuntimePlan<void> {
-  const scopedResult = yield* scoped(scopedBodyBlueprint, onResumableRecovery);
+  const scopedResult = yield* scoped(scopedBodyBlueprint);
   consume(scopedResult);
 }
 
@@ -64,12 +64,6 @@ function* resourceBlueprint(): RuntimePlan<void> {
 function* scopedBodyBlueprint(): RuntimePlan<string> {
   const bodyResult = yield* resumable(childBlueprint);
   return bodyResult;
-}
-
-function* onResumableRecovery(error: KhoraError): RuntimePlan<unknown> {
-  consume(error.message);
-  yield* cede();
-  return "scoped fallback";
 }
 
 function* childBlueprint(): RuntimePlan<string> {
