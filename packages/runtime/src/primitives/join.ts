@@ -1,5 +1,4 @@
-import type { RuntimePlan } from "#src/contracts";
-import type { ScopeRef } from "@khora/kernel";
+import type { RuntimePlan, ScopeRef } from "#src/contracts";
 import { join as kernelJoin } from "@khora/kernel/primitives";
 import { liftPlan } from "#src/adapter/plan-lift";
 import { unwrapEither } from "#src/primitives-kit";
