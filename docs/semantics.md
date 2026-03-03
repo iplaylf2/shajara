@@ -190,8 +190,8 @@ Process 与 Scope 均有三种互斥终态：
 
 当 Scope 处于 Closing 且终止无法推进到 Exited 时，微内核运行其最近祖先 ReaperScope 的 Reaper。仲裁决定：
 
-- **Wait**：继续等待自行收敛。
-- **Prune**：选择后代 Scope 子树断开并挂接到 Limbo，使原祖先 Scope 可继续推进到 Exited。
+- `none`：继续等待 cleanup 自行收敛（Wait）。
+- `some(failure)`：执行结构性修剪（Prune）：将待清理后代 Scope 子树断开并挂接到 Limbo，并以该 `failure` 使治理边界进入 Failed。
 
 ---
 
@@ -236,6 +236,11 @@ executor 解释到 syscall 时，以微内核一个原子步骤处理之，效�
 #### 治理 Scope 创建 `[Non-Blocking]`
 
 kernel 支持通过 syscall 创建 `SchedulerScope`、`ReaperScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Spawn(blueprint, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `ReaperScope → SchedulerScope → 执行子树根 Scope`。
+
+治理角色的 `spec` 契约：
+
+- `SchedulerScopeSpec`：`spec.role = "scheduler"`，并携带 `handler(readyProcesses) => Plan<ReadonlyArray<ProcessRef<unknown>>>`，用于举荐本轮可运行 Process 序列。
+- `ReaperScopeSpec`：`spec.role = "reaper"`，并携带 `handler(cleanupScopes, cause) => Plan<Option<Failure>>`，用于在 cleanup 卡住时给出 Wait/Prune 仲裁。
 
 ### 5.2 调度推进（内核内部）
 
