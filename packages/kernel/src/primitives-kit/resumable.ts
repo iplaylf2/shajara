@@ -4,7 +4,5 @@ import type { Either } from "fp-ts/Either";
 
 export const resumableDelegateKey: ContextKey<ScopeRef<unknown>> = contextKey<ScopeRef<unknown>>();
 
-export type ResumableBranchRecovery<Return> = Either<Failure, Return>;
-
 export const resumableFailureChannel = channel<Failure>();
-export const resumableRecoveryChannel = channel<ResumableBranchRecovery<unknown>>();
+export const resumableRecoveryChannel = channel<Either<Failure, unknown>>();

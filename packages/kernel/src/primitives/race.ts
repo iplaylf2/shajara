@@ -1,5 +1,5 @@
 import type { ArrayValues, UnknownArray } from "type-fest";
-import type { Blueprint, Failure, Plan, ScopeRef } from "#src/contracts";
+import type { Blueprint, Channel, Failure, Plan, ScopeRef } from "#src/contracts";
 import { either, readonlyArray } from "fp-ts";
 import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
@@ -12,14 +12,16 @@ import { supervisorScopeSpec } from "#src/scopes";
 export function race<BranchReturns extends UnknownArray>(
   branches: RaceBranches<BranchReturns>,
 ): Plan<Either<Failure, ArrayValues<BranchReturns>>> {
+  const raceChannel = channel<Either<Failure, ArrayValues<BranchReturns>>>();
+
   return pipe(
     plan.Do,
     plan.bindF("callerSelf", self),
     plan.bindF("arenaSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
-      spawn(raceArena(branches, callerRef), supervisorScopeSpec()),
+      spawn(raceArena(branches, callerRef, raceChannel), supervisorScopeSpec()),
     ),
     plan.chainF(({ arenaSelf: { scopeRef: arenaRef }, callerSelf: { scopeRef: callerRef } }) =>
-      fork(arenaFailureRelay(arenaRef, callerRef)),
+      fork(arenaFailureRelay(arenaRef, callerRef, raceChannel)),
     ),
     plan.chainF(() => receive(raceChannel)),
     plan.map(({ value }) => value),
@@ -33,6 +35,7 @@ type RaceBranches<BranchReturns extends UnknownArray> = {
 function raceArena(
   branches: ReadonlyArray<Blueprint<unknown>>,
   callerRef: ScopeRef<unknown>,
+  raceChannel: Channel<Either<Failure, unknown>>,
 ): Blueprint<never> {
   return () =>
     pipe(
@@ -42,7 +45,7 @@ function raceArena(
         pipe(
           branches,
           readonlyArray.map((branch) =>
-            pipe(spawn(branchRunner(branch, callerRef, arenaRef)), plan.liftF),
+            pipe(spawn(branchRunner(branch, callerRef, arenaRef, raceChannel)), plan.liftF),
           ),
           plan.sequence,
         ),
@@ -55,6 +58,7 @@ function raceArena(
 function arenaFailureRelay(
   arenaRef: ScopeRef<unknown>,
   callerRef: ScopeRef<unknown>,
+  raceChannel: Channel<Either<Failure, unknown>>,
 ): Blueprint<void> {
   return () =>
     pipe(
@@ -68,6 +72,7 @@ function branchRunner(
   branch: Blueprint<unknown>,
   callerRef: ScopeRef<unknown>,
   arenaRef: ScopeRef<unknown>,
+  raceChannel: Channel<Either<Failure, unknown>>,
 ): Blueprint<void> {
   return () =>
     pipe(
@@ -77,5 +82,4 @@ function branchRunner(
     );
 }
 
-const raceChannel = channel<Either<Failure, unknown>>();
 const haltChannel = channel<null>();

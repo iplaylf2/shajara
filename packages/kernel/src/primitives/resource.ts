@@ -12,6 +12,8 @@ import { supervisorScopeSpec } from "#src/scopes";
 export function resource<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
 ): Plan<Either<Failure, ProvidedValue>> {
+  const resourceChannel = channel<Either<Failure, ProvidedValue>>();
+
   return pipe(
     plan.Do,
     plan.bindF("callerSelf", self),
@@ -39,7 +41,7 @@ export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Plan<neve
 function resourceSupervisor<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
   callerRef: ScopeRef<unknown>,
-  resourceChannel: Channel<Either<Failure, unknown>>,
+  resourceChannel: Channel<Either<Failure, ProvidedValue>>,
 ): Blueprint<never> {
   return () =>
     pipe(
@@ -54,10 +56,10 @@ function resourceSupervisor<ProvidedValue>(
     );
 }
 
-function resourceFailureRelay(
+function resourceFailureRelay<ProvidedValue>(
   supervisorRef: ScopeRef<unknown>,
   callerRef: ScopeRef<unknown>,
-  resourceChannel: Channel<Either<Failure, unknown>>,
+  resourceChannel: Channel<Either<Failure, ProvidedValue>>,
 ): Blueprint<void> {
   return () =>
     pipe(
@@ -66,5 +68,3 @@ function resourceFailureRelay(
       plan.chainF((value) => send(callerRef, resourceChannel, value)),
     );
 }
-
-const resourceChannel = channel<Either<Failure, unknown>>();
