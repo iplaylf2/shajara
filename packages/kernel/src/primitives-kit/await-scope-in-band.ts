@@ -5,10 +5,10 @@ import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 
 /**
- * Awaits a child scope supervised by the current supervisor scope.
- * "Supervised" is a relative relationship role, not a distinct scope entity.
+ * Awaits a child scope through the in-band completion path only.
+ * Non-completed exits are treated as invalid for this helper.
  */
-export function awaitSupervisedScope<Return>(scopeRef: ScopeRef<Return>): Plan<Return> {
+export function awaitScopeInBand<Return>(scopeRef: ScopeRef<Return>): Plan<Return> {
   return pipe(
     awaitScope(scopeRef),
     plan.liftF,
