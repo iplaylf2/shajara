@@ -9,7 +9,7 @@ import type {
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ScopeTerminatedError } from "#src/errors";
 import { fromFailure } from "#src/primitives-kit";
-import { lowerPlan } from "#src/adapter/plan-lower";
+import { lowerPlan } from "#src/adapter/lower-plan";
 
 export function launch<Return>(
   executor: Executor,

@@ -1,7 +1,7 @@
 import type { ArrayValues } from "type-fest";
 import type { Blueprint } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
-import { lowerPlan } from "#src/adapter/plan-lower";
+import { lowerPlan } from "#src/adapter/lower-plan";
 
 export function lowerRuntimeBlueprints<Returns extends readonly unknown[]>(
   blueprints: RuntimeBlueprintTuple<Returns>,

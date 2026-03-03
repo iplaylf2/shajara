@@ -2,7 +2,7 @@ import type { RuntimeBlueprintTuple, RuntimeBlueprintValue } from "#src/primitiv
 import { lowerRuntimeBlueprints, unwrapEither } from "#src/primitives-kit";
 import type { RuntimePlan } from "#src/contracts";
 import { race as kernelRace } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/plan-lift";
+import { liftPlan } from "#src/adapter/lift-plan";
 
 export function* race<Returns extends readonly unknown[]>(
   primitives: RuntimeBlueprintTuple<Returns>,

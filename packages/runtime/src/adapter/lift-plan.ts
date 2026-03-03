@@ -1,6 +1,7 @@
 import type { Executor, ImpurePlan, Plan, Syscall } from "@khora/kernel";
-import { ensureExecutor, purePlan } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
+import { ensureExecutor } from "@khora/kernel";
+import { unreachable } from "@khora/kernel/utils";
 
 export function* liftPlan<Return>(plan: Plan<Return>): RuntimePlan<Return> {
   const executor = ensureExecutor();
@@ -27,7 +28,10 @@ function* continueFromImpure<Return>(
     nextPlan = impurePlan.then(resumeValue);
   } finally {
     if (nextPlan === null) {
-      const cleanup = executor.consumeCleanup(impurePlan) ?? (() => purePlan(null as Return));
+      const cleanup = executor.consumeCleanup(impurePlan);
+      if (cleanup === null) {
+        unreachable();
+      }
       nextPlan = cleanup() as Plan<Return>;
     }
   }

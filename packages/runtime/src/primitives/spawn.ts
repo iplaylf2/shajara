@@ -9,8 +9,8 @@ import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";
 import { KhoraError } from "#src/contracts";
 import { spawn as kernelSpawn } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/plan-lift";
-import { lowerPlan } from "#src/adapter/plan-lower";
+import { liftPlan } from "#src/adapter/lift-plan";
+import { lowerPlan } from "#src/adapter/lower-plan";
 
 export function spawn<Return>(
   entry: RuntimeBlueprint<Return>,
