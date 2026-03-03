@@ -29,7 +29,8 @@
 
 - kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段。
 - primitive 可由多条底层步骤组成，不假设"一原语 = 一指令"。
-- `spawn/scoped` 可接收可选 `spec`；spec 由 `@khora/kernel/scopes` 的角色工厂生成，不在调用点构造字面量。
+- primitive 层 `spawn` 暴露 `options`（sum type）而非 `spec`：当前支持 `supervisor`（边界收敛）与 `recovery`（`resumable` 委派恢复点）；`ScopeSpec` 不向 primitive 调用点直接暴露。
+- runtime 的 `spawn` 对 `recovery` handler 采用 runtime 语义（返回值=恢复成功，抛异常=恢复失败），并在适配边界转换为 kernel 所需失败通道形状。
 - 编排层不暴露 `fork` 原语；并发统一经 `spawn` 进入可控 Scope。
 - 用户侧生命周期粒度为 Scope，`process` 级句柄不进入公开表面。
 - `suspend` 恢复路径由父 scope 回收阶段以失败传播触发。

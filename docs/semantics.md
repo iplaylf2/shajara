@@ -62,6 +62,11 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 Process 是 Plan 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
+Process 在生命周期收敛中存在参与属性（`participation`）：
+
+- `tracked`：计入 Scope “变空”判定。
+- `auxiliary`：不计入 Scope “变空”判定，仅作为附属并发单元存在。
+
 ### 1.6 Processor 与 EventQueue
 
 `Processor` 是系统唯一的逻辑原子执行权令牌。`EventQueue` 存放可运行的 Process。
@@ -154,7 +159,7 @@ Process 与 Scope 均有三种互斥终态：
 - Scope 内任一 Process 以 `Failed(fault)` 退出
 - 从后代链路接收到 `Failed(fault)` 传播（仅适用于传播策略的角色）
 - 从祖先 Scope 收到终止级联
-- Scope 变空（不再包含任何 Process）
+- Scope 变空（不再包含任何 `tracked` Process）
 
 终态判定：
 
@@ -218,12 +223,13 @@ executor 解释到 syscall 时，以微内核一个原子步骤处理之，效�
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
 
-#### Fork(blueprint) → { processRef } `[Non-Blocking]`
+#### Fork(blueprint, options?) → { processRef } `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
+- `options.participation`：`tracked | auxiliary`，默认 `tracked`。两者语义见 §1.5；Scope “变空”触发见 §3.3。
 
 #### 治理 Scope 创建 `[Non-Blocking]`
 
@@ -354,13 +360,20 @@ primitive 不等于 syscall：
 
 #### resumable(plan) → Plan\<Either\<Failure, T\>\>
 
-在 scoped body 内声明可恢复边界。`resumable` 失败处理方案待定：恢复处理点的注入形态与路由规则尚未定稿。
+在 scoped body 内声明可恢复边界。`resumable` 在失败时查找 `resumableDelegateKey`：
+
+- 未命中：失败保持为 `Left(failure)`。
+- 命中：向委派点发送失败并等待恢复结果（`Either<Failure, T>`）带内返回。
 
 ### 6.4 等待与控制 primitives
 
-#### spawn(plan, spec?) → Plan\<ScopeRef\>
+#### spawn(plan, options?) → Plan\<ScopeRef\>
 
-封装 Spawn syscall，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。默认 StandardScope，可通过 spec 指定角色。
+封装 Spawn syscall，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
+
+- 默认：创建 StandardScope。
+- `options.mode = "supervisor"`：创建 SupervisorScope，在该边界内收敛后代失败/终止。
+- `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收失败请求并回发恢复结果。
 
 #### join(scopeRef) → Plan\<Either\<Failure, T\>\>
 

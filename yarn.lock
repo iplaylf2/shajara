@@ -277,6 +277,7 @@ __metadata:
   resolution: "@khora/kernel@workspace:packages/kernel"
   dependencies:
     "@khora/presets": "workspace:^"
+    defaults: "npm:^3.0.0"
     fp-ts: "npm:^2.16.11"
     oxlint: "catalog:"
     type-fest: "catalog:"
@@ -1212,6 +1213,13 @@ __metadata:
     supports-color:
       optional: true
   checksum: 10c0/d79136ec6c83ecbefd0f6a5593da6a9c91ec4d7ddc4b54c883d6e71ec9accb5f67a1a5e96d00a328196b5b5c86d365e98d8a3a70856aaf16b4e7b1985e67f5a6
+  languageName: node
+  linkType: hard
+
+"defaults@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "defaults@npm:3.0.0"
+  checksum: 10c0/6c42abf1ed9e2678489a1ceb3ed4a07635000accd37cd0e21c0733a7ab7b4bdce3f44b854bf18c88d207fc0da88a6d0fefb491b407dd14952d3396a3eacb84ec
   languageName: node
   linkType: hard
 

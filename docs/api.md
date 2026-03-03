@@ -89,16 +89,16 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ### 4.1 并发构造
 
-| 原语        | 签名概要                             | 说明                                                                                               |
-| ----------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(blueprint, spec?) → ScopeRef` | 创建子 Scope 并引入并行分支。`spec` 由 `@khora/kernel/scopes` 生成。                               |
-| `all`       | `all(blueprints) → T`                | 聚合等待多个分支。                                                                                 |
-| `race`      | `race(blueprints) → ArrayValues<T>`  | 选择最先完成者，触发其余分支收敛。                                                                 |
-| `scoped`    | `scoped(blueprint) → T`              | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                   |
-| `resource`  | `resource(body) → T`                 | 创建资源作用域；等待 `provide(value)` 返回首值，资源作用域在 provide 后挂起，父 scope 回收时清理。 |
-| `resumable` | `resumable(blueprint) → T`           | 在 `scoped` body 内声明可恢复边界。                                                                |
+| 原语        | 签名概要                                | 说明                                                                                                              |
+| ----------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `spawn`     | `spawn(blueprint, options?) → ScopeRef` | 创建子 Scope 并引入并行分支；`options` 为 sum type：`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
+| `all`       | `all(blueprints) → T`                   | 聚合等待多个分支。                                                                                                |
+| `race`      | `race(blueprints) → ArrayValues<T>`     | 选择最先完成者，触发其余分支收敛。                                                                                |
+| `scoped`    | `scoped(blueprint) → T`                 | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                                  |
+| `resource`  | `resource(body) → T`                    | 创建资源作用域；等待 `provide(value)` 返回首值，资源作用域在 provide 后挂起，父 scope 回收时清理。                |
+| `resumable` | `resumable(blueprint) → T`              | 在 `scoped` body 内声明可恢复边界。                                                                               |
 
-`resumable` 的失败处理方案待定：`scoped` 不接收恢复 handler，`onResumableBranchFailure` 的注入形态与路由规则尚未定稿。
+`recovery` 选项仅影响 `resumable` 委派恢复路径：`recover` 返回值视为恢复成功，抛异常视为恢复失败。
 
 ### 4.2 基础
 
