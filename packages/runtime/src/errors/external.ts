@@ -2,8 +2,12 @@ import { KhoraError } from "#src/contracts";
 import { externalFailure } from "@khora/kernel";
 
 export class ExternalError extends KhoraError {
-  constructor(message: string = "External failure") {
-    super(externalFailure(() => message));
+  constructor(raw: unknown, message: string) {
+    super(externalFailure(raw, () => message));
     this.name = "ExternalError";
+
+    if (raw instanceof Error) {
+      this.cause = raw;
+    }
   }
 }
