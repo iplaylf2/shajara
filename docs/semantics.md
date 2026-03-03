@@ -11,11 +11,13 @@
 `Plan<T>` 是 kernel 的计算承载面，以 free monad 编码：
 
 - **`PurePlan(value: T)`** — 终值节点。
-- **`ImpurePlan(syscall, then, terminate)`** — 产出一条 syscall，携带成功续延 `then(value)` 与中止续延 `terminate()`。
+- **`ImpurePlan(syscall, then)`** — 产出一条 syscall，携带成功续延 `then(value)`。
 
 `Blueprint<T>` = `() => Plan<T>`，延迟构造 Plan 的 thunk。
 
 `Syscall` 是非泛型基础对象契约，最小形状为 `{ kind: string; return?: readonly [unknown] }`。具体 syscall 通过 `return` tuple 声明返回值类型，`then` 的参数类型由 `SyscallReturn<S>` 从该见证推导。
+
+`ImpurePlan` 实例身份参与执行协议：同一时刻，每个活跃阻塞点对应且仅对应一个 `ImpurePlan` 对象实例，executor 在恢复/中断时按该对象身份定位对应续延与清理逻辑。语义层禁止复用同一 `ImpurePlan` 实例承载多个并发活跃阻塞点。
 
 ### 1.2 Fault 与失败通道
 

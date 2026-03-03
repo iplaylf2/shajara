@@ -7,6 +7,7 @@
 ## 1. kernel / runtime 边界
 
 - kernel 承载 `Plan`、`Syscall` 与类型化续延。runtime 负责 generator 适配与宿主桥接，不将 generator 细节下沉到 kernel。
+- `ImpurePlan` 的对象身份是执行期协议的一部分：同一时刻每个活跃阻塞点必须对应唯一 `ImpurePlan` 实例，不得跨并发活跃阻塞点复用实例。
 - 边界引用类型（`ScopeRef`、`ExecutionScopeRootRef`、`ExecutionScopeRef`、`SpawnDescriptor`、`SelfDescriptor`）由 kernel 单源定义并导出，runtime 直接消费，不重复定义。
 - 依赖方向：`executor → contracts/syscalls`，反向不允许。
 - 术语方向：`lift` = kernel → runtime，`lower` = runtime → kernel。

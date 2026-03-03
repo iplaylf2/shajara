@@ -29,7 +29,7 @@ export namespace plan {
     map: (fa, f) =>
       fa.kind === "pure"
         ? pure(f(fa.value))
-        : impure(fa.syscall, (x) => Functor.map(fa.then(x), f), fa.terminate),
+        : impure(fa.syscall, (x) => Functor.map(fa.then(x), f)),
   };
 
   export const Apply: apply.Apply1<URI> = {
@@ -37,7 +37,7 @@ export namespace plan {
     ap: (fab, fa) =>
       fab.kind === "pure"
         ? Functor.map(fa, fab.value)
-        : impure(fab.syscall, (x) => Apply.ap(fab.then(x), fa), fab.terminate),
+        : impure(fab.syscall, (x) => Apply.ap(fab.then(x), fa)),
     map: Functor.map,
   };
 
@@ -52,9 +52,7 @@ export namespace plan {
     URI,
     ap: Apply.ap,
     chain: (fa, f) =>
-      fa.kind === "pure"
-        ? f(fa.value)
-        : impure(fa.syscall, (x) => Chain.chain(fa.then(x), f), fa.terminate),
+      fa.kind === "pure" ? f(fa.value) : impure(fa.syscall, (x) => Chain.chain(fa.then(x), f)),
     map: Functor.map,
   };
 

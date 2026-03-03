@@ -4,7 +4,7 @@ export type Blueprint<Result> = () => Plan<Result>;
 
 // oxlint-disable-next-line id-length
 export function liftSyscall<S extends Syscall>(syscall: S): Plan<SyscallReturn<S>> {
-  return impurePlan(syscall, purePlan, () => purePlan(null));
+  return impurePlan(syscall, purePlan);
 }
 
 export type Plan<Result> = ImpurePlan<Syscall, Result> | PurePlan<Result>;
@@ -17,9 +17,8 @@ export function purePlan<Result>(value: Result): PurePlan<Result> {
 export function impurePlan<S extends Syscall, Result>(
   syscall: S,
   then: (returnValue: SyscallReturn<S>) => Plan<Result>,
-  terminate: () => Plan<unknown>,
 ): ImpurePlan<S, Result> {
-  return { kind: "impure", syscall, terminate, then };
+  return { kind: "impure", syscall, then };
 }
 
 export interface PurePlan<Result> {
@@ -31,6 +30,5 @@ export interface PurePlan<Result> {
 export interface ImpurePlan<S extends Syscall, Result> {
   readonly kind: "impure";
   readonly syscall: S;
-  readonly terminate: () => Plan<unknown>;
   readonly then: (returnValue: SyscallReturn<S>) => Plan<Result>;
 }
