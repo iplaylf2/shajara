@@ -35,13 +35,9 @@ export interface GovernorFullCapabilities {
   readonly reaper: ReaperHandler;
 }
 
-export type SchedulerHandler = (
-  readyProcess: ProcessRef<unknown>,
-) => Plan<Processor>;
+export type SchedulerHandler = (readyProcess: ProcessRef<unknown>) => Plan<Processor>;
 
-export type ReaperHandler = (
-  suspendedProcess: ProcessRef<unknown>,
-) => Plan<Option<Failure>>;
+export type ReaperHandler = (suspendedProcess: ProcessRef<unknown>) => Plan<Option<Failure>>;
 
 export interface GovernorScopeSpec extends ScopeSpec {
   readonly role: "governor";

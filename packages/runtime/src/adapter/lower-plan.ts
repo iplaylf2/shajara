@@ -7,6 +7,14 @@ export function lowerPlan<Return>(runtimePlan: RuntimePlan<Return>): Plan<Return
   return lowerRuntimeNext(executor, runtimePlan, null);
 }
 
+function lowerRuntimeNext<Return>(
+  executor: Executor,
+  runtimePlan: RuntimePlan<Return>,
+  response: unknown,
+): Plan<Return> {
+  return lowerRuntimeStep(executor, runtimePlan, runtimePlan.next(response));
+}
+
 function lowerRuntimeStep<Return>(
   executor: Executor,
   runtimePlan: RuntimePlan<Return>,
@@ -21,15 +29,8 @@ function lowerRuntimeStep<Return>(
   );
 
   executor.registerCleanup(impure, () => lowerRuntimeReturn(executor, runtimePlan));
-  return impure;
-}
 
-function lowerRuntimeNext<Return>(
-  executor: Executor,
-  runtimePlan: RuntimePlan<Return>,
-  response: unknown,
-): Plan<Return> {
-  return lowerRuntimeStep(executor, runtimePlan, runtimePlan.next(response));
+  return impure;
 }
 
 function lowerRuntimeReturn<Return>(

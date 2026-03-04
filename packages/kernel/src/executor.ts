@@ -61,10 +61,6 @@ export interface Executor {
    * Register cleanup continuation for an impure plan node.
    */
   registerCleanup(impurePlan: ImpurePlan<Syscall, unknown>, cleanup: () => Plan<unknown>): void;
-  /**
-   * Consume cleanup continuation for an impure plan node.
-   */
-  consumeCleanup(impurePlan: ImpurePlan<Syscall, unknown>): (() => Plan<unknown>) | null;
 }
 
 export function ensureExecutor(): Executor {
