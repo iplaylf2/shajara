@@ -129,6 +129,11 @@ EventQueue 为空且 Processor 在微内核手中时：
 2. Scheduler 选择可运行 Process 并送入 EventQueue。
 3. Scheduler 让出 Processor 后进入下一轮反应相。
 
+GovernorScope 的 scheduler handler 触发语义：
+
+- scheduler handler 由治下 Scope 的就绪 Process 活动驱动触发。
+- 每次触发仅针对一个就绪 Process 输入执行一次 handler。
+
 ---
 
 ## 3. 收敛与终止
@@ -192,6 +197,12 @@ Process 与 Scope 均有三种互斥终态：
 - `none`：继续等待 cleanup 自行收敛（Wait）。
 - `some(failure)`：执行结构性修剪（Prune）：将待清理后代 Scope 子树断开并挂接到 Limbo，并以该 `failure` 使治理边界进入 Failed。
 
+GovernorScope 的 reaper handler 触发语义：
+
+- reaper handler 不因常规就绪活动触发。
+- 仅在目标 Scope 已进入 Closing 且完成一次面向治下 Process 的终止推进（terminate pass）后触发。
+- 每次触发仅针对一个临时挂起 Process 输入执行一次 handler。
+
 ---
 
 ## 4. Syscall 协议
@@ -239,8 +250,8 @@ kernel 支持通过 syscall 创建 `GovernorScope` 与 `SupervisorScope`。`Supe
 治理角色的 `spec` 契约：
 
 - `GovernorScopeSpec`：`spec.role = "governor"`，并携带 `capabilities`（sum type）：
-- `coverage = "scheduler"`：只提供 `scheduler(readyProcesses) => Plan<ReadonlyArray<ProcessRef<unknown>>>`。
-- `coverage = "reaper"`：只提供 `reaper(cleanupScopes, cause) => Plan<Option<Failure>>`。
+- `coverage = "scheduler"`：只提供 `scheduler(readyProcess) => Plan<Processor>`。
+- `coverage = "reaper"`：只提供 `reaper(suspendedProcess) => Plan<Option<Failure>>`。
 - `coverage = "full"`：同时提供 `scheduler + reaper` 两类 handler。
 
 ### 5.2 调度推进（内核内部）

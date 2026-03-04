@@ -1,4 +1,4 @@
-import type { Failure, Plan, ProcessRef, ScopeRef, ScopeSpec } from "#src/contracts";
+import type { Failure, Plan, ProcessRef, Processor, ScopeRef, ScopeSpec } from "#src/contracts";
 import type { Option } from "#src/utils";
 
 export type GovernorScopeRef<Return> = ScopeRef<Return, GovernorScopeSpec>;
@@ -36,12 +36,11 @@ export interface GovernorFullCapabilities {
 }
 
 export type SchedulerHandler = (
-  readyProcesses: ReadonlyArray<ProcessRef<unknown>>,
-) => Plan<ReadonlyArray<ProcessRef<unknown>>>;
+  readyProcess: ProcessRef<unknown>,
+) => Plan<Processor>;
 
 export type ReaperHandler = (
-  cleanupScopes: ReadonlyArray<ScopeRef<unknown>>,
-  cause: Option<Failure>,
+  suspendedProcess: ProcessRef<unknown>,
 ) => Plan<Option<Failure>>;
 
 export interface GovernorScopeSpec extends ScopeSpec {
