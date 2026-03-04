@@ -75,4 +75,4 @@ runtime 直接消费 kernel 导出的引用类型，不重复定义同语义包�
 
 ## 7. 内核索引
 
-运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Plan、退出信息与等待者）、等待登记（Receive、AwaitProcess、AwaitScope），以及各 Scope 上按 Channel 令牌分组的消息队列与等待者登记。runtime 仅消费这些能力，不复制维护状态机。
+运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Plan、退出信息与等待者）、等待登记（Receive、AwaitScope，以及待定的 AwaitProcess），以及各 Scope 上按 Channel 令牌分组的消息队列与等待者登记。runtime 仅消费这些能力，不复制维护状态机。

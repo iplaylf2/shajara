@@ -188,7 +188,7 @@ Process 与 Scope 均有三种互斥终态：
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
-`AwaitProcess` 与 `AwaitScope` 仅提供结果可见性，不构成对上传策略的拦截。
+`AwaitScope`（以及待定的 `AwaitProcess`）仅提供结果可见性，不构成对上传策略的拦截。
 
 ### 3.6 结构性收敛：Reaper
 
@@ -260,24 +260,9 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 ### 5.3 控制与等待
 
-#### Terminate(processRef) → void `[Non-Blocking]`
-
-令目标 Process 退出为 Terminated，释放 AwaitProcess 阻塞者。
-
-- 前置：目标 Process 属于调用方 Scope。
-
 #### Halt(fault?) → Fault `[Blocking]`
 
 令调用方 Scope 进入 Closing，调用方 Process 以 `Fault(halt)` 退出。`fault` 为可选携带负载。触发对后代 Scope 的终止级联。
-
-#### AwaitProcess(processRef) → { exit } `[Blocking]`
-
-等待目标 Process 退出。
-
-- 前置：目标 Process 属于调用方 Scope。
-- 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", fault }` | `{ kind: "terminated" }`
-
-返回 `failed` 仅表示观察到退出结果，不改变已触发的 Scope 终止与传播。
 
 #### AwaitScope(scopeRef) → { exit } `[Blocking]`
 
@@ -302,6 +287,15 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 调用方 Process 主动释放 Processor（协作式让权）。
 
+#### 待定 syscall（概念保留）
+
+以下 syscall 当前保留为语义占位，具体对象形态（签名、返回值、阻塞分类与可见性约束）待 executor、scheduler 与 reaper 策略定稿后回填：
+
+- `Terminate(processRef)`
+- `AwaitProcess(processRef)`
+- `PollProcess(processRef)`
+- `PollScope(scopeRef)`
+
 ### 5.4 上下文与自省
 
 #### Bind(key, value) → void `[Non-Blocking]`
@@ -316,14 +310,6 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 返回调用方自省信息。
 
-#### PollProcess(processRef) → { exited, exit? } `[Non-Blocking]`
-
-查询目标 Process 是否已退出；若已退出返回其退出信息。
-
-#### PollScope(scopeRef) → { status } `[Non-Blocking]`
-
-查询目标 Scope 状态：`Running | Closing | Exited | InLimbo`。
-
 ---
 
 ## 6. Primitives
@@ -335,7 +321,7 @@ Primitive 是 kernel 在 syscall 之上提供的 **Plan 层代数组合**，每�
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Plan 片段，消费方无需自行拼装 syscall 序列。
-- **封装 Process 脆弱性**：syscall 层暴露的 `Fork`、`Terminate(processRef)`、`AwaitProcess` 等 Process 级操作被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
+- **封装 Process 脆弱性**：syscall 层暴露的 `Fork` 与待定的 Process 级操作（如 `Terminate(processRef)`、`AwaitProcess`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
 
 primitive 不等于 syscall：
 

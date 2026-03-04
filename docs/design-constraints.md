@@ -26,7 +26,7 @@
 - kernel primitive 通过显式代数通道（`Either<Failure, T>`）表达失败，不依赖宿主 `throw`。
 - runtime 在 primitive 适配边界统一解包 `Either`，将 `Left` 收敛为 `KhoraError` 抛出。
 - `Failure` 由 kernel 定义，runtime 包装为 `KhoraError`（`Error` 子类），不向用户暴露 kernel 失败类型。
-- `AwaitProcess/AwaitScope` 仅观察终态，不承担失败拦截；失败上传由 Scope 角色语义决定。
+- `AwaitProcess/AwaitScope` 仅观察终态，不承担失败拦截；失败上传由 Scope 角色语义决定（其中 `AwaitProcess` 的 syscall 形态待定）。
 
 ## 4. primitive 约束
 
