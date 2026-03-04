@@ -40,14 +40,13 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 **executor 衍生角色**（因 executor 架构需要而存在）：
 
-| 角色             | 职责                                          |
-| ---------------- | --------------------------------------------- |
-| `SchedulerScope` | 调度编排（Scheduler 职责）。                  |
-| `ReaperScope`    | 终止收敛仲裁（Reaper 职责）。                 |
-| `ExecutionScope` | 执行入口能力角色（launch + terminate 语义）。 |
-| `LimboScope`     | 结构性修剪承接角色（全局单例，见 §1.8）。     |
+| 角色             | 职责                                                |
+| ---------------- | --------------------------------------------------- |
+| `GovernorScope`  | 治理角色：承载 Scheduler/Reaper 两类 handler 策略。 |
+| `ExecutionScope` | 执行入口能力角色（launch + terminate 语义）。       |
+| `LimboScope`     | 结构性修剪承接角色（全局单例，见 §1.8）。           |
 
-创建约束：`StandardScope`、`SupervisorScope`、`SchedulerScope`、`ReaperScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 syscall 创建目标。
+创建约束：`StandardScope`、`SupervisorScope`、`GovernorScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 syscall 创建目标。
 
 ### 1.4 执行入口能力视图
 
@@ -93,7 +92,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 系统包含全局唯一的 `LimboScope` 单例。
 
 - 常态下不发生 Scope 父子迁移。
-- 仅当最近祖先 ReaperScope 给出 `Prune` 仲裁时，目标 Scope 从原树断开并挂接到 Limbo 下。
+- 仅当最近祖先 GovernorScope 的 reaper handler 给出 `Prune` 仲裁时，目标 Scope 从原树断开并挂接到 Limbo 下。
 - 迁移保持被迁移子树的原子结构（仅变更根节点父指针），被迁移 Scope 状态变为 `InLimbo`。
 
 ---
@@ -188,7 +187,7 @@ Process 与 Scope 均有三种互斥终态：
 
 ### 3.6 结构性收敛：Reaper
 
-当 Scope 处于 Closing 且终止无法推进到 Exited 时，微内核运行其最近祖先 ReaperScope 的 Reaper。仲裁决定：
+当 Scope 处于 Closing 且终止无法推进到 Exited 时，微内核运行其最近祖先 GovernorScope 的 reaper handler。仲裁决定：
 
 - `none`：继续等待 cleanup 自行收敛（Wait）。
 - `some(failure)`：执行结构性修剪（Prune）：将待清理后代 Scope 子树断开并挂接到 Limbo，并以该 `failure` 使治理边界进入 Failed。
@@ -235,12 +234,14 @@ executor 解释到 syscall 时，以微内核一个原子步骤处理之，效�
 
 #### 治理 Scope 创建 `[Non-Blocking]`
 
-kernel 支持通过 syscall 创建 `SchedulerScope`、`ReaperScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Spawn(blueprint, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `ReaperScope → SchedulerScope → 执行子树根 Scope`。
+kernel 支持通过 syscall 创建 `GovernorScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Spawn(blueprint, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `GovernorScope → 执行子树根 Scope`。
 
 治理角色的 `spec` 契约：
 
-- `SchedulerScopeSpec`：`spec.role = "scheduler"`，并携带 `handler(readyProcesses) => Plan<ReadonlyArray<ProcessRef<unknown>>>`，用于举荐本轮可运行 Process 序列。
-- `ReaperScopeSpec`：`spec.role = "reaper"`，并携带 `handler(cleanupScopes, cause) => Plan<Option<Failure>>`，用于在 cleanup 卡住时给出 Wait/Prune 仲裁。
+- `GovernorScopeSpec`：`spec.role = "governor"`，并携带 `capabilities`（sum type）：
+- `coverage = "scheduler"`：只提供 `scheduler(readyProcesses) => Plan<ReadonlyArray<ProcessRef<unknown>>>`。
+- `coverage = "reaper"`：只提供 `reaper(cleanupScopes, cause) => Plan<Option<Failure>>`。
+- `coverage = "full"`：同时提供 `scheduler + reaper` 两类 handler。
 
 ### 5.2 调度推进（内核内部）
 

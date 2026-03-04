@@ -1,0 +1,50 @@
+import type { Failure, Plan, ProcessRef, ScopeRef, ScopeSpec } from "#src/contracts";
+import type { Option } from "#src/utils";
+
+export type GovernorScopeRef<Return> = ScopeRef<Return, GovernorScopeSpec>;
+
+export function governorScopeSpec(config: GovernorScopeSpecConfig): GovernorScopeSpec {
+  return {
+    capabilities: config.capabilities,
+    role: "governor",
+  };
+}
+
+export interface GovernorScopeSpecConfig {
+  readonly capabilities: GovernorCapabilities;
+}
+
+export type GovernorCapabilities =
+  | GovernorSchedulerCapabilities
+  | GovernorReaperCapabilities
+  | GovernorFullCapabilities;
+
+export interface GovernorSchedulerCapabilities {
+  readonly coverage: "scheduler";
+  readonly scheduler: SchedulerHandler;
+}
+
+export interface GovernorReaperCapabilities {
+  readonly coverage: "reaper";
+  readonly reaper: ReaperHandler;
+}
+
+export interface GovernorFullCapabilities {
+  readonly coverage: "full";
+  readonly scheduler: SchedulerHandler;
+  readonly reaper: ReaperHandler;
+}
+
+export type SchedulerHandler = (
+  readyProcesses: ReadonlyArray<ProcessRef<unknown>>,
+) => Plan<ReadonlyArray<ProcessRef<unknown>>>;
+
+export type ReaperHandler = (
+  cleanupScopes: ReadonlyArray<ScopeRef<unknown>>,
+  cause: Option<Failure>,
+) => Plan<Option<Failure>>;
+
+export interface GovernorScopeSpec extends ScopeSpec {
+  readonly role: "governor";
+  readonly capabilities: GovernorCapabilities;
+}
