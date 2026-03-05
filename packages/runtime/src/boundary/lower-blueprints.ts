@@ -3,7 +3,7 @@ import type { RuntimeBlueprint } from "#src/contracts";
 import type { UnknownArray } from "type-fest";
 import { lowerBlueprint } from "#src/boundary/lower-blueprint";
 
-export function lowerRuntimeBlueprints<Returns extends UnknownArray>(
+export function lowerBlueprints<Returns extends UnknownArray>(
   blueprints: RuntimeBlueprintTuple<Returns>,
 ): {
   readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
