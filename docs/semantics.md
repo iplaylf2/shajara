@@ -25,6 +25,8 @@ syscall 成功恢复值由 `then(value)` 承接。失败表达方式不做统一
 
 `Fault` 是带外终止事件。发生 Fault 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(fault)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
 
+`halt` 触发的 fault 分层为：先形成 Process 的 `Failed(fault)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §3.5）。
+
 ### 1.3 Scope
 
 Scope 是生命周期、身份与上下文的统一载体，承载父子关系与 Process 归属。每个 Scope 拥有唯一 `ScopeRef`（控制面 capability handle），Scope 构成严格树（除根外每个 Scope 恰有一个父 Scope）。
@@ -161,7 +163,7 @@ Process 与 Scope 均有三种互斥终态：
 
 触发条件（任一即可）：
 
-- Scope 内执行 `Halt()`
+- Scope 内任一 Process 执行 `Halt()` 并以 `Failed(fault)` 退出
 - Scope 内任一 Process 以 `Failed(fault)` 退出
 - 从后代链路接收到 `Failed(fault)` 传播（仅适用于传播策略的角色）
 - 从祖先 Scope 收到终止级联
@@ -262,7 +264,7 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 #### Halt(fault?) → Fault `[Blocking]`
 
-令调用方 Scope 进入 Closing，调用方 Process 以 `Fault(halt)` 退出。`fault` 为可选携带负载。触发对后代 Scope 的终止级联。
+调用方 Process 以 `Fault(halt)` 退出。该 Process 的 `Failed(fault)` 使其所属 Scope 进入 Closing（终态 Failed），并触发对后代 Scope 的终止级联。`fault` 为可选携带负载。
 
 #### AwaitScope(scopeRef) → { exit } `[Blocking]`
 
@@ -386,7 +388,7 @@ primitive 不等于 syscall：
 
 #### halt(fault?) → Plan\<never\>
 
-封装 Halt syscall，触发当前 Scope 的终止级联。
+封装 Halt syscall，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。
 
 #### suspend() → Plan\<never\>
 
