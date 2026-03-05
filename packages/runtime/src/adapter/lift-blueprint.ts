@@ -1,8 +1,8 @@
-import type { Plan } from "@khora/kernel";
+import type { Blueprint, Plan } from "@khora/kernel";
 import type { RuntimePlan } from "#src/contracts";
 
-export function* liftPlan<Return>(plan: Plan<Return>): RuntimePlan<Return> {
-  return yield* liftStep(plan);
+export function* liftBlueprint<Return>(blueprint: Blueprint<Return>): RuntimePlan<Return> {
+  return yield* liftStep(blueprint());
 }
 
 function* liftStep<Return>(plan: Plan<Return>): RuntimePlan<Return> {

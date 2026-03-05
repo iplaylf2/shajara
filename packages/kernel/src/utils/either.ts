@@ -1,2 +1,2 @@
 // oxlint-disable no-duplicate-imports
-export { isLeft, isRight, left, match as matchEither, right, type Either } from "fp-ts/Either";
+export { type Either, isLeft, isRight, left, right, tryCatch } from "fp-ts/Either";

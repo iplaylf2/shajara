@@ -1,9 +1,9 @@
 import type { Channel, ReceiveResult, RuntimePlan } from "#src/contracts";
 import { receive as kernelReceive } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/lift-plan";
+import { liftBlueprint } from "#src/adapter/lift-blueprint";
 
 export function receive<ReceiveValue>(
   channel: Channel<ReceiveValue>,
 ): RuntimePlan<ReceiveResult<ReceiveValue>> {
-  return liftPlan(kernelReceive(channel));
+  return liftBlueprint(() => kernelReceive(channel));
 }

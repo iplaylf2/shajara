@@ -1,7 +1,7 @@
 import type { RuntimePlan } from "#src/contracts";
 import { suspend as kernelSuspend } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/lift-plan";
+import { liftBlueprint } from "#src/adapter/lift-blueprint";
 
 export function suspend(): RuntimePlan<never> {
-  return liftPlan(kernelSuspend());
+  return liftBlueprint(() => kernelSuspend());
 }

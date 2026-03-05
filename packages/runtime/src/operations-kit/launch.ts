@@ -9,7 +9,7 @@ import type {
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ScopeTerminatedError } from "#src/errors";
 import { fromFailure } from "#src/primitives-kit";
-import { lowerPlan } from "#src/adapter/lower-plan";
+import { lowerBlueprint } from "#src/adapter/lower-blueprint";
 
 export function launch<Return>(
   executor: Executor,
@@ -42,7 +42,7 @@ export function launch<Return>(
     }
   }
 
-  const execution = executor.launch(scope, () => lowerPlan(wrappedBlueprint()));
+  const execution = executor.launch(scope, lowerBlueprint(wrappedBlueprint));
   const settled = asSettledPromise(execution);
 
   return {

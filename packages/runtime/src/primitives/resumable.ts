@@ -1,10 +1,10 @@
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
 import { resumable as kernelResumable } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/lift-plan";
-import { lowerPlan } from "#src/adapter/lower-plan";
+import { liftBlueprint } from "#src/adapter/lift-blueprint";
+import { lowerBlueprint } from "#src/adapter/lower-blueprint";
 import { unwrapEither } from "#src/primitives-kit";
 
 export function* resumable<Return>(blueprint: RuntimeBlueprint<Return>): RuntimePlan<Return> {
-  const either = yield* liftPlan(kernelResumable(() => lowerPlan(blueprint())));
+  const either = yield* liftBlueprint(() => kernelResumable(lowerBlueprint(blueprint)));
   return unwrapEither(either);
 }

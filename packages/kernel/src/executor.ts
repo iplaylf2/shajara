@@ -1,8 +1,7 @@
-import type { Blueprint, ImpurePlan, Plan } from "./contracts/plan";
+import type { Blueprint, Plan } from "./contracts/plan";
 import type { Channel } from "./contracts/channel";
 import type { Failure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
-import type { Syscall } from "./contracts/syscall";
 import { notImplemented } from "./internal/not-implemented";
 
 const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
@@ -58,9 +57,9 @@ export interface Executor {
    */
   terminate(scope: ExecutionScopeRef): void;
   /**
-   * Register cleanup continuation for an impure plan node.
+   * Register cleanup continuation for a launched blueprint.
    */
-  registerCleanup(impurePlan: ImpurePlan<Syscall, unknown>, cleanup: () => Plan<unknown>): void;
+  registerCleanup(blueprint: Blueprint<unknown>, cleanup: () => Plan<unknown>): void;
 }
 
 export function ensureExecutor(): Executor {

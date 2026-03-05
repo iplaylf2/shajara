@@ -9,14 +9,14 @@ import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";
 import { KhoraError } from "#src/contracts";
 import { spawn as kernelSpawn } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/lift-plan";
-import { lowerPlan } from "#src/adapter/lower-plan";
+import { liftBlueprint } from "#src/adapter/lift-blueprint";
+import { lowerBlueprint } from "#src/adapter/lower-blueprint";
 
 export function spawn<Return>(
   entry: RuntimeBlueprint<Return>,
   options?: SpawnOptions,
 ): RuntimePlan<ScopeRef<Return>> {
-  return liftPlan(kernelSpawn(() => lowerPlan(entry()), toKernelSpawnOptions(options)));
+  return liftBlueprint(() => kernelSpawn(lowerBlueprint(entry), toKernelSpawnOptions(options)));
 }
 
 export type SpawnOptions = SpawnSupervisorOption | SpawnRecoveryOption;
@@ -48,7 +48,8 @@ function toKernelSpawnOptions(options: SpawnOptions | undefined): KernelSpawnOpt
 }
 
 function toKernelSpawnRecoveryHandler(recover: SpawnRecoveryHandler): KernelSpawnRecoveryHandler {
-  return (failure: Failure) => lowerPlan(runtimeRecovery(recover, fromFailure(failure)));
+  return (failure: Failure) =>
+    lowerBlueprint(() => runtimeRecovery(recover, fromFailure(failure)))();
 }
 
 function* runtimeRecovery(

@@ -1,7 +1,7 @@
 import type { RuntimePlan } from "#src/contracts";
 import { cede as kernelCede } from "@khora/kernel/primitives";
-import { liftPlan } from "#src/adapter/lift-plan";
+import { liftBlueprint } from "#src/adapter/lift-blueprint";
 
 export function cede(): RuntimePlan<void> {
-  return liftPlan(kernelCede());
+  return liftBlueprint(() => kernelCede());
 }

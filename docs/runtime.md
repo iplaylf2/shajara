@@ -9,7 +9,7 @@
 ```
 用户代码  ──yield*──▶  runtime（generator 编排 + 宿主桥接）
                             │
-                        lowerPlan / liftPlan
+                  lowerBlueprint / liftBlueprint
                             │
                       kernel（Plan 解释 + Scope 树 + EventQueue）
 ```
@@ -19,16 +19,16 @@
 
 runtime 不引入第二执行循环，仅通过执行入口把降解后的 Blueprint 提交给 kernel。
 
-## 2. Plan 适配协议
+## 2. Blueprint 适配协议
 
 用户以 `RuntimeBlueprint<T>`（generator function）书写流程，通过 `yield*` 组合原语。双向桥接由两个适配器完成：
 
-| 适配器      | 方向             | 作用                                                    |
-| ----------- | ---------------- | ------------------------------------------------------- |
-| `liftPlan`  | kernel → runtime | 把 `Plan<T>` 提升为 `RuntimePlan<T>` 供 `yield*` 消费。 |
-| `lowerPlan` | runtime → kernel | 把 `RuntimePlan<T>` 降解为 kernel 可执行 `Plan<T>`。    |
+| 适配器           | 方向             | 作用                                                                         |
+| ---------------- | ---------------- | ---------------------------------------------------------------------------- |
+| `liftBlueprint`  | kernel → runtime | 以 `Blueprint<T>` 为入口，在 runtime 中按需提升为 `RuntimePlan<T>`。         |
+| `lowerBlueprint` | runtime → kernel | 以 `RuntimeBlueprint<T>` 为入口，在 kernel 边界降解为可执行 `Blueprint<T>`。 |
 
-`RuntimePlan<T>` 即 `Generator<Syscall, T, unknown>`；`RuntimeBlueprint<T>` 即 `() => RuntimePlan<T>`。
+`RuntimePlan<T>` 即 `Generator<Syscall, T, unknown>`；`RuntimeBlueprint<T>` 即 `() => RuntimePlan<T>`。适配入口统一为 blueprint，而不是已实例化的 plan。
 
 术语方向固定：`lift` = kernel → runtime（上升到编排层），`lower` = runtime → kernel（下降到执行层）。
 
