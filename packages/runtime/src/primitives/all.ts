@@ -1,9 +1,10 @@
 import { liftBlueprint, lowerRuntimeBlueprints, unwrapEither } from "#src/boundary";
 import type { RuntimeBlueprintTuple } from "#src/boundary";
 import type { RuntimePlan } from "#src/contracts";
+import type { UnknownArray } from "type-fest";
 import { all as kernelAll } from "@khora/kernel/primitives";
 
-export function* all<Returns extends readonly unknown[]>(
+export function* all<Returns extends UnknownArray>(
   primitives: RuntimeBlueprintTuple<Returns>,
 ): RuntimePlan<Returns> {
   const either = yield* liftBlueprint(() => kernelAll(lowerRuntimeBlueprints(primitives)));

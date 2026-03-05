@@ -1,9 +1,9 @@
-import type { ArrayValues } from "type-fest";
 import type { Blueprint } from "@khora/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
+import type { UnknownArray } from "type-fest";
 import { lowerBlueprint } from "#src/boundary/lower-blueprint";
 
-export function lowerRuntimeBlueprints<Returns extends readonly unknown[]>(
+export function lowerRuntimeBlueprints<Returns extends UnknownArray>(
   blueprints: RuntimeBlueprintTuple<Returns>,
 ): {
   readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
@@ -13,8 +13,6 @@ export function lowerRuntimeBlueprints<Returns extends readonly unknown[]>(
   };
 }
 
-export type RuntimeBlueprintTuple<Returns extends readonly unknown[]> = {
+export type RuntimeBlueprintTuple<Returns extends UnknownArray> = {
   readonly [Index in keyof Returns]: RuntimeBlueprint<Returns[Index]>;
 };
-
-export type RuntimeBlueprintValue<Returns extends readonly unknown[]> = ArrayValues<Returns>;
