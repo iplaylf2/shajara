@@ -9,7 +9,7 @@
 当前主目标仍是打通可运行闭环：落地 kernel 执行器并接通 runtime 宿主入口。
 
 - 主阻塞：`ensureExecutor()` 仍为占位实现，端到端运行闭环未建立。  
-  证据：`packages/kernel/src/ensure-executor.ts`
+  证据：`packages/kernel/src/executor.ts`
 
 ## 2. 当前已落地状态（Build 相关）
 
@@ -30,6 +30,9 @@
 - 文档语义不再使用额外术语框架，统一改为“终态传播/收敛”描述。  
   影响：失败语义由 Scope 角色策略直接定义，避免双重术语层。  
   证据：`docs/semantics.md` §1.2、§1.3、§3.5、§6.4
+- 执行入口引用类型已收敛为单一 `ExecutionScopeRef`，移除 `ExecutionScopeRootRef`。  
+  影响：`rootScope`、`launch`、`terminate` 的契约参数统一；root 具备与其他执行作用域一致的终止能力。  
+  证据：`packages/kernel/src/executor.ts`、`packages/runtime/src/operations-kit/launch.ts`、`docs/design-constraints.md` §5、`docs/runtime.md` §6、`docs/semantics.md` §1.4
 
 ## 4. 下一步（Build 聚焦）
 
@@ -49,4 +52,3 @@ yarn lint
 
 - `yarn workspace @khora/kernel run typecheck`
 - `yarn workspace @khora/runtime run typecheck`
-- `yarn workspace @khora/example run typecheck`

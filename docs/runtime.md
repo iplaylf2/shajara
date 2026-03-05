@@ -63,13 +63,12 @@ runtime 以 `launch` 为统一收敛锚点：
 
 runtime 直接消费 kernel 导出的引用类型，不重复定义同语义包装：
 
-| 类型                          | 来源   | 用途                     |
-| ----------------------------- | ------ | ------------------------ |
-| `ScopeRef`                    | kernel | 结构层引用               |
-| `ExecutionScopeRootRef`       | kernel | 执行入口 root 锚点       |
-| `ExecutionScopeRef`           | kernel | 执行入口 launch 返回引用 |
-| `SelfDescriptor`              | kernel | 自省信息                 |
-| `SpawnRef`（SpawnDescriptor） | kernel | 编排侧子作用域引用       |
+| 类型                          | 来源   | 用途                    |
+| ----------------------------- | ------ | ----------------------- |
+| `ScopeRef`                    | kernel | 结构层引用              |
+| `ExecutionScopeRef`           | kernel | 执行入口引用（含 root） |
+| `SelfDescriptor`              | kernel | 自省信息                |
+| `SpawnRef`（SpawnDescriptor） | kernel | 编排侧子作用域引用      |
 
 命名规则：角色用 `*Scope`，控制面句柄用 `*Ref`。
 

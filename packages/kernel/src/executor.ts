@@ -4,15 +4,10 @@ import type { Failure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
-const ROOT_SCOPE_REF_TOKEN: unique symbol = Symbol("root-scope-ref");
-const LAUNCH_REF_TOKEN: unique symbol = Symbol("launch-ref");
-
-export interface ExecutionScopeRootRef extends ScopeRef<unknown> {
-  readonly [ROOT_SCOPE_REF_TOKEN]: "root-scope-ref";
-}
+const EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("execution-scope-ref");
 
 export interface ExecutionScopeRef extends ScopeRef<unknown> {
-  readonly [LAUNCH_REF_TOKEN]: "launch-ref";
+  readonly [EXECUTION_SCOPE_REF_TOKEN]: "execution-scope-ref";
 }
 
 export type LaunchResult<Return> =
@@ -40,20 +35,17 @@ export interface Executor {
   /**
    * Global root scope anchor.
    */
-  readonly rootScope: ExecutionScopeRootRef;
+  readonly rootScope: ExecutionScopeRef;
   /**
    * Launch a blueprint under the given scope.
    */
-  launch<Return>(
-    scope: ExecutionScopeRootRef | ExecutionScopeRef,
-    blueprint: Blueprint<Return>,
-  ): LaunchHandle<Return>;
+  launch<Return>(scope: ExecutionScopeRef, blueprint: Blueprint<Return>): LaunchHandle<Return>;
   /**
    * Send a value into the target scope's channel message queue.
    */
   send<Value>(scope: ScopeRef<unknown>, channel: Channel<Value>, value: Value): void;
   /**
-   * Terminate a host/runtime-controllable scope.
+   * Terminate an execution scope, including root.
    */
   terminate(scope: ExecutionScopeRef): void;
   /**

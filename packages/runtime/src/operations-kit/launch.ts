@@ -1,6 +1,5 @@
 import type {
   ExecutionScopeRef,
-  ExecutionScopeRootRef,
   Executor,
   LaunchHandle,
   LaunchResult,
@@ -12,7 +11,7 @@ import { ScopeTerminatedError } from "#src/errors";
 
 export function launch<Return>(
   executor: Executor,
-  scope: ExecutionScopeRootRef | ExecutionScopeRef,
+  scope: ExecutionScopeRef,
   blueprint: RuntimeBlueprint<Return>,
   options?: RunOptions,
 ): RuntimeLaunchResult<Return> {

@@ -54,10 +54,12 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 执行入口能力视图由 executor 基于 Scope 派生：
 
-| 视图                 | 能力                 | 句柄类型                |
-| -------------------- | -------------------- | ----------------------- |
-| `ExecutionScopeRoot` | 仅 `launch`          | `ExecutionScopeRootRef` |
-| `ExecutionScope`     | `launch + terminate` | `ExecutionScopeRef`     |
+| 视图                 | 能力                 | 句柄类型            |
+| -------------------- | -------------------- | ------------------- |
+| `ExecutionScopeRoot` | `launch + terminate` | `ExecutionScopeRef` |
+| `ExecutionScope`     | `launch + terminate` | `ExecutionScopeRef` |
+
+`ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异仅在于身份位置（全局根锚点），不在于能力集合或句柄类型。
 
 依赖方向：executor 建立在 `Scope/Plan/Syscall` 之上；`syscalls/contracts` 不反向依赖 executor。
 

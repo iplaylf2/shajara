@@ -34,6 +34,7 @@ run<T>(blueprint: RuntimeBlueprint<T>, options?: { signal?: AbortSignal }): Stat
 - 失败 → 抛出 `KhoraError`。
 
 当 `signal` 触发 abort 时，runtime 终止对应执行作用域。
+执行入口在内核侧统一由 `ExecutionScopeRef` 表达（含 root 锚点）。
 
 ### createScope
 

@@ -8,7 +8,7 @@
 
 - kernel 承载 `Plan`、`Syscall` 与类型化续延。runtime 负责 generator 适配与宿主桥接，不将 generator 细节下沉到 kernel。
 - cleanup 注册以 `Blueprint` 为锚点：同一条启动入口注册一次 cleanup。
-- 边界引用类型（`ScopeRef`、`ExecutionScopeRootRef`、`ExecutionScopeRef`、`SpawnDescriptor`、`SelfDescriptor`）由 kernel 单源定义并导出，runtime 直接消费，不重复定义。
+- 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SpawnDescriptor`、`SelfDescriptor`）由 kernel 单源定义并导出，runtime 直接消费，不重复定义。
 - 依赖方向：`executor → contracts/syscalls`，反向不允许。
 - 术语方向：`lift` = kernel → runtime，`lower` = runtime → kernel。
 - 命名：角色用 `*Scope`，句柄用 `*Ref`。
@@ -41,12 +41,12 @@
 
 ## 5. 执行入口契约
 
-- `Executor.rootScope` 为只读 root 锚点值（`ExecutionScopeRootRef`）。
-- `launch` 接受 `ExecutionScopeRootRef | ExecutionScopeRef`，返回 `LaunchHandle<T>`。
+- `Executor.rootScope` 为只读 root 锚点值（`ExecutionScopeRef`）。
+- `launch` 接受 `ExecutionScopeRef`，返回 `LaunchHandle<T>`。
 - `LaunchHandle` 暴露 `result: LaunchFuture<T>` 与 `state()`。
 - `LaunchResult<T>` 为三态 sum type（`success | failure | terminated`）。
 - runtime 通过 `result.onResult(...)` 做结果收敛，不退化为 `PromiseLike` 绑定。
-- `send` 目标为 `ScopeRef` + `Channel<T>`；`terminate` 目标为 `ExecutionScopeRef`。
+- `send` 目标为 `ScopeRef` + `Channel<T>`；`terminate` 目标为 `ExecutionScopeRef`（含 root）。
 
 ## 6. 目录结构
 
