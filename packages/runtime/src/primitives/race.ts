@@ -1,10 +1,10 @@
-import type { ArrayValues, UnknownArray } from "type-fest";
+import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import { liftBlueprint, lowerBlueprints, unwrapEither } from "#src/boundary";
 import type { RuntimeBlueprintTuple } from "#src/boundary";
 import type { RuntimePlan } from "#src/contracts";
 import { race as kernelRace } from "@khora/kernel";
 
-export function* race<Returns extends UnknownArray>(
+export function* race<Returns extends NonEmptyTuple<unknown>>(
   primitives: RuntimeBlueprintTuple<Returns>,
 ): RuntimePlan<ArrayValues<Returns>> {
   const outcome = yield* liftBlueprint(() => kernelRace<Returns>(lowerBlueprints(primitives)))();

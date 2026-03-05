@@ -94,7 +94,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | ----------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `spawn`     | `spawn(blueprint, options?) → ScopeRef` | 创建子 Scope 并引入并行分支；`options` 为 sum type：`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
 | `all`       | `all(blueprints) → T`                   | 聚合等待多个分支。                                                                                                |
-| `race`      | `race(blueprints) → ArrayValues<T>`     | 选择最先完成者，触发其余分支收敛。                                                                                |
+| `race`      | `race(blueprints) → ArrayValues<T>`     | 选择最先完成者，触发其余分支收敛。`blueprints` 为非空 tuple（至少一个分支）。                                     |
 | `scoped`    | `scoped(blueprint) → T`                 | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                                  |
 | `resource`  | `resource(body) → T`                    | 创建资源作用域；等待 `provide(value)` 返回首值，资源作用域在 provide 后挂起，父 scope 回收时清理。                |
 | `resumable` | `resumable(blueprint) → T`              | 在 `scoped` body 内声明可恢复边界。                                                                               |

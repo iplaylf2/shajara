@@ -27,7 +27,7 @@
 - `halt` 的失败分层固定为：Process 失败 → 所属 Scope 失败；父 Scope 是否失败由 Scope 角色语义决定。
 - runtime 在 primitive 适配边界统一解包 `Either`，将 `Left` 收敛为 `KhoraError` 抛出。
 - `Failure` 由 kernel 定义，runtime 包装为 `KhoraError`（`Error` 子类），不向用户暴露 kernel 失败类型。
-- `AwaitProcess/AwaitScope` 仅观察终态，不承担失败拦截；失败上传由 Scope 角色语义决定（其中 `AwaitProcess` 的 syscall 形态待定）。
+- `AwaitProcess/AwaitScope` 仅观察终态，不承担失败拦截；失败上传由 Scope 角色语义决定。
 
 ## 4. primitive 约束
 
@@ -35,7 +35,7 @@
 - primitive 可由多条底层步骤组成，不假设"一原语 = 一指令"。
 - primitive 层 `spawn` 暴露 `options`（sum type）而非 `spec`：当前支持 `supervisor`（边界收敛）与 `recovery`（`resumable` 委派恢复点）；`ScopeSpec` 不向 primitive 调用点直接暴露。
 - runtime 的 `spawn` 对 `recovery` handler 采用 runtime 语义（返回值=恢复成功，抛异常=恢复失败），并在适配边界转换为 kernel 所需失败通道形状。
-- 编排层不暴露 `fork` 原语；并发统一经 `spawn` 进入可控 Scope。
+- 编排层不暴露 `fork` 原语；`fork` 仅作为 primitive 内部组合步骤使用。
 - 用户侧生命周期粒度为 Scope，`process` 级句柄不进入公开表面。
 - `suspend` 恢复路径由父 scope 回收阶段以失败传播触发。
 

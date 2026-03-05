@@ -13,32 +13,32 @@
 
 ## 2. 当前已落地状态（Build 相关）
 
-- 终态与失败通道已统一：`AwaitScopeExit` 为 `completed/failed/terminated` 三态，kernel primitive 以 `Either<Failure, T>` 承载失败，runtime 在边界统一映射为异常。  
-  证据：`docs/semantics.md` §5.3、§6.2；`docs/runtime.md` §3
-- `spawn` 的恢复委派模式与 runtime 适配已落地。  
-  证据：`packages/kernel/src/primitives/spawn.ts`；`packages/runtime/src/primitives/spawn.ts`
-- 治理角色已统一为 `GovernorScope`，并通过 capabilities 显式表达 scheduler/reaper/full 组合。  
-  证据：`docs/semantics.md` §1.3、§5.1；`packages/kernel/src/scopes/governor.ts`
-- `send/receive/channel` 已在 kernel/runtime 对齐，并有 example 场景覆盖。  
-  证据：`packages/kernel/src/primitives/send.ts`、`packages/kernel/src/primitives/receive.ts`、`packages/runtime/src/primitives/send.ts`、`packages/runtime/src/primitives/receive.ts`、`apps/example/src/scenarios.ts`
+- `AwaitProcess` syscall 声明已落地，Process 终态观察与 `AwaitScope` 并列存在。  
+  证据：`packages/kernel/src/syscalls/await-process.ts`、`packages/kernel/src/syscalls/index.ts`
+- `all` 分支并发已改为 `Fork + AwaitProcess(in-band)`，外层 supervisor 仍通过 `awaitScopeConverged` 收敛整体结果。  
+  证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives-kit/await-process-in-band.ts`
+- `race` arena 内部分支已改为 `Fork`；分支完成后 `Send(raceChannel)` 并 `Halt`，arena 根 process 通过 `park` 挂起等待收敛路径。  
+  证据：`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives-kit/park.ts`
+- runtime `race` 入参已收敛为非空 tuple，禁止空分支调用。  
+  证据：`packages/runtime/src/primitives/race.ts`
 
 ## 3. 相对设计基线的新增增量
 
-- 失败术语统一为 `Failure/failed`，不再使用 `fault` 命名。  
-  影响：失败对象、失败终态、halt 载荷命名在契约与语义文档保持一致。  
-  证据：`packages/kernel/src/contracts/process.ts`、`packages/kernel/src/contracts/scope.ts`、`packages/kernel/src/syscalls/halt.ts`、`docs/semantics.md`
-- 文档语义不再使用额外术语框架，统一改为“终态传播/收敛”描述。  
-  影响：失败语义由 Scope 角色策略直接定义，避免双重术语层。  
-  证据：`docs/semantics.md` §1.2、§1.3、§3.5、§6.4
-- 执行入口引用类型已收敛为单一 `ExecutionScopeRef`，移除 `ExecutionScopeRootRef`。  
-  影响：`rootScope`、`launch`、`terminate` 的契约参数统一；root 具备与其他执行作用域一致的终止能力。  
-  证据：`packages/kernel/src/executor.ts`、`packages/runtime/src/operations-kit/launch.ts`、`docs/design-constraints.md` §5、`docs/runtime.md` §6、`docs/semantics.md` §1.4
+- `AwaitProcess` 从“待定概念”转为已声明 syscall。  
+  影响：Process 级等待进入可组合 syscall 面，`all` 等组合 primitive 可直接依赖 Process 终态观察。  
+  证据：`packages/kernel/src/syscalls/await-process.ts`、`docs/semantics.md` §5.3、`docs/design-constraints.md` §3
+- `all/race` 的分支执行单元从“branch 子 Scope”转为“branch Process”。  
+  影响：并发构造 primitive 内部可以直接组合 `Fork`；最终失败仍由外层 supervisor 收敛。  
+  证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`、`docs/semantics.md` §6.3
+- `race` 增加非空分支约束。  
+  影响：空分支语义不再是运行时分支问题，而是类型层面的调用前约束。  
+  证据：`packages/kernel/src/primitives/race.ts`、`packages/runtime/src/primitives/race.ts`、`docs/api.md` §4.1
 
 ## 4. 下一步（Build 聚焦）
 
 1. 落地 `ensureExecutor()`，形成可运行的 kernel 执行器。
 2. 接通 `run/createScope` 到真实执行器，完成 success/failure/terminated 端到端收敛。
-3. 在执行器中补齐 Governor handler 触发、输入校验与返回值消费接线。
+3. 在执行器中补齐 `AwaitProcess` 的解释路径，并联调 `all/race` 新分支模型。
 
 ## 5. 验证基线
 
@@ -48,7 +48,9 @@ yarn typecheck
 yarn lint
 ```
 
-当前与本次文档同步相关的类型验证已通过：
+当前与本次实现同步相关的验证已通过：
 
-- `yarn workspace @khora/kernel run typecheck`
-- `yarn workspace @khora/runtime run typecheck`
+- `yarn workspace @khora/kernel lint`
+- `yarn workspace @khora/kernel typecheck`
+- `yarn workspace @khora/runtime lint`
+- `yarn workspace @khora/runtime typecheck`

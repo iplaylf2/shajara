@@ -192,7 +192,7 @@ Process 与 Scope 均有三种互斥终态：
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
-`AwaitScope`（以及待定的 `AwaitProcess`）仅提供结果可见性，不构成对上传策略的拦截。
+`AwaitScope/AwaitProcess` 仅提供结果可见性，不构成对上传策略的拦截。
 
 ### 3.6 结构性收敛：Reaper
 
@@ -277,6 +277,13 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 `InLimbo` 为结构状态，不作为返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。不改变失败上传语义。
 
+#### AwaitProcess(processRef) → { exit } `[Blocking]`
+
+等待目标 Process 收敛到可观察终态。
+
+- 前置：processRef 对调用方可见。
+- 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", failure }` | `{ kind: "terminated" }`
+
 #### Send(scopeRef, channel, value) → void `[Non-Blocking]`
 
 向目标 Scope 的 `(scope, channel)` buffer 追加消息。若有 Process 阻塞在 `Receive(channel)`，最早的等待者出队并恢复，消息由该接收者独占。
@@ -296,7 +303,6 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 以下 syscall 当前保留为语义占位，具体对象形态（签名、返回值、阻塞分类与可见性约束）待 executor、scheduler 与 reaper 策略定稿后回填：
 
 - `Terminate(processRef)`
-- `AwaitProcess(processRef)`
 - `PollProcess(processRef)`
 - `PollScope(scopeRef)`
 
@@ -325,7 +331,7 @@ Primitive 是 kernel 在 syscall 之上提供的 **Plan 层代数组合**，每�
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Plan 片段，消费方无需自行拼装 syscall 序列。
-- **封装 Process 脆弱性**：syscall 层暴露的 `Fork` 与待定的 Process 级操作（如 `Terminate(processRef)`、`AwaitProcess`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
+- **封装 Process 脆弱性**：syscall 层暴露的 `Fork` 与 Process 级操作（如 `AwaitProcess`、待定的 `Terminate(processRef)`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
 
 primitive 不等于 syscall：
 
@@ -334,7 +340,7 @@ primitive 不等于 syscall：
 
 ### 6.2 失败通道
 
-涉及子 Scope 生命周期等待的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(failure)`，`terminated → Left(scopeTerminated)`。
+涉及生命周期等待（Scope 或 Process）的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit/ProcessExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(failure)`，`terminated → Left(scopeTerminated)`。
 
 这一分层使 kernel 层的失败保持可组合、可推理，而不依赖宿主异常机制。runtime 在适配边界统一解包 Either，将 Left 收敛为异常抛出。
 
@@ -345,19 +351,20 @@ primitive 不等于 syscall：
 聚合等待多个分支。组合方式：
 
 1. 创建 `SupervisorScope` 作为隔离容器。
-2. 在其中对每个 branch 调用 `Spawn` 创建子 Scope。
-3. 对每个子 Scope 调用 `AwaitScope` 等待终态（supervisor 内部直接 narrow 为 completed）。
+2. 在 supervisor 内部对每个 branch 调用 `Fork` 创建分支 Process。
+3. 对每个分支 Process 调用 `AwaitProcess` 等待终态（内部通过 in-band completed 路径收集值）。
 4. 整体通过 `awaitScopeConverged` 收敛外层 supervisor 的终态为 Either。
 
 #### race(branches) → Plan\<Either\<Failure, ArrayValues\<T\>\>\>
 
-选择最先完成者，触发其余分支收敛。组合方式：
+选择最先完成者，触发其余分支收敛。`branches` 为非空。组合方式：
 
 1. 创建 `SupervisorScope`（arena）。
-2. arena 内部为每个 branch 创建子 Scope；每个 branch 完成后通过 `Send(raceChannel)` 向调用方发送结果，并以 `Send(haltChannel)` 通知 arena 终止。
-3. arena 通过 `Receive(haltChannel)` 等待首个消息后执行 `Halt`，触发剩余分支级联终止。
-4. 调用方 Fork 一个后备 Process 等待 arena 收敛——若所有 branch 均失败（无人成功 Send），后备 Process 将 arena 的失败终态转发给调用方。
-5. 调用方通过 `Receive(raceChannel)` 取得首个结果。
+2. arena 内部对每个 branch 调用 `Fork` 创建分支 Process。
+3. 每个分支 Process 完成后通过 `Send(raceChannel)` 向调用方发送结果，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
+4. arena 根 Process 在完成分支 Fork 后执行 `park` 挂起，等待由分支触发的收敛路径驱动 arena 终态。
+5. 调用方 Fork 一个后备 Process 等待 arena 收敛——若在首个成功 `Send(raceChannel)` 之前 arena 已收敛（例如最速失败），后备 Process 将该收敛结果转发给调用方。
+6. 调用方通过 `Receive(raceChannel)` 取得首个结果。
 
 #### scoped(plan) → Plan\<Either\<Failure, T\>\>
 

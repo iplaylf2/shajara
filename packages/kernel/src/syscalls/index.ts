@@ -1,3 +1,4 @@
+export * from "./await-process";
 export * from "./await-scope";
 export * from "./bind";
 export * from "./cede";

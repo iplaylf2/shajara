@@ -1,3 +1,4 @@
+export * from "./await-process-in-band";
 export * from "./await-scope-converged";
 export * from "./await-scope-in-band";
 export * from "./park";

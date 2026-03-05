@@ -1,12 +1,12 @@
 import type { Blueprint, Failure, Plan } from "#src/contracts";
-import { awaitScopeConverged, awaitScopeInBand } from "#src/primitives-kit";
+import { awaitProcessInBand, awaitScopeConverged } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
+import { fork, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
 import { plan } from "#src/internal/fp";
 import { readonlyArray } from "fp-ts";
-import { spawn } from "#src/syscalls";
 import { supervisorScopeSpec } from "#src/scopes";
 
 export function all<BranchReturns extends UnknownArray>(
@@ -25,9 +25,9 @@ function allSupervisor<BranchReturns extends UnknownArray>(
   return () =>
     pipe(
       branches,
-      readonlyArray.map(flow(spawn, plan.liftF)),
+      readonlyArray.map(flow(fork, plan.liftF)),
       plan.sequence,
-      plan.map(readonlyArray.map(({ scopeRef }) => awaitScopeInBand(scopeRef))),
+      plan.map(readonlyArray.map(awaitProcessInBand)),
       plan.chain(plan.sequence),
       plan.map(narrowArrayAs<BranchReturns>()),
     );

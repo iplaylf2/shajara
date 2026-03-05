@@ -1,15 +1,15 @@
-import type { ArrayValues, UnknownArray } from "type-fest";
+import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import type { Blueprint, Channel, Failure, Plan, ScopeRef } from "#src/contracts";
+import { awaitScopeConverged, park } from "#src/primitives-kit";
 import { either, readonlyArray } from "fp-ts";
 import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
-import { awaitScopeConverged } from "#src/primitives-kit";
 import { channel } from "#src/contracts";
 import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 import { supervisorScopeSpec } from "#src/scopes";
 
-export function race<BranchReturns extends UnknownArray>(
+export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,
 ): Plan<Either<Failure, ArrayValues<BranchReturns>>> {
   const raceChannel = channel<Either<Failure, ArrayValues<BranchReturns>>>();
@@ -28,7 +28,7 @@ export function race<BranchReturns extends UnknownArray>(
   );
 }
 
-type RaceBranches<BranchReturns extends UnknownArray> = {
+type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
   readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
 };
 
@@ -39,19 +39,12 @@ function raceArena(
 ): Blueprint<never> {
   return () =>
     pipe(
-      self(),
-      plan.liftF,
-      plan.chain(({ scopeRef: arenaRef }) =>
-        pipe(
-          branches,
-          readonlyArray.map((branch) =>
-            pipe(spawn(branchRunner(branch, callerRef, arenaRef, raceChannel)), plan.liftF),
-          ),
-          plan.sequence,
-        ),
+      branches,
+      readonlyArray.map((branch) =>
+        pipe(fork(branchRunner(branch, callerRef, raceChannel)), plan.liftF),
       ),
-      plan.chainF(() => receive(haltChannel)),
-      plan.chainF(() => halt()),
+      plan.sequence,
+      plan.chain(() => park()),
     );
 }
 
@@ -71,15 +64,12 @@ function arenaFailureRelay(
 function branchRunner(
   branch: Blueprint<unknown>,
   callerRef: ScopeRef<unknown>,
-  arenaRef: ScopeRef<unknown>,
   raceChannel: Channel<Either<Failure, unknown>>,
-): Blueprint<void> {
+): Blueprint<never> {
   return () =>
     pipe(
       branch(),
       plan.chainF((value) => send(callerRef, raceChannel, either.right(value))),
-      plan.chainF(() => send(arenaRef, haltChannel, null)),
+      plan.chainF(() => halt()),
     );
 }
-
-const haltChannel = channel<null>();
