@@ -23,7 +23,7 @@ cleanup 以 `Blueprint` 身份锚定：每次启动的 blueprint 入口注册一
 
 syscall 成功恢复值由 `then(value)` 承接。失败表达方式不做统一强制——是否以返回值、异常或其他形状表达，按具体 syscall 条目单独定义。
 
-`Failure` 是带外失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
+`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
 
 `halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §3.5）。
 
@@ -35,10 +35,10 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 **kernel 原生角色**（语义由 kernel 直接定义）：
 
-| 角色              | 职责                                          |
-| ----------------- | --------------------------------------------- |
-| `StandardScope`   | 普通编排角色，承载业务流程与默认并发分支。    |
-| `SupervisorScope` | 终态收敛角色，把后代失败/终止收敛为带内结果。 |
+| 角色              | 职责                                            |
+| ----------------- | ----------------------------------------------- |
+| `StandardScope`   | 普通编排角色，承载业务流程与默认并发分支。      |
+| `SupervisorScope` | 终态收敛角色，把后代失败/终止收敛为可观察结果。 |
 
 **executor 衍生角色**（因 executor 架构需要而存在）：
 
@@ -186,7 +186,7 @@ Process 与 Scope 均有三种互斥终态：
 子 Scope 终态向父 Scope 上传按父角色语义处理：
 
 - **非 SupervisorScope**：传播策略——后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
-- **SupervisorScope**：收敛策略——后代 `failed/terminated` 不升级为祖先失败，本地收敛为可观察带内结果。
+- **SupervisorScope**：收敛策略——后代 `failed/terminated` 不升级为祖先失败，本地收敛为可观察结果。
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
@@ -370,7 +370,7 @@ primitive 不等于 syscall：
 在 scoped body 内声明可恢复边界。`resumable` 在失败时查找 `resumableDelegateKey`：
 
 - 未命中：失败保持为 `Left(failure)`。
-- 命中：向委派点发送失败并等待恢复结果（`Either<Failure, T>`）带内返回。
+- 命中：向委派点发送失败并等待恢复结果（`Either<Failure, T>`）返回。
 
 ### 6.4 等待与控制 primitives
 
