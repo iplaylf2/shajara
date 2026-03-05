@@ -4,13 +4,11 @@ import type {
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
 } from "@khora/kernel/primitives";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { fromFailure, toFailureUnknown } from "#src/primitives-kit";
+import { fromFailure, liftBlueprint, lowerBlueprint, toFailureUnknown } from "#src/boundary";
 import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";
 import { KhoraError } from "#src/contracts";
 import { spawn as kernelSpawn } from "@khora/kernel/primitives";
-import { liftBlueprint } from "#src/adapter/lift-blueprint";
-import { lowerBlueprint } from "#src/adapter/lower-blueprint";
 
 export function spawn<Return>(
   entry: RuntimeBlueprint<Return>,

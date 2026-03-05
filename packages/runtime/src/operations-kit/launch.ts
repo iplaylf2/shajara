@@ -6,10 +6,9 @@ import type {
   LaunchResult,
   LaunchState,
 } from "@khora/kernel";
+import { fromFailure, lowerBlueprint } from "#src/boundary";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ScopeTerminatedError } from "#src/errors";
-import { fromFailure } from "#src/primitives-kit";
-import { lowerBlueprint } from "#src/adapter/lower-blueprint";
 
 export function launch<Return>(
   executor: Executor,

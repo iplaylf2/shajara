@@ -1,6 +1,6 @@
 import type { Channel, RuntimePlan, ScopeRef } from "#src/contracts";
 import { send as kernelSend } from "@khora/kernel/primitives";
-import { liftBlueprint } from "#src/adapter/lift-blueprint";
+import { liftBlueprint } from "#src/boundary";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,

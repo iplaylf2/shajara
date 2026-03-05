@@ -63,7 +63,7 @@
 | `runtime/src/primitives/`         | 原语 + index                   |
 | `runtime/src/operations/`         | 宿主操作 + index               |
 | `runtime/src/operations-kit/`     | 操作共享支撑                   |
-| `runtime/src/adapter/`            | `liftBlueprint/lowerBlueprint` |
+| `runtime/src/boundary/`           | runtime↔kernel 边界共享支撑    |
 | `runtime/src/errors/`             | 错误类型                       |
 
 kernel 对外导出采用根入口分组导出，`@khora/kernel/scopes` 为 scope spec 公开子路径。
