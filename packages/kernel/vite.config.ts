@@ -6,9 +6,9 @@ export default defineConfig({
     lib: {
       entry: {
         index: "src/index.ts",
-        primitives: "src/primitives/index.ts",
-        scopes: "src/scopes/index.ts",
-        utils: "src/utils/index.ts",
+        scopes: "src/scopes.ts",
+        syscalls: "src/syscalls.ts",
+        utils: "src/utils.ts",
       },
       fileName: (format, entryName) => (format === "es" ? `${entryName}.js` : `${entryName}.cjs`),
       formats: ["es", "cjs"],

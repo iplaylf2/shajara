@@ -13,7 +13,7 @@
       "require": "./dist/index.cjs"
     },
     "./primitives": {
-      "types": "./dist/primitives/index.d.ts",
+      "types": "./dist/primitives.d.ts",
       "import": "./dist/primitives.js",
       "require": "./dist/primitives.cjs"
     }

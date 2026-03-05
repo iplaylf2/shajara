@@ -12,18 +12,18 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./primitives": {
-      "types": "./dist/primitives/index.d.ts",
-      "import": "./dist/primitives.js",
-      "require": "./dist/primitives.cjs"
+    "./syscalls": {
+      "types": "./dist/syscalls.d.ts",
+      "import": "./dist/syscalls.js",
+      "require": "./dist/syscalls.cjs"
     },
     "./scopes": {
-      "types": "./dist/scopes/index.d.ts",
+      "types": "./dist/scopes.d.ts",
       "import": "./dist/scopes.js",
       "require": "./dist/scopes.cjs"
     },
     "./utils": {
-      "types": "./dist/utils/index.d.ts",
+      "types": "./dist/utils.d.ts",
       "import": "./dist/utils.js",
       "require": "./dist/utils.cjs"
     }

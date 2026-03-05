@@ -2,7 +2,7 @@ import type { ArrayValues, UnknownArray } from "type-fest";
 import { liftBlueprint, lowerBlueprints, unwrapEither } from "#src/boundary";
 import type { RuntimeBlueprintTuple } from "#src/boundary";
 import type { RuntimePlan } from "#src/contracts";
-import { race as kernelRace } from "@khora/kernel/primitives";
+import { race as kernelRace } from "@khora/kernel";
 
 export function* race<Returns extends UnknownArray>(
   primitives: RuntimeBlueprintTuple<Returns>,
