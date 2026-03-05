@@ -23,7 +23,7 @@ export interface ScopeCompletedExit<Return> {
 
 export interface ScopeFailedExit {
   readonly kind: "failed";
-  readonly fault: Failure;
+  readonly failure: Failure;
 }
 
 export interface ScopeTerminatedExit {

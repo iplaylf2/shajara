@@ -17,7 +17,7 @@ export function awaitScopeConverged<Return>(
         case "completed":
           return either.right(scopeExit.value);
         case "failed":
-          return either.left(scopeExit.fault);
+          return either.left(scopeExit.failure);
         case "terminated":
           return either.left(scopeTerminated());
         default:

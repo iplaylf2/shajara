@@ -19,13 +19,13 @@
 
 cleanup 以 `Blueprint` 身份锚定：每次启动的 blueprint 入口注册一次 cleanup，由该入口对应的运行中 Plan 在中断/收敛时执行清理续延。
 
-### 1.2 Fault 与失败通道
+### 1.2 Failure 与失败通道
 
 syscall 成功恢复值由 `then(value)` 承接。失败表达方式不做统一强制——是否以返回值、异常或其他形状表达，按具体 syscall 条目单独定义。
 
-`Fault` 是带外终止事件。发生 Fault 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(fault)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
+`Failure` 是带外失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
 
-`halt` 触发的 fault 分层为：先形成 Process 的 `Failed(fault)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §3.5）。
+`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §3.5）。
 
 ### 1.3 Scope
 
@@ -85,7 +85,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 每条消息恰好投递给一个接收者（单消费者语义）。多个 Process 阻塞在同一 `(Scope, Channel)` 时，最早阻塞的 Process 优先获得下一条消息。
 
-消息队列在 kernel 语义层为逻辑无界；executor 实现可施加容量约束（超限触发 fault），此为实现策略而非语义定义。
+消息队列在 kernel 语义层为逻辑无界；executor 实现可施加容量约束（超限触发 failure），此为实现策略而非语义定义。
 
 消息传递协议的正确性不依赖调度顺序——Send 在 Receive 到达前执行时，值入 buffer 而非丢弃；Receive 在 Send 到达前执行时，阻塞等待。任意 Processor 数量与调度策略下行为一致。
 
@@ -120,7 +120,7 @@ EventQueue 非空时重复：
 2. 解释 P 的 Plan，直到：
    - P 执行 `[Blocking]` syscall 并让出 Processor；
    - P 达到 `Pure(value)` 并退出为 `Completed(value)`；
-   - 发生 Fault，P 退出为 `Failed(fault)`。
+   - 发生 Failure，P 退出为 `Failed(failure)`。
 3. Processor 回到微内核。
 
 ### 2.3 策略相（Schedule）
@@ -148,7 +148,7 @@ Process 与 Scope 均有三种互斥终态：
 | ------------ | ------------------ |
 | `Completed`  | 成功收敛           |
 | `Terminated` | 被外部终止级联打断 |
-| `Failed`     | 以 fault 失败      |
+| `Failed`     | 以 failure 失败    |
 
 ### 3.2 Scope 过程态
 
@@ -163,9 +163,9 @@ Process 与 Scope 均有三种互斥终态：
 
 触发条件（任一即可）：
 
-- Scope 内任一 Process 执行 `Halt()` 并以 `Failed(fault)` 退出
-- Scope 内任一 Process 以 `Failed(fault)` 退出
-- 从后代链路接收到 `Failed(fault)` 传播（仅适用于传播策略的角色）
+- Scope 内任一 Process 执行 `Halt()` 并以 `Failed(failure)` 退出
+- Scope 内任一 Process 以 `Failed(failure)` 退出
+- 从后代链路接收到 `Failed(failure)` 传播（仅适用于传播策略的角色）
 - 从祖先 Scope 收到终止级联
 - Scope 变空（不再包含任何 `tracked` Process）
 
@@ -262,16 +262,16 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 ### 5.3 控制与等待
 
-#### Halt(fault?) → Fault `[Blocking]`
+#### Halt(failure?) → Failure `[Blocking]`
 
-调用方 Process 以 `Fault(halt)` 退出。该 Process 的 `Failed(fault)` 使其所属 Scope 进入 Closing（终态 Failed），并触发对后代 Scope 的终止级联。`fault` 为可选携带负载。
+调用方 Process 以 `Failed(failure)` 语义退出。该 Process 的 `Failed(failure)` 使其所属 Scope 进入 Closing（终态 Failed），并触发对后代 Scope 的终止级联。`failure` 为可选携带负载。
 
 #### AwaitScope(scopeRef) → { exit } `[Blocking]`
 
 等待目标 Scope 收敛到可观察终态。
 
 - 前置：scopeRef 对调用方可见。
-- 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", fault }` | `{ kind: "terminated" }`
+- 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", failure }` | `{ kind: "terminated" }`
 
 `InLimbo` 为结构状态，不作为返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。不改变失败上传语义。
 
@@ -332,7 +332,7 @@ primitive 不等于 syscall：
 
 ### 6.2 失败通道
 
-涉及子 Scope 生命周期等待的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(fault)`，`terminated → Left(scopeTerminated)`。
+涉及子 Scope 生命周期等待的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(failure)`，`terminated → Left(scopeTerminated)`。
 
 这一分层使 kernel 层的失败保持可组合、可推理，而不依赖宿主异常机制。runtime 在适配边界统一解包 Either，将 Left 收敛为异常抛出。
 
@@ -386,7 +386,7 @@ primitive 不等于 syscall：
 
 等待目标 Scope 终态并收敛为 Either。
 
-#### halt(fault?) → Plan\<never\>
+#### halt(failure?) → Plan\<never\>
 
 封装 Halt syscall，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。
 

@@ -21,7 +21,7 @@ export interface ProcessCompletedExit<Return> {
 
 export interface ProcessFailedExit {
   readonly kind: "failed";
-  readonly fault: Failure;
+  readonly failure: Failure;
 }
 
 export interface ProcessTerminatedExit {

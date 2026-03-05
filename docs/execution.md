@@ -24,7 +24,7 @@ kernel 执行器实现未落地——`ensureExecutor()` 仍返回占位实现，
 | Channel 消息队列            | `Channel<T>` 为 phantom-typed 令牌，`Send/Receive` 以 Channel 为匹配键，per-(scope, channel) FIFO 队列缓存消息。                                                                                                                            |
 | `race` 实现                 | 基于双 Channel 的调用者直接接收架构。                                                                                                                                                                                                       |
 | `send/receive` 原语升格     | `kernel/runtime` 同步暴露 `send/receive` primitive，`example` 增加场景覆盖。                                                                                                                                                                |
-| `halt` 语义分层文档收敛     | 已明确 `halt` 的失败链路为“Process 失败 → 所属 Scope 失败 → 父 Scope 策略判定是否继续失败传播”，语义单源见 `docs/semantics.md` §1.2、§3.3、§5.3、§6.4。                                                                                 |
+| `halt` 语义分层文档收敛     | 已明确 `halt` 的失败链路为“Process 失败 → 所属 Scope 失败 → 父 Scope 策略判定是否继续失败传播”，语义单源见 `docs/semantics.md` §1.2、§3.3、§5.3、§6.4。                                                                                     |
 
 ## 3. 进行中
 
