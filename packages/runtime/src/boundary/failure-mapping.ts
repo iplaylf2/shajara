@@ -1,5 +1,6 @@
 import { ExternalError, ScopeHaltedError, ScopeTerminatedError } from "#src/errors";
-import type { ExternalFailure, Failure } from "@khora/kernel";
+import type { ExternalFailure } from "@khora/kernel";
+import type { Failure } from "#src/contracts";
 import { KhoraError } from "#src/contracts";
 import { externalFailure } from "@khora/kernel";
 

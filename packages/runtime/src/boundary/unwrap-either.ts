@@ -1,5 +1,5 @@
 import type { Either } from "@khora/kernel/utils";
-import type { Failure } from "@khora/kernel";
+import type { Failure } from "#src/contracts";
 import { fromFailure } from "./failure-mapping";
 import { isLeft } from "@khora/kernel/utils";
 

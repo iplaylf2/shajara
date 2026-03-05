@@ -1,6 +1,5 @@
+import type { LaunchState, RuntimeBlueprint } from "#src/contracts";
 import type { RunOptions, StatefulPromise } from "#src/operations-kit";
-import type { LaunchState } from "@khora/kernel";
-import type { RuntimeBlueprint } from "#src/contracts";
 import { ensureExecutor } from "@khora/kernel";
 import { launch } from "#src/operations-kit";
 import { suspend } from "#src/primitives";

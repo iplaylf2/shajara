@@ -1,12 +1,5 @@
-import type { Failure, Syscall } from "@khora/kernel";
-export {
-  channel,
-  contextKey,
-  type Channel,
-  type ContextKey,
-  type ReceiveResult,
-  type ScopeRef,
-} from "@khora/kernel";
+import type { Failure } from "./kernel";
+import type { Syscall } from "@khora/kernel";
 
 export type RuntimeBlueprint<Return> = () => RuntimePlan<Return>;
 

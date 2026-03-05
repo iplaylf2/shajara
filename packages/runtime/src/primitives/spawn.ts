@@ -1,9 +1,8 @@
-import type { Failure, ScopeRef } from "@khora/kernel";
+import type { Failure, RuntimeBlueprint, RuntimePlan, ScopeRef } from "#src/contracts";
 import type {
   SpawnOptions as KernelSpawnOptions,
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
 } from "@khora/kernel/primitives";
-import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
 import { fromFailure, liftBlueprint, lowerBlueprint, toFailureUnknown } from "#src/boundary";
 import { left, right } from "@khora/kernel/utils";
 import type { Either } from "@khora/kernel/utils";

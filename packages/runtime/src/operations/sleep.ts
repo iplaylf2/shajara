@@ -1,6 +1,7 @@
-import { channel, ensureExecutor } from "@khora/kernel";
 import { receive, scoped, self } from "#src/primitives";
 import type { RuntimePlan } from "#src/contracts";
+import { channel } from "#src/contracts";
+import { ensureExecutor } from "@khora/kernel";
 
 export function* sleep(milliseconds: number): RuntimePlan<void> {
   const executor = ensureExecutor();
