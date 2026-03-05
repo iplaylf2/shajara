@@ -3,5 +3,5 @@ import { self as kernelSelf } from "@khora/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function self<Scope extends ScopeRef<unknown>>(): RuntimePlan<SelfDescriptor<Scope>> {
-  return liftBlueprint(() => kernelSelf<Scope>());
+  return liftBlueprint(() => kernelSelf<Scope>())();
 }

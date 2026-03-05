@@ -5,8 +5,8 @@ import { resource as kernelResource } from "@khora/kernel";
 export function* resource<ProvidedValue>(
   body: RuntimeResourceBody<ProvidedValue>,
 ): RuntimePlan<ProvidedValue> {
-  const either = yield* liftBlueprint(() => createKernelResource(body));
-  return unwrapEither(either);
+  const outcome = yield* liftBlueprint(() => createKernelResource(body))();
+  return unwrapEither(outcome);
 }
 
 export type RuntimeResourceBody<ProvidedValue> = (
@@ -17,6 +17,6 @@ export type RuntimeResourceProvide<ProvidedValue> = (value: ProvidedValue) => Ru
 
 function createKernelResource<ProvidedValue>(runtimeBody: RuntimeResourceBody<ProvidedValue>) {
   return kernelResource<ProvidedValue>((kernelProvide) =>
-    lowerBlueprint(() => runtimeBody((value) => liftBlueprint(() => kernelProvide(value))))(),
+    lowerBlueprint(() => runtimeBody((value) => liftBlueprint(() => kernelProvide(value))()))(),
   );
 }

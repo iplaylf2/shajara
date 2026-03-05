@@ -3,5 +3,5 @@ import { bind as kernelBind } from "@khora/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function bind<Value>(key: ContextKey<Value>, value: Value): RuntimePlan<void> {
-  return liftBlueprint(() => kernelBind(key, value));
+  return liftBlueprint(() => kernelBind(key, value))();
 }

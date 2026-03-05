@@ -13,7 +13,7 @@ export function spawn<Return>(
   entry: RuntimeBlueprint<Return>,
   options?: SpawnOptions,
 ): RuntimePlan<ScopeRef<Return>> {
-  return liftBlueprint(() => kernelSpawn(lowerBlueprint(entry), toKernelSpawnOptions(options)));
+  return liftBlueprint(() => kernelSpawn(lowerBlueprint(entry), toKernelSpawnOptions(options)))();
 }
 
 export type SpawnOptions = SpawnSupervisorOption | SpawnRecoveryOption;

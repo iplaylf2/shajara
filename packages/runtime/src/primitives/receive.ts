@@ -5,5 +5,5 @@ import { liftBlueprint } from "#src/boundary";
 export function receive<ReceiveValue>(
   channel: Channel<ReceiveValue>,
 ): RuntimePlan<ReceiveResult<ReceiveValue>> {
-  return liftBlueprint(() => kernelReceive(channel));
+  return liftBlueprint(() => kernelReceive(channel))();
 }

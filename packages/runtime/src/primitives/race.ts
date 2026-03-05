@@ -7,6 +7,6 @@ import { race as kernelRace } from "@khora/kernel";
 export function* race<Returns extends UnknownArray>(
   primitives: RuntimeBlueprintTuple<Returns>,
 ): RuntimePlan<ArrayValues<Returns>> {
-  const either = yield* liftBlueprint(() => kernelRace<Returns>(lowerBlueprints(primitives)));
-  return unwrapEither(either);
+  const outcome = yield* liftBlueprint(() => kernelRace<Returns>(lowerBlueprints(primitives)))();
+  return unwrapEither(outcome);
 }

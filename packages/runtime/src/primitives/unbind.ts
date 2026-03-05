@@ -3,5 +3,5 @@ import { unbind as kernelUnbind } from "@khora/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function unbind(key: ContextKey<unknown>): RuntimePlan<void> {
-  return liftBlueprint(() => kernelUnbind(key));
+  return liftBlueprint(() => kernelUnbind(key))();
 }

@@ -7,6 +7,6 @@ import { all as kernelAll } from "@khora/kernel";
 export function* all<Returns extends UnknownArray>(
   primitives: RuntimeBlueprintTuple<Returns>,
 ): RuntimePlan<Returns> {
-  const either = yield* liftBlueprint(() => kernelAll(lowerBlueprints(primitives)));
-  return unwrapEither(either);
+  const outcome = yield* liftBlueprint(() => kernelAll(lowerBlueprints(primitives)))();
+  return unwrapEither(outcome);
 }

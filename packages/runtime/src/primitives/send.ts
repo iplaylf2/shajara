@@ -7,5 +7,5 @@ export function send<Value>(
   channel: Channel<Value>,
   value: Value,
 ): RuntimePlan<void> {
-  return liftBlueprint(() => kernelSend(scope, channel, value));
+  return liftBlueprint(() => kernelSend(scope, channel, value))();
 }

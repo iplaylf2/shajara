@@ -3,5 +3,5 @@ import { suspend as kernelSuspend } from "@khora/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function suspend(): RuntimePlan<never> {
-  return liftBlueprint(() => kernelSuspend());
+  return liftBlueprint(() => kernelSuspend())();
 }
