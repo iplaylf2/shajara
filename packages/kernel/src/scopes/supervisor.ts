@@ -1,9 +1,4 @@
-import type { ScopeRef, ScopeSpec } from "#src/contracts";
-import type { SpawnDescriptor } from "#src/syscalls";
-
-export type SupervisorScopeRef<Return> = ScopeRef<Return, SupervisorScopeSpec>;
-
-export type SupervisorSpawnDescriptor<Return> = SpawnDescriptor<Return, SupervisorScopeSpec>;
+import type { ScopeSpec } from "#src/contracts";
 
 export function supervisorScopeSpec(_options?: SupervisorScopeSpecOptions): SupervisorScopeSpec {
   return {

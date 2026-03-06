@@ -1,12 +1,11 @@
 import type { Blueprint, ProcessRef, ScopeRef, ScopeSpec, Syscall } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
-import type { StandardScopeSpec } from "#src/scopes/standard";
 import { standardScopeSpec } from "#src/scopes/standard";
 
-export function spawn<Return, Spec extends ScopeSpec = StandardScopeSpec>(
+export function spawn<Return>(
   entry: Blueprint<Return>,
-  spec = standardScopeSpec() as Spec,
-): SpawnSyscall<Return, Spec> {
+  spec: ScopeSpec = standardScopeSpec(),
+): SpawnSyscall<Return> {
   return {
     entry,
     kind: "spawn",
@@ -14,14 +13,14 @@ export function spawn<Return, Spec extends ScopeSpec = StandardScopeSpec>(
   };
 }
 
-export interface SpawnSyscall<Return, Spec extends ScopeSpec> extends Syscall {
+export interface SpawnSyscall<Return> extends Syscall {
   readonly kind: "spawn";
   readonly entry: Blueprint<Return>;
-  readonly spec: Spec;
-  readonly [RETURN_TOKEN]?: readonly [SpawnDescriptor<Return, Spec>];
+  readonly spec: ScopeSpec;
+  readonly [RETURN_TOKEN]?: readonly [SpawnDescriptor<Return>];
 }
 
-export interface SpawnDescriptor<Return, Spec extends ScopeSpec> {
-  readonly scopeRef: ScopeRef<Return, Spec>;
+export interface SpawnDescriptor<Return> {
+  readonly scopeRef: ScopeRef<Return>;
   readonly processRef: ProcessRef<Return>;
 }

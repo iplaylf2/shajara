@@ -1,6 +1,4 @@
-import type { ScopeRef, ScopeSpec } from "#src/contracts";
-
-export type StandardScopeRef<Return> = ScopeRef<Return, StandardScopeSpec>;
+import type { ScopeSpec } from "#src/contracts";
 
 export function standardScopeSpec(_options?: StandardScopeSpecOptions): StandardScopeSpec {
   return {

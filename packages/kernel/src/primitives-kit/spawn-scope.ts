@@ -3,10 +3,10 @@ import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 import { spawn } from "#src/syscalls";
 
-export function spawnScope<Return, Spec extends ScopeSpec>(
+export function spawnScope<Return>(
   entry: Blueprint<Return>,
-  spec: Spec,
-): Plan<ScopeRef<Return, Spec>> {
+  spec: ScopeSpec,
+): Plan<ScopeRef<Return>> {
   return pipe(
     spawn(entry, spec),
     plan.liftF,

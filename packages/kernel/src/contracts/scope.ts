@@ -1,11 +1,8 @@
 import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
 import type { Failure } from "./failure";
 
-declare const SCOPE_SPEC_TOKEN: unique symbol;
-
-export interface ScopeRef<Return, Spec extends ScopeSpec = ScopeSpec> {
+export interface ScopeRef<Return> {
   readonly [REF_TOKEN]: "scope";
-  readonly [SCOPE_SPEC_TOKEN]?: readonly [Spec];
   readonly [RETURN_TOKEN]?: readonly [Return];
 }
 
@@ -14,7 +11,7 @@ export interface ScopeSpec {
 }
 
 export type ScopeRefReturn<Ref extends ScopeRef<unknown>> =
-  Ref extends ScopeRef<infer Return, infer _Spec> ? Return : never;
+  Ref extends ScopeRef<infer Return> ? Return : never;
 
 export interface ScopeCompletedExit<Return> {
   readonly kind: "completed";

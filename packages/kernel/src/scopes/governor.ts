@@ -1,7 +1,5 @@
-import type { Failure, Plan, ProcessRef, Processor, ScopeRef, ScopeSpec } from "#src/contracts";
+import type { Failure, Plan, ProcessRef, Processor, ScopeSpec } from "#src/contracts";
 import type { Option } from "#src/utils";
-
-export type GovernorScopeRef<Return> = ScopeRef<Return, GovernorScopeSpec>;
 
 export function governorScopeSpec(config: GovernorScopeSpecConfig): GovernorScopeSpec {
   return {
