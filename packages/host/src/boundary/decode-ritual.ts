@@ -1,12 +1,10 @@
-import type { Ritual, Wisp, Sigil } from "@shajara/kernel";
-import type { RiteRoutine, RiteCoroutine } from "#src/contracts";
-import { ensureExecutor, halt, stirringWisp, restingWisp } from "@shajara/kernel";
+import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
+import type { Ritual, Sigil, Wisp } from "@shajara/kernel";
+import { ensureExecutor, halt, restingWisp, stirringWisp } from "@shajara/kernel";
 import { isLeft, tryCatch } from "@shajara/kernel/utils";
 import { toFailureUnknown } from "./failure-mapping";
 
-export function decodeRitual<Relic>(
-  routine: RiteRoutine<Relic>,
-): Ritual<Relic> {
+export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> {
   function decoded(): Wisp<Relic> {
     const startedRoutine = tryCatch(() => routine(), toFailureUnknown);
     if (isLeft(startedRoutine)) {

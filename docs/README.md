@@ -7,13 +7,13 @@ shajara 是结构化并发运行时，由两层构成：
 
 ## 文档索引
 
-| 文档                                           | 职责                                                      |
-| ---------------------------------------------- | --------------------------------------------------------- |
-| [semantics.md](semantics.md)                   | kernel 执行语义：对象模型、执行循环、收敛、sigil 协议。   |
-| [host.md](host.md)                             | host 分层架构与 kernel 适配协议。                         |
-| [api.md](api.md)                               | 用户侧公开 API 与使用约束。                               |
-| [design-constraints.md](design-constraints.md) | 跨层稳定约束与命名规则。                                  |
-| [execution.md](execution.md)                   | 当前实现状态快照。                                        |
+| 文档                                           | 职责                                                    |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| [semantics.md](semantics.md)                   | kernel 执行语义：对象模型、执行循环、收敛、sigil 协议。 |
+| [host.md](host.md)                             | host 分层架构与 kernel 适配协议。                       |
+| [api.md](api.md)                               | 用户侧公开 API 与使用约束。                             |
+| [design-constraints.md](design-constraints.md) | 跨层稳定约束与命名规则。                                |
+| [execution.md](execution.md)                   | 当前实现状态快照。                                      |
 
 ## 语义单源
 

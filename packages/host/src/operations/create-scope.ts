@@ -15,10 +15,7 @@ export function createScope(): HostScope {
     },
     closed,
     halt: haltScope,
-    run<Return>(
-      ritual: RiteRoutine<Return>,
-      options?: RunOptions,
-    ): StatefulPromise<Return> {
+    run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
       return launch(executor, launchedScope.scope, ritual, options).settled;
     },
     get state(): HostScopeState {

@@ -1,5 +1,5 @@
+import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
 import type { Ritual, Wisp } from "@shajara/kernel";
-import type { RiteRoutine, RiteCoroutine } from "#src/contracts";
 
 export function encodeRitual<Relic>(ritual: Ritual<Relic>): RiteRoutine<Relic> {
   return function* encoded(): RiteCoroutine<Relic> {

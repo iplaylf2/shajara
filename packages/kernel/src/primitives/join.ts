@@ -1,4 +1,4 @@
-import type { Failure, Wisp, ScopeRef } from "#src/contracts";
+import type { Failure, ScopeRef, Wisp } from "#src/contracts";
 import type { Either } from "#src/utils";
 import { awaitScopeConverged } from "#src/primitives-kit";
 

@@ -23,9 +23,9 @@ host 不引入第二执行循环，仅通过执行入口把降解后的 Ritual �
 
 用户以 `RiteRoutine<T>`（generator function）书写流程，通过 `yield*` 组合原语。双向桥接由两个适配器完成：
 
-| 适配器           | 方向             | 作用                                                                         |
-| ---------------- | ---------------- | ---------------------------------------------------------------------------- |
-| `encodeRitual` | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需编码为 `RiteCoroutine<T>`。    |
+| 适配器         | 方向          | 作用                                                                 |
+| -------------- | ------------- | -------------------------------------------------------------------- |
+| `encodeRitual` | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需编码为 `RiteCoroutine<T>`。     |
 | `decodeRitual` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界解码为可执行 `Ritual<T>`。 |
 
 `RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一为 ritual，而不是已实例化的 coroutine。

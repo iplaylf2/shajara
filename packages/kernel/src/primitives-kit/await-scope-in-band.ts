@@ -1,4 +1,4 @@
-import type { Wisp, ScopeCompletedExit, ScopeRef } from "#src/contracts";
+import type { ScopeCompletedExit, ScopeRef, Wisp } from "#src/contracts";
 import { awaitScope } from "#src/sigils";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";

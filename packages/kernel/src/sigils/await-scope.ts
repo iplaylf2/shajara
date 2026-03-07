@@ -1,9 +1,7 @@
 import type { ScopeExit, ScopeRef, ScopeRefReturn, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
-export function awaitScope<Scope extends ScopeRef<unknown>>(
-  scope: Scope,
-): AwaitScopeSigil<Scope> {
+export function awaitScope<Scope extends ScopeRef<unknown>>(scope: Scope): AwaitScopeSigil<Scope> {
   return {
     kind: "await-scope",
     scope,

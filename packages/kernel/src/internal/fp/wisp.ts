@@ -1,8 +1,8 @@
 // oxlint-disable id-length
-import type { Wisp, Sigil } from "#src/contracts";
+import type { Sigil, Wisp } from "#src/contracts";
 import type { applicative, apply, functor, monad, pointed } from "fp-ts";
+import { evoke, restingWisp, stirringWisp } from "#src/contracts";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
-import { evoke, stirringWisp, restingWisp } from "#src/contracts";
 import { lifting } from "./lifting";
 import type { sigil } from "./sigil";
 

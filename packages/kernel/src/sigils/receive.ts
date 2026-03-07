@@ -1,9 +1,7 @@
 import type { Channel, ScopeRef, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
-export function receive<ReceiveValue>(
-  channel: Channel<ReceiveValue>,
-): ReceiveSigil<ReceiveValue> {
+export function receive<ReceiveValue>(channel: Channel<ReceiveValue>): ReceiveSigil<ReceiveValue> {
   return {
     channel,
     kind: "receive",

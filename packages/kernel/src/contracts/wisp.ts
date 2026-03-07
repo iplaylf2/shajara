@@ -1,8 +1,8 @@
-import type { Sigil, Echo } from "./sigil";
+import type { Echo, Sigil } from "./sigil";
 
 export type Incantation<Args extends unknown[], Relic> = (...args: Args) => Wisp<Relic>;
 
-export type Resonance<S extends Sigil, Relic> = Incantation<[echo: Echo<S>], Relic>;
+export type Resonance<SigilType extends Sigil, Relic> = Incantation<[echo: Echo<SigilType>], Relic>;
 
 export type Ritual<Relic> = Incantation<[], Relic>;
 

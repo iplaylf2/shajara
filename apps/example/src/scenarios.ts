@@ -1,4 +1,4 @@
-import type { RiteRoutine, RiteCoroutine, ScopeRef } from "@shajara/host";
+import type { RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
 import { action, channel, contextKey, sleep, until } from "@shajara/host";
 import {
   all,

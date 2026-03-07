@@ -1,10 +1,10 @@
-import type { Failure, Wisp, ScopeRef } from "#src/contracts";
+import type { Failure, ScopeRef, Wisp } from "#src/contracts";
 import { awaitScope } from "#src/sigils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
-import { wisp } from "#src/internal/fp";
 import { scopeTerminated } from "#src/failures";
 import { unreachable } from "#src/utils";
+import { wisp } from "#src/internal/fp";
 
 export function awaitScopeConverged<Return>(
   scopeRef: ScopeRef<Return>,

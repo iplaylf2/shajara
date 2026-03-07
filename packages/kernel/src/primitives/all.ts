@@ -1,13 +1,13 @@
-import type { Ritual, Failure, Wisp } from "#src/contracts";
+import type { Failure, Ritual, Wisp } from "#src/contracts";
 import { awaitProcessInBand, awaitScopeConverged } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
 import { fork, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
-import { wisp } from "#src/internal/fp";
 import { readonlyArray } from "fp-ts";
 import { supervisorScopeSpec } from "#src/scopes";
+import { wisp } from "#src/internal/fp";
 
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,

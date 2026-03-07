@@ -1,4 +1,4 @@
-import type { Ritual, Channel, Failure, Wisp, ScopeRef } from "#src/contracts";
+import type { Channel, Failure, Ritual, ScopeRef, Wisp } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
 import { fork, receive, self, send, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
@@ -6,8 +6,8 @@ import { channel } from "#src/contracts/channel";
 import { either } from "fp-ts";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
-import { wisp } from "#src/internal/fp";
 import { supervisorScopeSpec } from "#src/scopes";
+import { wisp } from "#src/internal/fp";
 
 export function resource<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,

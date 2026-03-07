@@ -1,4 +1,4 @@
-import type { Ritual, ProcessRef, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
+import type { ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 import { standardScopeSpec } from "#src/scopes/standard";
 

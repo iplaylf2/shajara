@@ -1,4 +1,4 @@
-import type { RiteRoutine, RiteCoroutine } from "#src/contracts";
+import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
 import { decodeRitual, encodeRitual, unwrapEither } from "#src/boundary";
 import { scoped as kernelScoped } from "@shajara/kernel";
 

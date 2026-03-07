@@ -1,4 +1,4 @@
-import type { Ritual, Failure, Wisp, ScopeRef } from "#src/contracts";
+import type { Failure, Ritual, ScopeRef, Wisp } from "#src/contracts";
 import {
   awaitScopeConverged,
   resumableDelegateKey,

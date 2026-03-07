@@ -1,4 +1,4 @@
-import type { Ritual, ProcessRef, Sigil } from "#src/contracts";
+import type { ProcessRef, Ritual, Sigil } from "#src/contracts";
 import type { PartialDeep } from "type-fest";
 import type { RETURN_TOKEN } from "#src/utils";
 import defaults from "defaults";
@@ -10,9 +10,9 @@ export function fork<Return, Process extends ProcessRef<Return>>(
   const config = defaults(options ?? {}, { participation: "tracked" } as const);
 
   return {
-    ritual,
     kind: "fork",
     participation: config.participation,
+    ritual,
   };
 }
 

@@ -1,6 +1,6 @@
-import type { Channel, Wisp, ScopeRef } from "#src/contracts";
-import { wisp } from "#src/internal/fp";
+import type { Channel, ScopeRef, Wisp } from "#src/contracts";
 import { send as sendSigil } from "#src/sigils";
+import { wisp } from "#src/internal/fp";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,

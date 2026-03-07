@@ -1,4 +1,4 @@
-import type { Failure, RiteRoutine, RiteCoroutine, ScopeRef } from "#src/contracts";
+import type { Failure, RiteCoroutine, RiteRoutine, ScopeRef } from "#src/contracts";
 import type {
   SpawnOptions as KernelSpawnOptions,
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
@@ -45,8 +45,7 @@ function toKernelSpawnOptions(options: SpawnOptions | undefined): KernelSpawnOpt
 }
 
 function toKernelSpawnRecoveryHandler(recover: SpawnRecoveryHandler): KernelSpawnRecoveryHandler {
-  return (failure: Failure) =>
-    decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
+  return (failure: Failure) => decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
 }
 
 function* hostRecovery(

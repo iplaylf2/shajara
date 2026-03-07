@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { Sigil, Echo } from "#src/contracts";
+import type { Echo, Sigil } from "#src/contracts";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A extends Sigil> {

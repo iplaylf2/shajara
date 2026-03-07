@@ -1,7 +1,7 @@
 import type { Channel, Wisp } from "#src/contracts";
 import type { ReceiveResult } from "#src/sigils";
-import { wisp } from "#src/internal/fp";
 import { receive as receiveSigil } from "#src/sigils";
+import { wisp } from "#src/internal/fp";
 
 export type { ReceiveResult } from "#src/sigils";
 
