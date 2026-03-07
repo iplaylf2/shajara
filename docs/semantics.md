@@ -4,14 +4,26 @@
 
 ---
 
-## 1. 对象模型
+## 1. 核心语义
 
-### 1.1 Wisp 与 Ritual
+Shajara 中显现为一缕 **wisp**。
+
+**stirring** 的 wisp 带着一枚 **sigil**，也携着它的 **resonate**。施法者见 sigil 而得 **echo**，再以这个 echo 与 wisp 共振，于是继续牵出新的 wisp。
+
+**resting** 的 wisp 不再继续牵引 echo，而是留下一个 **relic**，安住下来。
+
+从一个空参数的起始咒式出发，沿着这些 wisp，在 echo 与 wisp 的共振中不断展开，直到最终留下 relic，这整场过程就是一次 **ritual**。
+
+---
+
+## 2. 对象模型
+
+### 2.1 Wisp 与 Ritual
 
 `Wisp<T>` 是 kernel 的计算承载面，以 free monad 编码：
 
 - **`RestingWisp(relic: T)`** — 留下 relic 并安住。
-- **`StirringWisp(sigil, resonance)`** — 带出一枚 sigil，并等待 echo 继续牵引后续 Wisp。
+- **`StirringWisp(sigil, resonate)`** — 带出一枚 sigil，并等待 echo 继续牵引后续 Wisp。
 
 `Ritual<T>` = `() => Wisp<T>`，延迟构造 Wisp 的 thunk。
 
@@ -21,15 +33,15 @@
 
 cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口注册一次 cleanup，由该入口对应的运行中 Wisp 在中断/收敛时执行清理续延。
 
-### 1.2 Failure 与失败通道
+### 2.2 Failure 与失败通道
 
-sigil 成功恢复值由 `resonance(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
+sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
 
 `Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
 
 `halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §3.5）。
 
-### 1.3 Scope
+### 2.3 Scope
 
 Scope 是生命周期、身份与上下文的统一载体，承载父子关系与 Process 归属。每个 Scope 拥有唯一 `ScopeRef`（控制面 capability handle），Scope 构成严格树（除根外每个 Scope 恰有一个父 Scope）。
 
@@ -52,7 +64,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 创建约束：`StandardScope`、`SupervisorScope`、`GovernorScope` 可由 sigil 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 sigil 创建目标。
 
-### 1.4 执行入口能力视图
+### 2.4 执行入口能力视图
 
 执行入口能力视图由 executor 基于 Scope 派生：
 
@@ -65,7 +77,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 依赖方向：executor 建立在 `Scope/Wisp/Sigil` 之上；`sigils/contracts` 不反向依赖 executor。
 
-### 1.5 Process
+### 2.5 Process
 
 Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
@@ -74,11 +86,11 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 - `tracked`：计入 Scope “变空”判定。
 - `auxiliary`：不计入 Scope “变空”判定，仅作为附属并发单元存在。
 
-### 1.6 Processor 与 EventQueue
+### 2.6 Processor 与 EventQueue
 
 `Processor` 是系统唯一的逻辑原子执行权令牌。`EventQueue` 存放可运行的 Process。
 
-### 1.7 消息传递
+### 2.7 消息传递
 
 `Channel<T>` 是 phantom-typed 不透明令牌，由 `channel<T>()` 创建，标识一条类型化消息通道，不绑定特定 Scope。持有令牌即具备发送或接收能力（capability 模型）。
 
@@ -93,7 +105,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 消息传递协议的正确性不依赖调度顺序——Send 在 Receive 到达前执行时，值入 buffer 而非丢弃；Receive 在 Send 到达前执行时，阻塞等待。任意 Processor 数量与调度策略下行为一致。
 
-### 1.8 Limbo
+### 2.8 Limbo
 
 系统包含全局唯一的 `LimboScope` 单例。
 
@@ -103,11 +115,11 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 ---
 
-## 2. 执行循环
+## 3. 执行循环
 
 微内核以迭代方式推进执行，每轮包含反应相与策略相。
 
-### 2.1 调度原则：广度优先
+### 3.1 调度原则：广度优先
 
 当前持有 Processor 的 Process 连续解释其 Wisp，直到遇到 `[Blocking]` sigil 或退出；`[Non-Blocking]` sigil（如 Spawn、Fork）创建的新 Process 进入 EventQueue 末端，不中断当前执行。
 
@@ -116,7 +128,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 - 同一 Process 内的连续 Non-Blocking sigil 序列在一次 Processor 持有期间原子完成。
 - Spawn/Fork 语义是"注册将来执行的 Process"，不是立即转移控制权。
 
-### 2.2 反应相（Drain）
+### 3.2 反应相（Drain）
 
 EventQueue 非空时重复：
 
@@ -127,7 +139,7 @@ EventQueue 非空时重复：
    - 发生 Failure，P 退出为 `Failed(failure)`。
 3. Processor 回到微内核。
 
-### 2.3 策略相（Schedule）
+### 3.3 策略相（Schedule）
 
 EventQueue 为空且 Processor 在微内核手中时：
 
@@ -142,9 +154,9 @@ GovernorScope 的 scheduler handler 触发语义：
 
 ---
 
-## 3. 收敛与终止
+## 4. 收敛与终止
 
-### 3.1 终态模型
+### 4.1 终态模型
 
 Process 与 Scope 均有三种互斥终态：
 
@@ -154,7 +166,7 @@ Process 与 Scope 均有三种互斥终态：
 | `Terminated` | 被外部终止级联打断 |
 | `Failed`     | 以 failure 失败    |
 
-### 3.2 Scope 过程态
+### 4.2 Scope 过程态
 
 | 过程态    | 说明                                   |
 | --------- | -------------------------------------- |
@@ -163,7 +175,7 @@ Process 与 Scope 均有三种互斥终态：
 | `Exited`  | 所有 Process 已退出。                  |
 | `InLimbo` | 被修剪到 Limbo 下。                    |
 
-### 3.3 进入 Closing
+### 4.3 进入 Closing
 
 触发条件（任一即可）：
 
@@ -181,11 +193,11 @@ Process 与 Scope 均有三种互斥终态：
 
 进入 Closing 时，终止级联传播到所有后代 Scope。所有 Process 退出后，Scope 进入 Exited。
 
-### 3.4 Closing 门控
+### 4.4 Closing 门控
 
 调用方 Scope 为 Closing 时：`Spawn/Fork` 失败；其他 sigil 按定义执行。
 
-### 3.5 终态上传策略
+### 4.5 终态上传策略
 
 子 Scope 终态向父 Scope 上传按父角色语义处理：
 
@@ -196,7 +208,7 @@ Process 与 Scope 均有三种互斥终态：
 
 `AwaitScope/AwaitProcess` 仅提供结果可见性，不构成对上传策略的拦截。
 
-### 3.6 结构性收敛：Reaper
+### 4.6 结构性收敛：Reaper
 
 当 Scope 处于 Closing 且终止无法推进到 Exited 时，微内核运行其最近祖先 GovernorScope 的 reaper handler。仲裁决定：
 
@@ -211,28 +223,28 @@ GovernorScope 的 reaper handler 触发语义：
 
 ---
 
-## 4. Sigil 协议
+## 5. Sigil 协议
 
-### 4.1 声明与解释边界
+### 5.1 声明与解释边界
 
 `sigils/` 提供 sigil **声明对象**（指令形状），表达"要做什么"与"echo 形状"。对象本身不具备解释能力；解释、调度与状态变更由 executor 完成。
 
-### 4.2 原子性
+### 5.2 原子性
 
 executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
 
-### 4.3 阻塞分类
+### 5.3 阻塞分类
 
-- **`[Non-Blocking]`**：调用方保留 Processor，resonance 立刻继续。
+- **`[Non-Blocking]`**：调用方保留 Processor，`resonate` 立刻继续。
 - **`[Blocking]`**：调用方释放 Processor，阻塞条件满足时微内核恢复该 Process。
 
 ---
 
-## 5. Sigil 规范
+## 6. Sigil 规范
 
 可见性规则：以 `ProcessRef` 为目标的操作要求目标 Process 属于调用方 Scope；以 `ScopeRef` 为目标的操作要求该 ScopeRef 对调用方可见。
 
-### 5.1 创建
+### 6.1 创建
 
 #### Spawn(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
 

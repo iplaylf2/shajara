@@ -29,7 +29,7 @@ export namespace wisp {
     map: (fa, f) =>
       fa.bearing === "resting"
         ? pure(f(fa.relic))
-        : impure(fa.sigil, (x) => Functor.map(fa.resonance(x), f)),
+        : impure(fa.sigil, (x) => Functor.map(fa.resonate(x), f)),
   };
 
   export const Apply: apply.Apply1<URI> = {
@@ -37,7 +37,7 @@ export namespace wisp {
     ap: (fab, fa) =>
       fab.bearing === "resting"
         ? Functor.map(fa, fab.relic)
-        : impure(fab.sigil, (x) => Apply.ap(fab.resonance(x), fa)),
+        : impure(fab.sigil, (x) => Apply.ap(fab.resonate(x), fa)),
     map: Functor.map,
   };
 
@@ -54,7 +54,7 @@ export namespace wisp {
     chain: (fa, f) =>
       fa.bearing === "resting"
         ? f(fa.relic)
-        : impure(fa.sigil, (x) => Chain.chain(fa.resonance(x), f)),
+        : impure(fa.sigil, (x) => Chain.chain(fa.resonate(x), f)),
     map: Functor.map,
   };
 

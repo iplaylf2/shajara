@@ -21,9 +21,9 @@ export function restingWisp<Relic>(relic: Relic): RestingWisp<Relic> {
 // oxlint-disable-next-line id-length
 export function stirringWisp<S extends Sigil, Relic>(
   sigil: S,
-  resonance: Resonance<S, Relic>,
+  resonate: Resonance<S, Relic>,
 ): StirringWisp<S, Relic> {
-  return { bearing: "stirring", resonance, sigil };
+  return { bearing: "stirring", resonate, sigil };
 }
 
 export interface RestingWisp<Relic> {
@@ -35,5 +35,5 @@ export interface RestingWisp<Relic> {
 export interface StirringWisp<S extends Sigil, Relic> {
   readonly bearing: "stirring";
   readonly sigil: S;
-  readonly resonance: Resonance<S, Relic>;
+  readonly resonate: Resonance<S, Relic>;
 }
