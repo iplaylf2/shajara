@@ -61,12 +61,12 @@
 | `kernel/src/primitives/`          | 原语 + index                   |
 | `kernel/src/scopes/`              | 角色条目                       |
 | `kernel/src/executor.ts`          | 执行入口契约与作用域执行状态   |
-| `runtime/src/contracts.ts`        | host 公共契约（`RiteCoroutine/RiteRoutine`） |
-| `runtime/src/primitives/`         | 原语 + index                   |
-| `runtime/src/operations/`         | 宿主操作 + index               |
-| `runtime/src/operations-kit/`     | 操作共享支撑                   |
-| `runtime/src/boundary/`           | host↔kernel 边界共享支撑       |
-| `runtime/src/errors/`             | 错误类型                       |
+| `host/src/contracts/`            | host 公共契约（`RiteCoroutine/RiteRoutine`） |
+| `host/src/primitives/`           | 原语 + index                   |
+| `host/src/operations/`           | 宿主操作 + index               |
+| `host/src/operations-kit/`       | 操作共享支撑                   |
+| `host/src/boundary/`             | host↔kernel 边界共享支撑       |
+| `host/src/errors/`               | 错误类型                       |
 
 kernel 对外导出采用根入口分组导出，`@shajara/kernel/scopes` 为 scope spec 公开子路径。
 
