@@ -1,8 +1,8 @@
 import type { RETURN_TOKEN } from "#src/utils";
 
 // oxlint-disable id-length
-export type Echo<T extends Sigil> =
-  NonNullable<T[typeof RETURN_TOKEN]> extends readonly [infer R] ? R : never;
+export type Echo<S extends Sigil> =
+  NonNullable<S[typeof RETURN_TOKEN]> extends readonly [infer E] ? E : never;
 
 export interface Sigil {
   readonly kind: string;

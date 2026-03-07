@@ -2,7 +2,8 @@ import type { Echo, Sigil } from "./sigil";
 
 export type Incantation<Args extends unknown[], Relic> = (...args: Args) => Wisp<Relic>;
 
-export type Resonance<SigilType extends Sigil, Relic> = Incantation<[echo: Echo<SigilType>], Relic>;
+// oxlint-disable-next-line id-length
+export type Resonance<S extends Sigil, Relic> = Incantation<[echo: Echo<S>], Relic>;
 
 export type Ritual<Relic> = Incantation<[], Relic>;
 
