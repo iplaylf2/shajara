@@ -13,10 +13,7 @@ import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
 
-export function spawn<Return>(
-  entry: Ritual<Return>,
-  options?: SpawnOptions,
-): Wisp<ScopeRef<Return>> {
+export function spawn<Relic>(entry: Ritual<Relic>, options?: SpawnOptions): Wisp<ScopeRef<Relic>> {
   if (options?.mode === "supervisor") {
     return spawnScope(entry, supervisorScopeSpec());
   }
@@ -41,10 +38,10 @@ export interface SpawnRecoveryOption {
 
 export type SpawnRecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
 
-function withRecoveryPoint<Return>(
-  entry: Ritual<Return>,
+function withRecoveryPoint<Relic>(
+  entry: Ritual<Relic>,
   recover: SpawnRecoveryHandler,
-): Ritual<Return> {
+): Ritual<Relic> {
   return () =>
     pipe(
       fork(recoveryWorker(recover), { participation: "auxiliary" }),

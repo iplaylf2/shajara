@@ -1,4 +1,4 @@
-import type { ScopeExit, ScopeRef, ScopeRefReturn, Sigil } from "#src/contracts";
+import type { ScopeExit, ScopeRef, ScopeRefRelic, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
 export function awaitScope<Scope extends ScopeRef<unknown>>(scope: Scope): AwaitScopeSigil<Scope> {
@@ -11,5 +11,5 @@ export function awaitScope<Scope extends ScopeRef<unknown>>(scope: Scope): Await
 export interface AwaitScopeSigil<Scope extends ScopeRef<unknown>> extends Sigil {
   readonly kind: "await-scope";
   readonly scope: Scope;
-  readonly [RETURN_TOKEN]?: readonly [ScopeExit<ScopeRefReturn<Scope>>];
+  readonly [RETURN_TOKEN]?: readonly [ScopeExit<ScopeRefRelic<Scope>>];
 }

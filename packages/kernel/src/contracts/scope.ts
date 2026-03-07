@@ -1,21 +1,21 @@
 import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
 import type { Failure } from "./failure";
 
-export interface ScopeRef<Return> {
+export interface ScopeRef<Relic> {
   readonly [REF_TOKEN]: "scope";
-  readonly [RETURN_TOKEN]?: readonly [Return];
+  readonly [RETURN_TOKEN]?: readonly [Relic];
 }
 
 export interface ScopeSpec {
   readonly role: string;
 }
 
-export type ScopeRefReturn<Ref extends ScopeRef<unknown>> =
-  Ref extends ScopeRef<infer Return> ? Return : never;
+export type ScopeRefRelic<Ref extends ScopeRef<unknown>> =
+  Ref extends ScopeRef<infer Relic> ? Relic : never;
 
-export interface ScopeCompletedExit<Return> {
+export interface ScopeCompletedExit<Relic> {
   readonly kind: "completed";
-  readonly value: Return;
+  readonly value: Relic;
 }
 
 export interface ScopeFailedExit {
@@ -27,4 +27,4 @@ export interface ScopeTerminatedExit {
   readonly kind: "terminated";
 }
 
-export type ScopeExit<Return> = ScopeCompletedExit<Return> | ScopeFailedExit | ScopeTerminatedExit;
+export type ScopeExit<Relic> = ScopeCompletedExit<Relic> | ScopeFailedExit | ScopeTerminatedExit;

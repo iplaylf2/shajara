@@ -16,8 +16,8 @@
 ## 2. 类型契约
 
 - kernel 公开类型参数不使用语义兜底默认值（如 `= unknown`）来隐式放宽约束。
-- 后缀约束：`*Return` 仅用于调用返回载荷，`*Exit` 仅用于生命周期终态，不可混用。
-- 返回类型泛型参数统一命名 `Return`（复数 `Returns`），运行时值字段统一命名 `value`。
+- 后缀约束：kernel 中优先使用 `*Relic` 表达语义留存；`*Exit` 仅用于生命周期终态，不可混用。
+- 泛型命名分层：kernel 语义层优先使用 `Relic`（复数 `Relics`），host 宿主承载层保留 `Return`（复数 `Returns`）；运行时值字段统一命名 `value`。
 - 角色 spec 的配置命名遵循语义准确性：字段全必填时使用 `*Config`，不使用 `*Options`。
 - 治理角色统一为 `GovernorScope`，并通过显式 handler 契约承载策略，不以内置固定策略替代；具体签名单源定义于 `semantics.md`。
 

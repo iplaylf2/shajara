@@ -2,10 +2,10 @@ import type { ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contra
 import type { RETURN_TOKEN } from "#src/utils";
 import { standardScopeSpec } from "#src/scopes/standard";
 
-export function spawn<Return>(
-  entry: Ritual<Return>,
+export function spawn<Relic>(
+  entry: Ritual<Relic>,
   spec: ScopeSpec = standardScopeSpec(),
-): SpawnSigil<Return> {
+): SpawnSigil<Relic> {
   return {
     entry,
     kind: "spawn",
@@ -13,14 +13,14 @@ export function spawn<Return>(
   };
 }
 
-export interface SpawnSigil<Return> extends Sigil {
+export interface SpawnSigil<Relic> extends Sigil {
   readonly kind: "spawn";
-  readonly entry: Ritual<Return>;
+  readonly entry: Ritual<Relic>;
   readonly spec: ScopeSpec;
-  readonly [RETURN_TOKEN]?: readonly [SpawnDescriptor<Return>];
+  readonly [RETURN_TOKEN]?: readonly [SpawnDescriptor<Relic>];
 }
 
-export interface SpawnDescriptor<Return> {
-  readonly scopeRef: ScopeRef<Return>;
-  readonly processRef: ProcessRef<Return>;
+export interface SpawnDescriptor<Relic> {
+  readonly scopeRef: ScopeRef<Relic>;
+  readonly processRef: ProcessRef<Relic>;
 }

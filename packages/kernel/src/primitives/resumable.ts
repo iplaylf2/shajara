@@ -13,7 +13,7 @@ import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
 
-export function resumable<Return>(entry: Ritual<Return>): Wisp<Either<Failure, Return>> {
+export function resumable<Relic>(entry: Ritual<Relic>): Wisp<Either<Failure, Relic>> {
   return pipe(
     spawn(entry, supervisorScopeSpec()),
     wisp.liftF,
@@ -26,7 +26,7 @@ export function resumable<Return>(entry: Ritual<Return>): Wisp<Either<Failure, R
           () => wispEither.left(failure),
           (delegateScopeRef) =>
             pipe(
-              spawn(delegateWorker<Return>(delegateScopeRef, failure)),
+              spawn(delegateWorker<Relic>(delegateScopeRef, failure)),
               wisp.liftF,
               wisp.chain(({ scopeRef }) => awaitScopeInBand(scopeRef)),
             ),
@@ -36,16 +36,16 @@ export function resumable<Return>(entry: Ritual<Return>): Wisp<Either<Failure, R
   );
 }
 
-function delegateWorker<Return>(
+function delegateWorker<Relic>(
   delegateScopeRef: ScopeRef<unknown>,
   failure: Failure,
-): Ritual<Either<Failure, Return>> {
+): Ritual<Either<Failure, Relic>> {
   return () =>
     pipe(
       send(delegateScopeRef, resumableFailureChannel, failure),
       wisp.liftF,
       wisp.chainF(() => receive(resumableRecoveryChannel)),
       wisp.map(({ value }) => value),
-      wisp.map(narrowAs<Either<Failure, Return>>()),
+      wisp.map(narrowAs<Either<Failure, Relic>>()),
     );
 }

@@ -5,6 +5,6 @@ import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
 
-export function scoped<Return>(entry: Ritual<Return>): Wisp<Either<Failure, Return>> {
+export function scoped<Relic>(entry: Ritual<Relic>): Wisp<Either<Failure, Relic>> {
   return pipe(spawnScope(entry, supervisorScopeSpec()), wisp.chain(awaitScopeConverged));
 }

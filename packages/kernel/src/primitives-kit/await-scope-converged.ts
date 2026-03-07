@@ -6,9 +6,9 @@ import { scopeTerminated } from "#src/failures";
 import { unreachable } from "#src/utils";
 import { wisp } from "#src/internal/fp";
 
-export function awaitScopeConverged<Return>(
-  scopeRef: ScopeRef<Return>,
-): Wisp<either.Either<Failure, Return>> {
+export function awaitScopeConverged<Relic>(
+  scopeRef: ScopeRef<Relic>,
+): Wisp<either.Either<Failure, Relic>> {
   return pipe(
     awaitScope(scopeRef),
     wisp.liftF,

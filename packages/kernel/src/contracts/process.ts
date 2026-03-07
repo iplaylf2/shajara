@@ -1,22 +1,22 @@
 import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
 import type { Failure } from "./failure";
 
-export type ProcessRefReturn<Ref extends ProcessRef<unknown>> =
-  Ref extends ProcessRef<infer Return> ? Return : never;
+export type ProcessRefRelic<Ref extends ProcessRef<unknown>> =
+  Ref extends ProcessRef<infer Relic> ? Relic : never;
 
-export type ProcessExit<Return> =
-  | ProcessCompletedExit<Return>
+export type ProcessExit<Relic> =
+  | ProcessCompletedExit<Relic>
   | ProcessFailedExit
   | ProcessTerminatedExit;
 
-export interface ProcessRef<Return> {
+export interface ProcessRef<Relic> {
   readonly [REF_TOKEN]: "process";
-  readonly [RETURN_TOKEN]?: readonly [Return];
+  readonly [RETURN_TOKEN]?: readonly [Relic];
 }
 
-export interface ProcessCompletedExit<Return> {
+export interface ProcessCompletedExit<Relic> {
   readonly kind: "completed";
-  readonly value: Return;
+  readonly value: Relic;
 }
 
 export interface ProcessFailedExit {

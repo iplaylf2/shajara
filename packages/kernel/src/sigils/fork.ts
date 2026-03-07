@@ -3,10 +3,10 @@ import type { PartialDeep } from "type-fest";
 import type { RETURN_TOKEN } from "#src/utils";
 import defaults from "defaults";
 
-export function fork<Return, Process extends ProcessRef<Return>>(
-  ritual: Ritual<Return>,
+export function fork<Relic, Process extends ProcessRef<Relic>>(
+  ritual: Ritual<Relic>,
   options?: PartialDeep<ForkConfig>,
-): ForkSigil<Return, Process> {
+): ForkSigil<Relic, Process> {
   const config = defaults(options ?? {}, { participation: "tracked" } as const);
 
   return {
@@ -16,9 +16,9 @@ export function fork<Return, Process extends ProcessRef<Return>>(
   };
 }
 
-export interface ForkSigil<Return, Process extends ProcessRef<Return>> extends Sigil {
+export interface ForkSigil<Relic, Process extends ProcessRef<Relic>> extends Sigil {
   readonly kind: "fork";
-  readonly ritual: Ritual<Return>;
+  readonly ritual: Ritual<Relic>;
   readonly participation: ForkParticipation;
   readonly [RETURN_TOKEN]?: readonly [Process];
 }

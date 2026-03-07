@@ -8,11 +8,11 @@ import { wisp } from "#src/internal/fp";
  * Awaits a child scope through the in-band completion path only.
  * Non-completed exits are treated as invalid for this helper.
  */
-export function awaitScopeInBand<Return>(scopeRef: ScopeRef<Return>): Wisp<Return> {
+export function awaitScopeInBand<Relic>(scopeRef: ScopeRef<Relic>): Wisp<Relic> {
   return pipe(
     awaitScope(scopeRef),
     wisp.liftF,
-    wisp.map(narrowAs<ScopeCompletedExit<Return>>()),
+    wisp.map(narrowAs<ScopeCompletedExit<Relic>>()),
     wisp.map(({ value }) => value),
   );
 }
