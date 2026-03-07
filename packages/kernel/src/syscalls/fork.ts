@@ -1,10 +1,10 @@
-import type { Blueprint, ProcessRef, Syscall } from "#src/contracts";
+import type { Ritual, ProcessRef, Sigil } from "#src/contracts";
 import type { PartialDeep } from "type-fest";
 import type { RETURN_TOKEN } from "#src/utils";
 import defaults from "defaults";
 
 export function fork<Return, Process extends ProcessRef<Return>>(
-  blueprint: Blueprint<Return>,
+  blueprint: Ritual<Return>,
   options?: PartialDeep<ForkConfig>,
 ): ForkSyscall<Return, Process> {
   const config = defaults(options ?? {}, { participation: "tracked" } as const);
@@ -16,9 +16,9 @@ export function fork<Return, Process extends ProcessRef<Return>>(
   };
 }
 
-export interface ForkSyscall<Return, Process extends ProcessRef<Return>> extends Syscall {
+export interface ForkSyscall<Return, Process extends ProcessRef<Return>> extends Sigil {
   readonly kind: "fork";
-  readonly blueprint: Blueprint<Return>;
+  readonly blueprint: Ritual<Return>;
   readonly participation: ForkParticipation;
   readonly [RETURN_TOKEN]?: readonly [Process];
 }

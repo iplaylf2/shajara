@@ -1,6 +1,6 @@
-import type { Plan } from "#src/contracts";
+import type { Wisp } from "#src/contracts";
 import { park } from "#src/primitives-kit";
 
-export function suspend(): Plan<never> {
+export function suspend(): Wisp<never> {
   return park();
 }

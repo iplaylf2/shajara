@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { Plan, Syscall } from "#src/contracts";
+import type { Wisp, Sigil } from "#src/contracts";
 import type { applicative, apply, either, functor, monad, pointed } from "fp-ts";
 import { eitherT, chain as fpChain, fromIO as fpFromIO, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";
@@ -9,15 +9,15 @@ import type { syscall } from "./syscall";
 
 declare module "fp-ts/HKT" {
   interface URItoKind2<E, A> {
-    readonly [planEither.URI]: planEither.PlanEither<E, A>;
+    readonly [planEither.URI]: planEither.WispEither<E, A>;
   }
 }
 
 export namespace planEither {
-  export const URI = "PlanEither";
+  export const URI = "WispEither";
   export type URI = typeof URI;
 
-  export type PlanEither<E, A> = Plan<either.Either<E, A>>;
+  export type WispEither<E, A> = Wisp<either.Either<E, A>>;
 
   export const left = eitherT.left(plan.Pointed);
   export const right = eitherT.right(plan.Pointed);
@@ -67,7 +67,7 @@ export namespace planEither {
     of: Pointed.of,
   };
 
-  export const Lifting: lifting.Lifting2<URI, syscall.URI, Syscall> = {
+  export const Lifting: lifting.Lifting2<URI, syscall.URI, Sigil> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,

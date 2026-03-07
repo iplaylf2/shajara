@@ -1,13 +1,13 @@
 // oxlint-disable id-length
-import type { Syscall, SyscallReturn } from "#src/contracts";
+import type { Sigil, Echo } from "#src/contracts";
 
 declare module "fp-ts/HKT" {
-  interface URItoKind<A extends Syscall> {
-    readonly [syscall.URI]: SyscallReturn<A>;
+  interface URItoKind<A extends Sigil> {
+    readonly [syscall.URI]: Echo<A>;
   }
 }
 
 export namespace syscall {
-  export const URI = "Syscall";
+  export const URI = "Sigil";
   export type URI = typeof URI;
 }

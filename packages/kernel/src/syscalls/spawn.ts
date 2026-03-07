@@ -1,9 +1,9 @@
-import type { Blueprint, ProcessRef, ScopeRef, ScopeSpec, Syscall } from "#src/contracts";
+import type { Ritual, ProcessRef, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 import { standardScopeSpec } from "#src/scopes/standard";
 
 export function spawn<Return>(
-  entry: Blueprint<Return>,
+  entry: Ritual<Return>,
   spec: ScopeSpec = standardScopeSpec(),
 ): SpawnSyscall<Return> {
   return {
@@ -13,9 +13,9 @@ export function spawn<Return>(
   };
 }
 
-export interface SpawnSyscall<Return> extends Syscall {
+export interface SpawnSyscall<Return> extends Sigil {
   readonly kind: "spawn";
-  readonly entry: Blueprint<Return>;
+  readonly entry: Ritual<Return>;
   readonly spec: ScopeSpec;
   readonly [RETURN_TOKEN]?: readonly [SpawnDescriptor<Return>];
 }

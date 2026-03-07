@@ -1,4 +1,4 @@
-import type { ContextKey, Syscall } from "#src/contracts";
+import type { ContextKey, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
 export function unbind(key: ContextKey<unknown>): UnbindSyscall {
@@ -8,7 +8,7 @@ export function unbind(key: ContextKey<unknown>): UnbindSyscall {
   };
 }
 
-export interface UnbindSyscall extends Syscall {
+export interface UnbindSyscall extends Sigil {
   readonly kind: "unbind";
   readonly key: ContextKey<unknown>;
   readonly [RETURN_TOKEN]?: readonly [void];

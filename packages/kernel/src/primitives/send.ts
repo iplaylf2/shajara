@@ -1,4 +1,4 @@
-import type { Channel, Plan, ScopeRef } from "#src/contracts";
+import type { Channel, Wisp, ScopeRef } from "#src/contracts";
 import { plan } from "#src/internal/fp";
 import { send as sendSyscall } from "#src/syscalls";
 
@@ -6,6 +6,6 @@ export function send<Value>(
   scope: ScopeRef<unknown>,
   channel: Channel<Value>,
   value: Value,
-): Plan<void> {
+): Wisp<void> {
   return plan.liftF(sendSyscall(scope, channel, value));
 }

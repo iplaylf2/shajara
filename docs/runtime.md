@@ -11,24 +11,24 @@
                             │
                   lowerBlueprint / liftBlueprint
                             │
-                      kernel（Plan 解释 + Scope 树 + EventQueue）
+                      kernel（Wisp 解释 + Scope 树 + EventQueue）
 ```
 
-- **kernel** 是执行语义单源：解释 Plan、执行 syscall、维护 Scope 树与 Process 索引、推进可运行队列。
-- **host** 负责将用户侧 generator 表达映射为 kernel 可执行 Plan，并在宿主边界承载 `run`、`createScope`、`action`、`sleep`、`until` 等 API。
+- **kernel** 是执行语义单源：解释 Wisp、执行 sigil、维护 Scope 树与 Process 索引、推进可运行队列。
+- **host** 负责将用户侧 generator 表达映射为 kernel 可执行 Wisp，并在宿主边界承载 `run`、`createScope`、`action`、`sleep`、`until` 等 API。
 
-host 不引入第二执行循环，仅通过执行入口把降解后的 Blueprint 提交给 kernel。
+host 不引入第二执行循环，仅通过执行入口把降解后的 Ritual 提交给 kernel。
 
-## 2. Blueprint 适配协议
+## 2. Ritual 适配协议
 
 用户以 `RiteRoutine<T>`（generator function）书写流程，通过 `yield*` 组合原语。双向桥接由两个适配器完成：
 
 | 适配器           | 方向             | 作用                                                                         |
 | ---------------- | ---------------- | ---------------------------------------------------------------------------- |
-| `liftBlueprint`  | kernel → host | 以 `Blueprint<T>` 为入口，在 host 中按需提升为 `RiteCoroutine<T>`。    |
-| `lowerBlueprint` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界降解为可执行 `Blueprint<T>`。 |
+| `liftBlueprint`  | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需提升为 `RiteCoroutine<T>`。    |
+| `lowerBlueprint` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界降解为可执行 `Ritual<T>`。 |
 
-`RiteCoroutine<T>` 即 `Generator<Syscall, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一为 blueprint，而不是已实例化的 plan。
+`RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一为 ritual，而不是已实例化的 coroutine。
 
 术语方向固定：`lift` = kernel → host（上升到编排层），`lower` = host → kernel（下降到执行层）。
 
@@ -42,7 +42,7 @@ kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保�
 
 host 以 `launch` 为统一收敛锚点：
 
-1. 调用 `executor.launch(scope, blueprint)` 获取 `LaunchHandle<T>`。
+1. 调用 `executor.launch(scope, ritual)` 获取 `LaunchHandle<T>`。
 2. 将 `LaunchResult<T>`（`success | failure | terminated`）收敛为 Promise 语义。
 3. 返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state()`）。
 4. 可选 `AbortSignal` 映射为 `executor.terminate(ref)`。
@@ -74,4 +74,4 @@ host 直接消费 kernel 导出的引用类型，不重复定义同语义包装�
 
 ## 7. 内核索引
 
-运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Plan、退出信息与等待者）、等待登记（Receive、AwaitScope，以及待定的 AwaitProcess），以及各 Scope 上按 Channel 令牌分组的消息队列与等待者登记。host 仅消费这些能力，不复制维护状态机。
+运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Wisp、退出信息与等待者）、等待登记（Receive、AwaitScope，以及待定的 AwaitProcess），以及各 Scope 上按 Channel 令牌分组的消息队列与等待者登记。host 仅消费这些能力，不复制维护状态机。

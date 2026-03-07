@@ -1,23 +1,23 @@
 // oxlint-disable id-length
-import type { Plan, Syscall } from "#src/contracts";
+import type { Wisp, Sigil } from "#src/contracts";
 import type { applicative, apply, functor, monad, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
-import { impurePlan, liftSyscall, purePlan } from "#src/contracts";
+import { evoke, stirringWisp, restingWisp } from "#src/contracts";
 import { lifting } from "./lifting";
 import type { syscall } from "./syscall";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {
-    readonly [plan.URI]: Plan<A>;
+    readonly [plan.URI]: Wisp<A>;
   }
 }
 
 export namespace plan {
-  export const URI = "Plan";
+  export const URI = "Wisp";
   export type URI = typeof URI;
 
-  export const pure = purePlan;
-  export const impure = impurePlan;
+  export const pure = restingWisp;
+  export const impure = stirringWisp;
 
   export const Pointed: pointed.Pointed1<URI> = {
     URI,
@@ -27,17 +27,17 @@ export namespace plan {
   export const Functor: functor.Functor1<URI> = {
     URI,
     map: (fa, f) =>
-      fa.kind === "pure"
-        ? pure(f(fa.value))
-        : impure(fa.syscall, (x) => Functor.map(fa.then(x), f)),
+      fa.bearing === "resting"
+        ? pure(f(fa.relic))
+        : impure(fa.sigil, (x) => Functor.map(fa.resonance(x), f)),
   };
 
   export const Apply: apply.Apply1<URI> = {
     URI,
     ap: (fab, fa) =>
-      fab.kind === "pure"
-        ? Functor.map(fa, fab.value)
-        : impure(fab.syscall, (x) => Apply.ap(fab.then(x), fa)),
+      fab.bearing === "resting"
+        ? Functor.map(fa, fab.relic)
+        : impure(fab.sigil, (x) => Apply.ap(fab.resonance(x), fa)),
     map: Functor.map,
   };
 
@@ -52,7 +52,9 @@ export namespace plan {
     URI,
     ap: Apply.ap,
     chain: (fa, f) =>
-      fa.kind === "pure" ? f(fa.value) : impure(fa.syscall, (x) => Chain.chain(fa.then(x), f)),
+      fa.bearing === "resting"
+        ? f(fa.relic)
+        : impure(fa.sigil, (x) => Chain.chain(fa.resonance(x), f)),
     map: Functor.map,
   };
 
@@ -66,11 +68,11 @@ export namespace plan {
 
   export const Do = pure(null);
 
-  export const Lifting: lifting.Lifting<URI, syscall.URI, Syscall> = {
+  export const Lifting: lifting.Lifting<URI, syscall.URI, Sigil> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,
-    liftF: liftSyscall,
+    liftF: evoke,
     map: Functor.map,
   };
 

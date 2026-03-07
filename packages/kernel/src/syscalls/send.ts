@@ -1,4 +1,4 @@
-import type { Channel, ScopeRef, Syscall } from "#src/contracts";
+import type { Channel, ScopeRef, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
 export function send<Value>(
@@ -14,7 +14,7 @@ export function send<Value>(
   };
 }
 
-export interface SendSyscall<Value> extends Syscall {
+export interface SendSyscall<Value> extends Sigil {
   readonly kind: "send";
   readonly scope: ScopeRef<unknown>;
   readonly channel: Channel<Value>;

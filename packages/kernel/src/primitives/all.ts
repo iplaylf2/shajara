@@ -1,4 +1,4 @@
-import type { Blueprint, Failure, Plan } from "#src/contracts";
+import type { Ritual, Failure, Wisp } from "#src/contracts";
 import { awaitProcessInBand, awaitScopeConverged } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
 import { fork, spawn } from "#src/syscalls";
@@ -11,7 +11,7 @@ import { supervisorScopeSpec } from "#src/scopes";
 
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
-): Plan<Either<Failure, BranchReturns>> {
+): Wisp<Either<Failure, BranchReturns>> {
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     plan.liftF,
@@ -21,7 +21,7 @@ export function all<BranchReturns extends UnknownArray>(
 
 function allSupervisor<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
-): Blueprint<BranchReturns> {
+): Ritual<BranchReturns> {
   return () =>
     pipe(
       branches,
@@ -34,5 +34,5 @@ function allSupervisor<BranchReturns extends UnknownArray>(
 }
 
 type AllBranches<BranchReturns extends UnknownArray> = {
-  readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
+  readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
 };

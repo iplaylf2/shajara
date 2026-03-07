@@ -1,4 +1,4 @@
-import type { ContextKey, Syscall } from "#src/contracts";
+import type { ContextKey, Sigil } from "#src/contracts";
 import type { Option, RETURN_TOKEN } from "#src/utils";
 
 export function lookup<Value>(key: ContextKey<Value>): LookupSyscall<Value> {
@@ -8,7 +8,7 @@ export function lookup<Value>(key: ContextKey<Value>): LookupSyscall<Value> {
   };
 }
 
-export interface LookupSyscall<Value> extends Syscall {
+export interface LookupSyscall<Value> extends Sigil {
   readonly kind: "lookup";
   readonly key: ContextKey<Value>;
   readonly [RETURN_TOKEN]?: readonly [Option<Value>];

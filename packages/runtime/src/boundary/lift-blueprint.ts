@@ -1,20 +1,20 @@
-import type { Blueprint, Plan } from "@shajara/kernel";
+import type { Ritual, Wisp } from "@shajara/kernel";
 import type { RiteRoutine, RiteCoroutine } from "#src/contracts";
 
-export function liftBlueprint<Return>(blueprint: Blueprint<Return>): RiteRoutine<Return> {
+export function liftBlueprint<Return>(blueprint: Ritual<Return>): RiteRoutine<Return> {
   return function* lifted(): RiteCoroutine<Return> {
     return yield* liftStep(blueprint());
   };
 }
 
-function* liftStep<Return>(plan: Plan<Return>): RiteCoroutine<Return> {
-  if (plan.kind === "pure") {
-    return plan.value;
+function* liftStep<Return>(wisp: Wisp<Return>): RiteCoroutine<Return> {
+  if (wisp.bearing === "resting") {
+    return wisp.relic;
   }
 
-  const resumeValue: unknown = yield plan.syscall;
+  const echo: unknown = yield wisp.sigil;
 
-  const nextPlan = plan.then(resumeValue);
+  const nextWisp = wisp.resonance(echo);
 
-  return yield* liftStep(nextPlan);
+  return yield* liftStep(nextWisp);
 }

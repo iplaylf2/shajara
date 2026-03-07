@@ -1,5 +1,5 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { Blueprint, Channel, Failure, Plan, ScopeRef } from "#src/contracts";
+import type { Ritual, Channel, Failure, Wisp, ScopeRef } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
 import { either, readonlyArray } from "fp-ts";
 import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
@@ -11,7 +11,7 @@ import { supervisorScopeSpec } from "#src/scopes";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,
-): Plan<Either<Failure, ArrayValues<BranchReturns>>> {
+): Wisp<Either<Failure, ArrayValues<BranchReturns>>> {
   const raceChannel = channel<Either<Failure, ArrayValues<BranchReturns>>>();
 
   return pipe(
@@ -29,14 +29,14 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
 }
 
 type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
-  readonly [Index in keyof BranchReturns]: Blueprint<BranchReturns[Index]>;
+  readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
 };
 
 function raceArena(
-  branches: ReadonlyArray<Blueprint<unknown>>,
+  branches: ReadonlyArray<Ritual<unknown>>,
   callerRef: ScopeRef<unknown>,
   raceChannel: Channel<Either<Failure, unknown>>,
-): Blueprint<never> {
+): Ritual<never> {
   return () =>
     pipe(
       branches,
@@ -52,7 +52,7 @@ function arenaFailureRelay(
   arenaRef: ScopeRef<unknown>,
   callerRef: ScopeRef<unknown>,
   raceChannel: Channel<Either<Failure, unknown>>,
-): Blueprint<void> {
+): Ritual<void> {
   return () =>
     pipe(
       arenaRef,
@@ -62,10 +62,10 @@ function arenaFailureRelay(
 }
 
 function branchRunner(
-  branch: Blueprint<unknown>,
+  branch: Ritual<unknown>,
   callerRef: ScopeRef<unknown>,
   raceChannel: Channel<Either<Failure, unknown>>,
-): Blueprint<never> {
+): Ritual<never> {
   return () =>
     pipe(
       branch(),

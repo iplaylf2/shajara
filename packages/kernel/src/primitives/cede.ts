@@ -1,7 +1,7 @@
-import type { Plan } from "#src/contracts";
+import type { Wisp } from "#src/contracts";
 import { cede as cedeSyscall } from "#src/syscalls";
 import { plan } from "#src/internal/fp";
 
-export function cede(): Plan<void> {
+export function cede(): Wisp<void> {
   return plan.liftF(cedeSyscall());
 }

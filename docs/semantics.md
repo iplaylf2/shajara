@@ -1,27 +1,29 @@
 # Kernel 语义
 
-本文档是 kernel 执行语义的单源定义，涵盖对象模型、执行循环、收敛协议与 syscall 规范。
+本文档是 kernel 执行语义的单源定义，涵盖对象模型、执行循环、收敛协议与 sigil 规范。
 
 ---
 
 ## 1. 对象模型
 
-### 1.1 Plan 与 Blueprint
+### 1.1 Wisp 与 Ritual
 
-`Plan<T>` 是 kernel 的计算承载面，以 free monad 编码：
+`Wisp<T>` 是 kernel 的计算承载面，以 free monad 编码：
 
-- **`PurePlan(value: T)`** — 终值节点。
-- **`ImpurePlan(syscall, then)`** — 产出一条 syscall，携带成功续延 `then(value)`。
+- **`RestingWisp(relic: T)`** — 留下 relic 并安住。
+- **`StirringWisp(sigil, resonance)`** — 带出一枚 sigil，并等待 echo 继续牵引后续 Wisp。
 
-`Blueprint<T>` = `() => Plan<T>`，延迟构造 Plan 的 thunk。
+`Ritual<T>` = `() => Wisp<T>`，延迟构造 Wisp 的 thunk。
 
-`Syscall` 是非泛型基础对象契约，最小形状为 `{ kind: string; return?: readonly [unknown] }`。具体 syscall 通过 `return` tuple 声明返回值类型，`then` 的参数类型由 `SyscallReturn<S>` 从该见证推导。
+`Incantation<Args, Relic>` 表示给定参数后显现一段 `Wisp<Relic>` 的咒式；`Ritual<T>` 是 `Incantation<[], T>`。`Resonance<S, Relic>` 则是接收 `Echo<S>` 后继续显现的续行咒式。
 
-cleanup 以 `Blueprint` 身份锚定：每次启动的 blueprint 入口注册一次 cleanup，由该入口对应的运行中 Plan 在中断/收敛时执行清理续延。
+`Sigil` 是非泛型基础对象契约，最小形状为 `{ kind: string; return?: readonly [unknown] }`。具体 sigil 通过 `return` tuple 声明 echo 类型，`Echo<S>` 从该见证推导。
+
+cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口注册一次 cleanup，由该入口对应的运行中 Wisp 在中断/收敛时执行清理续延。
 
 ### 1.2 Failure 与失败通道
 
-syscall 成功恢复值由 `then(value)` 承接。失败表达方式不做统一强制——是否以返回值、异常或其他形状表达，按具体 syscall 条目单独定义。
+sigil 成功恢复值由 `resonance(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
 
 `Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
 
@@ -48,7 +50,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 | `ExecutionScope` | 执行入口能力角色（launch + terminate 语义）。       |
 | `LimboScope`     | 结构性修剪承接角色（全局单例，见 §1.8）。           |
 
-创建约束：`StandardScope`、`SupervisorScope`、`GovernorScope` 可由 syscall 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 syscall 创建目标。
+创建约束：`StandardScope`、`SupervisorScope`、`GovernorScope` 可由 sigil 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 sigil 创建目标。
 
 ### 1.4 执行入口能力视图
 
@@ -61,11 +63,11 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 `ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异仅在于身份位置（全局根锚点），不在于能力集合或句柄类型。
 
-依赖方向：executor 建立在 `Scope/Plan/Syscall` 之上；`syscalls/contracts` 不反向依赖 executor。
+依赖方向：executor 建立在 `Scope/Wisp/Sigil` 之上；`syscalls/contracts` 不反向依赖 executor。
 
 ### 1.5 Process
 
-Process 是 Plan 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
+Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
 Process 在生命周期收敛中存在参与属性（`participation`）：
 
@@ -107,11 +109,11 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 ### 2.1 调度原则：广度优先
 
-当前持有 Processor 的 Process 连续解释其 Plan，直到遇到 `[Blocking]` syscall 或退出；`[Non-Blocking]` syscall（如 Spawn、Fork）创建的新 Process 进入 EventQueue 末端，不中断当前执行。
+当前持有 Processor 的 Process 连续解释其 Wisp，直到遇到 `[Blocking]` sigil 或退出；`[Non-Blocking]` sigil（如 Spawn、Fork）创建的新 Process 进入 EventQueue 末端，不中断当前执行。
 
 直接推论：
 
-- 同一 Process 内的连续 Non-Blocking syscall 序列在一次 Processor 持有期间原子完成。
+- 同一 Process 内的连续 Non-Blocking sigil 序列在一次 Processor 持有期间原子完成。
 - Spawn/Fork 语义是"注册将来执行的 Process"，不是立即转移控制权。
 
 ### 2.2 反应相（Drain）
@@ -119,8 +121,8 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 EventQueue 非空时重复：
 
 1. 出队一个 Process P，授予 Processor。
-2. 解释 P 的 Plan，直到：
-   - P 执行 `[Blocking]` syscall 并让出 Processor；
+2. 解释 P 的 Wisp，直到：
+   - P 执行 `[Blocking]` sigil 并让出 Processor；
    - P 达到 `Pure(value)` 并退出为 `Completed(value)`；
    - 发生 Failure，P 退出为 `Failed(failure)`。
 3. Processor 回到微内核。
@@ -181,7 +183,7 @@ Process 与 Scope 均有三种互斥终态：
 
 ### 3.4 Closing 门控
 
-调用方 Scope 为 Closing 时：`Spawn/Fork` 失败；其他 syscall 按定义执行。
+调用方 Scope 为 Closing 时：`Spawn/Fork` 失败；其他 sigil 按定义执行。
 
 ### 3.5 终态上传策略
 
@@ -209,37 +211,37 @@ GovernorScope 的 reaper handler 触发语义：
 
 ---
 
-## 4. Syscall 协议
+## 4. Sigil 协议
 
 ### 4.1 声明与解释边界
 
-`syscalls/` 提供 syscall **声明对象**（指令形状），表达"要做什么"与"返回值形状"。对象本身不具备解释能力；解释、调度与状态变更由 executor 完成。
+`syscalls/` 提供 sigil **声明对象**（指令形状），表达"要做什么"与"echo 形状"。对象本身不具备解释能力；解释、调度与状态变更由 executor 完成。
 
 ### 4.2 原子性
 
-executor 解释到 syscall 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
+executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
 
 ### 4.3 阻塞分类
 
-- **`[Non-Blocking]`**：调用方保留 Processor，continuation 立刻继续。
+- **`[Non-Blocking]`**：调用方保留 Processor，resonance 立刻继续。
 - **`[Blocking]`**：调用方释放 Processor，阻塞条件满足时微内核恢复该 Process。
 
 ---
 
-## 5. Syscall 规范
+## 5. Sigil 规范
 
 可见性规则：以 `ProcessRef` 为目标的操作要求目标 Process 属于调用方 Scope；以 `ScopeRef` 为目标的操作要求该 ScopeRef 对调用方可见。
 
 ### 5.1 创建
 
-#### Spawn(blueprint, spec?) → { scopeRef, processRef } `[Non-Blocking]`
+#### Spawn(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
 
 在调用方 Scope 下创建子 Scope 与根 Process。默认创建 `StandardScope`，可通过 `spec` 指定角色。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
 
-#### Fork(blueprint, options?) → { processRef } `[Non-Blocking]`
+#### Fork(ritual, options?) → { processRef } `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
@@ -249,13 +251,13 @@ executor 解释到 syscall 时，以微内核一个原子步骤处理之，效�
 
 #### 治理 Scope 创建 `[Non-Blocking]`
 
-kernel 支持通过 syscall 创建 `GovernorScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Spawn(blueprint, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `GovernorScope → 执行子树根 Scope`。
+kernel 支持通过 sigil 创建 `GovernorScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Spawn(ritual, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `GovernorScope → 执行子树根 Scope`。
 
 治理角色的 `spec` 契约：
 
 - `GovernorScopeSpec`：`spec.role = "governor"`，并携带 `capabilities`（sum type）：
-- `coverage = "scheduler"`：只提供 `scheduler(readyProcess) => Plan<Processor>`。
-- `coverage = "reaper"`：只提供 `reaper(suspendedProcess) => Plan<Option<Failure>>`。
+- `coverage = "scheduler"`：只提供 `scheduler(readyProcess) => Wisp<Processor>`。
+- `coverage = "reaper"`：只提供 `reaper(suspendedProcess) => Wisp<Option<Failure>>`。
 - `coverage = "full"`：同时提供 `scheduler + reaper` 两类 handler。
 
 ### 5.2 调度推进（内核内部）
@@ -298,9 +300,9 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 调用方 Process 主动释放 Processor（协作式让权）。
 
-#### 待定 syscall（概念保留）
+#### 待定 sigil（概念保留）
 
-以下 syscall 当前保留为语义占位，具体对象形态（签名、返回值、阻塞分类与可见性约束）待 executor、scheduler 与 reaper 策略定稿后回填：
+以下 sigil 当前保留为语义占位，具体对象形态（签名、返回值、阻塞分类与可见性约束）待 executor、scheduler 与 reaper 策略定稿后回填：
 
 - `Terminate(processRef)`
 - `PollProcess(processRef)`
@@ -326,17 +328,17 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 ### 6.1 定位
 
-Primitive 是 kernel 在 syscall 之上提供的 **Plan 层代数组合**，每个 primitive 产出 `Plan<T>`，由一条或多条 syscall 步骤组合而成。
+Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个 primitive 产出 `Wisp<T>`，由一条或多条 sigil 步骤组合而成。
 
 primitive 的价值：
 
-- **组合稳定性**：把正确的并发模式固化为 Plan 片段，消费方无需自行拼装 syscall 序列。
-- **封装 Process 脆弱性**：syscall 层暴露的 `Fork` 与 Process 级操作（如 `AwaitProcess`、待定的 `Terminate(processRef)`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
+- **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Fork` 与 Process 级操作（如 `AwaitProcess`、待定的 `Terminate(processRef)`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
 
-primitive 不等于 syscall：
+primitive 不等于 sigil：
 
-- syscall 是微内核的原子指令，由 executor 解释。
-- primitive 是 Plan 片段的组合器，在 Plan 代数内完成，不引入新的 executor 解释分支。
+- sigil 是微内核的原子指令，由 executor 解释。
+- primitive 是 Wisp 片段的组合器，在 Wisp 代数内完成，不引入新的 executor 解释分支。
 
 ### 6.2 失败通道
 
@@ -346,7 +348,7 @@ primitive 不等于 syscall：
 
 ### 6.3 并发构造 primitives
 
-#### all(branches) → Plan\<Either\<Failure, T\>\>
+#### all(branches) → Wisp\<Either\<Failure, T\>\>
 
 聚合等待多个分支。组合方式：
 
@@ -355,7 +357,7 @@ primitive 不等于 syscall：
 3. 对每个分支 Process 调用 `AwaitProcess` 等待终态（内部通过 in-band completed 路径收集值）。
 4. 整体通过 `awaitScopeConverged` 收敛外层 supervisor 的终态为 Either。
 
-#### race(branches) → Plan\<Either\<Failure, ArrayValues\<T\>\>\>
+#### race(branches) → Wisp\<Either\<Failure, ArrayValues\<T\>\>\>
 
 选择最先完成者，触发其余分支收敛。`branches` 为非空。组合方式：
 
@@ -366,15 +368,15 @@ primitive 不等于 syscall：
 5. 调用方 Fork 一个后备 Process 等待 arena 收敛——若在首个成功 `Send(raceChannel)` 之前 arena 已收敛（例如最速失败），后备 Process 将该收敛结果转发给调用方。
 6. 调用方通过 `Receive(raceChannel)` 取得首个结果。
 
-#### scoped(plan) → Plan\<Either\<Failure, T\>\>
+#### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
 
 创建 `SupervisorScope` 子 Scope 并立即等待其收敛。
 
-#### resource(body) → Plan\<Either\<Failure, T\>\>
+#### resource(body) → Wisp\<Either\<Failure, T\>\>
 
-创建资源作用域。body 接收 `provide: (value) → Plan<never>`；调用方等待 provide 的首个值作为返回，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。
+创建资源作用域。body 接收 `provide: (value) → Wisp<never>`；调用方等待 provide 的首个值作为返回，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。
 
-#### resumable(plan) → Plan\<Either\<Failure, T\>\>
+#### resumable(ritual) → Wisp\<Either\<Failure, T\>\>
 
 在 scoped body 内声明可恢复边界。`resumable` 在失败时查找 `resumableDelegateKey`：
 
@@ -383,40 +385,40 @@ primitive 不等于 syscall：
 
 ### 6.4 等待与控制 primitives
 
-#### spawn(plan, options?) → Plan\<ScopeRef\>
+#### spawn(ritual, options?) → Wisp\<ScopeRef\>
 
-封装 Spawn syscall，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
+封装 Spawn sigil，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
 
 - 默认：创建 StandardScope。
 - `options.mode = "supervisor"`：创建 SupervisorScope，在该边界内收敛后代失败/终止。
 - `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收失败请求并回发恢复结果。
 
-#### join(scopeRef) → Plan\<Either\<Failure, T\>\>
+#### join(scopeRef) → Wisp\<Either\<Failure, T\>\>
 
 等待目标 Scope 终态并收敛为 Either。
 
-#### halt(failure?) → Plan\<never\>
+#### halt(failure?) → Wisp\<never\>
 
-封装 Halt syscall，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。
+封装 Halt sigil，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。
 
-#### suspend() → Plan\<never\>
+#### suspend() → Wisp\<never\>
 
 持续挂起当前 Process，直到父 Scope 回收清理阶段以失败路径唤醒。
 
-#### cede() → Plan\<void\>
+#### cede() → Wisp\<void\>
 
-封装 Cede syscall，协作式让权。
+封装 Cede sigil，协作式让权。
 
 ### 6.5 上下文与自省 primitives
 
-#### bind(key, value) → Plan\<void\>
+#### bind(key, value) → Wisp\<void\>
 
 在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。
 
-#### lookup(key) → Plan\<T | undefined\>
+#### lookup(key) → Wisp\<T | undefined\>
 
 沿祖先链查找值；未命中时返回 `undefined`。
 
-#### self() → Plan\<SelfDescriptor\>
+#### self() → Wisp\<SelfDescriptor\>
 
 返回当前执行实体的自省信息。

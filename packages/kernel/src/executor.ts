@@ -1,4 +1,4 @@
-import type { Blueprint, Plan } from "./contracts/plan";
+import type { Ritual, Wisp } from "./contracts/plan";
 import type { Channel } from "./contracts/channel";
 import type { Failure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
@@ -39,7 +39,7 @@ export interface Executor {
   /**
    * Launch a blueprint under the given scope.
    */
-  launch<Return>(scope: ExecutionScopeRef, blueprint: Blueprint<Return>): LaunchHandle<Return>;
+  launch<Return>(scope: ExecutionScopeRef, blueprint: Ritual<Return>): LaunchHandle<Return>;
   /**
    * Send a value into the target scope's channel message queue.
    */
@@ -51,7 +51,7 @@ export interface Executor {
   /**
    * Register cleanup continuation for a launched blueprint.
    */
-  registerCleanup(blueprint: Blueprint<unknown>, cleanup: () => Plan<unknown>): void;
+  registerCleanup(blueprint: Ritual<unknown>, cleanup: () => Wisp<unknown>): void;
 }
 
 export function ensureExecutor(): Executor {

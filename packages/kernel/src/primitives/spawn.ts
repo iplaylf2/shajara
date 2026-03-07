@@ -1,4 +1,4 @@
-import type { Blueprint, Failure, Plan, ScopeRef } from "#src/contracts";
+import type { Ritual, Failure, Wisp, ScopeRef } from "#src/contracts";
 import {
   awaitScopeConverged,
   resumableDelegateKey,
@@ -14,9 +14,9 @@ import { pipe } from "fp-ts/function";
 import { plan } from "#src/internal/fp";
 
 export function spawn<Return>(
-  entry: Blueprint<Return>,
+  entry: Ritual<Return>,
   options?: SpawnOptions,
-): Plan<ScopeRef<Return>> {
+): Wisp<ScopeRef<Return>> {
   if (options?.mode === "supervisor") {
     return spawnScope(entry, supervisorScopeSpec());
   }
@@ -39,12 +39,12 @@ export interface SpawnRecoveryOption {
   readonly recover: SpawnRecoveryHandler;
 }
 
-export type SpawnRecoveryHandler = (failure: Failure) => Plan<Either<Failure, unknown>>;
+export type SpawnRecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
 
 function withRecoveryPoint<Return>(
-  entry: Blueprint<Return>,
+  entry: Ritual<Return>,
   recover: SpawnRecoveryHandler,
-): Blueprint<Return> {
+): Ritual<Return> {
   return () =>
     pipe(
       fork(recoveryWorker(recover), { participation: "auxiliary" }),
@@ -53,8 +53,8 @@ function withRecoveryPoint<Return>(
     );
 }
 
-function recoveryWorker(recover: SpawnRecoveryHandler): Blueprint<never> {
-  function loop(): Plan<never> {
+function recoveryWorker(recover: SpawnRecoveryHandler): Ritual<never> {
+  function loop(): Wisp<never> {
     return pipe(
       receive(resumableFailureChannel),
       plan.liftF,
@@ -81,7 +81,7 @@ function recoveryAttempt(
   from: ScopeRef<unknown>,
   failure: Failure,
   recover: SpawnRecoveryHandler,
-): Blueprint<void> {
+): Ritual<void> {
   return () =>
     pipe(
       spawnScope(() => recover(failure), supervisorScopeSpec()),

@@ -6,8 +6,8 @@
 
 ## 1. kernel / host 边界
 
-- kernel 承载 `Plan`、`Syscall` 与类型化续延。host 负责 generator 适配与宿主桥接，不将 generator 细节下沉到 kernel。
-- cleanup 注册以 `Blueprint` 为锚点：同一条启动入口注册一次 cleanup。
+- kernel 承载 `Wisp`、`Sigil` 与类型化续延。host 负责 generator 适配与宿主桥接，不将 generator 细节下沉到 kernel。
+- cleanup 注册以 `Ritual` 为锚点：同一条启动入口注册一次 cleanup。
 - 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SpawnDescriptor`、`SelfDescriptor`）由 kernel 单源定义并导出，host 直接消费，不重复定义。
 - 依赖方向：`executor → contracts/syscalls`，反向不允许。
 - 术语方向：`lift` = kernel → host，`lower` = host → kernel。
@@ -31,7 +31,7 @@
 
 ## 4. primitive 约束
 
-- kernel primitive 直接产出 `Plan<T>`，表达一次性消费的计划片段。
+- kernel primitive 直接产出 `Wisp<T>`，表达一次性消费的显现片段。
 - primitive 可由多条底层步骤组成，不假设"一原语 = 一指令"。
 - primitive 层 `spawn` 暴露 `options`（sum type）而非 `spec`：当前支持 `supervisor`（边界收敛）与 `recovery`（`resumable` 委派恢复点）；`ScopeSpec` 不向 primitive 调用点直接暴露。
 - host 的 `spawn` 对 `recovery` handler 采用 host 语义（返回值=恢复成功，抛异常=恢复失败），并在适配边界转换为 kernel 所需失败通道形状。
@@ -53,10 +53,10 @@
 | 路径                              | 职责                           |
 | --------------------------------- | ------------------------------ |
 | `kernel/src/contracts/`           | 核心类型契约                   |
-| `kernel/src/contracts/plan.ts`    | `Plan/Blueprint` 单源          |
+| `kernel/src/contracts/plan.ts`    | `Wisp/Ritual` 单源             |
 | `kernel/src/contracts/scope.ts`   | `ScopeRef/ScopeSpec` 单源      |
 | `kernel/src/contracts/channel.ts` | `Channel` 单源                 |
-| `kernel/src/syscalls/`            | syscall 声明 + index           |
+| `kernel/src/syscalls/`            | sigil 声明 + index             |
 | `kernel/src/primitives/`          | 原语 + index                   |
 | `kernel/src/scopes/`              | 角色条目                       |
 | `kernel/src/executor.ts`          | 执行入口契约与作用域执行状态   |

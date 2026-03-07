@@ -1,34 +1,38 @@
-import type { Syscall, SyscallReturn } from "./syscall";
+import type { Sigil, Echo } from "./syscall";
 
-export type Blueprint<Result> = () => Plan<Result>;
+export type Incantation<Args extends unknown[], Relic> = (...args: Args) => Wisp<Relic>;
 
-// oxlint-disable-next-line id-length
-export function liftSyscall<S extends Syscall>(syscall: S): Plan<SyscallReturn<S>> {
-  return impurePlan(syscall, purePlan);
-}
+export type Resonance<S extends Sigil, Relic> = Incantation<[echo: Echo<S>], Relic>;
 
-export type Plan<Result> = ImpurePlan<Syscall, Result> | PurePlan<Result>;
-
-export function purePlan<Result>(value: Result): PurePlan<Result> {
-  return { kind: "pure", value };
-}
+export type Ritual<Relic> = Incantation<[], Relic>;
 
 // oxlint-disable-next-line id-length
-export function impurePlan<S extends Syscall, Result>(
-  syscall: S,
-  then: (returnValue: SyscallReturn<S>) => Plan<Result>,
-): ImpurePlan<S, Result> {
-  return { kind: "impure", syscall, then };
+export function evoke<S extends Sigil>(sigil: S): Wisp<Echo<S>> {
+  return stirringWisp(sigil, restingWisp);
 }
 
-export interface PurePlan<Result> {
-  readonly kind: "pure";
-  readonly value: Result;
+export type Wisp<Relic> = StirringWisp<Sigil, Relic> | RestingWisp<Relic>;
+
+export function restingWisp<Relic>(relic: Relic): RestingWisp<Relic> {
+  return { bearing: "resting", relic };
 }
 
 // oxlint-disable-next-line id-length
-export interface ImpurePlan<S extends Syscall, Result> {
-  readonly kind: "impure";
-  readonly syscall: S;
-  readonly then: (returnValue: SyscallReturn<S>) => Plan<Result>;
+export function stirringWisp<S extends Sigil, Relic>(
+  sigil: S,
+  resonance: Resonance<S, Relic>,
+): StirringWisp<S, Relic> {
+  return { bearing: "stirring", resonance, sigil };
+}
+
+export interface RestingWisp<Relic> {
+  readonly bearing: "resting";
+  readonly relic: Relic;
+}
+
+// oxlint-disable-next-line id-length
+export interface StirringWisp<S extends Sigil, Relic> {
+  readonly bearing: "stirring";
+  readonly sigil: S;
+  readonly resonance: Resonance<S, Relic>;
 }

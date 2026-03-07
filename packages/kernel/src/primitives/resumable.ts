@@ -1,4 +1,4 @@
-import type { Blueprint, Failure, Plan, ScopeRef } from "#src/contracts";
+import type { Ritual, Failure, Wisp, ScopeRef } from "#src/contracts";
 import {
   awaitScopeConverged,
   awaitScopeInBand,
@@ -13,7 +13,7 @@ import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
 
-export function resumable<Return>(entry: Blueprint<Return>): Plan<Either<Failure, Return>> {
+export function resumable<Return>(entry: Ritual<Return>): Wisp<Either<Failure, Return>> {
   return pipe(
     spawn(entry, supervisorScopeSpec()),
     plan.liftF,
@@ -39,7 +39,7 @@ export function resumable<Return>(entry: Blueprint<Return>): Plan<Either<Failure
 function delegateWorker<Return>(
   delegateScopeRef: ScopeRef<unknown>,
   failure: Failure,
-): Blueprint<Either<Failure, Return>> {
+): Ritual<Either<Failure, Return>> {
   return () =>
     pipe(
       send(delegateScopeRef, resumableFailureChannel, failure),

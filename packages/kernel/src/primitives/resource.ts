@@ -1,4 +1,4 @@
-import type { Blueprint, Channel, Failure, Plan, ScopeRef } from "#src/contracts";
+import type { Ritual, Channel, Failure, Wisp, ScopeRef } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
 import { fork, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
@@ -11,7 +11,7 @@ import { supervisorScopeSpec } from "#src/scopes";
 
 export function resource<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
-): Plan<Either<Failure, ProvidedValue>> {
+): Wisp<Either<Failure, ProvidedValue>> {
   const resourceChannel = channel<Either<Failure, ProvidedValue>>();
 
   return pipe(
@@ -34,15 +34,15 @@ export function resource<ProvidedValue>(
 
 export type ResourceBody<ProvidedValue> = (
   provide: ResourceProvide<ProvidedValue>,
-) => Plan<unknown>;
+) => Wisp<unknown>;
 
-export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Plan<never>;
+export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Wisp<never>;
 
 function resourceSupervisor<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
   callerRef: ScopeRef<unknown>,
   resourceChannel: Channel<Either<Failure, ProvidedValue>>,
-): Blueprint<never> {
+): Ritual<never> {
   return () =>
     pipe(
       body((value) =>
@@ -60,7 +60,7 @@ function resourceFailureRelay<ProvidedValue>(
   supervisorRef: ScopeRef<unknown>,
   callerRef: ScopeRef<unknown>,
   resourceChannel: Channel<Either<Failure, ProvidedValue>>,
-): Blueprint<void> {
+): Ritual<void> {
   return () =>
     pipe(
       supervisorRef,

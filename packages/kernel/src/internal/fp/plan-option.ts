@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { Plan, Syscall } from "#src/contracts";
+import type { Wisp, Sigil } from "#src/contracts";
 import type { applicative, apply, functor, monad, option, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, optionT, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";
@@ -9,15 +9,15 @@ import type { syscall } from "./syscall";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {
-    readonly [planOption.URI]: planOption.PlanOption<A>;
+    readonly [planOption.URI]: planOption.WispOption<A>;
   }
 }
 
 export namespace planOption {
-  export const URI = "PlanOption";
+  export const URI = "WispOption";
   export type URI = typeof URI;
 
-  export type PlanOption<A> = Plan<option.Option<A>>;
+  export type WispOption<A> = Wisp<option.Option<A>>;
 
   export const some = optionT.some(plan.Pointed);
 
@@ -65,7 +65,7 @@ export namespace planOption {
     of: Pointed.of,
   };
 
-  export const Lifting: lifting.Lifting<URI, syscall.URI, Syscall> = {
+  export const Lifting: lifting.Lifting<URI, syscall.URI, Sigil> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,

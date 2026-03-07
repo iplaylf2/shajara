@@ -1,5 +1,5 @@
 import type { RETURN_TOKEN } from "#src/utils";
-import type { Syscall } from "#src/contracts";
+import type { Sigil } from "#src/contracts";
 
 export function cede(): CedeSyscall {
   return {
@@ -7,7 +7,7 @@ export function cede(): CedeSyscall {
   };
 }
 
-export interface CedeSyscall extends Syscall {
+export interface CedeSyscall extends Sigil {
   readonly kind: "cede";
   readonly [RETURN_TOKEN]?: readonly [void];
 }
