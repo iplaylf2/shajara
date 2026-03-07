@@ -1,12 +1,12 @@
 import { liftBlueprint, lowerBlueprints, unwrapEither } from "#src/boundary";
-import type { RuntimeBlueprintTuple } from "#src/boundary";
-import type { RuntimePlan } from "#src/contracts";
+import type { RiteRoutineTuple } from "#src/boundary";
+import type { RiteCoroutine } from "#src/contracts";
 import type { UnknownArray } from "type-fest";
 import { all as kernelAll } from "@shajara/kernel";
 
 export function* all<Returns extends UnknownArray>(
-  primitives: RuntimeBlueprintTuple<Returns>,
-): RuntimePlan<Returns> {
+  primitives: RiteRoutineTuple<Returns>,
+): RiteCoroutine<Returns> {
   const outcome = yield* liftBlueprint(() => kernelAll(lowerBlueprints(primitives)))();
   return unwrapEither(outcome);
 }

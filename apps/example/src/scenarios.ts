@@ -1,5 +1,5 @@
-import type { RuntimeBlueprint, RuntimePlan, ScopeRef } from "@shajara/runtime";
-import { action, channel, contextKey, sleep, until } from "@shajara/runtime";
+import type { RiteRoutine, RiteCoroutine, ScopeRef } from "@shajara/host";
+import { action, channel, contextKey, sleep, until } from "@shajara/host";
 import {
   all,
   bind,
@@ -17,10 +17,10 @@ import {
   spawn,
   suspend,
   unbind,
-} from "@shajara/runtime/primitives";
-import type { RuntimeResourceProvide } from "@shajara/runtime/primitives";
+} from "@shajara/host/primitives";
+import type { HostResourceProvide } from "@shajara/host/primitives";
 
-function getExampleScenario(name: ExampleScenarioName): RuntimeBlueprint<unknown> {
+function getExampleScenario(name: ExampleScenarioName): RiteRoutine<unknown> {
   return EXAMPLE_SCENARIOS[name];
 }
 
@@ -41,37 +41,37 @@ const EXAMPLE_SCENARIOS = {
   spawn: spawnBlueprint,
   suspend: suspendBlueprint,
   until: untilBlueprint,
-} satisfies Record<string, RuntimeBlueprint<unknown>>;
+} satisfies Record<string, RiteRoutine<unknown>>;
 
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
-function* scopedBlueprint(): RuntimePlan<void> {
+function* scopedBlueprint(): RiteCoroutine<void> {
   const scopedResult = yield* scoped(scopedBodyBlueprint);
   consume(scopedResult);
 }
 
-function* spawnBlueprint(): RuntimePlan<void> {
+function* spawnBlueprint(): RiteCoroutine<void> {
   const spawned = yield* spawn(childBlueprint);
   const joinedValue = yield* join(spawned);
   consume(joinedValue);
 }
 
-function* resourceBlueprint(): RuntimePlan<void> {
+function* resourceBlueprint(): RiteCoroutine<void> {
   const providedValue = yield* resource(resourceBodyBlueprint);
   consume(providedValue);
 }
 
-function* scopedBodyBlueprint(): RuntimePlan<string> {
+function* scopedBodyBlueprint(): RiteCoroutine<string> {
   const bodyResult = yield* resumable(childBlueprint);
   return bodyResult;
 }
 
-function* childBlueprint(): RuntimePlan<string> {
+function* childBlueprint(): RiteCoroutine<string> {
   yield* cede();
   return "child done";
 }
 
-function* resourceBodyBlueprint(provide: RuntimeResourceProvide<string>): RuntimePlan<void> {
+function* resourceBodyBlueprint(provide: HostResourceProvide<string>): RiteCoroutine<void> {
   const resourceValue = "resource-ready";
 
   try {
@@ -82,31 +82,31 @@ function* resourceBodyBlueprint(provide: RuntimeResourceProvide<string>): Runtim
   }
 }
 
-function* allBlueprint(): RuntimePlan<void> {
+function* allBlueprint(): RiteCoroutine<void> {
   const bothDone = yield* all([cede, cede] as const);
   consume(bothDone);
 }
 
-function* raceBlueprint(): RuntimePlan<void> {
+function* raceBlueprint(): RiteCoroutine<void> {
   const winner = yield* race([cede, cede] as const);
   consume(winner);
 }
 
-function* actionResolveBlueprint(): RuntimePlan<void> {
+function* actionResolveBlueprint(): RiteCoroutine<void> {
   const pending = yield* action<string>();
   pending.resolve("action done");
   const value = yield* join(pending.scope);
   consume(value);
 }
 
-function* bindLookupBlueprint(): RuntimePlan<void> {
+function* bindLookupBlueprint(): RiteCoroutine<void> {
   yield* bind(TRACE_ID_KEY, "request-1");
   const traceId = yield* lookup(TRACE_ID_KEY);
   consume(traceId);
   yield* unbind(TRACE_ID_KEY);
 }
 
-function* sendReceiveBlueprint(): RuntimePlan<void> {
+function* sendReceiveBlueprint(): RiteCoroutine<void> {
   const { scopeRef: callerRef } = yield* self();
   const spawned = yield* spawn(() => senderBlueprint(callerRef));
   const { value } = yield* receive(EXAMPLE_MESSAGE_CHANNEL);
@@ -115,36 +115,36 @@ function* sendReceiveBlueprint(): RuntimePlan<void> {
   consume(joinedValue);
 }
 
-function* selfBlueprint(): RuntimePlan<void> {
+function* selfBlueprint(): RiteCoroutine<void> {
   const descriptor = yield* self();
   consume(descriptor);
 }
 
-function* untilBlueprint(): RuntimePlan<void> {
+function* untilBlueprint(): RiteCoroutine<void> {
   const value = yield* until(() => Promise.resolve("until done"));
   consume(value);
 }
 
-function* sleepBlueprint(): RuntimePlan<void> {
+function* sleepBlueprint(): RiteCoroutine<void> {
   yield* sleep(EXAMPLE_SLEEP_MILLISECONDS);
 }
 
-function* runBlueprint(): RuntimePlan<string> {
+function* runBlueprint(): RiteCoroutine<string> {
   yield* cede();
   return "run done";
 }
 
-function* senderBlueprint(callerRef: ScopeRef<unknown>): RuntimePlan<"sent"> {
+function* senderBlueprint(callerRef: ScopeRef<unknown>): RiteCoroutine<"sent"> {
   yield* send(callerRef, EXAMPLE_MESSAGE_CHANNEL, "message from child");
   return "sent";
 }
 
-function* haltBlueprint(): RuntimePlan<never> {
+function* haltBlueprint(): RiteCoroutine<never> {
   yield* halt();
   throw new Error("Not implemented: halt() never returns.");
 }
 
-function* suspendBlueprint(): RuntimePlan<never> {
+function* suspendBlueprint(): RiteCoroutine<never> {
   yield* suspend();
   throw new Error("Not implemented: suspend() only resumes as failure.");
 }

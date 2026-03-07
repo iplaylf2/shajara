@@ -342,7 +342,7 @@ primitive 不等于 syscall：
 
 涉及生命周期等待（Scope 或 Process）的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit/ProcessExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(failure)`，`terminated → Left(scopeTerminated)`。
 
-这一分层使 kernel 层的失败保持可组合、可推理，而不依赖宿主异常机制。runtime 在适配边界统一解包 Either，将 Left 收敛为异常抛出。
+这一分层使 kernel 层的失败保持可组合、可推理，而不依赖宿主异常机制。host 在适配边界统一解包 Either，将 Left 收敛为异常抛出。
 
 ### 6.3 并发构造 primitives
 

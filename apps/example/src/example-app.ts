@@ -1,4 +1,4 @@
-import { createScope, run } from "@shajara/runtime";
+import { createScope, run } from "@shajara/host";
 import type { ExampleScenarioName } from "./scenarios";
 import { getExampleScenario } from "./scenarios";
 

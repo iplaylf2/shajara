@@ -1,12 +1,12 @@
 import { receive, scoped, self } from "#src/primitives";
-import type { RuntimePlan } from "#src/contracts";
+import type { RiteCoroutine } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
 import { channel } from "#src/contracts";
 import { ensureExecutor } from "@shajara/kernel";
 
-export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Return> {
+export function* until<Return>(thunk: HostUntilThunk<Return>): RiteCoroutine<Return> {
   const executor = ensureExecutor();
-  return yield* scoped(function* untilBlueprint(): RuntimePlan<Return> {
+  return yield* scoped(function* untilBlueprint(): RiteCoroutine<Return> {
     const { scopeRef } = yield* self();
 
     thunk().then(
@@ -25,6 +25,6 @@ export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Re
   });
 }
 
-export type RuntimeUntilThunk<Return> = () => PromiseLike<Return>;
+export type HostUntilThunk<Return> = () => PromiseLike<Return>;
 
 const settlementChannel = channel<Settlement<unknown>>();

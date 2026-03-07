@@ -1,7 +1,7 @@
-import type { RuntimePlan } from "#src/contracts";
+import type { RiteCoroutine } from "#src/contracts";
 import { suspend as kernelSuspend } from "@shajara/kernel";
 import { liftBlueprint } from "#src/boundary";
 
-export function suspend(): RuntimePlan<never> {
+export function suspend(): RiteCoroutine<never> {
   return liftBlueprint(() => kernelSuspend())();
 }

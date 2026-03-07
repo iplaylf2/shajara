@@ -1,10 +1,10 @@
 import type { Blueprint } from "@shajara/kernel";
-import type { RuntimeBlueprint } from "#src/contracts";
+import type { RiteRoutine } from "#src/contracts";
 import type { UnknownArray } from "type-fest";
 import { lowerBlueprint } from "./lower-blueprint";
 
 export function lowerBlueprints<Returns extends UnknownArray>(
-  blueprints: RuntimeBlueprintTuple<Returns>,
+  blueprints: RiteRoutineTuple<Returns>,
 ): {
   readonly [Index in keyof Returns]: Blueprint<Returns[Index]>;
 } {
@@ -13,6 +13,6 @@ export function lowerBlueprints<Returns extends UnknownArray>(
   };
 }
 
-export type RuntimeBlueprintTuple<Returns extends UnknownArray> = {
-  readonly [Index in keyof Returns]: RuntimeBlueprint<Returns[Index]>;
+export type RiteRoutineTuple<Returns extends UnknownArray> = {
+  readonly [Index in keyof Returns]: RiteRoutine<Returns[Index]>;
 };

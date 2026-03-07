@@ -1,10 +1,10 @@
-import type { LaunchState, RuntimeBlueprint } from "#src/contracts";
+import type { LaunchState, RiteRoutine } from "#src/contracts";
 import type { RunOptions, StatefulPromise } from "#src/operations-kit";
 import { ensureExecutor } from "@shajara/kernel";
 import { launch } from "#src/operations-kit";
 import { suspend } from "#src/primitives";
 
-export function createScope(): RuntimeScope {
+export function createScope(): HostScope {
   const executor = ensureExecutor();
   const launchedScope = launch(executor, executor.rootScope, suspend);
   const closed: Promise<void> = Promise.resolve(launchedScope.settled);
@@ -16,12 +16,12 @@ export function createScope(): RuntimeScope {
     closed,
     halt: haltScope,
     run<Return>(
-      blueprint: RuntimeBlueprint<Return>,
+      blueprint: RiteRoutine<Return>,
       options?: RunOptions,
     ): StatefulPromise<Return> {
       return launch(executor, launchedScope.scope, blueprint, options).settled;
     },
-    get state(): RuntimeScopeState {
+    get state(): HostScopeState {
       return launchedScope.settled.state();
     },
   };
@@ -34,12 +34,12 @@ export function createScope(): RuntimeScope {
   }
 }
 
-export interface RuntimeScope {
-  run<Return>(blueprint: RuntimeBlueprint<Return>, options?: RunOptions): StatefulPromise<Return>;
+export interface HostScope {
+  run<Return>(blueprint: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
   halt(): Promise<void>;
-  readonly state: RuntimeScopeState;
+  readonly state: HostScopeState;
   readonly closed: Promise<void>;
   [Symbol.asyncDispose](): Promise<void>;
 }
 
-export type RuntimeScopeState = LaunchState;
+export type HostScopeState = LaunchState;

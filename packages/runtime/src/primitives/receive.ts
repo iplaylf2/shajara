@@ -1,9 +1,9 @@
-import type { Channel, ReceiveResult, RuntimePlan } from "#src/contracts";
+import type { Channel, ReceiveResult, RiteCoroutine } from "#src/contracts";
 import { receive as kernelReceive } from "@shajara/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function receive<ReceiveValue>(
   channel: Channel<ReceiveValue>,
-): RuntimePlan<ReceiveResult<ReceiveValue>> {
+): RiteCoroutine<ReceiveResult<ReceiveValue>> {
   return liftBlueprint(() => kernelReceive(channel))();
 }

@@ -1,17 +1,17 @@
 # API
 
-本文档定义用户侧公开 API 与使用约束。用户通过 `@shajara/runtime` 消费所有能力。
+本文档定义用户侧公开 API 与使用约束。用户通过 `@shajara/host` 消费所有能力。
 
 ---
 
 ## 1. 计算单元
 
-### RuntimeBlueprint
+### RiteRoutine
 
-`RuntimeBlueprint<T>` 是用户侧编排单元——generator function，通过 `yield*` 组合原语，通过 `return` 产生结果。
+`RiteRoutine<T>` 是用户侧编排单元——generator function，通过 `yield*` 组合原语，通过 `return` 产生结果。
 
 ```ts
-const myTask: RuntimeBlueprint<string> = function* () {
+const myTask: RiteRoutine<string> = function* () {
   yield* cede();
   return "done";
 };
@@ -24,22 +24,22 @@ const myTask: RuntimeBlueprint<string> = function* () {
 ### run
 
 ```ts
-run<T>(blueprint: RuntimeBlueprint<T>, options?: { signal?: AbortSignal }): StatefulPromise<T>
+run<T>(blueprint: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulPromise<T>
 ```
 
 启动一段蓝图，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。运行作用域挂载在全局 root scope 下。
 
 - 成功 → 返回结果值。
 - 终止 → 抛出 `ScopeTerminatedError`。
-- 失败 → 抛出 `KhoraError`。
+- 失败 → 抛出 `ShajaraError`。
 
-当 `signal` 触发 abort 时，runtime 终止对应执行作用域。
+当 `signal` 触发 abort 时，host 终止对应执行作用域。
 执行入口在内核侧统一由 `ExecutionScopeRef` 表达（含 root 锚点）。
 
 ### createScope
 
 ```ts
-createScope(): RuntimeScope
+createScope(): HostScope
 ```
 
 创建宿主侧托管作用域，挂载在全局 root scope 下。返回：
@@ -56,12 +56,12 @@ createScope(): RuntimeScope
 
 ## 3. 宿主桥接操作
 
-以下操作在 `RuntimeBlueprint` 内通过 `yield*` 使用，属于上下文敏感入口。
+以下操作在 `RiteRoutine` 内通过 `yield*` 使用，属于上下文敏感入口。
 
 ### action
 
 ```ts
-yield* action<T>(): RuntimeAction<T>   // { scope, resolve, reject }
+yield* action<T>(): HostAction<T>   // { scope, resolve, reject }
 ```
 
 获取宿主侧可结算能力记录，作用域归属当前执行上下文分支。
@@ -86,7 +86,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ## 4. 编排原语
 
-原语在 `RuntimeBlueprint` 内通过 `yield*` 使用，直接得到 `RuntimePlan`。
+原语在 `RiteRoutine` 内通过 `yield*` 使用，直接得到 `RiteCoroutine`。
 
 ### 4.1 并发构造
 
@@ -129,6 +129,6 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 - 用户侧不直接接触 kernel 契约细节。
 - 用户可观察的生命周期粒度是 Scope，不是 Process。
 - 编排层通过 `spawn` 句柄配合 `join` 等待分支收敛，不透出底层 scope 结构字段。
-- generator 侧成功通过返回值表达，失败由 runtime 以异常抛出传播。
+- generator 侧成功通过返回值表达，失败由 host 以异常抛出传播。
 - 控制面契约统一以 `*Ref` 表达能力句柄。
 - `createScope` 属于宿主入口（非 primitives），生命周期由 `halt()` 或 `asyncDispose` 治理。

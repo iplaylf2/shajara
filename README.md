@@ -11,4 +11,4 @@ shajara 是一个并发计算内核，目标是把并发计算的生命周期管
 
 ## 示例
 
-- `apps/example`：`@shajara/runtime` 的最小调用示例工程
+- `apps/example`：`@shajara/host` 的最小调用示例工程

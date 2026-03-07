@@ -1,5 +1,5 @@
 {
-  "name": "@shajara/runtime",
+  "name": "@shajara/host",
   "version": "0.1.0",
   "private": true,
   "type": "module",

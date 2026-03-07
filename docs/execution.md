@@ -6,7 +6,7 @@
 
 ## 1. 当前目标与阻塞
 
-当前主目标仍是打通可运行闭环：落地 kernel 执行器并接通 runtime 宿主入口。
+当前主目标仍是打通可运行闭环：落地 kernel 执行器并接通 host 宿主入口。
 
 - 主阻塞：`ensureExecutor()` 仍为占位实现，端到端运行闭环未建立。  
   证据：`packages/kernel/src/executor.ts`
@@ -19,7 +19,7 @@
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives-kit/await-process-in-band.ts`
 - `race` arena 内部分支已改为 `Fork`；分支完成后 `Send(raceChannel)` 并 `Halt`，arena 根 process 通过 `park` 挂起等待收敛路径。  
   证据：`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives-kit/park.ts`
-- runtime `race` 入参已收敛为非空 tuple，禁止空分支调用。  
+- host `race` 入参已收敛为非空 tuple，禁止空分支调用。  
   证据：`packages/runtime/src/primitives/race.ts`
 
 ## 3. 相对设计基线的新增增量
@@ -52,5 +52,5 @@ yarn lint
 
 - `yarn workspace @shajara/kernel lint`
 - `yarn workspace @shajara/kernel typecheck`
-- `yarn workspace @shajara/runtime lint`
-- `yarn workspace @shajara/runtime typecheck`
+- `yarn workspace @shajara/host lint`
+- `yarn workspace @shajara/host typecheck`

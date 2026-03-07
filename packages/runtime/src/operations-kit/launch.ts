@@ -6,18 +6,18 @@ import type {
   LaunchState,
 } from "@shajara/kernel";
 import { fromFailure, lowerBlueprint } from "#src/boundary";
-import type { RuntimeBlueprint } from "#src/contracts";
+import type { RiteRoutine } from "#src/contracts";
 import { ScopeTerminatedError } from "#src/errors";
 
 export function launch<Return>(
   executor: Executor,
   scope: ExecutionScopeRef,
-  blueprint: RuntimeBlueprint<Return>,
+  blueprint: RiteRoutine<Return>,
   options?: RunOptions,
 ): RuntimeLaunchResult<Return> {
   const signal = options?.signal;
 
-  function* wrappedBlueprint(): ReturnType<RuntimeBlueprint<Return>> {
+  function* wrappedBlueprint(): ReturnType<RiteRoutine<Return>> {
     if (!signal) {
       return yield* blueprint();
     }

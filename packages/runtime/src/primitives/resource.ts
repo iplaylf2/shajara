@@ -1,21 +1,21 @@
 import { liftBlueprint, lowerBlueprint, unwrapEither } from "#src/boundary";
-import type { RuntimePlan } from "#src/contracts";
+import type { RiteCoroutine } from "#src/contracts";
 import { resource as kernelResource } from "@shajara/kernel";
 
 export function* resource<ProvidedValue>(
-  body: RuntimeResourceBody<ProvidedValue>,
-): RuntimePlan<ProvidedValue> {
+  body: HostResourceBody<ProvidedValue>,
+): RiteCoroutine<ProvidedValue> {
   const outcome = yield* liftBlueprint(() => createKernelResource(body))();
   return unwrapEither(outcome);
 }
 
-export type RuntimeResourceBody<ProvidedValue> = (
-  provide: RuntimeResourceProvide<ProvidedValue>,
-) => RuntimePlan<unknown>;
+export type HostResourceBody<ProvidedValue> = (
+  provide: HostResourceProvide<ProvidedValue>,
+) => RiteCoroutine<unknown>;
 
-export type RuntimeResourceProvide<ProvidedValue> = (value: ProvidedValue) => RuntimePlan<never>;
+export type HostResourceProvide<ProvidedValue> = (value: ProvidedValue) => RiteCoroutine<never>;
 
-function createKernelResource<ProvidedValue>(runtimeBody: RuntimeResourceBody<ProvidedValue>) {
+function createKernelResource<ProvidedValue>(runtimeBody: HostResourceBody<ProvidedValue>) {
   return kernelResource<ProvidedValue>((kernelProvide) =>
     lowerBlueprint(() => runtimeBody((value) => liftBlueprint(() => kernelProvide(value))()))(),
   );

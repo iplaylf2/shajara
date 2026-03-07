@@ -1,11 +1,11 @@
 import type { Failure } from "./kernel";
 import type { Syscall } from "@shajara/kernel";
 
-export type RuntimeBlueprint<Return> = () => RuntimePlan<Return>;
+export type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 
-export type RuntimePlan<Return> = Generator<Syscall, Return, unknown>;
+export type RiteCoroutine<Return> = Generator<Syscall, Return, unknown>;
 
-export abstract class KhoraError extends Error {
+export abstract class ShajaraError extends Error {
   constructor(protected readonly failure: Failure) {
     super(failure.message());
   }

@@ -11,7 +11,7 @@
     "typecheck": "yarn run -T tsc --noEmit"
   },
   "dependencies": {
-    "@shajara/runtime": "workspace:^"
+    "@shajara/host": "workspace:^"
   },
   "devDependencies": {
     "@shajara/presets": "workspace:^",

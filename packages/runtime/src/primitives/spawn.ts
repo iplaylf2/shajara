@@ -1,4 +1,4 @@
-import type { Failure, RuntimeBlueprint, RuntimePlan, ScopeRef } from "#src/contracts";
+import type { Failure, RiteRoutine, RiteCoroutine, ScopeRef } from "#src/contracts";
 import type {
   SpawnOptions as KernelSpawnOptions,
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
@@ -6,13 +6,13 @@ import type {
 import { fromFailure, liftBlueprint, lowerBlueprint, toFailureUnknown } from "#src/boundary";
 import { left, right } from "@shajara/kernel/utils";
 import type { Either } from "@shajara/kernel/utils";
-import { KhoraError } from "#src/contracts";
+import { ShajaraError } from "#src/contracts";
 import { spawn as kernelSpawn } from "@shajara/kernel";
 
 export function spawn<Return>(
-  entry: RuntimeBlueprint<Return>,
+  entry: RiteRoutine<Return>,
   options?: SpawnOptions,
-): RuntimePlan<ScopeRef<Return>> {
+): RiteCoroutine<ScopeRef<Return>> {
   return liftBlueprint(() => kernelSpawn(lowerBlueprint(entry), toKernelSpawnOptions(options)))();
 }
 
@@ -27,7 +27,7 @@ export interface SpawnRecoveryOption {
   readonly recover: SpawnRecoveryHandler;
 }
 
-export type SpawnRecoveryHandler = (error: KhoraError) => RuntimePlan<unknown>;
+export type SpawnRecoveryHandler = (error: ShajaraError) => RiteCoroutine<unknown>;
 
 function toKernelSpawnOptions(options: SpawnOptions | undefined): KernelSpawnOptions | undefined {
   if (!options) {
@@ -51,8 +51,8 @@ function toKernelSpawnRecoveryHandler(recover: SpawnRecoveryHandler): KernelSpaw
 
 function* runtimeRecovery(
   recover: SpawnRecoveryHandler,
-  error: KhoraError,
-): RuntimePlan<Either<Failure, unknown>> {
+  error: ShajaraError,
+): RiteCoroutine<Either<Failure, unknown>> {
   try {
     const replacement = yield* recover(error);
     return right(replacement);

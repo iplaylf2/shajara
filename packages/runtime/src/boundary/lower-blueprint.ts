@@ -1,11 +1,11 @@
 import type { Blueprint, Plan, Syscall } from "@shajara/kernel";
-import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
+import type { RiteRoutine, RiteCoroutine } from "#src/contracts";
 import { ensureExecutor, halt, impurePlan, purePlan } from "@shajara/kernel";
 import { isLeft, tryCatch } from "@shajara/kernel/utils";
 import { toFailureUnknown } from "./failure-mapping";
 
 export function lowerBlueprint<Return>(
-  runtimeBlueprint: RuntimeBlueprint<Return>,
+  runtimeBlueprint: RiteRoutine<Return>,
 ): Blueprint<Return> {
   function lowered(): Plan<Return> {
     const startedPlan = tryCatch(() => runtimeBlueprint(), toFailureUnknown);
@@ -25,7 +25,7 @@ export function lowerBlueprint<Return>(
 }
 
 function lowerRuntimeNext<Return>(
-  runtimePlan: RuntimePlan<Return>,
+  runtimePlan: RiteCoroutine<Return>,
   response: unknown,
 ): Plan<Return> {
   const nextStep = tryCatch(() => runtimePlan.next(response), toFailureUnknown);
@@ -37,7 +37,7 @@ function lowerRuntimeNext<Return>(
 }
 
 function lowerRuntimeStep<Return>(
-  runtimePlan: RuntimePlan<Return>,
+  runtimePlan: RiteCoroutine<Return>,
   step: IteratorResult<Syscall, Return>,
 ): Plan<Return> {
   if (step.done) {
@@ -47,7 +47,7 @@ function lowerRuntimeStep<Return>(
   return impurePlan(step.value, (response) => lowerRuntimeNext(runtimePlan, response));
 }
 
-function lowerRuntimeReturn<Return>(runtimePlan: RuntimePlan<Return>): Plan<Return> {
+function lowerRuntimeReturn<Return>(runtimePlan: RiteCoroutine<Return>): Plan<Return> {
   const nextStep = tryCatch(() => runtimePlan.return(null as Return), toFailureUnknown);
   if (isLeft(nextStep)) {
     return halt(nextStep.left);

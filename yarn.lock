@@ -869,10 +869,24 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@shajara/example@workspace:apps/example"
   dependencies:
+    "@shajara/host": "workspace:^"
     "@shajara/presets": "workspace:^"
-    "@shajara/runtime": "workspace:^"
     oxlint: "catalog:"
     vite: "catalog:"
+  languageName: unknown
+  linkType: soft
+
+"@shajara/host@workspace:^, @shajara/host@workspace:packages/runtime":
+  version: 0.0.0-use.local
+  resolution: "@shajara/host@workspace:packages/runtime"
+  dependencies:
+    "@shajara/kernel": "workspace:^"
+    "@shajara/presets": "workspace:^"
+    oxlint: "catalog:"
+    type-fest: "catalog:"
+    typescript: "catalog:"
+    vite: "catalog:"
+    vite-plugin-dts: "catalog:"
   languageName: unknown
   linkType: soft
 
@@ -896,20 +910,6 @@ __metadata:
   resolution: "@shajara/presets@workspace:internal/presets"
   dependencies:
     oxlint: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@shajara/runtime@workspace:^, @shajara/runtime@workspace:packages/runtime":
-  version: 0.0.0-use.local
-  resolution: "@shajara/runtime@workspace:packages/runtime"
-  dependencies:
-    "@shajara/kernel": "workspace:^"
-    "@shajara/presets": "workspace:^"
-    oxlint: "catalog:"
-    type-fest: "catalog:"
-    typescript: "catalog:"
-    vite: "catalog:"
-    vite-plugin-dts: "catalog:"
   languageName: unknown
   linkType: soft
 

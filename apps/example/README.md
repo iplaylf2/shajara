@@ -1,6 +1,6 @@
 # @shajara/example
 
-Type-shape example for `@shajara/runtime` and `@shajara/kernel` contracts.
+Type-shape example for `@shajara/host` and `@shajara/kernel` contracts.
 
 ## Check
 
