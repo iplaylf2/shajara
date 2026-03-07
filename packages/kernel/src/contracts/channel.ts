@@ -1,5 +1,6 @@
-import type { RELIC_TOKEN } from "./token";
 import { notImplemented } from "#src/internal/not-implemented";
+
+declare const VALUE_TOKEN: unique symbol;
 
 // oxlint-disable-next-line id-length
 export type ChannelValue<C extends Channel<unknown>> =
@@ -10,5 +11,5 @@ export function channel<Value>(): Channel<Value> {
 }
 
 export interface Channel<Value> {
-  readonly [RELIC_TOKEN]?: readonly [Value];
+  readonly [VALUE_TOKEN]?: readonly [Value];
 }

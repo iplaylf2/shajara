@@ -1,5 +1,7 @@
-import type { REF_TOKEN, RELIC_TOKEN } from "./token";
 import type { Failure } from "./failure";
+import type { REF_TOKEN } from "./token";
+
+declare const RELIC_TOKEN: unique symbol;
 
 export interface ScopeRef<Relic> {
   readonly [REF_TOKEN]: "scope";

@@ -1,5 +1,6 @@
-import type { RELIC_TOKEN } from "./token";
 import { notImplemented } from "#src/internal/not-implemented";
+
+declare const VALUE_TOKEN: unique symbol;
 
 // oxlint-disable-next-line id-length
 export type ContextKeyValue<K extends ContextKey<unknown>> =
@@ -10,5 +11,5 @@ export function contextKey<Value>(): ContextKey<Value> {
 }
 
 export interface ContextKey<Value> {
-  readonly [RELIC_TOKEN]?: readonly [Value];
+  readonly [VALUE_TOKEN]?: readonly [Value];
 }
