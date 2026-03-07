@@ -1,5 +1,5 @@
 import type { Channel, ReceiveResult, RuntimePlan } from "#src/contracts";
-import { receive as kernelReceive } from "@khora/kernel";
+import { receive as kernelReceive } from "@shajara/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function receive<ReceiveValue>(

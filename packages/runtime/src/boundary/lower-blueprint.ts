@@ -1,7 +1,7 @@
-import type { Blueprint, Plan, Syscall } from "@khora/kernel";
+import type { Blueprint, Plan, Syscall } from "@shajara/kernel";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
-import { ensureExecutor, halt, impurePlan, purePlan } from "@khora/kernel";
-import { isLeft, tryCatch } from "@khora/kernel/utils";
+import { ensureExecutor, halt, impurePlan, purePlan } from "@shajara/kernel";
+import { isLeft, tryCatch } from "@shajara/kernel/utils";
 import { toFailureUnknown } from "./failure-mapping";
 
 export function lowerBlueprint<Return>(

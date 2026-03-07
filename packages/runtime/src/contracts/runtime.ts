@@ -1,5 +1,5 @@
 import type { Failure } from "./kernel";
-import type { Syscall } from "@khora/kernel";
+import type { Syscall } from "@shajara/kernel";
 
 export type RuntimeBlueprint<Return> = () => RuntimePlan<Return>;
 

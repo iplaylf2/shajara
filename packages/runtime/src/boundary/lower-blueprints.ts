@@ -1,4 +1,4 @@
-import type { Blueprint } from "@khora/kernel";
+import type { Blueprint } from "@shajara/kernel";
 import type { RuntimeBlueprint } from "#src/contracts";
 import type { UnknownArray } from "type-fest";
 import { lowerBlueprint } from "./lower-blueprint";

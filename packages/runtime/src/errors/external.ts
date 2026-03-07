@@ -1,5 +1,5 @@
 import { KhoraError } from "#src/contracts";
-import { externalFailure } from "@khora/kernel";
+import { externalFailure } from "@shajara/kernel";
 
 export class ExternalError extends KhoraError {
   constructor(raw: unknown, message: string) {

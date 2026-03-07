@@ -2,12 +2,12 @@ import type { Failure, RuntimeBlueprint, RuntimePlan, ScopeRef } from "#src/cont
 import type {
   SpawnOptions as KernelSpawnOptions,
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
-} from "@khora/kernel";
+} from "@shajara/kernel";
 import { fromFailure, liftBlueprint, lowerBlueprint, toFailureUnknown } from "#src/boundary";
-import { left, right } from "@khora/kernel/utils";
-import type { Either } from "@khora/kernel/utils";
+import { left, right } from "@shajara/kernel/utils";
+import type { Either } from "@shajara/kernel/utils";
 import { KhoraError } from "#src/contracts";
-import { spawn as kernelSpawn } from "@khora/kernel";
+import { spawn as kernelSpawn } from "@shajara/kernel";
 
 export function spawn<Return>(
   entry: RuntimeBlueprint<Return>,

@@ -1,5 +1,5 @@
 {
-  "name": "@khora/runtime",
+  "name": "@shajara/runtime",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -24,10 +24,10 @@
     "typecheck": "yarn run -T tsc --noEmit"
   },
   "dependencies": {
-    "@khora/kernel": "workspace:^"
+    "@shajara/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@khora/presets": "workspace:^",
+    "@shajara/presets": "workspace:^",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
     "typescript": "catalog:",

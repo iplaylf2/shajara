@@ -2,7 +2,7 @@ import { receive, scoped, self } from "#src/primitives";
 import type { RuntimePlan } from "#src/contracts";
 import type { Settlement } from "#src/operations-kit";
 import { channel } from "#src/contracts";
-import { ensureExecutor } from "@khora/kernel";
+import { ensureExecutor } from "@shajara/kernel";
 
 export function* until<Return>(thunk: RuntimeUntilThunk<Return>): RuntimePlan<Return> {
   const executor = ensureExecutor();

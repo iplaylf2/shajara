@@ -67,7 +67,7 @@
 | `runtime/src/boundary/`           | runtime↔kernel 边界共享支撑    |
 | `runtime/src/errors/`             | 错误类型                       |
 
-kernel 对外导出采用根入口分组导出，`@khora/kernel/scopes` 为 scope spec 公开子路径。
+kernel 对外导出采用根入口分组导出，`@shajara/kernel/scopes` 为 scope spec 公开子路径。
 
 ## 7. example 约束
 

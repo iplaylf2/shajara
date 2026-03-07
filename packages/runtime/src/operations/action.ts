@@ -1,7 +1,7 @@
 import type { RejectedSettlement, ResolvedSettlement, Settlement } from "#src/operations-kit";
 import type { RuntimePlan, ScopeRef } from "#src/contracts";
 import { channel } from "#src/contracts";
-import { ensureExecutor } from "@khora/kernel";
+import { ensureExecutor } from "@shajara/kernel";
 import { receive } from "#src/primitives/receive";
 import { spawn } from "#src/primitives/spawn";
 

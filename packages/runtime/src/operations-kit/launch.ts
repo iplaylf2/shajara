@@ -4,7 +4,7 @@ import type {
   LaunchHandle,
   LaunchResult,
   LaunchState,
-} from "@khora/kernel";
+} from "@shajara/kernel";
 import { fromFailure, lowerBlueprint } from "#src/boundary";
 import type { RuntimeBlueprint } from "#src/contracts";
 import { ScopeTerminatedError } from "#src/errors";

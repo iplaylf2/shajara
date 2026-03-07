@@ -1,5 +1,5 @@
 {
-  "name": "@khora/presets",
+  "name": "@shajara/presets",
   "type": "module",
   "exports": {
     "./*": "./exports/*"

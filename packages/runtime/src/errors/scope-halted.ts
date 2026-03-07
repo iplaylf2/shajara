@@ -1,5 +1,5 @@
 import { KhoraError } from "#src/contracts";
-import { scopeHalted } from "@khora/kernel";
+import { scopeHalted } from "@shajara/kernel";
 
 export class ScopeHaltedError extends KhoraError {
   constructor() {

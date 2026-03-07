@@ -1,8 +1,8 @@
 import { ExternalError, ScopeHaltedError, ScopeTerminatedError } from "#src/errors";
-import type { ExternalFailure } from "@khora/kernel";
+import type { ExternalFailure } from "@shajara/kernel";
 import type { Failure } from "#src/contracts";
 import { KhoraError } from "#src/contracts";
-import { externalFailure } from "@khora/kernel";
+import { externalFailure } from "@shajara/kernel";
 
 export function toFailure(error: Error): Failure {
   if (error instanceof KhoraError) {

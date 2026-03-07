@@ -1,6 +1,6 @@
 import { liftBlueprint, lowerBlueprint, unwrapEither } from "#src/boundary";
 import type { RuntimePlan } from "#src/contracts";
-import { resource as kernelResource } from "@khora/kernel";
+import { resource as kernelResource } from "@shajara/kernel";
 
 export function* resource<ProvidedValue>(
   body: RuntimeResourceBody<ProvidedValue>,

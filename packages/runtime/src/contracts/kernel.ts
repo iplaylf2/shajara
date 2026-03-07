@@ -9,4 +9,4 @@ export {
   type SelfDescriptor,
   channel,
   contextKey,
-} from "@khora/kernel";
+} from "@shajara/kernel";

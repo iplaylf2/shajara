@@ -1,7 +1,7 @@
 import type { ContextKey, RuntimePlan } from "#src/contracts";
 import { liftBlueprint, unwrapOption } from "#src/boundary";
 import { ExternalError } from "#src/errors";
-import { lookup as kernelLookup } from "@khora/kernel";
+import { lookup as kernelLookup } from "@shajara/kernel";
 
 export function* lookup<Value>(key: ContextKey<Value>): RuntimePlan<Value> {
   const outcome = yield* liftBlueprint(() => kernelLookup<Value>(key))();

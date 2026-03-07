@@ -1,4 +1,4 @@
-import type { Blueprint, Plan } from "@khora/kernel";
+import type { Blueprint, Plan } from "@shajara/kernel";
 import type { RuntimeBlueprint, RuntimePlan } from "#src/contracts";
 
 export function liftBlueprint<Return>(blueprint: Blueprint<Return>): RuntimeBlueprint<Return> {

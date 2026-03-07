@@ -2,7 +2,7 @@ import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import { liftBlueprint, lowerBlueprints, unwrapEither } from "#src/boundary";
 import type { RuntimeBlueprintTuple } from "#src/boundary";
 import type { RuntimePlan } from "#src/contracts";
-import { race as kernelRace } from "@khora/kernel";
+import { race as kernelRace } from "@shajara/kernel";
 
 export function* race<Returns extends NonEmptyTuple<unknown>>(
   primitives: RuntimeBlueprintTuple<Returns>,

@@ -261,54 +261,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@khora/example@workspace:apps/example":
-  version: 0.0.0-use.local
-  resolution: "@khora/example@workspace:apps/example"
-  dependencies:
-    "@khora/presets": "workspace:^"
-    "@khora/runtime": "workspace:^"
-    oxlint: "catalog:"
-    vite: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@khora/kernel@workspace:^, @khora/kernel@workspace:packages/kernel":
-  version: 0.0.0-use.local
-  resolution: "@khora/kernel@workspace:packages/kernel"
-  dependencies:
-    "@khora/presets": "workspace:^"
-    defaults: "npm:^3.0.0"
-    fp-ts: "npm:^2.16.11"
-    oxlint: "catalog:"
-    type-fest: "catalog:"
-    typescript: "catalog:"
-    vite: "catalog:"
-    vite-plugin-dts: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@khora/presets@workspace:^, @khora/presets@workspace:internal/presets":
-  version: 0.0.0-use.local
-  resolution: "@khora/presets@workspace:internal/presets"
-  dependencies:
-    oxlint: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@khora/runtime@workspace:^, @khora/runtime@workspace:packages/runtime":
-  version: 0.0.0-use.local
-  resolution: "@khora/runtime@workspace:packages/runtime"
-  dependencies:
-    "@khora/kernel": "workspace:^"
-    "@khora/presets": "workspace:^"
-    oxlint: "catalog:"
-    type-fest: "catalog:"
-    typescript: "catalog:"
-    vite: "catalog:"
-    vite-plugin-dts: "catalog:"
-  languageName: unknown
-  linkType: soft
-
 "@microsoft/api-extractor-model@npm:7.32.2":
   version: 7.32.2
   resolution: "@microsoft/api-extractor-model@npm:7.32.2"
@@ -912,6 +864,54 @@ __metadata:
   checksum: 10c0/0b8b9ce38ebe0104739e2b67f0b4c75dae6f9bedda3cd95bddc7068c618e7c5945d383baa7b4cc5d88fe2662e6f8402cfd2bef060f0c846b2f37abe6d4bf600a
   languageName: node
   linkType: hard
+
+"@shajara/example@workspace:apps/example":
+  version: 0.0.0-use.local
+  resolution: "@shajara/example@workspace:apps/example"
+  dependencies:
+    "@shajara/presets": "workspace:^"
+    "@shajara/runtime": "workspace:^"
+    oxlint: "catalog:"
+    vite: "catalog:"
+  languageName: unknown
+  linkType: soft
+
+"@shajara/kernel@workspace:^, @shajara/kernel@workspace:packages/kernel":
+  version: 0.0.0-use.local
+  resolution: "@shajara/kernel@workspace:packages/kernel"
+  dependencies:
+    "@shajara/presets": "workspace:^"
+    defaults: "npm:^3.0.0"
+    fp-ts: "npm:^2.16.11"
+    oxlint: "catalog:"
+    type-fest: "catalog:"
+    typescript: "catalog:"
+    vite: "catalog:"
+    vite-plugin-dts: "catalog:"
+  languageName: unknown
+  linkType: soft
+
+"@shajara/presets@workspace:^, @shajara/presets@workspace:internal/presets":
+  version: 0.0.0-use.local
+  resolution: "@shajara/presets@workspace:internal/presets"
+  dependencies:
+    oxlint: "catalog:"
+  languageName: unknown
+  linkType: soft
+
+"@shajara/runtime@workspace:^, @shajara/runtime@workspace:packages/runtime":
+  version: 0.0.0-use.local
+  resolution: "@shajara/runtime@workspace:packages/runtime"
+  dependencies:
+    "@shajara/kernel": "workspace:^"
+    "@shajara/presets": "workspace:^"
+    oxlint: "catalog:"
+    type-fest: "catalog:"
+    typescript: "catalog:"
+    vite: "catalog:"
+    vite-plugin-dts: "catalog:"
+  languageName: unknown
+  linkType: soft
 
 "@types/argparse@npm:1.0.38":
   version: 1.0.38
@@ -1601,23 +1601,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"khora@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "khora@workspace:."
-  dependencies:
-    oxfmt: "npm:^0.36.0"
-    oxlint: "catalog:"
-    typescript: "catalog:"
-  dependenciesMeta:
-    oxfmt:
-      unplugged: true
-    oxlint:
-      unplugged: true
-    tinypool:
-      unplugged: true
-  languageName: unknown
-  linkType: soft
-
 "kolorist@npm:^1.8.0":
   version: 1.8.0
   resolution: "kolorist@npm:1.8.0"
@@ -2277,6 +2260,23 @@ __metadata:
   checksum: 10c0/5160b06975a38b11c1ab55950cb5b8a23db78df88275d3d8a42ccf1f29e55112ac995b3a26a522c36e3b5f76b0445f1eef70d696b8c7862a2b4303d7b0e7609e
   languageName: node
   linkType: hard
+
+"shajara@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "shajara@workspace:."
+  dependencies:
+    oxfmt: "npm:^0.36.0"
+    oxlint: "catalog:"
+    typescript: "catalog:"
+  dependenciesMeta:
+    oxfmt:
+      unplugged: true
+    oxlint:
+      unplugged: true
+    tinypool:
+      unplugged: true
+  languageName: unknown
+  linkType: soft
 
 "smart-buffer@npm:^4.2.0":
   version: 4.2.0

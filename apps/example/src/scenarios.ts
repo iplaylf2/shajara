@@ -1,5 +1,5 @@
-import type { RuntimeBlueprint, RuntimePlan, ScopeRef } from "@khora/runtime";
-import { action, channel, contextKey, sleep, until } from "@khora/runtime";
+import type { RuntimeBlueprint, RuntimePlan, ScopeRef } from "@shajara/runtime";
+import { action, channel, contextKey, sleep, until } from "@shajara/runtime";
 import {
   all,
   bind,
@@ -17,8 +17,8 @@ import {
   spawn,
   suspend,
   unbind,
-} from "@khora/runtime/primitives";
-import type { RuntimeResourceProvide } from "@khora/runtime/primitives";
+} from "@shajara/runtime/primitives";
+import type { RuntimeResourceProvide } from "@shajara/runtime/primitives";
 
 function getExampleScenario(name: ExampleScenarioName): RuntimeBlueprint<unknown> {
   return EXAMPLE_SCENARIOS[name];

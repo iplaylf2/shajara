@@ -1,5 +1,5 @@
-import type { Option } from "@khora/kernel/utils";
-import { isNone } from "@khora/kernel/utils";
+import type { Option } from "@shajara/kernel/utils";
+import { isNone } from "@shajara/kernel/utils";
 
 export function unwrapOption<Return>(option: Option<Return>, noneError: Error): Return {
   if (isNone(option)) {

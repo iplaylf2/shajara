@@ -1,6 +1,6 @@
-# @khora/example
+# @shajara/example
 
-Type-shape example for `@khora/runtime` and `@khora/kernel` contracts.
+Type-shape example for `@shajara/runtime` and `@shajara/kernel` contracts.
 
 ## Check
 

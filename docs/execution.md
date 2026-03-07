@@ -50,7 +50,7 @@ yarn lint
 
 当前与本次实现同步相关的验证已通过：
 
-- `yarn workspace @khora/kernel lint`
-- `yarn workspace @khora/kernel typecheck`
-- `yarn workspace @khora/runtime lint`
-- `yarn workspace @khora/runtime typecheck`
+- `yarn workspace @shajara/kernel lint`
+- `yarn workspace @shajara/kernel typecheck`
+- `yarn workspace @shajara/runtime lint`
+- `yarn workspace @shajara/runtime typecheck`

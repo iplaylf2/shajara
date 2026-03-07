@@ -1,5 +1,5 @@
 import type { ContextKey, RuntimePlan } from "#src/contracts";
-import { unbind as kernelUnbind } from "@khora/kernel";
+import { unbind as kernelUnbind } from "@shajara/kernel";
 import { liftBlueprint } from "#src/boundary";
 
 export function unbind(key: ContextKey<unknown>): RuntimePlan<void> {

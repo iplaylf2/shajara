@@ -1,9 +1,9 @@
-# khora
+# shajara
 
-khora 是结构化并发运行时，由两层构成：
+shajara 是结构化并发运行时，由两层构成：
 
-- **`@khora/kernel`** — 纯代数执行内核，以 `Plan`（free monad over `Syscall`）为承载面，定义 Scope 树、Process 生命周期与 syscall 协议。
-- **`@khora/runtime`** — 面向用户的 generator 编排层，桥接 kernel 语义并提供宿主 API（`run`、`createScope`、`action`、`sleep`、`until`）。
+- **`@shajara/kernel`** — 纯代数执行内核，以 `Plan`（free monad over `Syscall`）为承载面，定义 Scope 树、Process 生命周期与 syscall 协议。
+- **`@shajara/runtime`** — 面向用户的 generator 编排层，桥接 kernel 语义并提供宿主 API（`run`、`createScope`、`action`、`sleep`、`until`）。
 
 ## 文档索引
 

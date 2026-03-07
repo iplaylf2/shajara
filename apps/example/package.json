@@ -1,5 +1,5 @@
 {
-  "name": "@khora/example",
+  "name": "@shajara/example",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,10 @@
     "typecheck": "yarn run -T tsc --noEmit"
   },
   "dependencies": {
-    "@khora/runtime": "workspace:^"
+    "@shajara/runtime": "workspace:^"
   },
   "devDependencies": {
-    "@khora/presets": "workspace:^",
+    "@shajara/presets": "workspace:^",
     "oxlint": "catalog:",
     "vite": "catalog:"
   }

@@ -1,6 +1,6 @@
 # API
 
-本文档定义用户侧公开 API 与使用约束。用户通过 `@khora/runtime` 消费所有能力。
+本文档定义用户侧公开 API 与使用约束。用户通过 `@shajara/runtime` 消费所有能力。
 
 ---
 

@@ -1,5 +1,5 @@
 import { KhoraError } from "#src/contracts";
-import { scopeTerminated } from "@khora/kernel";
+import { scopeTerminated } from "@shajara/kernel";
 
 export class ScopeTerminatedError extends KhoraError {
   constructor() {
