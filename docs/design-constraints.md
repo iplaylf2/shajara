@@ -56,7 +56,8 @@
 | `kernel/src/contracts/plan.ts`    | `Wisp/Ritual` 单源             |
 | `kernel/src/contracts/scope.ts`   | `ScopeRef/ScopeSpec` 单源      |
 | `kernel/src/contracts/channel.ts` | `Channel` 单源                 |
-| `kernel/src/sigils.ts`            | sigil 公共入口                 |
+| `kernel/src/sigils/`             | sigil 声明 + index             |
+| `kernel/src/sigils.ts`           | sigil 公共入口                 |
 | `kernel/src/primitives/`          | 原语 + index                   |
 | `kernel/src/scopes/`              | 角色条目                       |
 | `kernel/src/executor.ts`          | 执行入口契约与作用域执行状态   |
