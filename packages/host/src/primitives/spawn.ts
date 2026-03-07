@@ -46,10 +46,10 @@ function toKernelSpawnOptions(options: SpawnOptions | undefined): KernelSpawnOpt
 
 function toKernelSpawnRecoveryHandler(recover: SpawnRecoveryHandler): KernelSpawnRecoveryHandler {
   return (failure: Failure) =>
-    decodeRitual(() => runtimeRecovery(recover, fromFailure(failure)))();
+    decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
 }
 
-function* runtimeRecovery(
+function* hostRecovery(
   recover: SpawnRecoveryHandler,
   error: ShajaraError,
 ): RiteCoroutine<Either<Failure, unknown>> {

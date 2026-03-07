@@ -1,4 +1,2 @@
 gadt
-khora
-syscall
-syscalls
+shajara

@@ -29,6 +29,6 @@ export function fromFailure(failure: Failure): ShajaraError {
       return new ExternalError(external.raw, external.message());
     }
     default:
-      throw new Error(`Unsupported failure kind in runtime mapping: ${failure.kind}`);
+      throw new Error(`Unsupported failure kind in host mapping: ${failure.kind}`);
   }
 }
