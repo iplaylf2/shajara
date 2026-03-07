@@ -3,14 +3,14 @@ import type { RETURN_TOKEN } from "#src/utils";
 
 export function receive<ReceiveValue>(
   channel: Channel<ReceiveValue>,
-): ReceiveSyscall<ReceiveValue> {
+): ReceiveSigil<ReceiveValue> {
   return {
     channel,
     kind: "receive",
   };
 }
 
-export interface ReceiveSyscall<ReceiveValue> extends Sigil {
+export interface ReceiveSigil<ReceiveValue> extends Sigil {
   readonly kind: "receive";
   readonly channel: Channel<ReceiveValue>;
   readonly [RETURN_TOKEN]?: readonly [ReceiveResult<ReceiveValue>];

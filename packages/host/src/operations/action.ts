@@ -6,7 +6,7 @@ import { receive } from "#src/primitives/receive";
 import { spawn } from "#src/primitives/spawn";
 
 export function* action<Return>(): RiteCoroutine<HostAction<Return>> {
-  const scope = yield* spawn(function* actionBlueprint(): RiteCoroutine<Return> {
+  const scope = yield* spawn(function* actionRitual(): RiteCoroutine<Return> {
     const { value: settlement } = yield* receive(settlementChannel);
     switch (settlement.status) {
       case "resolved":

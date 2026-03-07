@@ -3,14 +3,14 @@ import type { RETURN_TOKEN } from "#src/utils";
 
 export function awaitScope<Scope extends ScopeRef<unknown>>(
   scope: Scope,
-): AwaitScopeSyscall<Scope> {
+): AwaitScopeSigil<Scope> {
   return {
     kind: "await-scope",
     scope,
   };
 }
 
-export interface AwaitScopeSyscall<Scope extends ScopeRef<unknown>> extends Sigil {
+export interface AwaitScopeSigil<Scope extends ScopeRef<unknown>> extends Sigil {
   readonly kind: "await-scope";
   readonly scope: Scope;
   readonly [RETURN_TOKEN]?: readonly [ScopeExit<ScopeRefReturn<Scope>>];

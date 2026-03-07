@@ -6,7 +6,7 @@ import { ensureExecutor } from "@shajara/kernel";
 
 export function* until<Return>(thunk: HostUntilThunk<Return>): RiteCoroutine<Return> {
   const executor = ensureExecutor();
-  return yield* scoped(function* untilBlueprint(): RiteCoroutine<Return> {
+  return yield* scoped(function* untilRitual(): RiteCoroutine<Return> {
     const { scopeRef } = yield* self();
 
     thunk().then(

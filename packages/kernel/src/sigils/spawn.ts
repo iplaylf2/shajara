@@ -5,7 +5,7 @@ import { standardScopeSpec } from "#src/scopes/standard";
 export function spawn<Return>(
   entry: Ritual<Return>,
   spec: ScopeSpec = standardScopeSpec(),
-): SpawnSyscall<Return> {
+): SpawnSigil<Return> {
   return {
     entry,
     kind: "spawn",
@@ -13,7 +13,7 @@ export function spawn<Return>(
   };
 }
 
-export interface SpawnSyscall<Return> extends Sigil {
+export interface SpawnSigil<Return> extends Sigil {
   readonly kind: "spawn";
   readonly entry: Ritual<Return>;
   readonly spec: ScopeSpec;

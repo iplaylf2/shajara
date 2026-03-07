@@ -37,9 +37,9 @@ export interface Executor {
    */
   readonly rootScope: ExecutionScopeRef;
   /**
-   * Launch a blueprint under the given scope.
+   * Launch a ritual under the given scope.
    */
-  launch<Return>(scope: ExecutionScopeRef, blueprint: Ritual<Return>): LaunchHandle<Return>;
+  launch<Return>(scope: ExecutionScopeRef, ritual: Ritual<Return>): LaunchHandle<Return>;
   /**
    * Send a value into the target scope's channel message queue.
    */
@@ -49,9 +49,9 @@ export interface Executor {
    */
   terminate(scope: ExecutionScopeRef): void;
   /**
-   * Register cleanup continuation for a launched blueprint.
+   * Register cleanup continuation for a launched ritual.
    */
-  registerCleanup(blueprint: Ritual<unknown>, cleanup: () => Wisp<unknown>): void;
+  registerCleanup(ritual: Ritual<unknown>, cleanup: () => Wisp<unknown>): void;
 }
 
 export function ensureExecutor(): Executor {

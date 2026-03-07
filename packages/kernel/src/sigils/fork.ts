@@ -4,21 +4,21 @@ import type { RETURN_TOKEN } from "#src/utils";
 import defaults from "defaults";
 
 export function fork<Return, Process extends ProcessRef<Return>>(
-  blueprint: Ritual<Return>,
+  ritual: Ritual<Return>,
   options?: PartialDeep<ForkConfig>,
-): ForkSyscall<Return, Process> {
+): ForkSigil<Return, Process> {
   const config = defaults(options ?? {}, { participation: "tracked" } as const);
 
   return {
-    blueprint,
+    ritual,
     kind: "fork",
     participation: config.participation,
   };
 }
 
-export interface ForkSyscall<Return, Process extends ProcessRef<Return>> extends Sigil {
+export interface ForkSigil<Return, Process extends ProcessRef<Return>> extends Sigil {
   readonly kind: "fork";
-  readonly blueprint: Ritual<Return>;
+  readonly ritual: Ritual<Return>;
   readonly participation: ForkParticipation;
   readonly [RETURN_TOKEN]?: readonly [Process];
 }

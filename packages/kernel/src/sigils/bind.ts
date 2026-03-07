@@ -1,7 +1,7 @@
 import type { ContextKey, Sigil } from "#src/contracts";
 import type { RETURN_TOKEN } from "#src/utils";
 
-export function bind<Value>(key: ContextKey<Value>, value: Value): BindSyscall<Value> {
+export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Value> {
   return {
     key,
     kind: "bind",
@@ -9,7 +9,7 @@ export function bind<Value>(key: ContextKey<Value>, value: Value): BindSyscall<V
   };
 }
 
-export interface BindSyscall<Value> extends Sigil {
+export interface BindSigil<Value> extends Sigil {
   readonly kind: "bind";
   readonly key: ContextKey<Value>;
   readonly [RETURN_TOKEN]?: readonly [void];
