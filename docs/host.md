@@ -30,7 +30,7 @@ host 不引入第二执行循环，仅通过执行入口把降解后的 Ritual �
 
 `RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一为 ritual，而不是已实例化的 coroutine。
 
-术语方向固定：`lift` = kernel → host（上升到编排层），`lower` = host → kernel（下降到执行层）。
+术语方向固定：`encode` = kernel → host（编码为宿主承载形态），`decode` = host → kernel（解码回 kernel ritual）。
 
 ## 3. 失败通道分层
 

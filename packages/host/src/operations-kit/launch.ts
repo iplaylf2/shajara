@@ -14,7 +14,7 @@ export function launch<Return>(
   scope: ExecutionScopeRef,
   ritual: RiteRoutine<Return>,
   options?: RunOptions,
-): RuntimeLaunchResult<Return> {
+): HostLaunchResult<Return> {
   const signal = options?.signal;
 
   function* guardedRitual(): ReturnType<RiteRoutine<Return>> {
@@ -49,7 +49,7 @@ export function launch<Return>(
   };
 }
 
-export interface RuntimeLaunchResult<Return> {
+export interface HostLaunchResult<Return> {
   readonly scope: ExecutionScopeRef;
   readonly settled: StatefulPromise<Return>;
 }

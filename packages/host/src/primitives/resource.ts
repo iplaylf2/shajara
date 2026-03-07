@@ -15,8 +15,8 @@ export type HostResourceBody<ProvidedValue> = (
 
 export type HostResourceProvide<ProvidedValue> = (value: ProvidedValue) => RiteCoroutine<never>;
 
-function createKernelResource<ProvidedValue>(runtimeBody: HostResourceBody<ProvidedValue>) {
+function createKernelResource<ProvidedValue>(body: HostResourceBody<ProvidedValue>) {
   return kernelResource<ProvidedValue>((kernelProvide) =>
-    decodeRitual(() => runtimeBody((value) => encodeRitual(() => kernelProvide(value))()))(),
+    decodeRitual(() => body((value) => encodeRitual(() => kernelProvide(value))()))(),
   );
 }

@@ -27,7 +27,7 @@ const myTask: RiteRoutine<string> = function* () {
 run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulPromise<T>
 ```
 
-启动一段蓝图，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。运行作用域挂载在全局 root scope 下。
+启动一段 ritual，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。运行作用域挂载在全局 root scope 下。
 
 - 成功 → 返回结果值。
 - 终止 → 抛出 `ScopeTerminatedError`。
@@ -46,7 +46,7 @@ createScope(): HostScope
 
 | 成员                             | 说明                                            |
 | -------------------------------- | ----------------------------------------------- |
-| `scope.run(ritual, options?)`    | 在托管作用域下启动蓝图，行为与顶层 `run` 一致。 |
+| `scope.run(ritual, options?)`    | 在托管作用域下启动 ritual，行为与顶层 `run` 一致。 |
 | `scope.halt()`                   | 触发关闭流程并等待收敛。                        |
 | `scope.state`                    | 同步状态快照：`open \| closing \| closed`。     |
 | `scope.closed`                   | 清理完成后 resolve；终止/失败时按对应类型抛出。 |
