@@ -20,7 +20,7 @@
 - `race` arena 内部分支已改为 `Fork`；分支完成后 `Send(raceChannel)` 并 `Halt`，arena 根 process 通过 `park` 挂起等待收敛路径。  
   证据：`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives-kit/park.ts`
 - host `race` 入参已收敛为非空 tuple，禁止空分支调用。  
-  证据：`packages/runtime/src/primitives/race.ts`
+  证据：`packages/host/src/primitives/race.ts`
 
 ## 3. 相对设计基线的新增增量
 
@@ -32,7 +32,7 @@
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`、`docs/semantics.md` §6.3
 - `race` 增加非空分支约束。  
   影响：空分支语义不再是运行时分支问题，而是类型层面的调用前约束。  
-  证据：`packages/kernel/src/primitives/race.ts`、`packages/runtime/src/primitives/race.ts`、`docs/api.md` §4.1
+  证据：`packages/kernel/src/primitives/race.ts`、`packages/host/src/primitives/race.ts`、`docs/api.md` §4.1
 
 ## 4. 下一步（Build 聚焦）
 

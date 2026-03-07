@@ -876,9 +876,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@shajara/host@workspace:^, @shajara/host@workspace:packages/runtime":
+"@shajara/host@workspace:^, @shajara/host@workspace:packages/host":
   version: 0.0.0-use.local
-  resolution: "@shajara/host@workspace:packages/runtime"
+  resolution: "@shajara/host@workspace:packages/host"
   dependencies:
     "@shajara/kernel": "workspace:^"
     "@shajara/presets": "workspace:^"
