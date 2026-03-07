@@ -3,11 +3,11 @@ import type { Sigil, Echo } from "#src/contracts";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A extends Sigil> {
-    readonly [syscall.URI]: Echo<A>;
+    readonly [sigil.URI]: Echo<A>;
   }
 }
 
-export namespace syscall {
+export namespace sigil {
   export const URI = "Sigil";
   export type URI = typeof URI;
 }

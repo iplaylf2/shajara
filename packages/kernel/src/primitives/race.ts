@@ -6,7 +6,7 @@ import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
 import { channel } from "#src/contracts";
 import { pipe } from "fp-ts/function";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 import { supervisorScopeSpec } from "#src/scopes";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
@@ -15,16 +15,16 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   const raceChannel = channel<Either<Failure, ArrayValues<BranchReturns>>>();
 
   return pipe(
-    plan.Do,
-    plan.bindF("callerSelf", self),
-    plan.bindF("arenaSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
+    wisp.Do,
+    wisp.bindF("callerSelf", self),
+    wisp.bindF("arenaSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
       spawn(raceArena(branches, callerRef, raceChannel), supervisorScopeSpec()),
     ),
-    plan.chainF(({ arenaSelf: { scopeRef: arenaRef }, callerSelf: { scopeRef: callerRef } }) =>
+    wisp.chainF(({ arenaSelf: { scopeRef: arenaRef }, callerSelf: { scopeRef: callerRef } }) =>
       fork(arenaFailureRelay(arenaRef, callerRef, raceChannel)),
     ),
-    plan.chainF(() => receive(raceChannel)),
-    plan.map(({ value }) => value),
+    wisp.chainF(() => receive(raceChannel)),
+    wisp.map(({ value }) => value),
   );
 }
 
@@ -41,10 +41,10 @@ function raceArena(
     pipe(
       branches,
       readonlyArray.map((branch) =>
-        pipe(fork(branchRunner(branch, callerRef, raceChannel)), plan.liftF),
+        pipe(fork(branchRunner(branch, callerRef, raceChannel)), wisp.liftF),
       ),
-      plan.sequence,
-      plan.chain(() => park()),
+      wisp.sequence,
+      wisp.chain(() => park()),
     );
 }
 
@@ -57,7 +57,7 @@ function arenaFailureRelay(
     pipe(
       arenaRef,
       awaitScopeConverged,
-      plan.chainF((value) => send(callerRef, raceChannel, value)),
+      wisp.chainF((value) => send(callerRef, raceChannel, value)),
     );
 }
 
@@ -69,7 +69,7 @@ function branchRunner(
   return () =>
     pipe(
       branch(),
-      plan.chainF((value) => send(callerRef, raceChannel, either.right(value))),
-      plan.chainF(() => halt()),
+      wisp.chainF((value) => send(callerRef, raceChannel, either.right(value))),
+      wisp.chainF(() => halt()),
     );
 }

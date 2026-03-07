@@ -53,7 +53,7 @@
 | 路径                              | 职责                           |
 | --------------------------------- | ------------------------------ |
 | `kernel/src/contracts/`           | 核心类型契约                   |
-| `kernel/src/contracts/plan.ts`    | `Wisp/Ritual` 单源             |
+| `kernel/src/contracts/wisp.ts`    | `Wisp/Ritual` 单源             |
 | `kernel/src/contracts/scope.ts`   | `ScopeRef/ScopeSpec` 单源      |
 | `kernel/src/contracts/channel.ts` | `Channel` 单源                 |
 | `kernel/src/syscalls/`            | sigil 声明 + index             |

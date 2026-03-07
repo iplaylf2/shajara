@@ -5,7 +5,7 @@ import { fork, spawn } from "#src/syscalls";
 import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 import { readonlyArray } from "fp-ts";
 import { supervisorScopeSpec } from "#src/scopes";
 
@@ -14,8 +14,8 @@ export function all<BranchReturns extends UnknownArray>(
 ): Wisp<Either<Failure, BranchReturns>> {
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
-    plan.liftF,
-    plan.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
+    wisp.liftF,
+    wisp.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
   );
 }
 
@@ -25,11 +25,11 @@ function allSupervisor<BranchReturns extends UnknownArray>(
   return () =>
     pipe(
       branches,
-      readonlyArray.map(flow(fork, plan.liftF)),
-      plan.sequence,
-      plan.map(readonlyArray.map(awaitProcessInBand)),
-      plan.chain(plan.sequence),
-      plan.map(narrowArrayAs<BranchReturns>()),
+      readonlyArray.map(flow(fork, wisp.liftF)),
+      wisp.sequence,
+      wisp.map(readonlyArray.map(awaitProcessInBand)),
+      wisp.chain(wisp.sequence),
+      wisp.map(narrowArrayAs<BranchReturns>()),
     );
 }
 

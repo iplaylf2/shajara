@@ -5,7 +5,7 @@ import type {
   LaunchResult,
   LaunchState,
 } from "@shajara/kernel";
-import { fromFailure, lowerBlueprint } from "#src/boundary";
+import { decodeRitual, fromFailure } from "#src/boundary";
 import type { RiteRoutine } from "#src/contracts";
 import { ScopeTerminatedError } from "#src/errors";
 
@@ -40,7 +40,7 @@ export function launch<Return>(
     }
   }
 
-  const execution = executor.launch(scope, lowerBlueprint(wrappedBlueprint));
+  const execution = executor.launch(scope, decodeRitual(wrappedBlueprint));
   const settled = asSettledPromise(execution);
 
   return {

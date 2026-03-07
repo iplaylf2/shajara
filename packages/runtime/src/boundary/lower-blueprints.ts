@@ -1,14 +1,14 @@
 import type { Ritual } from "@shajara/kernel";
 import type { RiteRoutine } from "#src/contracts";
 import type { UnknownArray } from "type-fest";
-import { lowerBlueprint } from "./lower-blueprint";
+import { decodeRitual } from "./lower-blueprint";
 
-export function lowerBlueprints<Returns extends UnknownArray>(
-  blueprints: RiteRoutineTuple<Returns>,
+export function decodeRituals<Returns extends UnknownArray>(
+  routines: RiteRoutineTuple<Returns>,
 ): {
   readonly [Index in keyof Returns]: Ritual<Returns[Index]>;
 } {
-  return blueprints.map((blueprint) => lowerBlueprint(blueprint)) as {
+  return routines.map((routine) => decodeRitual(routine)) as {
     readonly [Index in keyof Returns]: Ritual<Returns[Index]>;
   };
 }

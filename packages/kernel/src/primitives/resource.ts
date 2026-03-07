@@ -6,7 +6,7 @@ import { channel } from "#src/contracts/channel";
 import { either } from "fp-ts";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 import { supervisorScopeSpec } from "#src/scopes";
 
 export function resource<ProvidedValue>(
@@ -15,20 +15,20 @@ export function resource<ProvidedValue>(
   const resourceChannel = channel<Either<Failure, ProvidedValue>>();
 
   return pipe(
-    plan.Do,
-    plan.bindF("callerSelf", self),
-    plan.bindF("resourceSupervisorSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
+    wisp.Do,
+    wisp.bindF("callerSelf", self),
+    wisp.bindF("resourceSupervisorSelf", ({ callerSelf: { scopeRef: callerRef } }) =>
       spawn(resourceSupervisor(body, callerRef, resourceChannel), supervisorScopeSpec()),
     ),
-    plan.chainF(
+    wisp.chainF(
       ({
         callerSelf: { scopeRef: callerRef },
         resourceSupervisorSelf: { scopeRef: supervisorRef },
       }) => fork(resourceFailureRelay(supervisorRef, callerRef, resourceChannel)),
     ),
-    plan.chainF(() => receive(resourceChannel)),
-    plan.map(({ value }) => value),
-    plan.map(narrowAs<Either<Failure, ProvidedValue>>()),
+    wisp.chainF(() => receive(resourceChannel)),
+    wisp.map(({ value }) => value),
+    wisp.map(narrowAs<Either<Failure, ProvidedValue>>()),
   );
 }
 
@@ -48,11 +48,11 @@ function resourceSupervisor<ProvidedValue>(
       body((value) =>
         pipe(
           send(callerRef, resourceChannel, either.right(value)),
-          plan.liftF,
-          plan.chain(() => park()),
+          wisp.liftF,
+          wisp.chain(() => park()),
         ),
       ),
-      plan.chain(() => park()),
+      wisp.chain(() => park()),
     );
 }
 
@@ -65,6 +65,6 @@ function resourceFailureRelay<ProvidedValue>(
     pipe(
       supervisorRef,
       awaitScopeConverged,
-      plan.chainF((value) => send(callerRef, resourceChannel, value)),
+      wisp.chainF((value) => send(callerRef, resourceChannel, value)),
     );
 }

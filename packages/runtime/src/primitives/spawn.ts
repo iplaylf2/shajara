@@ -3,7 +3,7 @@ import type {
   SpawnOptions as KernelSpawnOptions,
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
 } from "@shajara/kernel";
-import { fromFailure, liftBlueprint, lowerBlueprint, toFailureUnknown } from "#src/boundary";
+import { decodeRitual, encodeRitual, fromFailure, toFailureUnknown } from "#src/boundary";
 import { left, right } from "@shajara/kernel/utils";
 import type { Either } from "@shajara/kernel/utils";
 import { ShajaraError } from "#src/contracts";
@@ -13,7 +13,7 @@ export function spawn<Return>(
   entry: RiteRoutine<Return>,
   options?: SpawnOptions,
 ): RiteCoroutine<ScopeRef<Return>> {
-  return liftBlueprint(() => kernelSpawn(lowerBlueprint(entry), toKernelSpawnOptions(options)))();
+  return encodeRitual(() => kernelSpawn(decodeRitual(entry), toKernelSpawnOptions(options)))();
 }
 
 export type SpawnOptions = SpawnSupervisorOption | SpawnRecoveryOption;
@@ -46,7 +46,7 @@ function toKernelSpawnOptions(options: SpawnOptions | undefined): KernelSpawnOpt
 
 function toKernelSpawnRecoveryHandler(recover: SpawnRecoveryHandler): KernelSpawnRecoveryHandler {
   return (failure: Failure) =>
-    lowerBlueprint(() => runtimeRecovery(recover, fromFailure(failure)))();
+    decodeRitual(() => runtimeRecovery(recover, fromFailure(failure)))();
 }
 
 function* runtimeRecovery(

@@ -4,11 +4,11 @@ import { ensureExecutor, halt, stirringWisp, restingWisp } from "@shajara/kernel
 import { isLeft, tryCatch } from "@shajara/kernel/utils";
 import { toFailureUnknown } from "./failure-mapping";
 
-export function lowerBlueprint<Return>(
-  runtimeBlueprint: RiteRoutine<Return>,
-): Ritual<Return> {
-  function lowered(): Wisp<Return> {
-    const startedPlan = tryCatch(() => runtimeBlueprint(), toFailureUnknown);
+export function decodeRitual<Relic>(
+  routine: RiteRoutine<Relic>,
+): Ritual<Relic> {
+  function decoded(): Wisp<Relic> {
+    const startedPlan = tryCatch(() => routine(), toFailureUnknown);
     if (isLeft(startedPlan)) {
       return halt(startedPlan.left);
     }
@@ -16,18 +16,18 @@ export function lowerBlueprint<Return>(
     const runtimePlan = startedPlan.right;
 
     const executor = ensureExecutor();
-    executor.registerCleanup(lowered, () => lowerRuntimeReturn(runtimePlan));
+    executor.registerCleanup(decoded, () => lowerRuntimeReturn(runtimePlan));
 
     return lowerRuntimeNext(runtimePlan, null);
   }
 
-  return lowered;
+  return decoded;
 }
 
-function lowerRuntimeNext<Return>(
-  runtimePlan: RiteCoroutine<Return>,
+function lowerRuntimeNext<Relic>(
+  runtimePlan: RiteCoroutine<Relic>,
   response: unknown,
-): Wisp<Return> {
+): Wisp<Relic> {
   const nextStep = tryCatch(() => runtimePlan.next(response), toFailureUnknown);
   if (isLeft(nextStep)) {
     return halt(nextStep.left);
@@ -36,10 +36,10 @@ function lowerRuntimeNext<Return>(
   return lowerRuntimeStep(runtimePlan, nextStep.right);
 }
 
-function lowerRuntimeStep<Return>(
-  runtimePlan: RiteCoroutine<Return>,
-  step: IteratorResult<Sigil, Return>,
-): Wisp<Return> {
+function lowerRuntimeStep<Relic>(
+  runtimePlan: RiteCoroutine<Relic>,
+  step: IteratorResult<Sigil, Relic>,
+): Wisp<Relic> {
   if (step.done) {
     return restingWisp(step.value);
   }
@@ -47,8 +47,8 @@ function lowerRuntimeStep<Return>(
   return stirringWisp(step.value, (response) => lowerRuntimeNext(runtimePlan, response));
 }
 
-function lowerRuntimeReturn<Return>(runtimePlan: RiteCoroutine<Return>): Wisp<Return> {
-  const nextStep = tryCatch(() => runtimePlan.return(null as Return), toFailureUnknown);
+function lowerRuntimeReturn<Relic>(runtimePlan: RiteCoroutine<Relic>): Wisp<Relic> {
+  const nextStep = tryCatch(() => runtimePlan.return(null as Relic), toFailureUnknown);
   if (isLeft(nextStep)) {
     return halt(nextStep.left);
   }

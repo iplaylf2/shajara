@@ -9,7 +9,7 @@
 ```
 用户代码  ──yield*──▶  host（generator 编排 + 宿主桥接）
                             │
-                  lowerBlueprint / liftBlueprint
+                  decodeRitual / encodeRitual
                             │
                       kernel（Wisp 解释 + Scope 树 + EventQueue）
 ```
@@ -25,8 +25,8 @@ host 不引入第二执行循环，仅通过执行入口把降解后的 Ritual �
 
 | 适配器           | 方向             | 作用                                                                         |
 | ---------------- | ---------------- | ---------------------------------------------------------------------------- |
-| `liftBlueprint`  | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需提升为 `RiteCoroutine<T>`。    |
-| `lowerBlueprint` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界降解为可执行 `Ritual<T>`。 |
+| `encodeRitual` | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需编码为 `RiteCoroutine<T>`。    |
+| `decodeRitual` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界解码为可执行 `Ritual<T>`。 |
 
 `RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一为 ritual，而不是已实例化的 coroutine。
 

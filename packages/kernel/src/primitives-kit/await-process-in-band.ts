@@ -2,7 +2,7 @@ import type { Wisp, ProcessCompletedExit, ProcessRef } from "#src/contracts";
 import { awaitProcess } from "#src/syscalls";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 
 /**
  * Awaits a process through the in-band completion path only.
@@ -11,8 +11,8 @@ import { plan } from "#src/internal/fp";
 export function awaitProcessInBand<Return>(processRef: ProcessRef<Return>): Wisp<Return> {
   return pipe(
     awaitProcess(processRef),
-    plan.liftF,
-    plan.map(narrowAs<ProcessCompletedExit<Return>>()),
-    plan.map(({ value }) => value),
+    wisp.liftF,
+    wisp.map(narrowAs<ProcessCompletedExit<Return>>()),
+    wisp.map(({ value }) => value),
   );
 }

@@ -1,7 +1,7 @@
 import type { RiteCoroutine, ScopeRef, SelfDescriptor } from "#src/contracts";
 import { self as kernelSelf } from "@shajara/kernel";
-import { liftBlueprint } from "#src/boundary";
+import { encodeRitual } from "#src/boundary";
 
 export function self<Scope extends ScopeRef<unknown>>(): RiteCoroutine<SelfDescriptor<Scope>> {
-  return liftBlueprint(() => kernelSelf<Scope>())();
+  return encodeRitual(() => kernelSelf<Scope>())();
 }

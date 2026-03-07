@@ -4,15 +4,15 @@ import type { applicative, apply, functor, monad, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
 import { evoke, stirringWisp, restingWisp } from "#src/contracts";
 import { lifting } from "./lifting";
-import type { syscall } from "./syscall";
+import type { sigil } from "./syscall";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {
-    readonly [plan.URI]: Wisp<A>;
+    readonly [wisp.URI]: Wisp<A>;
   }
 }
 
-export namespace plan {
+export namespace wisp {
   export const URI = "Wisp";
   export type URI = typeof URI;
 
@@ -68,7 +68,7 @@ export namespace plan {
 
   export const Do = pure(null);
 
-  export const Lifting: lifting.Lifting<URI, syscall.URI, Sigil> = {
+  export const Lifting: lifting.Lifting<URI, sigil.URI, Sigil> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,

@@ -4,30 +4,30 @@ import type { applicative, apply, either, functor, monad, pointed } from "fp-ts"
 import { eitherT, chain as fpChain, fromIO as fpFromIO, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";
 import { lifting } from "./lifting";
-import { plan } from "./plan";
-import type { syscall } from "./syscall";
+import { wisp } from "./plan";
+import type { sigil } from "./syscall";
 
 declare module "fp-ts/HKT" {
   interface URItoKind2<E, A> {
-    readonly [planEither.URI]: planEither.WispEither<E, A>;
+    readonly [wispEither.URI]: wispEither.WispEither<E, A>;
   }
 }
 
-export namespace planEither {
+export namespace wispEither {
   export const URI = "WispEither";
   export type URI = typeof URI;
 
   export type WispEither<E, A> = Wisp<either.Either<E, A>>;
 
-  export const left = eitherT.left(plan.Pointed);
-  export const right = eitherT.right(plan.Pointed);
+  export const left = eitherT.left(wisp.Pointed);
+  export const right = eitherT.right(wisp.Pointed);
 
-  export const map = eitherT.map(plan.Functor);
-  export const ap = eitherT.ap(plan.Apply);
-  export const chain = eitherT.chain(plan.Monad);
+  export const map = eitherT.map(wisp.Functor);
+  export const ap = eitherT.ap(wisp.Apply);
+  export const chain = eitherT.chain(wisp.Monad);
 
-  export const leftPlan = eitherT.leftF(plan.Functor);
-  export const rightPlan = eitherT.rightF(plan.Functor);
+  export const leftWisp = eitherT.leftF(wisp.Functor);
+  export const rightWisp = eitherT.rightF(wisp.Functor);
 
   export const Pointed: pointed.Pointed2<URI> = {
     URI,
@@ -67,11 +67,11 @@ export namespace planEither {
     of: Pointed.of,
   };
 
-  export const Lifting: lifting.Lifting2<URI, syscall.URI, Sigil> = {
+  export const Lifting: lifting.Lifting2<URI, sigil.URI, Sigil> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,
-    liftF: flow(plan.liftF, rightPlan),
+    liftF: flow(wisp.liftF, rightWisp),
     map: Functor.map,
   };
 
@@ -94,17 +94,17 @@ export namespace planEither {
   export const chainFirstIOK = fpFromIO.chainFirstIOK(FromIO, Chain);
   export const chainIOK = fpFromIO.chainIOK(FromIO, Chain);
 
-  export const alt = eitherT.alt(plan.Monad);
-  export const bimap = eitherT.bimap(plan.Monad);
-  export const chainNullableK = eitherT.chainNullableK(plan.Monad);
-  export const fromNullable = eitherT.fromNullable(plan.Pointed);
-  export const getOrElse = eitherT.getOrElse(plan.Monad);
-  export const mapLeft = eitherT.mapLeft(plan.Functor);
-  export const match = eitherT.match(plan.Chain);
-  export const matchE = eitherT.matchE(plan.Chain);
-  export const orElse = eitherT.orElse(plan.Monad);
-  export const orElseFirst = eitherT.orElseFirst(plan.Monad);
-  export const orLeft = eitherT.orLeft(plan.Monad);
-  export const swap = eitherT.swap(plan.Functor);
-  export const toUnion = eitherT.toUnion(plan.Functor);
+  export const alt = eitherT.alt(wisp.Monad);
+  export const bimap = eitherT.bimap(wisp.Monad);
+  export const chainNullableK = eitherT.chainNullableK(wisp.Monad);
+  export const fromNullable = eitherT.fromNullable(wisp.Pointed);
+  export const getOrElse = eitherT.getOrElse(wisp.Monad);
+  export const mapLeft = eitherT.mapLeft(wisp.Functor);
+  export const match = eitherT.match(wisp.Chain);
+  export const matchE = eitherT.matchE(wisp.Chain);
+  export const orElse = eitherT.orElse(wisp.Monad);
+  export const orElseFirst = eitherT.orElseFirst(wisp.Monad);
+  export const orLeft = eitherT.orLeft(wisp.Monad);
+  export const swap = eitherT.swap(wisp.Functor);
+  export const toUnion = eitherT.toUnion(wisp.Functor);
 }

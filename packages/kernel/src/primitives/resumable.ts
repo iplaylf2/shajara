@@ -7,7 +7,7 @@ import {
   resumableRecoveryChannel,
 } from "#src/primitives-kit";
 import { lookup, receive, send, spawn } from "#src/syscalls";
-import { plan, planEither, planOption } from "#src/internal/fp";
+import { wisp, wispEither, wispOption } from "#src/internal/fp";
 import type { Either } from "#src/utils";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
@@ -16,19 +16,19 @@ import { supervisorScopeSpec } from "#src/scopes";
 export function resumable<Return>(entry: Ritual<Return>): Wisp<Either<Failure, Return>> {
   return pipe(
     spawn(entry, supervisorScopeSpec()),
-    plan.liftF,
-    plan.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
-    planEither.orElse((failure) =>
+    wisp.liftF,
+    wisp.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
+    wispEither.orElse((failure) =>
       pipe(
         lookup(resumableDelegateKey),
-        plan.liftF,
-        planOption.matchE(
-          () => planEither.left(failure),
+        wisp.liftF,
+        wispOption.matchE(
+          () => wispEither.left(failure),
           (delegateScopeRef) =>
             pipe(
               spawn(delegateWorker<Return>(delegateScopeRef, failure)),
-              plan.liftF,
-              plan.chain(({ scopeRef }) => awaitScopeInBand(scopeRef)),
+              wisp.liftF,
+              wisp.chain(({ scopeRef }) => awaitScopeInBand(scopeRef)),
             ),
         ),
       ),
@@ -43,9 +43,9 @@ function delegateWorker<Return>(
   return () =>
     pipe(
       send(delegateScopeRef, resumableFailureChannel, failure),
-      plan.liftF,
-      plan.chainF(() => receive(resumableRecoveryChannel)),
-      plan.map(({ value }) => value),
-      plan.map(narrowAs<Either<Failure, Return>>()),
+      wisp.liftF,
+      wisp.chainF(() => receive(resumableRecoveryChannel)),
+      wisp.map(({ value }) => value),
+      wisp.map(narrowAs<Either<Failure, Return>>()),
     );
 }

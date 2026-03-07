@@ -11,7 +11,7 @@ import { standardScopeSpec, supervisorScopeSpec } from "#src/scopes";
 import type { Either } from "#src/utils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 
 export function spawn<Return>(
   entry: Ritual<Return>,
@@ -48,8 +48,8 @@ function withRecoveryPoint<Return>(
   return () =>
     pipe(
       fork(recoveryWorker(recover), { participation: "auxiliary" }),
-      plan.liftF,
-      plan.chain(() => entry()),
+      wisp.liftF,
+      wisp.chain(() => entry()),
     );
 }
 
@@ -57,12 +57,12 @@ function recoveryWorker(recover: SpawnRecoveryHandler): Ritual<never> {
   function loop(): Wisp<never> {
     return pipe(
       receive(resumableFailureChannel),
-      plan.liftF,
-      plan.chain(({ from, value: failure }) =>
+      wisp.liftF,
+      wisp.chain(({ from, value: failure }) =>
         pipe(
           fork(recoveryAttempt(from, failure, recover)),
-          plan.liftF,
-          plan.chain(() => loop()),
+          wisp.liftF,
+          wisp.chain(() => loop()),
         ),
       ),
     );
@@ -71,9 +71,9 @@ function recoveryWorker(recover: SpawnRecoveryHandler): Ritual<never> {
   return () =>
     pipe(
       self(),
-      plan.liftF,
-      plan.chainF(({ scopeRef }) => bind(resumableDelegateKey, scopeRef)),
-      plan.chain(() => loop()),
+      wisp.liftF,
+      wisp.chainF(({ scopeRef }) => bind(resumableDelegateKey, scopeRef)),
+      wisp.chain(() => loop()),
     );
 }
 
@@ -85,8 +85,8 @@ function recoveryAttempt(
   return () =>
     pipe(
       spawnScope(() => recover(failure), supervisorScopeSpec()),
-      plan.chain(awaitScopeConverged),
-      plan.map(either.flatten),
-      plan.chainF((recovery) => send(from, resumableRecoveryChannel, recovery)),
+      wisp.chain(awaitScopeConverged),
+      wisp.map(either.flatten),
+      wisp.chainF((recovery) => send(from, resumableRecoveryChannel, recovery)),
     );
 }

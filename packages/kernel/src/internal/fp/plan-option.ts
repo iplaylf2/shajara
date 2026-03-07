@@ -4,28 +4,28 @@ import type { applicative, apply, functor, monad, option, pointed } from "fp-ts"
 import { chain as fpChain, fromIO as fpFromIO, optionT, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";
 import { lifting } from "./lifting";
-import { plan } from "./plan";
-import type { syscall } from "./syscall";
+import { wisp } from "./plan";
+import type { sigil } from "./syscall";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {
-    readonly [planOption.URI]: planOption.WispOption<A>;
+    readonly [wispOption.URI]: wispOption.WispOption<A>;
   }
 }
 
-export namespace planOption {
+export namespace wispOption {
   export const URI = "WispOption";
   export type URI = typeof URI;
 
   export type WispOption<A> = Wisp<option.Option<A>>;
 
-  export const some = optionT.some(plan.Pointed);
+  export const some = optionT.some(wisp.Pointed);
 
-  export const map = optionT.map(plan.Functor);
-  export const ap = optionT.ap(plan.Apply);
-  export const chain = optionT.chain(plan.Monad);
+  export const map = optionT.map(wisp.Functor);
+  export const ap = optionT.ap(wisp.Apply);
+  export const chain = optionT.chain(wisp.Monad);
 
-  export const fromPlan = optionT.fromF(plan.Functor);
+  export const fromWisp = optionT.fromF(wisp.Functor);
 
   export const Pointed: pointed.Pointed1<URI> = {
     URI,
@@ -65,11 +65,11 @@ export namespace planOption {
     of: Pointed.of,
   };
 
-  export const Lifting: lifting.Lifting<URI, syscall.URI, Sigil> = {
+  export const Lifting: lifting.Lifting<URI, sigil.URI, Sigil> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,
-    liftF: flow(plan.liftF, fromPlan),
+    liftF: flow(wisp.liftF, fromWisp),
     map: Functor.map,
   };
 
@@ -92,14 +92,14 @@ export namespace planOption {
   export const chainFirstIOK = fpFromIO.chainFirstIOK(FromIO, Chain);
   export const chainIOK = fpFromIO.chainIOK(FromIO, Chain);
 
-  export const alt = optionT.alt(plan.Monad);
-  export const chainNullableK = optionT.chainNullableK(plan.Monad);
-  export const chainOptionK = optionT.chainOptionK(plan.Monad);
-  export const fromEither = optionT.fromEither(plan.Pointed);
-  export const fromNullable = optionT.fromNullable(plan.Pointed);
-  export const fromPredicate = optionT.fromPredicate(plan.Pointed);
-  export const getOrElse = optionT.getOrElse(plan.Monad);
-  export const match = optionT.match(plan.Functor);
-  export const matchE = optionT.matchE(plan.Chain);
-  export const zero = optionT.zero(plan.Pointed);
+  export const alt = optionT.alt(wisp.Monad);
+  export const chainNullableK = optionT.chainNullableK(wisp.Monad);
+  export const chainOptionK = optionT.chainOptionK(wisp.Monad);
+  export const fromEither = optionT.fromEither(wisp.Pointed);
+  export const fromNullable = optionT.fromNullable(wisp.Pointed);
+  export const fromPredicate = optionT.fromPredicate(wisp.Pointed);
+  export const getOrElse = optionT.getOrElse(wisp.Monad);
+  export const match = optionT.match(wisp.Functor);
+  export const matchE = optionT.matchE(wisp.Chain);
+  export const zero = optionT.zero(wisp.Pointed);
 }

@@ -2,7 +2,7 @@ import type { Wisp, ScopeCompletedExit, ScopeRef } from "#src/contracts";
 import { awaitScope } from "#src/syscalls";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 
 /**
  * Awaits a child scope through the in-band completion path only.
@@ -11,8 +11,8 @@ import { plan } from "#src/internal/fp";
 export function awaitScopeInBand<Return>(scopeRef: ScopeRef<Return>): Wisp<Return> {
   return pipe(
     awaitScope(scopeRef),
-    plan.liftF,
-    plan.map(narrowAs<ScopeCompletedExit<Return>>()),
-    plan.map(({ value }) => value),
+    wisp.liftF,
+    wisp.map(narrowAs<ScopeCompletedExit<Return>>()),
+    wisp.map(({ value }) => value),
   );
 }

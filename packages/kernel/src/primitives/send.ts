@@ -1,5 +1,5 @@
 import type { Channel, Wisp, ScopeRef } from "#src/contracts";
-import { plan } from "#src/internal/fp";
+import { wisp } from "#src/internal/fp";
 import { send as sendSyscall } from "#src/syscalls";
 
 export function send<Value>(
@@ -7,5 +7,5 @@ export function send<Value>(
   channel: Channel<Value>,
   value: Value,
 ): Wisp<void> {
-  return plan.liftF(sendSyscall(scope, channel, value));
+  return wisp.liftF(sendSyscall(scope, channel, value));
 }

@@ -1,13 +1,13 @@
 import type { Ritual, Wisp } from "@shajara/kernel";
 import type { RiteRoutine, RiteCoroutine } from "#src/contracts";
 
-export function liftBlueprint<Return>(blueprint: Ritual<Return>): RiteRoutine<Return> {
-  return function* lifted(): RiteCoroutine<Return> {
-    return yield* liftStep(blueprint());
+export function encodeRitual<Relic>(ritual: Ritual<Relic>): RiteRoutine<Relic> {
+  return function* encoded(): RiteCoroutine<Relic> {
+    return yield* liftStep(ritual());
   };
 }
 
-function* liftStep<Return>(wisp: Wisp<Return>): RiteCoroutine<Return> {
+function* liftStep<Relic>(wisp: Wisp<Relic>): RiteCoroutine<Relic> {
   if (wisp.bearing === "resting") {
     return wisp.relic;
   }
