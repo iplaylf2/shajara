@@ -1,5 +1,4 @@
-import type { ContextKey, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { ContextKey, RETURN_TOKEN, Sigil } from "#src/contracts";
 
 export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Value> {
   return {

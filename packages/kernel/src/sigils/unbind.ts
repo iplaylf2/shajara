@@ -1,5 +1,4 @@
-import type { ContextKey, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { ContextKey, RETURN_TOKEN, Sigil } from "#src/contracts";
 
 export function unbind(key: ContextKey<unknown>): UnbindSigil {
   return {

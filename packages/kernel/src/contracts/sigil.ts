@@ -1,4 +1,4 @@
-import type { RETURN_TOKEN } from "#src/utils";
+import type { RETURN_TOKEN } from "./token";
 
 // oxlint-disable id-length
 export type Echo<S extends Sigil> =

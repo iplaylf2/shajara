@@ -1,5 +1,4 @@
-import type { ProcessExit, ProcessRef, ProcessRefRelic, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { ProcessExit, ProcessRef, ProcessRefRelic, RETURN_TOKEN, Sigil } from "#src/contracts";
 
 export function awaitProcess<Process extends ProcessRef<unknown>>(
   process: Process,

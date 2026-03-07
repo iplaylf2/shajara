@@ -1,5 +1,4 @@
-import type { Channel, ScopeRef, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { Channel, RETURN_TOKEN, ScopeRef, Sigil } from "#src/contracts";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,

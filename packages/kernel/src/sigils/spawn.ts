@@ -1,5 +1,4 @@
-import type { ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { ProcessRef, RETURN_TOKEN, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
 import { standardScopeSpec } from "#src/scopes/standard";
 
 export function spawn<Relic>(

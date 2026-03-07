@@ -1,5 +1,4 @@
-import type { ScopeExit, ScopeRef, ScopeRefRelic, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { RETURN_TOKEN, ScopeExit, ScopeRef, ScopeRefRelic, Sigil } from "#src/contracts";
 
 export function awaitScope<Scope extends ScopeRef<unknown>>(scope: Scope): AwaitScopeSigil<Scope> {
   return {

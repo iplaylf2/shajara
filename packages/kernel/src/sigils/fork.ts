@@ -1,6 +1,5 @@
-import type { ProcessRef, Ritual, Sigil } from "#src/contracts";
+import type { ProcessRef, RETURN_TOKEN, Ritual, Sigil } from "#src/contracts";
 import type { PartialDeep } from "type-fest";
-import type { RETURN_TOKEN } from "#src/utils";
 import defaults from "defaults";
 
 export function fork<Relic, Process extends ProcessRef<Relic>>(

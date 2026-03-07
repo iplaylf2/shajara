@@ -1,5 +1,4 @@
-import type { Failure, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { Failure, RETURN_TOKEN, Sigil } from "#src/contracts";
 import { scopeHalted } from "#src/failures";
 
 export function halt(failure: Failure = scopeHalted()): HaltSigil {

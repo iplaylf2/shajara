@@ -1,5 +1,4 @@
-import type { ProcessRef, ScopeRef, Sigil } from "#src/contracts";
-import type { RETURN_TOKEN } from "#src/utils";
+import type { ProcessRef, RETURN_TOKEN, ScopeRef, Sigil } from "#src/contracts";
 
 export function self<Scope extends ScopeRef<unknown>>(): SelfSigil<Scope> {
   return {

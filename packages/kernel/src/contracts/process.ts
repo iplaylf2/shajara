@@ -1,4 +1,4 @@
-import type { REF_TOKEN, RETURN_TOKEN } from "#src/utils";
+import type { REF_TOKEN, RETURN_TOKEN } from "./token";
 import type { Failure } from "./failure";
 
 export type ProcessRefRelic<Ref extends ProcessRef<unknown>> =

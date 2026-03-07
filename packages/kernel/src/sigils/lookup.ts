@@ -1,5 +1,5 @@
-import type { ContextKey, Sigil } from "#src/contracts";
-import type { Option, RETURN_TOKEN } from "#src/utils";
+import type { ContextKey, RETURN_TOKEN, Sigil } from "#src/contracts";
+import type { Option } from "#src/utils";
 
 export function lookup<Value>(key: ContextKey<Value>): LookupSigil<Value> {
   return {
