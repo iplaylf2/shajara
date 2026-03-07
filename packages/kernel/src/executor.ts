@@ -1,4 +1,4 @@
-import type { Ritual, Wisp } from "./contracts/plan";
+import type { Ritual, Wisp } from "./contracts/wisp";
 import type { Channel } from "./contracts/channel";
 import type { Failure } from "./contracts/failure";
 import type { ScopeRef } from "./contracts/scope";
