@@ -12,14 +12,14 @@ import { ScopeTerminatedError } from "#src/errors";
 export function launch<Return>(
   executor: Executor,
   scope: ExecutionScopeRef,
-  blueprint: RiteRoutine<Return>,
+  ritual: RiteRoutine<Return>,
   options?: RunOptions,
 ): RuntimeLaunchResult<Return> {
   const signal = options?.signal;
 
-  function* wrappedBlueprint(): ReturnType<RiteRoutine<Return>> {
+  function* guardedRitual(): ReturnType<RiteRoutine<Return>> {
     if (!signal) {
-      return yield* blueprint();
+      return yield* ritual();
     }
 
     function onAbort(): void {
@@ -34,13 +34,13 @@ export function launch<Return>(
 
     signal.addEventListener("abort", onAbort, { once: true });
     try {
-      return yield* blueprint();
+      return yield* ritual();
     } finally {
       signal.removeEventListener("abort", onAbort);
     }
   }
 
-  const execution = executor.launch(scope, decodeRitual(wrappedBlueprint));
+  const execution = executor.launch(scope, decodeRitual(guardedRitual));
   const settled = asSettledPromise(execution);
 
   return {

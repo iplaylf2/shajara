@@ -24,7 +24,7 @@ const myTask: RiteRoutine<string> = function* () {
 ### run
 
 ```ts
-run<T>(blueprint: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulPromise<T>
+run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulPromise<T>
 ```
 
 启动一段蓝图，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。运行作用域挂载在全局 root scope 下。
@@ -46,7 +46,7 @@ createScope(): HostScope
 
 | 成员                             | 说明                                            |
 | -------------------------------- | ----------------------------------------------- |
-| `scope.run(blueprint, options?)` | 在托管作用域下启动蓝图，行为与顶层 `run` 一致。 |
+| `scope.run(ritual, options?)`    | 在托管作用域下启动蓝图，行为与顶层 `run` 一致。 |
 | `scope.halt()`                   | 触发关闭流程并等待收敛。                        |
 | `scope.state`                    | 同步状态快照：`open \| closing \| closed`。     |
 | `scope.closed`                   | 清理完成后 resolve；终止/失败时按对应类型抛出。 |
@@ -92,12 +92,12 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 | 原语        | 签名概要                                | 说明                                                                                                              |
 | ----------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(blueprint, options?) → ScopeRef` | 创建子 Scope 并引入并行分支；`options` 为 sum type：`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
-| `all`       | `all(blueprints) → T`                   | 聚合等待多个分支。                                                                                                |
-| `race`      | `race(blueprints) → ArrayValues<T>`     | 选择最先完成者，触发其余分支收敛。`blueprints` 为非空 tuple（至少一个分支）。                                     |
-| `scoped`    | `scoped(blueprint) → T`                 | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                                  |
+| `spawn`     | `spawn(ritual, options?) → ScopeRef`    | 创建子 Scope 并引入并行分支；`options` 为 sum type：`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
+| `all`       | `all(rituals) → T`                      | 聚合等待多个分支。                                                                                                |
+| `race`      | `race(rituals) → ArrayValues<T>`        | 选择最先完成者，触发其余分支收敛。`rituals` 为非空 tuple（至少一个分支）。                                        |
+| `scoped`    | `scoped(ritual) → T`                    | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                                  |
 | `resource`  | `resource(body) → T`                    | 创建资源作用域；等待 `provide(value)` 返回首值，资源作用域在 provide 后挂起，父 scope 回收时清理。                |
-| `resumable` | `resumable(blueprint) → T`              | 在 `scoped` body 内声明可恢复边界。                                                                               |
+| `resumable` | `resumable(ritual) → T`                 | 在 `scoped` body 内声明可恢复边界。                                                                               |
 
 `recovery` 选项仅影响 `resumable` 委派恢复路径：`recover` 返回值视为恢复成功，抛异常视为恢复失败。
 

@@ -16,10 +16,10 @@ export function createScope(): HostScope {
     closed,
     halt: haltScope,
     run<Return>(
-      blueprint: RiteRoutine<Return>,
+      ritual: RiteRoutine<Return>,
       options?: RunOptions,
     ): StatefulPromise<Return> {
-      return launch(executor, launchedScope.scope, blueprint, options).settled;
+      return launch(executor, launchedScope.scope, ritual, options).settled;
     },
     get state(): HostScopeState {
       return launchedScope.settled.state();
@@ -35,7 +35,7 @@ export function createScope(): HostScope {
 }
 
 export interface HostScope {
-  run<Return>(blueprint: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
+  run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
   halt(): Promise<void>;
   readonly state: HostScopeState;
   readonly closed: Promise<void>;

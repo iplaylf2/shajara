@@ -7,6 +7,7 @@ export default defineConfig({
       entry: {
         index: "src/index.ts",
         scopes: "src/scopes.ts",
+        sigils: "src/sigils.ts",
         syscalls: "src/syscalls.ts",
         utils: "src/utils.ts",
       },

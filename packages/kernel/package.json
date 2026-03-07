@@ -12,6 +12,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./sigils": {
+      "types": "./dist/sigils.d.ts",
+      "import": "./dist/sigils.js",
+      "require": "./dist/sigils.cjs"
+    },
     "./syscalls": {
       "types": "./dist/syscalls.d.ts",
       "import": "./dist/syscalls.js",

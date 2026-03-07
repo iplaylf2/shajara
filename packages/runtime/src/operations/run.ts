@@ -4,9 +4,9 @@ import { ensureExecutor } from "@shajara/kernel";
 import { launch } from "#src/operations-kit";
 
 export function run<Return>(
-  blueprint: RiteRoutine<Return>,
+  ritual: RiteRoutine<Return>,
   options?: RunOptions,
 ): StatefulPromise<Return> {
   const executor = ensureExecutor();
-  return launch(executor, executor.rootScope, blueprint, options).settled;
+  return launch(executor, executor.rootScope, ritual, options).settled;
 }
