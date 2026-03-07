@@ -1,4 +1,4 @@
-import type { ProcessExit, ProcessRef, ProcessRefRelic, RETURN_TOKEN, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, ProcessExit, ProcessRef, ProcessRefRelic, Sigil } from "#src/contracts";
 
 export function awaitProcess<Process extends ProcessRef<unknown>>(
   process: Process,
@@ -12,5 +12,5 @@ export function awaitProcess<Process extends ProcessRef<unknown>>(
 export interface AwaitProcessSigil<Process extends ProcessRef<unknown>> extends Sigil {
   readonly kind: "await-process";
   readonly process: Process;
-  readonly [RETURN_TOKEN]?: readonly [ProcessExit<ProcessRefRelic<Process>>];
+  readonly [ECHO_TOKEN]?: readonly [ProcessExit<ProcessRefRelic<Process>>];
 }

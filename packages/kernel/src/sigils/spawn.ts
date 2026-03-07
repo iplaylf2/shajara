@@ -1,4 +1,4 @@
-import type { ProcessRef, RETURN_TOKEN, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
 import { standardScopeSpec } from "#src/scopes/standard";
 
 export function spawn<Relic>(
@@ -16,7 +16,7 @@ export interface SpawnSigil<Relic> extends Sigil {
   readonly kind: "spawn";
   readonly entry: Ritual<Relic>;
   readonly spec: ScopeSpec;
-  readonly [RETURN_TOKEN]?: readonly [SpawnDescriptor<Relic>];
+  readonly [ECHO_TOKEN]?: readonly [SpawnDescriptor<Relic>];
 }
 
 export interface SpawnDescriptor<Relic> {

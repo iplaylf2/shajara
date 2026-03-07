@@ -1,4 +1,4 @@
-import type { Channel, RETURN_TOKEN, ScopeRef, Sigil } from "#src/contracts";
+import type { Channel, ECHO_TOKEN, ScopeRef, Sigil } from "#src/contracts";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,
@@ -18,5 +18,5 @@ export interface SendSigil<Value> extends Sigil {
   readonly scope: ScopeRef<unknown>;
   readonly channel: Channel<Value>;
   readonly value: Value;
-  readonly [RETURN_TOKEN]?: readonly [void];
+  readonly [ECHO_TOKEN]?: readonly [void];
 }

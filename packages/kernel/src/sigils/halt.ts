@@ -1,4 +1,4 @@
-import type { Failure, RETURN_TOKEN, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, Failure, Sigil } from "#src/contracts";
 import { scopeHalted } from "#src/failures";
 
 export function halt(failure: Failure = scopeHalted()): HaltSigil {
@@ -8,5 +8,5 @@ export function halt(failure: Failure = scopeHalted()): HaltSigil {
 export interface HaltSigil extends Sigil {
   readonly failure: Failure;
   readonly kind: "halt";
-  readonly [RETURN_TOKEN]?: readonly [never];
+  readonly [ECHO_TOKEN]?: readonly [never];
 }

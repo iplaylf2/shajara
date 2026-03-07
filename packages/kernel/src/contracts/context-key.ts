@@ -1,4 +1,4 @@
-import type { RETURN_TOKEN } from "./token";
+import type { RELIC_TOKEN } from "./token";
 import { notImplemented } from "#src/internal/not-implemented";
 
 // oxlint-disable-next-line id-length
@@ -10,5 +10,5 @@ export function contextKey<Value>(): ContextKey<Value> {
 }
 
 export interface ContextKey<Value> {
-  readonly [RETURN_TOKEN]?: readonly [Value];
+  readonly [RELIC_TOKEN]?: readonly [Value];
 }

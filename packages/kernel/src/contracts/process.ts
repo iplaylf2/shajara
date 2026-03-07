@@ -1,4 +1,4 @@
-import type { REF_TOKEN, RETURN_TOKEN } from "./token";
+import type { REF_TOKEN, RELIC_TOKEN } from "./token";
 import type { Failure } from "./failure";
 
 export type ProcessRefRelic<Ref extends ProcessRef<unknown>> =
@@ -11,7 +11,7 @@ export type ProcessExit<Relic> =
 
 export interface ProcessRef<Relic> {
   readonly [REF_TOKEN]: "process";
-  readonly [RETURN_TOKEN]?: readonly [Relic];
+  readonly [RELIC_TOKEN]?: readonly [Relic];
 }
 
 export interface ProcessCompletedExit<Relic> {

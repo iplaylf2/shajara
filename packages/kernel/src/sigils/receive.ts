@@ -1,4 +1,4 @@
-import type { Channel, RETURN_TOKEN, ScopeRef, Sigil } from "#src/contracts";
+import type { Channel, ECHO_TOKEN, ScopeRef, Sigil } from "#src/contracts";
 
 export function receive<ReceiveValue>(channel: Channel<ReceiveValue>): ReceiveSigil<ReceiveValue> {
   return {
@@ -10,7 +10,7 @@ export function receive<ReceiveValue>(channel: Channel<ReceiveValue>): ReceiveSi
 export interface ReceiveSigil<ReceiveValue> extends Sigil {
   readonly kind: "receive";
   readonly channel: Channel<ReceiveValue>;
-  readonly [RETURN_TOKEN]?: readonly [ReceiveResult<ReceiveValue>];
+  readonly [ECHO_TOKEN]?: readonly [ReceiveResult<ReceiveValue>];
 }
 
 export interface ReceiveResult<ReceiveValue> {

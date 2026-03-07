@@ -1,4 +1,4 @@
-import type { RETURN_TOKEN, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, Sigil } from "#src/contracts";
 
 export function cede(): CedeSigil {
   return {
@@ -8,5 +8,5 @@ export function cede(): CedeSigil {
 
 export interface CedeSigil extends Sigil {
   readonly kind: "cede";
-  readonly [RETURN_TOKEN]?: readonly [void];
+  readonly [ECHO_TOKEN]?: readonly [void];
 }

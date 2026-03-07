@@ -1,4 +1,4 @@
-import type { ProcessRef, RETURN_TOKEN, Ritual, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, ProcessRef, Ritual, Sigil } from "#src/contracts";
 import type { PartialDeep } from "type-fest";
 import defaults from "defaults";
 
@@ -19,7 +19,7 @@ export interface ForkSigil<Relic, Process extends ProcessRef<Relic>> extends Sig
   readonly kind: "fork";
   readonly ritual: Ritual<Relic>;
   readonly participation: ForkParticipation;
-  readonly [RETURN_TOKEN]?: readonly [Process];
+  readonly [ECHO_TOKEN]?: readonly [Process];
 }
 
 export interface ForkConfig {
