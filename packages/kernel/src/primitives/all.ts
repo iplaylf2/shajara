@@ -1,7 +1,7 @@
 import type { Ritual, Failure, Wisp } from "#src/contracts";
 import { awaitProcessInBand, awaitScopeConverged } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
-import { fork, spawn } from "#src/syscalls";
+import { fork, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";

@@ -6,7 +6,7 @@ import {
   resumableRecoveryChannel,
   spawnScope,
 } from "#src/primitives-kit";
-import { bind, fork, receive, self, send } from "#src/syscalls";
+import { bind, fork, receive, self, send } from "#src/sigils";
 import { standardScopeSpec, supervisorScopeSpec } from "#src/scopes";
 import type { Either } from "#src/utils";
 import { either } from "fp-ts";

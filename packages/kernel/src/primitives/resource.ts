@@ -1,6 +1,6 @@
 import type { Ritual, Channel, Failure, Wisp, ScopeRef } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
-import { fork, receive, self, send, spawn } from "#src/syscalls";
+import { fork, receive, self, send, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import { channel } from "#src/contracts/channel";
 import { either } from "fp-ts";

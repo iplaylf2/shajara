@@ -4,7 +4,7 @@ import type { applicative, apply, functor, monad, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
 import { evoke, stirringWisp, restingWisp } from "#src/contracts";
 import { lifting } from "./lifting";
-import type { sigil } from "./syscall";
+import type { sigil } from "./sigil";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {

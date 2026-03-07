@@ -1,4 +1,4 @@
-import type { Sigil, Echo } from "./syscall";
+import type { Sigil, Echo } from "./sigil";
 
 export type Incantation<Args extends unknown[], Relic> = (...args: Args) => Wisp<Relic>;
 

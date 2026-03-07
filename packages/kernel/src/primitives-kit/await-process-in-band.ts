@@ -1,5 +1,5 @@
 import type { Wisp, ProcessCompletedExit, ProcessRef } from "#src/contracts";
-import { awaitProcess } from "#src/syscalls";
+import { awaitProcess } from "#src/sigils";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";

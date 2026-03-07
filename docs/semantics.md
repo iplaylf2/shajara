@@ -63,7 +63,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 `ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异仅在于身份位置（全局根锚点），不在于能力集合或句柄类型。
 
-依赖方向：executor 建立在 `Scope/Wisp/Sigil` 之上；`syscalls/contracts` 不反向依赖 executor。
+依赖方向：executor 建立在 `Scope/Wisp/Sigil` 之上；`sigils/contracts` 不反向依赖 executor。
 
 ### 1.5 Process
 
@@ -215,7 +215,7 @@ GovernorScope 的 reaper handler 触发语义：
 
 ### 4.1 声明与解释边界
 
-`syscalls/` 提供 sigil **声明对象**（指令形状），表达"要做什么"与"echo 形状"。对象本身不具备解释能力；解释、调度与状态变更由 executor 完成。
+`sigils/` 提供 sigil **声明对象**（指令形状），表达"要做什么"与"echo 形状"。对象本身不具备解释能力；解释、调度与状态变更由 executor 完成。
 
 ### 4.2 原子性
 

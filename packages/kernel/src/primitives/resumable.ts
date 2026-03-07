@@ -6,7 +6,7 @@ import {
   resumableFailureChannel,
   resumableRecoveryChannel,
 } from "#src/primitives-kit";
-import { lookup, receive, send, spawn } from "#src/syscalls";
+import { lookup, receive, send, spawn } from "#src/sigils";
 import { wisp, wispEither, wispOption } from "#src/internal/fp";
 import type { Either } from "#src/utils";
 import { narrowAs } from "#src/utils";

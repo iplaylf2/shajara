@@ -2,7 +2,7 @@ import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import type { Ritual, Channel, Failure, Wisp, ScopeRef } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
 import { either, readonlyArray } from "fp-ts";
-import { fork, halt, receive, self, send, spawn } from "#src/syscalls";
+import { fork, halt, receive, self, send, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import { channel } from "#src/contracts";
 import { pipe } from "fp-ts/function";

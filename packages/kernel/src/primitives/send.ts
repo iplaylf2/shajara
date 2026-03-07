@@ -1,6 +1,6 @@
 import type { Channel, Wisp, ScopeRef } from "#src/contracts";
 import { wisp } from "#src/internal/fp";
-import { send as sendSyscall } from "#src/syscalls";
+import { send as sendSyscall } from "#src/sigils";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,

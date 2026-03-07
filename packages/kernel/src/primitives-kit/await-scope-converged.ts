@@ -1,5 +1,5 @@
 import type { Failure, Wisp, ScopeRef } from "#src/contracts";
-import { awaitScope } from "#src/syscalls";
+import { awaitScope } from "#src/sigils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";

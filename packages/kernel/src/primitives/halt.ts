@@ -1,5 +1,5 @@
 import type { Failure, Wisp } from "#src/contracts";
-import { halt as haltSyscall } from "#src/syscalls";
+import { halt as haltSyscall } from "#src/sigils";
 import { wisp } from "#src/internal/fp";
 import { scopeHalted } from "#src/failures";
 

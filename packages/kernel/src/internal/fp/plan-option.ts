@@ -5,7 +5,7 @@ import { chain as fpChain, fromIO as fpFromIO, optionT, readonlyArray } from "fp
 import { flow } from "fp-ts/function";
 import { lifting } from "./lifting";
 import { wisp } from "./plan";
-import type { sigil } from "./syscall";
+import type { sigil } from "./sigil";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {
