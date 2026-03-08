@@ -1,12 +1,12 @@
-import type { ECHO_TOKEN, Failure, FutureKey, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, Failure, FutureResolverKey, Sigil } from "#src/contracts";
 import type { Either } from "#src/utils";
 
 export function settleFuture<Value extends Either<Failure, unknown>>(
-  futureKey: FutureKey<Value>,
+  futureResolverKey: FutureResolverKey<Value>,
   result: Value,
 ): SettleFutureSigil<Value> {
   return {
-    futureKey,
+    futureResolverKey,
     kind: "settle-future",
     result,
   };
@@ -14,7 +14,7 @@ export function settleFuture<Value extends Either<Failure, unknown>>(
 
 export interface SettleFutureSigil<Value extends Either<Failure, unknown>> extends Sigil {
   readonly kind: "settle-future";
-  readonly futureKey: FutureKey<Value>;
+  readonly futureResolverKey: FutureResolverKey<Value>;
   readonly result: Value;
   readonly [ECHO_TOKEN]?: readonly [void];
 }

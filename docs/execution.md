@@ -13,7 +13,7 @@
 
 ## 2. 当前已落地状态（Build 相关）
 
-- kernel 已新增 `FutureKey` 契约，结果域约束为 `Either<Failure, T>`。  
+- kernel 已新增 `FutureKey` 与 `FutureResolverKey` 契约，结果域约束为 `Either<Failure, T>`。  
   证据：`packages/kernel/src/contracts/future-key.ts`
 - kernel 已新增 `future / awaitFuture / settleFuture / pollFuture` 四个 sigil 声明。  
   证据：`packages/kernel/src/sigils/future.ts`、`packages/kernel/src/sigils/await-future.ts`、`packages/kernel/src/sigils/settle-future.ts`、`packages/kernel/src/sigils/poll-future.ts`
@@ -24,11 +24,11 @@
 
 ## 3. 相对设计基线的新增增量
 
-- kernel 新增 `FutureKey`，作为与 `MessageKey`、`ContextKey` 并列的 `*Key` 概念。  
-  影响：scope 内“一次性结果槽位”从 mailbox 语义中独立出来，后续可以逐步替换部分 `MessageKey` 的 result-slot 用法。  
+- kernel 新增 `FutureKey` 与 `FutureResolverKey`，把 future 的观察能力与收敛能力拆成两个 capability。  
+  影响：future 的可观察面与可收敛面不再依赖约定区分，后续可以更稳地替换部分 `MessageKey` 的 result-slot 用法。  
   证据：`packages/kernel/src/contracts/future-key.ts`、`docs/semantics.md`
-- future 采用“值域即 `Either<Failure, T>`”的单泛型约束，而不是双泛型左右值拆分。  
-  影响：future 的收敛结果保持单一结果型，`awaitFuture/pollFuture/settleFuture` 都直接围绕该结果型工作。  
+- future 采用“值域即 `Either<Failure, T>`”的单泛型约束，并在 `future()` 返回 tuple 时同时交付观察 key 与收敛 key。  
+  影响：future 的收敛结果保持单一结果型，能力分化直接编码进返回形状。  
   证据：`packages/kernel/src/contracts/future-key.ts`、`packages/kernel/src/sigils/await-future.ts`、`packages/kernel/src/sigils/settle-future.ts`
 - `api.md` 未新增 future 用户面。  
   影响：这次变更仍停留在 kernel 基础层与设计文档层，没有提前扩张到 host 用户 API。  
@@ -38,7 +38,7 @@
 
 1. 在执行器中加入 `future / await-future / settle-future / poll-future` 的解释路径。
 2. 定实 owner scope 关闭时 pending future 的强制 `Left<Failure>` 收敛机制。
-3. 评估 `race`、`resource` 等内部 result-slot 模式，选择首批从 `MessageKey` 迁移到 `FutureKey` 的目标。
+3. 评估 `race`、`resource` 等内部 result-slot 模式，选择首批从 `MessageKey` 迁移到 `FutureKey/FutureResolverKey` 的目标。
 
 ## 5. 验证基线
 

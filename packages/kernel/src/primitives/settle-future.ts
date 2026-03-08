@@ -1,11 +1,11 @@
-import type { Failure, FutureKey, Wisp } from "#src/contracts";
+import type { Failure, FutureResolverKey, Wisp } from "#src/contracts";
 import type { Either } from "#src/utils";
 import { settleFuture as settleFutureSigil } from "#src/sigils";
 import { wisp } from "#src/internal/fp";
 
 export function settleFuture<Value extends Either<Failure, unknown>>(
-  futureKey: FutureKey<Value>,
+  futureResolverKey: FutureResolverKey<Value>,
   result: Value,
 ): Wisp<void> {
-  return wisp.liftF(settleFutureSigil(futureKey, result));
+  return wisp.liftF(settleFutureSigil(futureResolverKey, result));
 }

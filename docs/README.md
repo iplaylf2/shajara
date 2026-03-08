@@ -23,4 +23,4 @@ shajara 由两层构成：
 - host 层架构与适配方向 → `host.md`
 - 用户可见 API 形状 → `api.md`
 - 跨层约束 → `design-constraints.md`
-- `MessageKey` 的 mailbox 语义与 `FutureKey` 的单次收敛语义 → `semantics.md`
+- `MessageKey` 的 mailbox 语义，以及 `FutureKey / FutureResolverKey` 的单次收敛语义 → `semantics.md`
