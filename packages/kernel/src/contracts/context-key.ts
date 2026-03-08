@@ -1,3 +1,4 @@
+import type { KEY_TOKEN } from "./token";
 import { notImplemented } from "#src/internal/not-implemented";
 
 declare const VALUE_TOKEN: unique symbol;
@@ -11,5 +12,6 @@ export function contextKey<Value>(): ContextKey<Value> {
 }
 
 export interface ContextKey<Value> {
+  readonly [KEY_TOKEN]: "context";
   readonly [VALUE_TOKEN]?: readonly [Value];
 }

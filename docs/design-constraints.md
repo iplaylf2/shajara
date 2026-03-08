@@ -11,7 +11,7 @@
 - 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SpawnDescriptor`、`SelfDescriptor`）由 kernel 单源定义并导出，host 直接消费，不重复定义。
 - 依赖方向：`executor → contracts/sigil`，反向不允许。
 - 术语方向：`lift` = kernel → host，`lower` = host → kernel。
-- 命名：角色用 `*Scope`，句柄用 `*Ref`。
+- 命名：角色用 `*Scope`，控制面句柄用 `*Ref`，selector / lookup token 用 `*Key`。
 
 ## 2. 类型契约
 
