@@ -4,5 +4,6 @@ export * from "./process";
 export * from "./scope";
 export * from "./message-key";
 export * from "./context-key";
+export * from "./future-key";
 export * from "./sigil";
 export * from "./token";

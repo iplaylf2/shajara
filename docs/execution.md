@@ -6,39 +6,39 @@
 
 ## 1. 当前目标与阻塞
 
-当前主目标仍是打通可运行闭环：落地 kernel 执行器并接通 host 宿主入口。
+当前主目标仍是打通 kernel 的可运行闭环，同时把新引入的 `future` 基础语义接入设计单源。
 
-- 主阻塞：`ensureExecutor()` 仍为占位实现，端到端运行闭环未建立。  
+- 主阻塞：`ensureExecutor()` 仍为占位实现，sigil 解释路径尚未建立，future 目前停留在 contracts/sigils/primitives 形状层。  
   证据：`packages/kernel/src/executor.ts`
 
 ## 2. 当前已落地状态（Build 相关）
 
-- `AwaitProcess` sigil 声明已落地，Process 终态观察与 `AwaitScope` 并列存在。  
-  证据：`packages/kernel/src/sigils/await-process.ts`、`packages/kernel/src/sigils.ts`
-- `all` 分支并发已改为 `Fork + AwaitProcess(in-band)`，外层 supervisor 仍通过 `awaitScopeConverged` 收敛整体结果。  
-  证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives-kit/await-process-in-band.ts`
-- `race` arena 内部分支已改为 `Fork`；分支完成后 `Send(raceMessageKey)` 并 `Halt`，arena 根 process 通过 `park` 挂起等待收敛路径。  
-  证据：`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives-kit/park.ts`
-- host `race` 入参已收敛为非空 tuple，禁止空分支调用。  
-  证据：`packages/host/src/primitives/race.ts`
+- kernel 已新增 `FutureKey` 契约，结果域约束为 `Either<Failure, T>`。  
+  证据：`packages/kernel/src/contracts/future-key.ts`
+- kernel 已新增 `future / awaitFuture / settleFuture / pollFuture` 四个 sigil 声明。  
+  证据：`packages/kernel/src/sigils/future.ts`、`packages/kernel/src/sigils/await-future.ts`、`packages/kernel/src/sigils/settle-future.ts`、`packages/kernel/src/sigils/poll-future.ts`
+- kernel 已新增与同名 sigil 对齐的 primitive 包装层。  
+  证据：`packages/kernel/src/primitives/future.ts`、`packages/kernel/src/primitives/await-future.ts`、`packages/kernel/src/primitives/settle-future.ts`、`packages/kernel/src/primitives/poll-future.ts`
+- 设计单源已同步 future：对象模型、sigil 协议与跨层约束已纳入文档。  
+  证据：`docs/semantics.md`、`docs/design-constraints.md`、`docs/README.md`
 
 ## 3. 相对设计基线的新增增量
 
-- `AwaitProcess` 从“待定概念”转为已声明 sigil。  
-  影响：Process 级等待进入可组合 sigil 面，`all` 等组合 primitive 可直接依赖 Process 终态观察。  
-  证据：`packages/kernel/src/sigils/await-process.ts`、`docs/semantics.md` §5.3、`docs/design-constraints.md` §3
-- `all/race` 的分支执行单元从“branch 子 Scope”转为“branch Process”。  
-  影响：并发构造 primitive 内部可以直接组合 `Fork`；最终失败仍由外层 supervisor 收敛。  
-  证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`、`docs/semantics.md` §6.3
-- `race` 增加非空分支约束。  
-  影响：空分支语义不再是运行时分支问题，而是类型层面的调用前约束。  
-  证据：`packages/kernel/src/primitives/race.ts`、`packages/host/src/primitives/race.ts`、`docs/api.md` §4.1
+- kernel 新增 `FutureKey`，作为与 `MessageKey`、`ContextKey` 并列的 `*Key` 概念。  
+  影响：scope 内“一次性结果槽位”从 mailbox 语义中独立出来，后续可以逐步替换部分 `MessageKey` 的 result-slot 用法。  
+  证据：`packages/kernel/src/contracts/future-key.ts`、`docs/semantics.md`
+- future 采用“值域即 `Either<Failure, T>`”的单泛型约束，而不是双泛型左右值拆分。  
+  影响：future 的收敛结果保持单一结果型，`awaitFuture/pollFuture/settleFuture` 都直接围绕该结果型工作。  
+  证据：`packages/kernel/src/contracts/future-key.ts`、`packages/kernel/src/sigils/await-future.ts`、`packages/kernel/src/sigils/settle-future.ts`
+- `api.md` 未新增 future 用户面。  
+  影响：这次变更仍停留在 kernel 基础层与设计文档层，没有提前扩张到 host 用户 API。  
+  证据：`docs/api.md`
 
 ## 4. 下一步（Build 聚焦）
 
-1. 落地 `ensureExecutor()`，形成可运行的 kernel 执行器。
-2. 接通 `run/createScope` 到真实执行器，完成 success/failure/terminated 端到端收敛。
-3. 在执行器中补齐 `AwaitProcess` 的解释路径，并联调 `all/race` 新分支模型。
+1. 在执行器中加入 `future / await-future / settle-future / poll-future` 的解释路径。
+2. 定实 owner scope 关闭时 pending future 的强制 `Left<Failure>` 收敛机制。
+3. 评估 `race`、`resource` 等内部 result-slot 模式，选择首批从 `MessageKey` 迁移到 `FutureKey` 的目标。
 
 ## 5. 验证基线
 
@@ -52,5 +52,3 @@ yarn lint
 
 - `yarn workspace @shajara/kernel lint`
 - `yarn workspace @shajara/kernel typecheck`
-- `yarn workspace @shajara/host lint`
-- `yarn workspace @shajara/host typecheck`

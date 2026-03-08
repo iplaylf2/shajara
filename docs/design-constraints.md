@@ -10,8 +10,9 @@
 - cleanup 注册以 `Ritual` 为锚点：同一条启动入口注册一次 cleanup。
 - 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SpawnDescriptor`、`SelfDescriptor`）由 kernel 单源定义并导出，host 直接消费，不重复定义。
 - 依赖方向：`executor → contracts/sigil`，反向不允许。
+- executor 侧派生结果句柄不反向定义 kernel 基础概念；kernel 级 `future` 语义单源属于 `contracts/sigils/primitives`。
 - 术语方向：`lift` = kernel → host，`lower` = host → kernel。
-- 命名：角色用 `*Scope`，控制面句柄用 `*Ref`，selector / lookup token 用 `*Key`。
+- 命名：角色用 `*Scope`，控制面句柄用 `*Ref`，selector / lookup token / scope 内单次收敛槽位用 `*Key`。
 
 ## 2. 类型契约
 
@@ -24,6 +25,7 @@
 ## 3. 失败通道
 
 - kernel primitive 通过显式代数通道（`Either<Failure, T>`）表达失败，不依赖宿主 `throw`。
+- `FutureKey` 的结果域固定为 `Either<Failure, T>`；future 不引入第二条独立失败通道。
 - `halt` 的失败分层固定为：Process 失败 → 所属 Scope 失败；父 Scope 是否失败由 Scope 角色语义决定。
 - host 在 primitive 适配边界统一解包 `Either`，将 `Left` 收敛为 `ShajaraError` 抛出。
 - `Failure` 由 kernel 定义，host 包装为 `ShajaraError`（`Error` 子类），不向用户暴露 kernel 失败类型。
@@ -56,6 +58,7 @@
 | `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                           |
 | `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeSpec` 单源                    |
 | `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                            |
+| `kernel/src/contracts/future-key.ts`  | `FutureKey` 单源                             |
 | `kernel/src/sigils/`                  | sigil 声明 + index                           |
 | `kernel/src/sigils.ts`                | sigil 公共入口                               |
 | `kernel/src/primitives/`              | 原语 + index                                 |

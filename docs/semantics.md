@@ -60,7 +60,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 | ---------------- | --------------------------------------------------- |
 | `GovernorScope`  | 治理角色：承载 Scheduler/Reaper 两类 handler 策略。 |
 | `ExecutionScope` | 执行入口能力角色（launch + terminate 语义）。       |
-| `LimboScope`     | 结构性修剪承接角色（全局单例，见 §1.8）。           |
+| `LimboScope`     | 结构性修剪承接角色（全局单例，见 §2.9）。           |
 
 创建约束：`StandardScope`、`SupervisorScope`、`GovernorScope` 可由 sigil 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 sigil 创建目标。
 
@@ -90,7 +90,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 `Processor` 是系统唯一的逻辑原子执行权令牌。`EventQueue` 存放可运行的 Process。
 
-### 2.7 消息传递
+### 2.7 MessageKey 与消息传递
 
 `MessageKey<T>` 是 phantom-typed 不透明令牌，由 `messageKey<T>()` 创建。它标识的是 Scope 内 mailbox 的匹配 key，而不是一个脱离 Scope 独立存在的通道。持有令牌即具备发送或接收能力（capability 模型）。
 
@@ -105,7 +105,30 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 消息传递协议的正确性不依赖调度顺序——Send 在 Receive 到达前执行时，值入 buffer 而非丢弃；Receive 在 Send 到达前执行时，阻塞等待。任意 Processor 数量与调度策略下行为一致。
 
-### 2.8 Limbo
+### 2.8 FutureKey 与单次收敛
+
+`FutureKey<Value>` 是 phantom-typed 不透明令牌，其中 `Value` 约束为 `Either<Failure, unknown>`。它标识的是 owner Scope 内一个 **单次收敛槽位**，而不是消息队列或独立运行实体。
+
+future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到的 `FutureKey` 可以被传递与持有；future 本体的生命周期仍附着于 owner Scope。
+
+每个 `(ownerScope, FutureKey)` 对隐式维护一个二态单元：
+
+- `pending`：尚未收敛
+- `settled(value)`：已以某个 `Either<Failure, T>` 结果收敛
+
+future 的语义中心是“同一结果可被重复观察”，而不是消息消费：
+
+- `AwaitFuture(futureKey)`：等待该 future 收敛，并返回同一个 settled 结果
+- `PollFuture(futureKey)`：非阻塞观察；未收敛返回 `None`，已收敛返回 `Some(result)`
+- `SettleFuture(futureKey, result)`：将 pending future 收敛为某个结果
+
+与 `MessageKey` 不同，future 不具备 FIFO、buffer 或单消费者语义。多个 Process 可以同时等待同一个 future；收敛后所有观察者都得到同一结果值。
+
+settle 权限受 Scope 谱系约束：只有 owner Scope 或其后代 Scope 才能对该 future 执行 `SettleFuture`。
+
+owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 future 的结果域固定在 `Either<Failure, T>` 上，而不是额外引入第二条失败通道。
+
+### 2.9 Limbo
 
 系统包含全局唯一的 `LimboScope` 单例。
 
@@ -298,6 +321,36 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 前置：processRef 对调用方可见。
 - 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", failure }` | `{ kind: "terminated" }`
 
+#### Future() → futureKey `[Non-Blocking]`
+
+在调用方 Scope 内创建一个 pending future，并返回其 `FutureKey<Value>`。
+
+- `Value` 的形状固定为 `Either<Failure, T>`。
+- owner Scope 固定为创建时的当前 Scope。
+
+#### AwaitFuture(futureKey) → result `[Blocking]`
+
+等待目标 future 收敛。
+
+- 前置：futureKey 对调用方可见。
+- 返回 result：`Either<Failure, T>`
+- 多个观察者可同时等待；future 收敛后都恢复到同一个结果。
+
+#### PollFuture(futureKey) → Option\<result\> `[Non-Blocking]`
+
+非阻塞观察目标 future 的当前状态。
+
+- 前置：futureKey 对调用方可见。
+- 未收敛：返回 `None`
+- 已收敛：返回 `Some(Either<Failure, T>)`
+
+#### SettleFuture(futureKey, result) → void `[Non-Blocking]`
+
+将目标 future 收敛为给定结果。
+
+- 前置：futureKey 对调用方可见，且调用方 Scope 必须是 owner Scope 或其后代 Scope。
+- `result` 的形状为 `Either<Failure, T>`。
+
 #### Send(scopeRef, messageKey, value) → void `[Non-Blocking]`
 
 向目标 Scope 的 `(scope, messageKey)` buffer 追加消息。若有 Process 阻塞在 `Receive(messageKey)`，最早的等待者出队并恢复，消息由该接收者独占。
@@ -395,7 +448,23 @@ primitive 不等于 sigil：
 - 未命中：失败保持为 `Left(failure)`。
 - 命中：向委派点发送失败并等待恢复结果（`Either<Failure, T>`）返回。
 
-### 6.4 等待与控制 primitives
+### 6.4 future、等待与控制 primitives
+
+#### future() → Wisp\<FutureKey\<Either\<Failure, T\>\>\>
+
+封装 `Future` sigil，在当前 Scope 内创建一个 pending future，并返回其 `FutureKey`。
+
+#### awaitFuture(futureKey) → Wisp\<Either\<Failure, T\>\>
+
+封装 `AwaitFuture` sigil，等待目标 future 收敛并返回结果。
+
+#### pollFuture(futureKey) → Wisp\<Option\<Either\<Failure, T\>\>\>
+
+封装 `PollFuture` sigil，非阻塞观察目标 future 的当前收敛状态。
+
+#### settleFuture(futureKey, result) → Wisp\<void\>
+
+封装 `SettleFuture` sigil，对目标 future 执行单次收敛。
 
 #### spawn(ritual, options?) → Wisp\<ScopeRef\>
 
