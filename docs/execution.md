@@ -19,8 +19,8 @@
   证据：`packages/kernel/src/sigils/future.ts`、`packages/kernel/src/sigils/await-future.ts`、`packages/kernel/src/sigils/settle-future.ts`、`packages/kernel/src/sigils/poll-future.ts`
 - kernel 已新增与同名 sigil 对齐的 primitive 包装层。  
   证据：`packages/kernel/src/primitives/future.ts`、`packages/kernel/src/primitives/await-future.ts`、`packages/kernel/src/primitives/settle-future.ts`、`packages/kernel/src/primitives/poll-future.ts`
-- 设计单源已同步 future：对象模型、sigil 协议与跨层约束已纳入文档。  
-  证据：`docs/semantics.md`、`docs/design-constraints.md`、`docs/README.md`
+- 设计单源已同步 future：对象模型、sigil 协议与实现约束已纳入文档。  
+  证据：`docs/semantics.md`、`docs/implementation-constraints.md`、`docs/README.md`
 
 ## 3. 相对设计基线的新增增量
 
