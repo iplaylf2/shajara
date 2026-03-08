@@ -1,10 +1,13 @@
 import type { Failure } from "./failure";
+import type { FutureKey } from "./future-key";
 import type { REF_TOKEN } from "./token";
+import type { Right } from "#src/utils";
 
 declare const RELIC_TOKEN: unique symbol;
 
 export interface ScopeRef<Relic> {
   readonly [REF_TOKEN]: "scope";
+  readonly exitFuture: FutureKey<Right<ScopeExit<Relic>>>;
   readonly [RELIC_TOKEN]?: readonly [Relic];
 }
 

@@ -1,5 +1,5 @@
 import type { Failure, ScopeRef, Wisp } from "#src/contracts";
-import { awaitScope } from "#src/sigils";
+import { awaitFuture } from "#src/primitives/await-future";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { scopeTerminated } from "#src/failures";
@@ -10,9 +10,8 @@ export function awaitScopeConverged<Relic>(
   scopeRef: ScopeRef<Relic>,
 ): Wisp<either.Either<Failure, Relic>> {
   return pipe(
-    awaitScope(scopeRef),
-    wisp.liftF,
-    wisp.map((scopeExit) => {
+    awaitFuture(scopeRef.exitFuture),
+    wisp.map(({ right: scopeExit }) => {
       switch (scopeExit.kind) {
         case "completed":
           return either.right(scopeExit.value);

@@ -1,5 +1,7 @@
 import type { Failure } from "./failure";
+import type { FutureKey } from "./future-key";
 import type { REF_TOKEN } from "./token";
+import type { Right } from "#src/utils";
 
 declare const RELIC_TOKEN: unique symbol;
 
@@ -13,6 +15,7 @@ export type ProcessExit<Relic> =
 
 export interface ProcessRef<Relic> {
   readonly [REF_TOKEN]: "process";
+  readonly exitFuture: FutureKey<Right<ProcessExit<Relic>>>;
   readonly [RELIC_TOKEN]?: readonly [Relic];
 }
 

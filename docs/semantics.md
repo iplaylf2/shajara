@@ -45,6 +45,8 @@ sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统�
 
 Scope 是生命周期、身份与上下文的统一载体，承载父子关系与 Process 归属。每个 Scope 拥有唯一 `ScopeRef`（控制面 capability handle），Scope 构成严格树（除根外每个 Scope 恰有一个父 Scope）。
 
+`ScopeRef` 除了表达身份与控制面可见性，也显式携带 `exitFuture`。该 future-like 观察面用于等待该 Scope 的生命周期终态，其值域固定为 `Right<ScopeExit<T>>`。
+
 角色按语义来源分两层：
 
 **kernel 原生角色**（语义由 kernel 直接定义）：
@@ -81,6 +83,8 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
+`ProcessRef` 也显式携带 `exitFuture`，用于等待该 Process 的生命周期终态，其值域固定为 `Right<ProcessExit<T>>`。
+
 Process 在生命周期收敛中存在参与属性（`participation`）：
 
 - `tracked`：计入 Scope “变空”判定。
@@ -109,7 +113,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 `FutureKey<Value>` 与 `FutureResolverKey<Value>` 是成对出现的 phantom-typed 不透明令牌，其中 `Value` 约束为 `Either<Failure, unknown>`。它们共同标识 owner Scope 内一个 **单次收敛槽位**，而不是消息队列或独立运行实体。
 
-future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到一对 key：`[FutureKey, FutureResolverKey]`。future 本体的生命周期仍附着于 owner Scope。
+普通 future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到一对 key：`[FutureKey, FutureResolverKey]`。future 本体的生命周期仍附着于 owner Scope。
 
 每个 `(ownerScope, FutureKey, FutureResolverKey)` 组三元关系隐式维护一个二态单元：
 
@@ -127,6 +131,8 @@ future 的语义中心是“同一结果可被重复观察”，而不是消息�
 能力边界由 key 形状直接表达：`FutureKey` 只用于观察，`FutureResolverKey` 只用于收敛。settle 权限仍受 Scope 谱系约束：只有 owner Scope 或其后代 Scope 才能对该 future 执行 `SettleFuture`。
 
 owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 future 的结果域固定在 `Either<Failure, T>` 上，而不是额外引入第二条失败通道。
+
+`ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一观察协议，但它们不是由 `Future()` sigil 直接创建的普通结果槽。两者的 payload 分别固定为 `Right<ScopeExit<T>>` 与 `Right<ProcessExit<T>>`，用于表达生命周期终态的可观察面。
 
 ### 2.9 Limbo
 
@@ -229,7 +235,7 @@ Process 与 Scope 均有三种互斥终态：
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
-`AwaitScope/AwaitProcess` 仅提供结果可见性，不构成对上传策略的拦截。
+通过 `AwaitFuture(scopeRef.exitFuture)` / `AwaitFuture(processRef.exitFuture)` 观察终态，仅提供结果可见性，不构成对上传策略的拦截。
 
 ### 4.6 结构性收敛：Reaper
 
@@ -305,22 +311,6 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 调用方 Process 以 `Failed(failure)` 语义退出。该 Process 的 `Failed(failure)` 使其所属 Scope 进入 Closing（终态 Failed），并触发对后代 Scope 的终止级联。`failure` 为可选携带负载。
 
-#### AwaitScope(scopeRef) → { exit } `[Blocking]`
-
-等待目标 Scope 收敛到可观察终态。
-
-- 前置：scopeRef 对调用方可见。
-- 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", failure }` | `{ kind: "terminated" }`
-
-`InLimbo` 为结构状态，不作为返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。不改变失败上传语义。
-
-#### AwaitProcess(processRef) → { exit } `[Blocking]`
-
-等待目标 Process 收敛到可观察终态。
-
-- 前置：processRef 对调用方可见。
-- 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", failure }` | `{ kind: "terminated" }`
-
 #### Future() → [futureKey, futureResolverKey] `[Non-Blocking]`
 
 在调用方 Scope 内创建一个 pending future，并返回其 `[FutureKey<Value>, FutureResolverKey<Value>]`。
@@ -335,6 +325,8 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 前置：futureKey 对调用方可见。
 - 返回 result：`Either<Failure, T>`
 - 多个观察者可同时等待；future 收敛后都恢复到同一个结果。
+
+通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察生命周期终态时，`AwaitFuture` 的返回值分别为 `Right<ScopeExit<T>>` / `Right<ProcessExit<T>>`。`InLimbo` 为结构状态，不作为独立返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。
 
 #### PollFuture(futureKey) → Option\<result\> `[Non-Blocking]`
 
@@ -398,7 +390,7 @@ Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
-- **封装 Process 脆弱性**：sigil 层暴露的 `Fork` 与 Process 级操作（如 `AwaitProcess`、待定的 `Terminate(processRef)`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Fork` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待、待定的 `Terminate(processRef)`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
 
 primitive 不等于 sigil：
 
@@ -419,7 +411,7 @@ primitive 不等于 sigil：
 
 1. 创建 `SupervisorScope` 作为隔离容器。
 2. 在 supervisor 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. 对每个分支 Process 调用 `AwaitProcess` 等待终态（内部通过 in-band completed 路径收集值）。
+3. 对每个分支 Process 通过 `awaitFuture(processRef.exitFuture)` 等待终态（内部通过 in-band completed 路径收集值）。
 4. 整体通过 `awaitScopeConverged` 收敛外层 supervisor 的终态为 Either。
 
 #### race(branches) → Wisp\<Either\<Failure, ArrayValues\<T\>\>\>
@@ -476,7 +468,7 @@ primitive 不等于 sigil：
 
 #### join(scopeRef) → Wisp\<Either\<Failure, T\>\>
 
-等待目标 Scope 终态并收敛为 Either。
+通过 `awaitFuture(scopeRef.exitFuture)` 等待目标 Scope 终态并收敛为 Either。
 
 #### halt(failure?) → Wisp\<never\>
 

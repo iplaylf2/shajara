@@ -1,5 +1,5 @@
 import type { ScopeCompletedExit, ScopeRef, Wisp } from "#src/contracts";
-import { awaitScope } from "#src/sigils";
+import { awaitFuture } from "#src/primitives/await-future";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
@@ -10,8 +10,8 @@ import { wisp } from "#src/internal/fp";
  */
 export function awaitScopeInBand<Relic>(scopeRef: ScopeRef<Relic>): Wisp<Relic> {
   return pipe(
-    awaitScope(scopeRef),
-    wisp.liftF,
+    awaitFuture(scopeRef.exitFuture),
+    wisp.map(({ right }) => right),
     wisp.map(narrowAs<ScopeCompletedExit<Relic>>()),
     wisp.map(({ value }) => value),
   );

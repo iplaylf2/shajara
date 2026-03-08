@@ -1,5 +1,5 @@
 import type { ProcessCompletedExit, ProcessRef, Wisp } from "#src/contracts";
-import { awaitProcess } from "#src/sigils";
+import { awaitFuture } from "#src/primitives/await-future";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
@@ -10,8 +10,8 @@ import { wisp } from "#src/internal/fp";
  */
 export function awaitProcessInBand<Relic>(processRef: ProcessRef<Relic>): Wisp<Relic> {
   return pipe(
-    awaitProcess(processRef),
-    wisp.liftF,
+    awaitFuture(processRef.exitFuture),
+    wisp.map(({ right }) => right),
     wisp.map(narrowAs<ProcessCompletedExit<Relic>>()),
     wisp.map(({ value }) => value),
   );
