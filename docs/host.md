@@ -51,13 +51,13 @@ host 以 `launch` 为统一收敛锚点：
 
 ## 5. 宿主桥接
 
-`action`、`sleep`、`until` 等宿主操作在内部利用 `Channel<T>` 令牌完成宿主回调到 kernel 的消息投递闭环：
+`action`、`sleep`、`until` 等宿主操作在内部利用 `MessageKey<T>` 令牌完成宿主回调到 kernel 的消息投递闭环：
 
-- 模块级创建 `Channel<T>` 令牌。
-- host 内部通过 `executor.send(scope, channel, value)` 注入宿主输入。
-- kernel 侧由 `receive(channel)` 等待并收敛。
+- 模块级创建 `MessageKey<T>` 令牌。
+- host 内部通过 `executor.send(scope, messageKey, value)` 注入宿主输入。
+- kernel 侧由 `receive(messageKey)` 等待并收敛。
 
-同一套 `send/receive/channel` 也作为 host 编排原语对用户暴露，宿主桥接路径仍由 host 内部封装。
+同一套 `send/receive/messageKey` 也作为 host 编排原语对用户暴露，宿主桥接路径仍由 host 内部封装。
 
 ## 6. 边界引用类型
 
@@ -74,4 +74,4 @@ host 直接消费 kernel 导出的引用类型，不重复定义同语义包装�
 
 ## 7. 内核索引
 
-运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Wisp、退出信息与等待者）、等待登记（Receive、AwaitScope，以及待定的 AwaitProcess），以及各 Scope 上按 Channel 令牌分组的消息队列与等待者登记。host 仅消费这些能力，不复制维护状态机。
+运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Wisp、退出信息与等待者）、等待登记（Receive、AwaitScope，以及待定的 AwaitProcess），以及各 Scope 上按 MessageKey 令牌分组的消息队列与等待者登记。host 仅消费这些能力，不复制维护状态机。

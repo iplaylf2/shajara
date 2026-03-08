@@ -103,23 +103,23 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ### 4.2 基础
 
-| 原语      | 签名概要                                | 说明                                           |
-| --------- | --------------------------------------- | ---------------------------------------------- |
-| `join`    | `join(scopeRef) → T`                    | 等待 spawn 句柄对应作用域完成并返回结果。      |
-| `send`    | `send(scopeRef, channel, value) → void` | 向目标 Scope 的 Channel 投递消息。             |
-| `receive` | `receive(channel) → { value, from }`    | 在当前 Scope 上等待指定 Channel 的下一条消息。 |
-| `halt`    | `halt() → never`                        | 触发当前 Scope 的终止级联。                    |
-| `cede`    | `cede() → void`                         | 协作式让权。                                   |
-| `suspend` | `suspend() → never`                     | 持续挂起，直到父 scope 回收清理阶段触发。      |
+| 原语      | 签名概要                                   | 说明                                                     |
+| --------- | ------------------------------------------ | -------------------------------------------------------- |
+| `join`    | `join(scopeRef) → T`                       | 等待 spawn 句柄对应作用域完成并返回结果。                |
+| `send`    | `send(scopeRef, messageKey, value) → void` | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。 |
+| `receive` | `receive(messageKey) → { value, from }`    | 在当前 Scope 上等待指定 `messageKey` 的下一条消息。      |
+| `halt`    | `halt() → never`                           | 触发当前 Scope 的终止级联。                              |
+| `cede`    | `cede() → void`                            | 协作式让权。                                             |
+| `suspend` | `suspend() → never`                        | 持续挂起，直到父 scope 回收清理阶段触发。                |
 
 ### 4.3 上下文与自省
 
-| 原语      | 签名概要                                 | 说明                                       |
-| --------- | ---------------------------------------- | ------------------------------------------ |
-| `bind`    | `bind(ContextKey<T>, value) → void`      | 在当前 Scope 绑定值。                      |
-| `lookup`  | `lookup(ContextKey<T>) → T \| undefined` | 沿祖先链解析值；未命中时返回 `undefined`。 |
-| `channel` | `channel<T>() → Channel<T>`              | 创建 Channel 令牌，用于 `send/receive`。   |
-| `self`    | `self() → SelfDescriptor`                | 读取当前执行实体的自省信息。               |
+| 原语         | 签名概要                                 | 说明                                       |
+| ------------ | ---------------------------------------- | ------------------------------------------ |
+| `bind`       | `bind(ContextKey<T>, value) → void`      | 在当前 Scope 绑定值。                      |
+| `lookup`     | `lookup(ContextKey<T>) → T \| undefined` | 沿祖先链解析值；未命中时返回 `undefined`。 |
+| `messageKey` | `messageKey<T>() → MessageKey<T>`        | 创建消息匹配 key，用于 `send/receive`。    |
+| `self`       | `self() → SelfDescriptor`                | 读取当前执行实体的自省信息。               |
 
 ---
 

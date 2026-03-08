@@ -1,6 +1,6 @@
 import type { Ritual, Wisp } from "./contracts/wisp";
-import type { Channel } from "./contracts/channel";
 import type { Failure } from "./contracts/failure";
+import type { MessageKey } from "./contracts/message-key";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
@@ -41,9 +41,9 @@ export interface Executor {
    */
   launch<Return>(scope: ExecutionScopeRef, ritual: Ritual<Return>): LaunchHandle<Return>;
   /**
-   * Send a value into the target scope's channel message queue.
+   * Send a value into the target scope's mailbox selected by the message key.
    */
-  send<Value>(scope: ScopeRef<unknown>, channel: Channel<Value>, value: Value): void;
+  send<Value>(scope: ScopeRef<unknown>, messageKey: MessageKey<Value>, value: Value): void;
   /**
    * Terminate an execution scope, including root.
    */

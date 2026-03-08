@@ -1,12 +1,12 @@
 // oxlint-disable no-duplicate-imports
 export {
-  type Channel,
   type ContextKey,
   type Failure,
   type LaunchState,
+  type MessageKey,
   type ReceiveResult,
   type ScopeRef,
   type SelfDescriptor,
-  channel,
   contextKey,
+  messageKey,
 } from "@shajara/kernel";

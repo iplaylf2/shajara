@@ -17,7 +17,7 @@
   证据：`packages/kernel/src/sigils/await-process.ts`、`packages/kernel/src/sigils.ts`
 - `all` 分支并发已改为 `Fork + AwaitProcess(in-band)`，外层 supervisor 仍通过 `awaitScopeConverged` 收敛整体结果。  
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives-kit/await-process-in-band.ts`
-- `race` arena 内部分支已改为 `Fork`；分支完成后 `Send(raceChannel)` 并 `Halt`，arena 根 process 通过 `park` 挂起等待收敛路径。  
+- `race` arena 内部分支已改为 `Fork`；分支完成后 `Send(raceMessageKey)` 并 `Halt`，arena 根 process 通过 `park` 挂起等待收敛路径。  
   证据：`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives-kit/park.ts`
 - host `race` 入参已收敛为非空 tuple，禁止空分支调用。  
   证据：`packages/host/src/primitives/race.ts`

@@ -1,5 +1,5 @@
 import type { RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
-import { action, channel, contextKey, sleep, until } from "@shajara/host";
+import { action, contextKey, messageKey, sleep, until } from "@shajara/host";
 import {
   all,
   bind,
@@ -109,7 +109,7 @@ function* bindLookupRitual(): RiteCoroutine<void> {
 function* sendReceiveRitual(): RiteCoroutine<void> {
   const { scopeRef: callerRef } = yield* self();
   const spawned = yield* spawn(() => senderRitual(callerRef));
-  const { value } = yield* receive(EXAMPLE_MESSAGE_CHANNEL);
+  const { value } = yield* receive(EXAMPLE_MESSAGE_KEY);
   consume(value);
   const joinedValue = yield* join(spawned);
   consume(joinedValue);
@@ -135,7 +135,7 @@ function* runRitual(): RiteCoroutine<string> {
 }
 
 function* senderRitual(callerRef: ScopeRef<unknown>): RiteCoroutine<"sent"> {
-  yield* send(callerRef, EXAMPLE_MESSAGE_CHANNEL, "message from child");
+  yield* send(callerRef, EXAMPLE_MESSAGE_KEY, "message from child");
   return "sent";
 }
 
@@ -155,7 +155,7 @@ function consume<Value>(value: Value): Value {
 
 const EXAMPLE_SLEEP_MILLISECONDS = 10;
 const TRACE_ID_KEY = contextKey<string>();
-const EXAMPLE_MESSAGE_CHANNEL = channel<string>();
+const EXAMPLE_MESSAGE_KEY = messageKey<string>();
 
 export { EXAMPLE_SCENARIOS, getExampleScenario };
 export type { ExampleScenarioName };

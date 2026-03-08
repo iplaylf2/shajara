@@ -3,8 +3,8 @@ import {
   awaitScopeConverged,
   awaitScopeInBand,
   resumableDelegateKey,
-  resumableFailureChannel,
-  resumableRecoveryChannel,
+  resumableFailureMessageKey,
+  resumableRecoveryMessageKey,
 } from "#src/primitives-kit";
 import { lookup, receive, send, spawn } from "#src/sigils";
 import { wisp, wispEither, wispOption } from "#src/internal/fp";
@@ -42,9 +42,9 @@ function delegateWorker<Relic>(
 ): Ritual<Either<Failure, Relic>> {
   return () =>
     pipe(
-      send(delegateScopeRef, resumableFailureChannel, failure),
+      send(delegateScopeRef, resumableFailureMessageKey, failure),
       wisp.liftF,
-      wisp.chainF(() => receive(resumableRecoveryChannel)),
+      wisp.chainF(() => receive(resumableRecoveryMessageKey)),
       wisp.map(({ value }) => value),
       wisp.map(narrowAs<Either<Failure, Relic>>()),
     );

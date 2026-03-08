@@ -23,3 +23,4 @@ shajara 由两层构成：
 - host 层架构与适配方向 → `host.md`
 - 用户可见 API 形状 → `api.md`
 - 跨层约束 → `design-constraints.md`
+- 消息投递语义采用 `MessageKey` 作为主术语，真实地址是 `(scope, messageKey)` → `semantics.md`

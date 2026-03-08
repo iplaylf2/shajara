@@ -1,11 +1,11 @@
-import type { Channel, ScopeRef, Wisp } from "#src/contracts";
+import type { MessageKey, ScopeRef, Wisp } from "#src/contracts";
 import { send as sendSigil } from "#src/sigils";
 import { wisp } from "#src/internal/fp";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,
-  channel: Channel<Value>,
+  messageKey: MessageKey<Value>,
   value: Value,
 ): Wisp<void> {
-  return wisp.liftF(sendSigil(scope, channel, value));
+  return wisp.liftF(sendSigil(scope, messageKey, value));
 }

@@ -92,14 +92,14 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 ### 2.7 消息传递
 
-`Channel<T>` 是 phantom-typed 不透明令牌，由 `channel<T>()` 创建，标识一条类型化消息通道，不绑定特定 Scope。持有令牌即具备发送或接收能力（capability 模型）。
+`MessageKey<T>` 是 phantom-typed 不透明令牌，由 `messageKey<T>()` 创建。它标识的是 Scope 内 mailbox 的匹配 key，而不是一个脱离 Scope 独立存在的通道。持有令牌即具备发送或接收能力（capability 模型）。
 
-每个 `(Scope, Channel)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
+每个 `(Scope, MessageKey)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
 
-- **Send(scopeRef, channel, value)**：向目标 Scope 的 `(scope, channel)` buffer 追加消息。若有 Process 阻塞在 `Receive(channel)`，最早的等待者出队并恢复，消息由该接收者独占。`[Non-Blocking]`
-- **Receive(channel)**：在调用方 Scope 上接收匹配 Channel 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞直至下次匹配 Send。返回 `{ value, from: ScopeRef }`，`from` 为发送方进程所属 Scope。`[Blocking]`
+- **Send(scopeRef, messageKey, value)**：向目标 Scope 的 `(scope, messageKey)` buffer 追加消息。若有 Process 阻塞在 `Receive(messageKey)`，最早的等待者出队并恢复，消息由该接收者独占。`[Non-Blocking]`
+- **Receive(messageKey)**：在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞直至下次匹配 Send。返回 `{ value, from: ScopeRef }`，`from` 为发送方进程所属 Scope。`[Blocking]`
 
-每条消息恰好投递给一个接收者（单消费者语义）。多个 Process 阻塞在同一 `(Scope, Channel)` 时，最早阻塞的 Process 优先获得下一条消息。
+每条消息恰好投递给一个接收者（单消费者语义）。多个 Process 阻塞在同一 `(Scope, MessageKey)` 时，最早阻塞的 Process 优先获得下一条消息。
 
 消息队列在 kernel 语义层为逻辑无界；executor 实现可施加容量约束（超限触发 failure），此为实现策略而非语义定义。
 
@@ -298,15 +298,15 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 前置：processRef 对调用方可见。
 - 返回 exit：`{ kind: "completed", value }` | `{ kind: "failed", failure }` | `{ kind: "terminated" }`
 
-#### Send(scopeRef, channel, value) → void `[Non-Blocking]`
+#### Send(scopeRef, messageKey, value) → void `[Non-Blocking]`
 
-向目标 Scope 的 `(scope, channel)` buffer 追加消息。若有 Process 阻塞在 `Receive(channel)`，最早的等待者出队并恢复，消息由该接收者独占。
+向目标 Scope 的 `(scope, messageKey)` buffer 追加消息。若有 Process 阻塞在 `Receive(messageKey)`，最早的等待者出队并恢复，消息由该接收者独占。
 
 - 前置：scopeRef 对调用方可见。
 
-#### Receive(channel) → { value, from } `[Blocking]`
+#### Receive(messageKey) → { value, from } `[Blocking]`
 
-在调用方 Scope 上接收匹配 Channel 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞。`from` 为发送方所属 Scope 的 ScopeRef。
+在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞。`from` 为发送方所属 Scope 的 ScopeRef。
 
 #### Cede() → void `[Blocking]`
 
@@ -375,10 +375,10 @@ primitive 不等于 sigil：
 
 1. 创建 `SupervisorScope`（arena）。
 2. arena 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. 每个分支 Process 完成后通过 `Send(raceChannel)` 向调用方发送结果，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
+3. 每个分支 Process 完成后通过 `Send(raceMessageKey)` 向调用方发送结果，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
 4. arena 根 Process 在完成分支 Fork 后执行 `park` 挂起，等待由分支触发的收敛路径驱动 arena 终态。
-5. 调用方 Fork 一个后备 Process 等待 arena 收敛——若在首个成功 `Send(raceChannel)` 之前 arena 已收敛（例如最速失败），后备 Process 将该收敛结果转发给调用方。
-6. 调用方通过 `Receive(raceChannel)` 取得首个结果。
+5. 调用方 Fork 一个后备 Process 等待 arena 收敛——若在首个成功 `Send(raceMessageKey)` 之前 arena 已收敛（例如最速失败），后备 Process 将该收敛结果转发给调用方。
+6. 调用方通过 `Receive(raceMessageKey)` 取得首个结果。
 
 #### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
 

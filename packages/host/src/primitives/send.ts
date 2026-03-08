@@ -1,11 +1,11 @@
-import type { Channel, RiteCoroutine, ScopeRef } from "#src/contracts";
+import type { MessageKey, RiteCoroutine, ScopeRef } from "#src/contracts";
 import { encodeRitual } from "#src/boundary";
 import { send as kernelSend } from "@shajara/kernel";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,
-  channel: Channel<Value>,
+  messageKey: MessageKey<Value>,
   value: Value,
 ): RiteCoroutine<void> {
-  return encodeRitual(() => kernelSend(scope, channel, value))();
+  return encodeRitual(() => kernelSend(scope, messageKey, value))();
 }
