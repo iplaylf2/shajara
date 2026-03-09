@@ -6,6 +6,7 @@ import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
 import { readonlyArray } from "fp-ts";
+import { restingWisp } from "#src/contracts";
 import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
 
@@ -15,7 +16,9 @@ export function all<BranchReturns extends UnknownArray>(
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     wisp.liftF,
-    wisp.chain(({ processRef }) => chainFuture(processRef.exitFuture, unwrapProcessExit)),
+    wisp.chain(({ processRef }) =>
+      chainFuture(processRef.exitFuture, flow(unwrapProcessExit, restingWisp)),
+    ),
   );
 }
 
