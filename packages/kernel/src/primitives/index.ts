@@ -12,7 +12,6 @@ export * from "./receive";
 export * from "./race";
 export * from "./resource";
 export * from "./resumable";
-export * from "./scoped";
 export * from "./self";
 export * from "./send";
 export * from "./settle-future";

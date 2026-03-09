@@ -1,5 +1,5 @@
-import type { Failure, Ritual, Wisp } from "#src/contracts";
-import { awaitProcessInBand, awaitScopeConverged } from "#src/primitives-kit";
+import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
+import { awaitProcessInBand, chainFuture, unwrapProcessExit } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
 import { fork, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
@@ -11,11 +11,11 @@ import { wisp } from "#src/internal/fp";
 
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
-): Wisp<Either<Failure, BranchReturns>> {
+): Wisp<FutureKey<Either<Failure, BranchReturns>>> {
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     wisp.liftF,
-    wisp.chain(({ scopeRef }) => awaitScopeConverged(scopeRef)),
+    wisp.chain(({ processRef }) => chainFuture(processRef.exitFuture, unwrapProcessExit)),
   );
 }
 

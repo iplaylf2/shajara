@@ -1,8 +1,8 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { Failure, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { awaitFuture, fork, future, halt, settleFuture, spawn } from "#src/sigils";
+import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
 import { awaitScopeConverged, park } from "#src/primitives-kit";
 import { either, readonlyArray } from "fp-ts";
+import { fork, future, halt, settleFuture, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
@@ -10,7 +10,7 @@ import { wisp } from "#src/internal/fp";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,
-): Wisp<Either<Failure, ArrayValues<BranchReturns>>> {
+): Wisp<FutureKey<Either<Failure, ArrayValues<BranchReturns>>>> {
   return pipe(
     wisp.Do,
     wisp.bindF("raceFuture", () => future<Either<Failure, ArrayValues<BranchReturns>>>()),
@@ -21,7 +21,7 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
       ({ arenaSelf: { scopeRef: arenaRef }, raceFuture: [, raceFutureResolverKey] }) =>
         fork(arenaFailureRelay(arenaRef, raceFutureResolverKey)),
     ),
-    wisp.chainF(({ raceFuture: [raceFutureKey] }) => awaitFuture(raceFutureKey)),
+    wisp.map(({ raceFuture: [raceFutureKey] }) => raceFutureKey),
   );
 }
 

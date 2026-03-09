@@ -405,37 +405,32 @@ primitive 不等于 sigil：
 
 ### 6.3 并发构造 primitives
 
-#### all(branches) → Wisp\<Either\<Failure, T\>\>
+#### all(branches) → Wisp\<FutureKey\<Either\<Failure, T\>\>\>
 
 聚合等待多个分支。组合方式：
 
 1. 创建 `SupervisorScope` 作为隔离容器。
 2. 在 supervisor 内部对每个 branch 调用 `Fork` 创建分支 Process。
 3. 对每个分支 Process 通过 `awaitFuture(processRef.exitFuture)` 等待终态（内部通过 in-band completed 路径收集值）。
-4. 整体通过 `awaitScopeConverged` 收敛外层 supervisor 的终态为 Either。
+4. primitive 返回一个 future；外层 supervisor 的终态通过单独的 relay process 收敛到该 future。
 
-#### race(branches) → Wisp\<Either\<Failure, ArrayValues\<T\>\>\>
+#### race(branches) → Wisp\<FutureKey\<Either\<Failure, ArrayValues\<T\>\>\>
 
 选择最先完成者，触发其余分支收敛。`branches` 为非空。组合方式：
 
 1. 创建 `SupervisorScope`（arena）。
 2. arena 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. 每个分支 Process 完成后通过 `Send(raceMessageKey)` 向调用方发送结果，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
+3. primitive 预先创建一个 race future；每个分支 Process 完成后对该 future 执行 `SettleFuture(Right(value))`，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
 4. arena 根 Process 在完成分支 Fork 后执行 `park` 挂起，等待由分支触发的收敛路径驱动 arena 终态。
-5. 调用方 Fork 一个后备 Process 等待 arena 收敛——若在首个成功 `Send(raceMessageKey)` 之前 arena 已收敛（例如最速失败），后备 Process 将该收敛结果转发给调用方。
-6. 调用方通过 `Receive(raceMessageKey)` 取得首个结果。
+5. 一个后备 relay process 等待 arena 收敛；若在首个成功 settle 之前 arena 已收敛（例如最速失败），relay 会将该收敛结果转发给 race future。
 
-#### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
+#### resource(body) → Wisp\<FutureKey\<Either\<Failure, T\>\>\>
 
-创建 `SupervisorScope` 子 Scope 并立即等待其收敛。
+创建资源作用域。body 接收 `provide: (value) → Wisp<never>`；primitive 返回首个 `provide` 结果对应的 future，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。
 
-#### resource(body) → Wisp\<Either\<Failure, T\>\>
+#### resumable(ritual) → Wisp\<FutureKey\<Either\<Failure, T\>\>\>
 
-创建资源作用域。body 接收 `provide: (value) → Wisp<never>`；调用方等待 provide 的首个值作为返回，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。
-
-#### resumable(ritual) → Wisp\<Either\<Failure, T\>\>
-
-在 scoped body 内声明可恢复边界。`resumable` 在失败时查找 `resumableDelegateKey`：
+在 supervisor boundary 内声明可恢复边界，并返回恢复结果 future。`resumable` 在失败时查找 `resumableDelegateKey`：
 
 - 未命中：失败保持为 `Left(failure)`。
 - 命中：向委派点发送失败并等待恢复结果（`Either<Failure, T>`）返回。
