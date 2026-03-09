@@ -32,7 +32,3 @@ export interface ProcessFailedExit {
 export interface ProcessTerminatedExit {
   readonly kind: "terminated";
 }
-
-export interface Processor {
-  readonly kind: "processor";
-}

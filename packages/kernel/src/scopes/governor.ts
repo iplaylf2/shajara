@@ -1,5 +1,6 @@
-import type { Failure, ProcessRef, Processor, ScopeSpec, Wisp } from "#src/contracts";
+import type { Failure, ProcessRef, ScopeSpec, Wisp } from "#src/contracts";
 import type { Option } from "#src/utils";
+import type { Processor } from "#src/executor";
 
 export function governorScopeSpec(config: GovernorScopeSpecConfig): GovernorScopeSpec {
   return {

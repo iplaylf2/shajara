@@ -31,6 +31,10 @@ export interface LaunchHandle<Return> {
   state(): LaunchState;
 }
 
+export interface Processor {
+  readonly kind: "processor";
+}
+
 export interface Executor {
   /**
    * Global root scope anchor.
