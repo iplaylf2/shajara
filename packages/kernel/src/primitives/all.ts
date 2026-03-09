@@ -1,11 +1,11 @@
 import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
-import { awaitProcessInBand, chainFuture, unwrapProcessExit } from "#src/primitives-kit";
+import { awaitProcessInBand, forkFuture, unwrapProcessExit } from "#src/primitives-kit";
+import { either, readonlyArray } from "fp-ts";
 import { flow, pipe } from "fp-ts/function";
 import { fork, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
-import { readonlyArray } from "fp-ts";
 import { restingWisp } from "#src/contracts";
 import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
@@ -17,7 +17,7 @@ export function all<BranchReturns extends UnknownArray>(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     wisp.liftF,
     wisp.chain(({ processRef }) =>
-      chainFuture(processRef.exitFuture, flow(unwrapProcessExit, restingWisp)),
+      forkFuture(processRef.exitFuture, flow(either.chain(unwrapProcessExit), restingWisp)),
     ),
   );
 }
