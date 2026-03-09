@@ -5,12 +5,12 @@ import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
 
 // oxlint-disable-next-line id-length
-export function forkFuture<F extends Failure, Source, Chained>(
-  futureKey: FutureKey<either.Either<F, Source>>,
-  chain: (value: either.Either<F, Source>) => Wisp<either.Either<F, Chained>>,
-): Wisp<FutureKey<either.Either<F, Chained>>> {
+export function forkFuture<
+  Source extends either.Either<Failure, unknown>,
+  Chained extends either.Either<Failure, unknown>,
+>(futureKey: FutureKey<Source>, chain: (value: Source) => Wisp<Chained>): Wisp<FutureKey<Chained>> {
   return pipe(
-    future<either.Either<F, Chained>>(),
+    future<Chained>(),
     wisp.liftF,
     wisp.chainFirstF(([, chainedResolverKey]) =>
       fork(chainFuture(futureKey, chainedResolverKey, chain)),
@@ -20,10 +20,13 @@ export function forkFuture<F extends Failure, Source, Chained>(
 }
 
 // oxlint-disable-next-line id-length
-function chainFuture<F extends Failure, Source, Chained>(
-  futureKey: FutureKey<either.Either<F, Source>>,
-  chainedResolverKey: FutureResolverKey<either.Either<F, Chained>>,
-  chain: (value: either.Either<F, Source>) => Wisp<either.Either<F, Chained>>,
+function chainFuture<
+  Source extends either.Either<Failure, unknown>,
+  Chained extends either.Either<Failure, unknown>,
+>(
+  futureKey: FutureKey<Source>,
+  chainedResolverKey: FutureResolverKey<Chained>,
+  chain: (value: Source) => Wisp<Chained>,
 ): Ritual<void> {
   return () =>
     pipe(
