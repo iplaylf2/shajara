@@ -110,7 +110,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `receive` | `receive(messageKey) → { value, from }`    | 在当前 Scope 上等待指定 `messageKey` 的下一条消息。      |
 | `halt`    | `halt() → never`                           | 触发当前 Scope 的终止级联。                              |
 | `cede`    | `cede() → void`                            | 协作式让权。                                             |
-| `suspend` | `suspend() → never`                        | 持续挂起，直到父 scope 回收清理阶段触发。                |
+| `park`    | `park() → never`                           | 持续挂起，直到父 scope 回收清理阶段触发。                |
 
 ### 4.3 上下文与自省
 

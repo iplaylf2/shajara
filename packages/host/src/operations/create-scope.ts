@@ -2,11 +2,11 @@ import type { LaunchState, RiteRoutine } from "#src/contracts";
 import type { RunOptions, StatefulPromise } from "#src/operations-kit";
 import { ensureExecutor } from "@shajara/kernel";
 import { launch } from "#src/operations-kit";
-import { suspend } from "#src/primitives";
+import { park } from "#src/primitives";
 
 export function createScope(): HostScope {
   const executor = ensureExecutor();
-  const launchedScope = launch(executor, executor.rootScope, suspend);
+  const launchedScope = launch(executor, executor.rootScope, park);
   const closed: Promise<void> = Promise.resolve(launchedScope.settled);
 
   return {

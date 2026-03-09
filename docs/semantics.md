@@ -474,7 +474,7 @@ primitive 不等于 sigil：
 
 封装 Halt sigil，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。
 
-#### suspend() → Wisp\<never\>
+#### park() → Wisp\<never\>
 
 持续挂起当前 Process，直到父 Scope 回收清理阶段以失败路径唤醒。
 

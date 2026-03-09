@@ -7,6 +7,7 @@ import {
   halt,
   join,
   lookup,
+  park,
   race,
   receive,
   resource,
@@ -15,7 +16,6 @@ import {
   self,
   send,
   spawn,
-  suspend,
   unbind,
 } from "@shajara/host/primitives";
 import type { HostResourceProvide } from "@shajara/host/primitives";
@@ -31,6 +31,7 @@ const EXAMPLE_SCENARIOS = {
   cede: childRitual,
   halt: haltRitual,
   join: spawnRitual,
+  park: parkRitual,
   race: raceRitual,
   resource: resourceRitual,
   run: runRitual,
@@ -39,7 +40,6 @@ const EXAMPLE_SCENARIOS = {
   sendReceive: sendReceiveRitual,
   sleep: sleepRitual,
   spawn: spawnRitual,
-  suspend: suspendRitual,
   until: untilRitual,
 } satisfies Record<string, RiteRoutine<unknown>>;
 
@@ -144,9 +144,9 @@ function* haltRitual(): RiteCoroutine<never> {
   throw new Error("Not implemented: halt() never returns.");
 }
 
-function* suspendRitual(): RiteCoroutine<never> {
-  yield* suspend();
-  throw new Error("Not implemented: suspend() only resumes as failure.");
+function* parkRitual(): RiteCoroutine<never> {
+  yield* park();
+  throw new Error("Not implemented: park() only resumes as failure.");
 }
 
 function consume<Value>(value: Value): Value {
