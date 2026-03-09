@@ -72,7 +72,7 @@ export namespace wisp {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,
-    liftF: evoke,
+    liftF: evoke as any,
     map: Functor.map,
   };
 

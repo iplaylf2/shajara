@@ -2,8 +2,8 @@
 import type { Echo, Sigil } from "#src/contracts";
 
 declare module "fp-ts/HKT" {
-  interface URItoKind<A extends Sigil> {
-    readonly [sigil.URI]: Echo<A>;
+  interface URItoKind<A> {
+    readonly [sigil.URI]: A extends Sigil ? Echo<A> : unknown;
   }
 }
 
