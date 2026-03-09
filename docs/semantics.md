@@ -164,7 +164,7 @@ EventQueue 非空时重复：
 1. 出队一个 Process P，授予 Processor。
 2. 解释 P 的 Wisp，直到：
    - P 执行 `[Blocking]` sigil 并让出 Processor；
-   - P 达到 `Pure(value)` 并退出为 `Completed(value)`；
+   - P 达到 `RestingWisp(value)` 并退出为 `Completed(value)`；
    - 发生 Failure，P 退出为 `Failed(failure)`。
 3. Processor 回到微内核。
 

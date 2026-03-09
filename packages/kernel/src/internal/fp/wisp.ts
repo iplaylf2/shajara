@@ -16,20 +16,17 @@ export namespace wisp {
   export const URI = "Wisp";
   export type URI = typeof URI;
 
-  export const pure = restingWisp;
-  export const impure = stirringWisp;
-
   export const Pointed: pointed.Pointed1<URI> = {
     URI,
-    of: pure,
+    of: restingWisp,
   };
 
   export const Functor: functor.Functor1<URI> = {
     URI,
     map: (fa, f) =>
       fa.bearing === "resting"
-        ? pure(f(fa.relic))
-        : impure(fa.sigil, (x) => Functor.map(fa.resonate(x), f)),
+        ? restingWisp(f(fa.relic))
+        : stirringWisp(fa.sigil, (x) => Functor.map(fa.resonate(x), f)),
   };
 
   export const Apply: apply.Apply1<URI> = {
@@ -37,7 +34,7 @@ export namespace wisp {
     ap: (fab, fa) =>
       fab.bearing === "resting"
         ? Functor.map(fa, fab.relic)
-        : impure(fab.sigil, (x) => Apply.ap(fab.resonate(x), fa)),
+        : stirringWisp(fab.sigil, (x) => Apply.ap(fab.resonate(x), fa)),
     map: Functor.map,
   };
 
@@ -54,7 +51,7 @@ export namespace wisp {
     chain: (fa, f) =>
       fa.bearing === "resting"
         ? f(fa.relic)
-        : impure(fa.sigil, (x) => Chain.chain(fa.resonate(x), f)),
+        : stirringWisp(fa.sigil, (x) => Chain.chain(fa.resonate(x), f)),
     map: Functor.map,
   };
 
@@ -66,7 +63,7 @@ export namespace wisp {
     of: Pointed.of,
   };
 
-  export const Do = pure(null);
+  export const Do = restingWisp(null);
 
   export const Lifting: lifting.Lifting<URI, sigil.URI, Sigil> = {
     URI,
