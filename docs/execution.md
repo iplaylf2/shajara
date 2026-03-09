@@ -23,7 +23,7 @@
   证据：`packages/kernel/src/primitives/race.ts`
 - `resource` 已改为返回由 supervisor / failure relay 收敛的 `FutureKey<Either<Failure, T>>`。  
   证据：`packages/kernel/src/primitives/resource.ts`
-- `resumable` 当前保持旧版单层结构，作为后续重构基线，而不是继续沿用那版额外包装的实现。  
+- `resumable` 已改为返回 `FutureKey<Either<Failure, T>>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
   证据：`packages/kernel/src/primitives/resumable.ts`
 
 ## 3. 相对设计基线的新增增量
@@ -34,13 +34,13 @@
 - `scoped` 被 `spawn(..., supervisorScopeSpec())` 这一更基础的 supervisor boundary 表达替代。  
   影响：kernel primitive 面减少一个专门入口，supervisor 语义收口到 `spawn`。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/kernel/src/primitives/all.ts`
-- `resumable` 尚未完成同类迁移。  
-  影响：当前这轮语义切换只在部分 primitive 上成立，`resumable` 仍是未闭合增量。  
+- `resumable` 当前仍通过 `delegateWorker` + mailbox channel 回传 recovery 结果，而不是把 `FutureResolverKey` 传下去并由 recovery 路径直接 settle 对应 future。  
+  影响：现状会多占一个额外 scope；后续若改成传递 future resolver，可以去掉这层 channel 回传与额外 scope。  
   证据：`packages/kernel/src/primitives/resumable.ts`
 
 ## 4. 下一步（Build 聚焦）
 
-1. 完成 `resumable` 的最小机制改造，使其和 `all` 一样从旧版主干直接演进，而不是重包结构。
+1. 把 `resumable` 的 `delegateWorker` 从 channel 回传改成直接 resolve future，去掉一层额外 process。
 2. 复核 `resource` 是否还能进一步收窄到更接近旧版主干的改法。
 3. 等 kernel 语义完全对齐后，再向上游包同步这些返回值变化。
 

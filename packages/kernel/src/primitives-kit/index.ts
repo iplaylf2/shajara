@@ -5,4 +5,5 @@ export * from "./fork-future";
 export * from "./park";
 export * from "./process-exit";
 export * from "./resumable";
+export * from "./scope-exit";
 export * from "./spawn-scope";
