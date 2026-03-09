@@ -3,25 +3,19 @@ import type { FutureKey } from "./future-key";
 import type { REF_TOKEN } from "./token";
 import type { Right } from "#src/utils";
 
-declare const RELIC_TOKEN: unique symbol;
+export interface ProcessRef<Value> {
+  readonly [REF_TOKEN]: "process";
+  readonly exitFuture: FutureKey<Right<ProcessExit<Value>>>;
+}
 
-export type ProcessRefRelic<Ref extends ProcessRef<unknown>> =
-  Ref extends ProcessRef<infer Relic> ? Relic : never;
-
-export type ProcessExit<Relic> =
-  | ProcessCompletedExit<Relic>
+export type ProcessExit<Value> =
+  | ProcessCompletedExit<Value>
   | ProcessFailedExit
   | ProcessTerminatedExit;
 
-export interface ProcessRef<Relic> {
-  readonly [REF_TOKEN]: "process";
-  readonly exitFuture: FutureKey<Right<ProcessExit<Relic>>>;
-  readonly [RELIC_TOKEN]?: readonly [Relic];
-}
-
-export interface ProcessCompletedExit<Relic> {
+export interface ProcessCompletedExit<Value> {
   readonly kind: "completed";
-  readonly value: Relic;
+  readonly value: Value;
 }
 
 export interface ProcessFailedExit {

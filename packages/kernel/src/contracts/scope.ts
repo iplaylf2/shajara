@@ -3,24 +3,20 @@ import type { FutureKey } from "./future-key";
 import type { REF_TOKEN } from "./token";
 import type { Right } from "#src/utils";
 
-declare const RELIC_TOKEN: unique symbol;
-
-export interface ScopeRef<Relic> {
+export interface ScopeRef<Value> {
   readonly [REF_TOKEN]: "scope";
-  readonly exitFuture: FutureKey<Right<ScopeExit<Relic>>>;
-  readonly [RELIC_TOKEN]?: readonly [Relic];
+  readonly exitFuture: FutureKey<Right<ScopeExit<Value>>>;
 }
 
 export interface ScopeSpec {
   readonly role: string;
 }
 
-export type ScopeRefRelic<Ref extends ScopeRef<unknown>> =
-  Ref extends ScopeRef<infer Relic> ? Relic : never;
+export type ScopeExit<Value> = ScopeCompletedExit<Value> | ScopeFailedExit | ScopeTerminatedExit;
 
-export interface ScopeCompletedExit<Relic> {
+export interface ScopeCompletedExit<Value> {
   readonly kind: "completed";
-  readonly value: Relic;
+  readonly value: Value;
 }
 
 export interface ScopeFailedExit {
@@ -31,5 +27,3 @@ export interface ScopeFailedExit {
 export interface ScopeTerminatedExit {
   readonly kind: "terminated";
 }
-
-export type ScopeExit<Relic> = ScopeCompletedExit<Relic> | ScopeFailedExit | ScopeTerminatedExit;
