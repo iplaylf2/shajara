@@ -1,9 +1,7 @@
-import type { MessageKey, ReceiveResult, RiteCoroutine } from "#src/contracts";
+import type { MessageKey, RiteCoroutine } from "#src/contracts";
 import { encodeRitual } from "#src/boundary";
 import { receive as kernelReceive } from "@shajara/kernel";
 
-export function receive<ReceiveValue>(
-  messageKey: MessageKey<ReceiveValue>,
-): RiteCoroutine<ReceiveResult<ReceiveValue>> {
+export function receive<Value>(messageKey: MessageKey<Value>): RiteCoroutine<Value> {
   return encodeRitual(() => kernelReceive(messageKey))();
 }

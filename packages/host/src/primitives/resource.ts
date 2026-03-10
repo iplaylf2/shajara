@@ -1,12 +1,11 @@
-import { decodeRitual, encodeRitual, unwrapEither } from "#src/boundary";
-import type { RiteCoroutine } from "#src/contracts";
+import type { RiteCoroutine, RiteFuture } from "#src/contracts";
+import { decodeRitual, encodeRitual } from "#src/boundary";
 import { resource as kernelResource } from "@shajara/kernel";
 
 export function* resource<ProvidedValue>(
   body: HostResourceBody<ProvidedValue>,
-): RiteCoroutine<ProvidedValue> {
-  const outcome = yield* encodeRitual(() => createKernelResource(body))();
-  return unwrapEither(outcome);
+): RiteCoroutine<RiteFuture<ProvidedValue>> {
+  return yield* encodeRitual(() => createKernelResource(body))();
 }
 
 export type HostResourceBody<ProvidedValue> = (

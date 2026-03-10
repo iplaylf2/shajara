@@ -7,7 +7,7 @@ import { spawn } from "#src/primitives/spawn";
 
 export function* action<Return>(): RiteCoroutine<HostAction<Return>> {
   const scope = yield* spawn(function* actionRitual(): RiteCoroutine<Return> {
-    const { value: settlement } = yield* receive(settlementMessageKey);
+    const settlement = yield* receive(settlementMessageKey);
     switch (settlement.status) {
       case "resolved":
         return settlement.value as Return;

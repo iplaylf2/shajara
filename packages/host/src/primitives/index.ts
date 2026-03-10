@@ -1,4 +1,5 @@
 export * from "./all";
+export * from "./await-future";
 export * from "./bind";
 export * from "./cede";
 export * from "./halt";
@@ -9,7 +10,6 @@ export * from "./receive";
 export * from "./race";
 export * from "./resource";
 export * from "./resumable";
-export * from "./scoped";
 export * from "./self";
 export * from "./send";
 export * from "./spawn";

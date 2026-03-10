@@ -2,6 +2,7 @@ import type { RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
 import { action, contextKey, messageKey, sleep, until } from "@shajara/host";
 import {
   all,
+  awaitFuture,
   bind,
   cede,
   halt,
@@ -12,7 +13,6 @@ import {
   receive,
   resource,
   resumable,
-  scoped,
   self,
   send,
   spawn,
@@ -34,8 +34,8 @@ const EXAMPLE_SCENARIOS = {
   park: parkRitual,
   race: raceRitual,
   resource: resourceRitual,
+  resumable: resumableRitual,
   run: runRitual,
-  scoped: scopedRitual,
   self: selfRitual,
   sendReceive: sendReceiveRitual,
   sleep: sleepRitual,
@@ -45,11 +45,6 @@ const EXAMPLE_SCENARIOS = {
 
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
-function* scopedRitual(): RiteCoroutine<void> {
-  const scopedResult = yield* scoped(scopedBodyRitual);
-  consume(scopedResult);
-}
-
 function* spawnRitual(): RiteCoroutine<void> {
   const spawned = yield* spawn(childRitual);
   const joinedValue = yield* join(spawned);
@@ -57,13 +52,13 @@ function* spawnRitual(): RiteCoroutine<void> {
 }
 
 function* resourceRitual(): RiteCoroutine<void> {
-  const providedValue = yield* resource(resourceBodyRitual);
+  const providedValue = yield* awaitFuture(yield* resource(resourceBodyRitual));
   consume(providedValue);
 }
 
-function* scopedBodyRitual(): RiteCoroutine<string> {
-  const bodyResult = yield* resumable(childRitual);
-  return bodyResult;
+function* resumableRitual(): RiteCoroutine<void> {
+  const bodyResult = yield* awaitFuture(yield* resumable(childRitual));
+  consume(bodyResult);
 }
 
 function* childRitual(): RiteCoroutine<string> {
@@ -83,12 +78,12 @@ function* resourceBodyRitual(provide: HostResourceProvide<string>): RiteCoroutin
 }
 
 function* allRitual(): RiteCoroutine<void> {
-  const bothDone = yield* all([cede, cede] as const);
+  const bothDone = yield* awaitFuture(yield* all([cede, cede] as const));
   consume(bothDone);
 }
 
 function* raceRitual(): RiteCoroutine<void> {
-  const winner = yield* race([cede, cede] as const);
+  const winner = yield* awaitFuture(yield* race([cede, cede] as const));
   consume(winner);
 }
 
@@ -109,7 +104,7 @@ function* bindLookupRitual(): RiteCoroutine<void> {
 function* sendReceiveRitual(): RiteCoroutine<void> {
   const { scopeRef: callerRef } = yield* self();
   const spawned = yield* spawn(() => senderRitual(callerRef));
-  const { value } = yield* receive(EXAMPLE_MESSAGE_KEY);
+  const value = yield* receive(EXAMPLE_MESSAGE_KEY);
   consume(value);
   const joinedValue = yield* join(spawned);
   consume(joinedValue);

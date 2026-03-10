@@ -2,9 +2,9 @@
 export {
   type ContextKey,
   type Failure,
+  type FutureKey,
   type LaunchState,
   type MessageKey,
-  type ReceiveResult,
   type ScopeRef,
   type SelfDescriptor,
   contextKey,
