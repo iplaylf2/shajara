@@ -90,7 +90,7 @@ function* raceRitual(): RiteCoroutine<void> {
 function* actionResolveRitual(): RiteCoroutine<void> {
   const pending = yield* action<string>();
   pending.resolve("action done");
-  const value = yield* join(pending.scope);
+  const value = yield* awaitFuture(pending.future);
   consume(value);
 }
 

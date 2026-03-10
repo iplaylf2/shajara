@@ -1,6 +1,6 @@
-import type { Failure, FutureKey, FutureResolverKey } from "./kernel";
+import type { Failure, FutureKey } from "./kernel";
+import type { FutureResolverKey, Sigil } from "@shajara/kernel";
 import type { Either } from "@shajara/kernel/utils";
-import type { Sigil } from "@shajara/kernel";
 
 export type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 

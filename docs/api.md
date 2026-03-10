@@ -61,10 +61,10 @@ createScope(): HostScope
 ### action
 
 ```ts
-yield* action<T>(): HostAction<T>   // { scope, resolve, reject }
+yield* action<T>(): HostAction<T>   // { future, resolve, reject }
 ```
 
-获取宿主侧可结算能力记录，作用域归属当前执行上下文分支。
+获取宿主侧可结算能力记录，返回结果以 future 形式暴露，由宿主侧 `resolve/reject` 单次收敛。
 
 ### sleep
 
