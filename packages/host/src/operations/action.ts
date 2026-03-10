@@ -4,7 +4,7 @@ import { ensureExecutor } from "@shajara/kernel";
 import { future } from "#src/primitives";
 import { toFailure } from "#src/boundary";
 
-export function* action<Return>(): RiteCoroutine<HostAction<Return>> {
+export function* action<Return>(): RiteCoroutine<Action<Return>> {
   const [settlementFuture, settlementResolverKey] = yield* future<Return>();
   const executor = ensureExecutor();
 
@@ -19,7 +19,7 @@ export function* action<Return>(): RiteCoroutine<HostAction<Return>> {
   };
 }
 
-export interface HostAction<Return> {
+export interface Action<Return> {
   readonly future: RiteFuture<Return>;
   resolve(value: Return): void;
   reject(reason: Error): void;

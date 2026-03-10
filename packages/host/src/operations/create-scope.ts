@@ -4,7 +4,7 @@ import { ensureExecutor } from "@shajara/kernel";
 import { launch } from "#src/operations-kit";
 import { park } from "#src/primitives";
 
-export function createScope(): HostScope {
+export function createScope(): Scope {
   const executor = ensureExecutor();
   const launchedScope = launch(executor, executor.rootScope, park);
   const closed: Promise<void> = Promise.resolve(launchedScope.settled);
@@ -18,7 +18,7 @@ export function createScope(): HostScope {
     run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
       return launch(executor, launchedScope.scope, ritual, options).settled;
     },
-    get state(): HostScopeState {
+    get state(): ScopeState {
       return launchedScope.settled.state();
     },
   };
@@ -31,12 +31,12 @@ export function createScope(): HostScope {
   }
 }
 
-export interface HostScope {
+export interface Scope {
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
   halt(): Promise<void>;
-  readonly state: HostScopeState;
+  readonly state: ScopeState;
   readonly closed: Promise<void>;
   [Symbol.asyncDispose](): Promise<void>;
 }
 
-export type HostScopeState = LaunchState;
+export type ScopeState = LaunchState;

@@ -18,7 +18,7 @@ import {
   spawn,
   unbind,
 } from "@shajara/host/primitives";
-import type { HostResourceProvide } from "@shajara/host/primitives";
+import type { ResourceProvide } from "@shajara/host/primitives";
 
 function getExampleScenario(name: ExampleScenarioName): RiteRoutine<unknown> {
   return EXAMPLE_SCENARIOS[name];
@@ -66,7 +66,7 @@ function* childRitual(): RiteCoroutine<string> {
   return "child done";
 }
 
-function* resourceBodyRitual(provide: HostResourceProvide<string>): RiteCoroutine<void> {
+function* resourceBodyRitual(provide: ResourceProvide<string>): RiteCoroutine<void> {
   const resourceValue = "resource-ready";
 
   try {

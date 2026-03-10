@@ -39,7 +39,7 @@ run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulProm
 ### createScope
 
 ```ts
-createScope(): HostScope
+createScope(): Scope
 ```
 
 创建宿主侧托管作用域，挂载在全局 root scope 下。返回：
@@ -61,7 +61,7 @@ createScope(): HostScope
 ### action
 
 ```ts
-yield* action<T>(): HostAction<T>   // { future, resolve, reject }
+yield* action<T>(): Action<T>   // { future, resolve, reject }
 ```
 
 获取宿主侧可结算能力记录，返回结果以 future 形式暴露，由宿主侧 `resolve/reject` 单次收敛。
