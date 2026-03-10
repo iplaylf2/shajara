@@ -3,9 +3,9 @@ import type { Either } from "#src/utils";
 import { settle as settleSigil } from "#src/sigils";
 import { wisp } from "#src/internal/fp";
 
-export function settle<Value extends Either<Failure, unknown>>(
-  futureSettleKey: FutureSettleKey<Value>,
-  result: Value,
+export function settle<Result extends Either<Failure, unknown>>(
+  futureSettle: FutureSettleKey<Result>,
+  result: Result,
 ): Wisp<void> {
-  return wisp.liftF(settleSigil(futureSettleKey, result));
+  return wisp.liftF(settleSigil(futureSettle, result));
 }

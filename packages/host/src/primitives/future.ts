@@ -4,6 +4,6 @@ import type { Failure } from "@shajara/kernel";
 import { encodeRitual } from "#src/boundary";
 import { future as kernelFuture } from "@shajara/kernel";
 
-export function future<Return>(): RiteCoroutine<[RiteFuture<Return>, RiteFutureSettle<Return>]> {
-  return encodeRitual(() => kernelFuture<Either<Failure, Return>>())();
+export function future<Result>(): RiteCoroutine<[RiteFuture<Result>, RiteFutureSettle<Result>]> {
+  return encodeRitual(() => kernelFuture<Either<Failure, Result>>())();
 }

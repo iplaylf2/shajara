@@ -1,13 +1,13 @@
 import type { ECHO_TOKEN, Failure, FutureKey, FutureSettleKey, Sigil } from "#src/contracts";
 import type { Either } from "#src/utils";
 
-export function future<Value extends Either<Failure, unknown>>(): FutureSigil<Value> {
+export function future<Result extends Either<Failure, unknown>>(): FutureSigil<Result> {
   return {
     kind: "future",
   };
 }
 
-export interface FutureSigil<Value extends Either<Failure, unknown>> extends Sigil {
+export interface FutureSigil<Result extends Either<Failure, unknown>> extends Sigil {
   readonly kind: "future";
-  readonly [ECHO_TOKEN]?: readonly [[FutureKey<Value>, FutureSettleKey<Value>]];
+  readonly [ECHO_TOKEN]?: readonly [[FutureKey<Result>, FutureSettleKey<Result>]];
 }

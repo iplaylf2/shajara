@@ -1,17 +1,17 @@
 import type { ECHO_TOKEN, Failure, FutureKey, Sigil } from "#src/contracts";
 import type { Either, Option } from "#src/utils";
 
-export function poll<Value extends Either<Failure, unknown>>(
-  futureKey: FutureKey<Value>,
-): PollSigil<Value> {
+export function poll<Result extends Either<Failure, unknown>>(
+  future: FutureKey<Result>,
+): PollSigil<Result> {
   return {
-    futureKey,
+    future,
     kind: "poll",
   };
 }
 
-export interface PollSigil<Value extends Either<Failure, unknown>> extends Sigil {
+export interface PollSigil<Result extends Either<Failure, unknown>> extends Sigil {
   readonly kind: "poll";
-  readonly futureKey: FutureKey<Value>;
-  readonly [ECHO_TOKEN]?: readonly [Option<Value>];
+  readonly future: FutureKey<Result>;
+  readonly [ECHO_TOKEN]?: readonly [Option<Result>];
 }

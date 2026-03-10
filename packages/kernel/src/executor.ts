@@ -53,9 +53,9 @@ export interface Executor {
   /**
    * Settle a future result slot through its settlement capability.
    */
-  settle<Value extends Either<Failure, unknown>>(
-    futureSettleKey: FutureSettleKey<Value>,
-    result: Value,
+  settle<Result extends Either<Failure, unknown>>(
+    futureSettle: FutureSettleKey<Result>,
+    result: Result,
   ): void;
   /**
    * Terminate an execution scope, including root.

@@ -1,17 +1,17 @@
 import type { ECHO_TOKEN, Failure, FutureKey, Sigil } from "#src/contracts";
 import type { Either } from "#src/utils";
 
-export function wait<Value extends Either<Failure, unknown>>(
-  futureKey: FutureKey<Value>,
-): WaitSigil<Value> {
+export function wait<Result extends Either<Failure, unknown>>(
+  future: FutureKey<Result>,
+): WaitSigil<Result> {
   return {
-    futureKey,
+    future,
     kind: "wait",
   };
 }
 
-export interface WaitSigil<Value extends Either<Failure, unknown>> extends Sigil {
+export interface WaitSigil<Result extends Either<Failure, unknown>> extends Sigil {
   readonly kind: "wait";
-  readonly futureKey: FutureKey<Value>;
-  readonly [ECHO_TOKEN]?: readonly [Value];
+  readonly future: FutureKey<Result>;
+  readonly [ECHO_TOKEN]?: readonly [Result];
 }
