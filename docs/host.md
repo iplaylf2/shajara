@@ -51,13 +51,13 @@ host 以 `launch` 为统一收敛锚点：
 
 ## 5. 宿主桥接
 
-`action`、`sleep`、`until` 等宿主操作在内部利用 `MessageKey<T>` 令牌完成宿主回调到 kernel 的消息投递闭环：
+`action`、`sleep`、`until` 等宿主操作在内部利用 future settlement capability 完成宿主回调到 kernel 的单次收敛闭环：
 
-- 模块级创建 `MessageKey<T>` 令牌。
-- host 内部通过 `executor.send(scope, messageKey, value)` 注入宿主输入。
-- kernel 侧由 `receive(messageKey)` 等待并收敛。
+- host 侧创建 `FutureKey / FutureResolverKey` 对。
+- kernel 侧通过 `awaitFuture(futureKey)` 等待收敛。
+- 宿主回调通过 `executor.settle(futureResolverKey, result)` 注入最终结果。
 
-同一套 `send/receive/messageKey` 也作为 host 编排原语对用户暴露，宿主桥接路径仍由 host 内部封装。
+同一套 `send/receive/messageKey` 仍作为用户可见的 mailbox 原语保留；宿主桥接不再借用消息队列去模拟单次 settlement。
 
 ## 6. 边界引用类型
 

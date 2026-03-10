@@ -102,15 +102,16 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ### 4.2 基础
 
-| 原语          | 签名概要                                   | 说明                                                          |
-| ------------- | ------------------------------------------ | ------------------------------------------------------------- |
-| `join`        | `join(scopeRef) → T`                       | 等待 spawn 句柄对应作用域完成并返回结果。                     |
-| `awaitFuture` | `awaitFuture(future) → T`                  | 等待 future 收敛并返回结果。                                  |
-| `send`        | `send(scopeRef, messageKey, value) → void` | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。      |
-| `receive`     | `receive(messageKey) → T`                  | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。 |
-| `halt`        | `halt() → never`                           | 触发当前 Scope 的终止级联。                                   |
-| `cede`        | `cede() → void`                            | 协作式让权。                                                  |
-| `park`        | `park() → never`                           | 持续挂起，直到父 scope 回收清理阶段触发。                     |
+| 原语          | 签名概要                                               | 说明                                                              |
+| ------------- | ------------------------------------------------------ | ----------------------------------------------------------------- |
+| `join`        | `join(scopeRef) → T`                                   | 等待 spawn 句柄对应作用域完成并返回结果。                         |
+| `future`      | `future<T>() → [RiteFuture<T>, RiteFutureResolver<T>]` | 在当前 Scope 内创建一个 pending future 及其 resolver capability。 |
+| `awaitFuture` | `awaitFuture(future) → T`                              | 等待 future 收敛并返回结果。                                      |
+| `send`        | `send(scopeRef, messageKey, value) → void`             | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。          |
+| `receive`     | `receive(messageKey) → T`                              | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。     |
+| `halt`        | `halt() → never`                                       | 触发当前 Scope 的终止级联。                                       |
+| `cede`        | `cede() → void`                                        | 协作式让权。                                                      |
+| `park`        | `park() → never`                                       | 持续挂起，直到父 scope 回收清理阶段触发。                         |
 
 ### 4.3 上下文与自省
 

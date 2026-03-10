@@ -2,6 +2,7 @@ export * from "./all";
 export * from "./await-future";
 export * from "./bind";
 export * from "./cede";
+export * from "./future";
 export * from "./halt";
 export * from "./join";
 export * from "./lookup";

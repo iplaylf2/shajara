@@ -1,5 +1,7 @@
 import type { Ritual, Wisp } from "./contracts/wisp";
+import type { Either } from "./utils";
 import type { Failure } from "./contracts/failure";
+import type { FutureResolverKey } from "./contracts/future-key";
 import type { MessageKey } from "./contracts/message-key";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
@@ -48,6 +50,13 @@ export interface Executor {
    * Send a value into the target scope's mailbox selected by the message key.
    */
   send<Value>(scope: ScopeRef<unknown>, messageKey: MessageKey<Value>, value: Value): void;
+  /**
+   * Settle a future result slot through its resolver capability.
+   */
+  settle<Value extends Either<Failure, unknown>>(
+    futureResolverKey: FutureResolverKey<Value>,
+    result: Value,
+  ): void;
   /**
    * Terminate an execution scope, including root.
    */
