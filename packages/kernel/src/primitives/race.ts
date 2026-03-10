@@ -1,9 +1,8 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import { awaitFuture, fork, future, halt, settleFuture, spawn } from "#src/sigils";
 import { either, readonlyArray } from "fp-ts";
-import { fork, future, halt, settleFuture, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
-import { awaitFuture } from "#src/primitives/await-future";
 import { park } from "#src/primitives-kit";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
@@ -52,6 +51,7 @@ function arenaFailureRelay(
   return () =>
     pipe(
       awaitFuture(arenaRef.exitFuture),
+      wisp.liftF,
       wisp.chainF((value) => settleFuture(raceFutureResolverKey, value)),
     );
 }

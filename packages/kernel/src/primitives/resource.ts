@@ -1,7 +1,6 @@
 import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { fork, future, settleFuture, spawn } from "#src/sigils";
+import { awaitFuture, fork, future, settleFuture, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
-import { awaitFuture } from "#src/primitives/await-future";
 import { either } from "fp-ts";
 import { park } from "#src/primitives-kit";
 import { pipe } from "fp-ts/function";
@@ -55,6 +54,7 @@ function resourceFailureRelay<ProvidedValue>(
   return () =>
     pipe(
       awaitFuture(supervisorRef.exitFuture),
+      wisp.liftF,
       wisp.chainF((value) => settleFuture(resourceFutureResolverKey, value)),
     );
 }

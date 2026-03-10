@@ -1,10 +1,9 @@
 import type { Failure, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { bind, fork, receive, self, settleFuture } from "#src/sigils";
+import { awaitFuture, bind, fork, receive, self, settleFuture } from "#src/sigils";
 import { resumableDelegateKey, resumableFailureMessageKey, spawnScope } from "#src/primitives-kit";
 import { standardScopeSpec, supervisorScopeSpec } from "#src/scopes";
 import type { Either } from "#src/utils";
 import type { ResumableRecoveryRequest } from "#src/primitives-kit";
-import { awaitFuture } from "#src/primitives/await-future";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
@@ -77,7 +76,7 @@ function recoveryAttempt(
   return () =>
     pipe(
       spawnScope(() => recover(request.failure), supervisorScopeSpec()),
-      wisp.chain((scopeRef) => awaitFuture(scopeRef.exitFuture)),
+      wisp.chainF((scopeRef) => awaitFuture(scopeRef.exitFuture)),
       wisp.map(either.flatten),
       wisp.chainF((recovery) => settleFuture(request.recoveryKey, recovery)),
     );
