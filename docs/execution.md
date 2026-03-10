@@ -21,12 +21,12 @@
   证据：`packages/kernel/src/primitives/all.ts`
 - `race` 已改为返回由 arena 内部 settle 的 `FutureKey<Either<Failure, T>>`，外层不再隐式 await。  
   证据：`packages/kernel/src/primitives/race.ts`
-- `resource` 已改为返回由 supervisor / failure relay 收敛的 `FutureKey<Either<Failure, T>>`。  
+- `resource` 已改为返回由 supervisor `exitFuture` 经 `forkFuture` relay 收敛的 `FutureKey<Either<Failure, T>>`。  
   证据：`packages/kernel/src/primitives/resource.ts`
 - `resumable` 已改为返回 `FutureKey<Either<Failure, T>>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
   证据：`packages/kernel/src/primitives/resumable.ts`
-- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureResolverKey` 后直接 settle future”，并且不再通过 `forkFuture` 派生结果 future。  
-  影响：去掉了 `delegateWorker` 那层额外 scope；`resumable` 现在由单个 result future + relay process 表达最终收敛，恢复结果走单次收敛语义而不是额外 mailbox。  
+- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureResolverKey` 后直接 settle future”，最终结果 future 现在直接由 `forkFuture(scopeRef.exitFuture, ...)` 派生。  
+  影响：去掉了 `delegateWorker` 那层额外 scope；`resumable` 现在由单个 result future + `forkFuture` relay 表达最终收敛，恢复结果走单次收敛语义而不是额外 mailbox。  
   证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
 
 ## 3. 相对设计基线的新增增量

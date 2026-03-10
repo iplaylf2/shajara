@@ -1,9 +1,10 @@
-import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { awaitFuture, fork, future, settleFuture, spawn } from "#src/sigils";
+import type { Failure, FutureKey, FutureResolverKey, Ritual, Wisp } from "#src/contracts";
+import { forkFutureInto, park } from "#src/primitives-kit";
+import { future, settleFuture, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import { either } from "fp-ts";
-import { park } from "#src/primitives-kit";
 import { pipe } from "fp-ts/function";
+import { restingWisp } from "#src/contracts";
 import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
 
@@ -13,12 +14,12 @@ export function resource<ProvidedValue>(
   return pipe(
     wisp.Do,
     wisp.bindF("resourceFuture", () => future<Either<Failure, ProvidedValue>>()),
-    wisp.bindF("resourceSupervisorSelf", ({ resourceFuture: [, resourceFutureResolverKey] }) =>
-      spawn(resourceSupervisor(body, resourceFutureResolverKey), supervisorScopeSpec()),
+    wisp.bindF("resourceSupervisorSelf", ({ resourceFuture: [, resourceResolverKey] }) =>
+      spawn(resourceSupervisor(body, resourceResolverKey), supervisorScopeSpec()),
     ),
-    wisp.chainFirstF(
-      ({ resourceFuture: [, resourceFutureResolverKey], resourceSupervisorSelf: { scopeRef } }) =>
-        fork(resourceFailureRelay(scopeRef, resourceFutureResolverKey)),
+    wisp.chainFirst(
+      ({ resourceFuture: [, resourceResolverKey], resourceSupervisorSelf: { scopeRef } }) =>
+        forkFutureInto(scopeRef.exitFuture, resourceResolverKey, restingWisp),
     ),
     wisp.map(({ resourceFuture: [resourceFutureKey] }) => resourceFutureKey),
   );
@@ -32,29 +33,17 @@ export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Wisp<neve
 
 function resourceSupervisor<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
-  resourceFutureResolverKey: FutureResolverKey<Either<Failure, ProvidedValue>>,
+  resourceResolverKey: FutureResolverKey<Either<Failure, ProvidedValue>>,
 ): Ritual<never> {
   return () =>
     pipe(
       body((value) =>
         pipe(
-          settleFuture(resourceFutureResolverKey, either.right(value)),
+          settleFuture(resourceResolverKey, either.right(value)),
           wisp.liftF,
           wisp.chain(() => park()),
         ),
       ),
       wisp.chain(() => park()),
-    );
-}
-
-function resourceFailureRelay<ProvidedValue>(
-  supervisorRef: ScopeRef<unknown>,
-  resourceFutureResolverKey: FutureResolverKey<Either<Failure, ProvidedValue>>,
-): Ritual<void> {
-  return () =>
-    pipe(
-      awaitFuture(supervisorRef.exitFuture),
-      wisp.liftF,
-      wisp.chainF((value) => settleFuture(resourceFutureResolverKey, value)),
     );
 }

@@ -1,10 +1,11 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { awaitFuture, fork, future, halt, settleFuture, spawn } from "#src/sigils";
+import type { Failure, FutureKey, FutureResolverKey, Ritual, Wisp } from "#src/contracts";
 import { either, readonlyArray } from "fp-ts";
+import { fork, future, halt, settleFuture, spawn } from "#src/sigils";
+import { forkFutureInto, park } from "#src/primitives-kit";
 import type { Either } from "#src/utils";
-import { park } from "#src/primitives-kit";
 import { pipe } from "fp-ts/function";
+import { restingWisp } from "#src/contracts";
 import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
 
@@ -14,12 +15,11 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   return pipe(
     wisp.Do,
     wisp.bindF("raceFuture", () => future<Either<Failure, ArrayValues<BranchReturns>>>()),
-    wisp.bindF("arenaSelf", ({ raceFuture: [, raceFutureResolverKey] }) =>
-      spawn(raceArena(branches, raceFutureResolverKey), supervisorScopeSpec()),
+    wisp.bindF("arenaSelf", ({ raceFuture: [, raceResolverKey] }) =>
+      spawn(raceArena(branches, raceResolverKey), supervisorScopeSpec()),
     ),
-    wisp.chainFirstF(
-      ({ arenaSelf: { scopeRef: arenaRef }, raceFuture: [, raceFutureResolverKey] }) =>
-        fork(arenaFailureRelay(arenaRef, raceFutureResolverKey)),
+    wisp.chainFirst(({ arenaSelf: { scopeRef: arenaRef }, raceFuture: [, raceResolverKey] }) =>
+      forkFutureInto(arenaRef.exitFuture, raceResolverKey, restingWisp),
     ),
     wisp.map(({ raceFuture: [raceFutureKey] }) => raceFutureKey),
   );
@@ -31,39 +31,25 @@ type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
 
 function raceArena(
   branches: ReadonlyArray<Ritual<unknown>>,
-  raceFutureResolverKey: FutureResolverKey<Either<Failure, unknown>>,
+  raceResolverKey: FutureResolverKey<Either<Failure, unknown>>,
 ): Ritual<never> {
   return () =>
     pipe(
       branches,
-      readonlyArray.map((branch) =>
-        pipe(fork(branchRunner(branch, raceFutureResolverKey)), wisp.liftF),
-      ),
+      readonlyArray.map((branch) => pipe(fork(branchRunner(branch, raceResolverKey)), wisp.liftF)),
       wisp.sequence,
       wisp.chain(() => park()),
     );
 }
 
-function arenaFailureRelay(
-  arenaRef: ScopeRef<unknown>,
-  raceFutureResolverKey: FutureResolverKey<Either<Failure, unknown>>,
-): Ritual<void> {
-  return () =>
-    pipe(
-      awaitFuture(arenaRef.exitFuture),
-      wisp.liftF,
-      wisp.chainF((value) => settleFuture(raceFutureResolverKey, value)),
-    );
-}
-
 function branchRunner(
   branch: Ritual<unknown>,
-  raceFutureResolverKey: FutureResolverKey<Either<Failure, unknown>>,
+  raceResolverKey: FutureResolverKey<Either<Failure, unknown>>,
 ): Ritual<never> {
   return () =>
     pipe(
       branch(),
-      wisp.chainF((value) => settleFuture(raceFutureResolverKey, either.right(value))),
+      wisp.chainF((value) => settleFuture(raceResolverKey, either.right(value))),
       wisp.chainF(() => halt()),
     );
 }

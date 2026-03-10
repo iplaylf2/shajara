@@ -412,7 +412,7 @@ primitive 不等于 sigil：
 1. 创建 `SupervisorScope` 作为隔离容器。
 2. 在 supervisor 内部对每个 branch 调用 `Fork` 创建分支 Process。
 3. 对每个分支 Process 通过 `awaitFuture(processRef.exitFuture)` 等待终态（内部通过 in-band completed 路径收集值）。
-4. primitive 返回一个 future；外层 supervisor 的终态通过单独的 relay process 收敛到该 future。
+4. primitive 返回一个 future；外层 supervisor 的终态通过共享的 `forkFuture` relay 机制收敛到该 future。
 
 #### race(branches) → Wisp\<FutureKey\<Either\<Failure, ArrayValues\<T\>\>\>
 
@@ -422,7 +422,7 @@ primitive 不等于 sigil：
 2. arena 内部对每个 branch 调用 `Fork` 创建分支 Process。
 3. primitive 预先创建一个 race future；每个分支 Process 完成后对该 future 执行 `SettleFuture(Right(value))`，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
 4. arena 根 Process 在完成分支 Fork 后执行 `park` 挂起，等待由分支触发的收敛路径驱动 arena 终态。
-5. 一个后备 relay process 等待 arena 收敛；若在首个成功 settle 之前 arena 已收敛（例如最速失败），relay 会将该收敛结果转发给 race future。
+5. 一个后备 `forkFuture` relay 等待 arena 收敛；若在首个成功 settle 之前 arena 已收敛（例如最速失败），relay 会将该收敛结果转发给 race future。
 
 #### resource(body) → Wisp\<FutureKey\<Either\<Failure, T\>\>\>
 

@@ -1,4 +1,11 @@
-import type { Failure, FutureKey, FutureResolverKey, Ritual, Wisp } from "#src/contracts";
+import type {
+  Failure,
+  FutureKey,
+  FutureResolverKey,
+  ProcessRef,
+  Ritual,
+  Wisp,
+} from "#src/contracts";
 import { awaitFuture, fork, future, settleFuture } from "#src/sigils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
@@ -12,11 +19,23 @@ export function forkFuture<
   return pipe(
     future<Chained>(),
     wisp.liftF,
-    wisp.chainFirstF(([, chainedResolverKey]) =>
-      fork(chainFuture(futureKey, chainedResolverKey, chain)),
+    wisp.chainFirst(([, chainedResolverKey]) =>
+      forkFutureInto(futureKey, chainedResolverKey, chain),
     ),
     wisp.map(([chainedFutureKey]) => chainedFutureKey),
   );
+}
+
+// oxlint-disable-next-line id-length
+export function forkFutureInto<
+  Source extends either.Either<Failure, unknown>,
+  Chained extends either.Either<Failure, unknown>,
+>(
+  futureKey: FutureKey<Source>,
+  chainedResolverKey: FutureResolverKey<Chained>,
+  chain: (value: Source) => Wisp<Chained>,
+): Wisp<ProcessRef<void>> {
+  return pipe(fork(chainFuture(futureKey, chainedResolverKey, chain)), wisp.liftF);
 }
 
 // oxlint-disable-next-line id-length
