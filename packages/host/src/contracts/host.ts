@@ -8,6 +8,7 @@ export type RiteCoroutine<Return> = Generator<Sigil, Return, unknown>;
 
 export type RiteFuture<Return> = FutureKey<Either<Failure, Return>>;
 export type RiteFutureSettle<Return> = FutureSettleKey<Either<Failure, Return>>;
+export type RiteSettlement<Return> = { readonly resolve: Return } | { readonly reject: Error };
 
 export abstract class ShajaraError extends Error {
   constructor(protected readonly failure: Failure) {
