@@ -1,12 +1,9 @@
 import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import {
-  awaitScopeConverged,
-  resumableDelegateKey,
-  resumableFailureMessageKey,
-} from "#src/primitives-kit";
 import { fork, future, lookup, send, settleFuture, spawn } from "#src/sigils";
+import { resumableDelegateKey, resumableFailureMessageKey } from "#src/primitives-kit";
 import { wisp, wispEither, wispOption } from "#src/internal/fp";
 import type { Either } from "#src/utils";
+import { awaitFuture } from "#src/primitives/await-future";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
@@ -34,7 +31,7 @@ function resumableRelay<Relic>(
 ): Ritual<void> {
   return () =>
     pipe(
-      awaitScopeConverged(supervisorRef),
+      awaitFuture(supervisorRef.exitFuture),
       wispEither.matchE(
         (failure) =>
           pipe(

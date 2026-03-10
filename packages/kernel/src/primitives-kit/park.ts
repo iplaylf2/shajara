@@ -5,11 +5,7 @@ import { receive } from "#src/sigils";
 import { wisp } from "#src/internal/fp";
 
 export function park(): Wisp<never> {
-  return pipe(
-    receive(parkMessageKey),
-    wisp.liftF,
-    wisp.map(({ value }) => value),
-  );
+  return pipe(receive(parkMessageKey), wisp.liftF);
 }
 
 const parkMessageKey = messageKey<never>();
