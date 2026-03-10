@@ -93,8 +93,8 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | 原语        | 签名概要                                     | 说明                                                                                                                                                                          |
 | ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `spawn`     | `spawn(ritual, options?) → ScopeRef`         | 创建子 Scope 并引入并行分支；省略 `options` 时默认 `{ mode: "standard" }`，也可显式传入 `{ mode: "standard" }`、`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
-| `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `awaitFuture` 显式等待。                                                                                                          |
-| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `awaitFuture`。`rituals` 为非空 tuple（至少一个分支）。                                                              |
+| `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                                                                 |
+| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                                                                     |
 | `resource`  | `resource(body) → RiteFuture<T>`             | 创建资源作用域并立即返回首个 `provide(value)` 的 future；资源作用域在 provide 后挂起，父 scope 回收时清理。                                                                   |
 | `resumable` | `resumable(ritual) → RiteFuture<T>`          | 在 supervisor boundary 内声明可恢复边界，并立即返回恢复结果 future。                                                                                                          |
 
@@ -102,16 +102,16 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ### 4.2 基础
 
-| 原语          | 签名概要                                               | 说明                                                              |
-| ------------- | ------------------------------------------------------ | ----------------------------------------------------------------- |
-| `join`        | `join(scopeRef) → T`                                   | 等待 spawn 句柄对应作用域完成并返回结果。                         |
-| `future`      | `future<T>() → [RiteFuture<T>, RiteFutureResolver<T>]` | 在当前 Scope 内创建一个 pending future 及其 resolver capability。 |
-| `awaitFuture` | `awaitFuture(future) → T`                              | 等待 future 收敛并返回结果。                                      |
-| `send`        | `send(scopeRef, messageKey, value) → void`             | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。          |
-| `receive`     | `receive(messageKey) → T`                              | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。     |
-| `halt`        | `halt() → never`                                       | 触发当前 Scope 的终止级联。                                       |
-| `cede`        | `cede() → void`                                        | 协作式让权。                                                      |
-| `park`        | `park() → never`                                       | 持续挂起，直到父 scope 回收清理阶段触发。                         |
+| 原语      | 签名概要                                             | 说明                                                            |
+| --------- | ---------------------------------------------------- | --------------------------------------------------------------- |
+| `join`    | `join(scopeRef) → T`                                 | 等待 spawn 句柄对应作用域完成并返回结果。                       |
+| `future`  | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前 Scope 内创建一个 pending future 及其 settle capability。 |
+| `wait`    | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                                    |
+| `send`    | `send(scopeRef, messageKey, value) → void`           | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。        |
+| `receive` | `receive(messageKey) → T`                            | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。   |
+| `halt`    | `halt() → never`                                     | 触发当前 Scope 的终止级联。                                     |
+| `cede`    | `cede() → void`                                      | 协作式让权。                                                    |
+| `park`    | `park() → never`                                     | 持续挂起，直到父 scope 回收清理阶段触发。                       |
 
 ### 4.3 上下文与自省
 
@@ -129,7 +129,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 - 原语通过 `yield* 原语(...)` 调用，不使用 `yield* 原语(...)()` 形式。
 - 用户侧不直接接触 kernel 契约细节。
 - 用户可观察的生命周期粒度是 Scope，不是 Process。
-- 编排层通过 `spawn` 句柄配合 `join`、通过 `RiteFuture` 配合 `awaitFuture` 等待收敛，不透出底层 future/scope 结构细节。
+- 编排层通过 `spawn` 句柄配合 `join`、通过 `RiteFuture` 配合 `wait` 等待收敛，不透出底层 future/scope 结构细节。
 - generator 侧成功通过返回值表达，失败由 host 以异常抛出传播。
 - 控制面契约统一以 `*Ref` 表达能力句柄。
 - `createScope` 属于宿主入口（非 primitives），生命周期由 `halt()` 或 `asyncDispose` 治理。

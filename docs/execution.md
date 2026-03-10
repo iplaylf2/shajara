@@ -25,20 +25,20 @@
   证据：`packages/kernel/src/primitives/resource.ts`
 - `resumable` 已改为返回 `FutureKey<Either<Failure, T>>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
   证据：`packages/kernel/src/primitives/resumable.ts`
-- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureResolverKey` 后直接 settle future”，最终结果 future 现在直接由 `forkFuture(scopeRef.exitFuture, ...)` 派生。  
+- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureSettleKey` 后直接 settle future”，最终结果 future 现在直接由 `forkFuture(scopeRef.exitFuture, ...)` 派生。  
   影响：去掉了 `delegateWorker` 那层额外 scope；`resumable` 现在由单个 result future + `forkFuture` relay 表达最终收敛，恢复结果走单次收敛语义而不是额外 mailbox。  
   证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
 
 ## 3. 相对设计基线的新增增量
 
 - 设计基线原本允许部分 primitive 在调用方 process 内隐式等待；当前增量是把这类“创建新 scope 的等待协议”外显成 `FutureKey`。  
-  影响：启动结构与结果等待解耦，调用方需要显式决定是否以及何时 `awaitFuture`。  
+  影响：启动结构与结果等待解耦，调用方需要显式决定是否以及何时 `wait`。  
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives/resource.ts`
 - `scoped` 被 `spawn(..., supervisorScopeSpec())` 这一更基础的 supervisor boundary 表达替代。  
   影响：kernel primitive 面减少一个专门入口，supervisor 语义收口到 `spawn`。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/kernel/src/primitives/all.ts`
-- `resumable` recovery request 的消息载荷已从单纯 `failure` 扩展为 `{ failure, futureResolverKey }`。  
-  影响：消息仍只负责委派，结果回传已从 mailbox 语义切换为 future 收敛语义，契约更贴近 `FutureKey / FutureResolverKey` 的设计基线。  
+- `resumable` recovery request 的消息载荷已从单纯 `failure` 扩展为 `{ failure, recoverySettleKey }`。  
+  影响：消息仍只负责委派，结果回传已从 mailbox 语义切换为 future 收敛语义，契约更贴近 `FutureKey / FutureSettleKey` 的设计基线。  
   证据：`packages/kernel/src/primitives-kit/resumable.ts`
 
 ## 4. 下一步（Build 聚焦）

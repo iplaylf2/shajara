@@ -1,6 +1,6 @@
-import type { Failure, FutureKey, FutureResolverKey, Ritual, Wisp } from "#src/contracts";
+import type { Failure, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
 import { forkFutureInto, park } from "#src/primitives-kit";
-import { future, settleFuture, spawn } from "#src/sigils";
+import { future, settle, spawn } from "#src/sigils";
 import type { Either } from "#src/utils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
@@ -14,11 +14,11 @@ export function resource<ProvidedValue>(
   return pipe(
     wisp.Do,
     wisp.bindF("resourceFuture", () => future<Either<Failure, ProvidedValue>>()),
-    wisp.bindF("resourceSelf", ({ resourceFuture: [, resourceResolverKey] }) =>
-      spawn(resourceSupervisor(body, resourceResolverKey), supervisorScopeSpec()),
+    wisp.bindF("resourceSelf", ({ resourceFuture: [, resourceSettleKey] }) =>
+      spawn(resourceSupervisor(body, resourceSettleKey), supervisorScopeSpec()),
     ),
-    wisp.chainFirst(({ resourceFuture: [, resourceResolverKey], resourceSelf: { scopeRef } }) =>
-      forkFutureInto(scopeRef.exitFuture, resourceResolverKey, restingWisp),
+    wisp.chainFirst(({ resourceFuture: [, resourceSettleKey], resourceSelf: { scopeRef } }) =>
+      forkFutureInto(scopeRef.exitFuture, resourceSettleKey, restingWisp),
     ),
     wisp.map(({ resourceFuture: [resourceFutureKey] }) => resourceFutureKey),
   );
@@ -32,13 +32,13 @@ export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Wisp<neve
 
 function resourceSupervisor<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
-  resourceResolverKey: FutureResolverKey<Either<Failure, ProvidedValue>>,
+  resourceSettleKey: FutureSettleKey<Either<Failure, ProvidedValue>>,
 ): Ritual<never> {
   return () =>
     pipe(
       body((value) =>
         pipe(
-          settleFuture(resourceResolverKey, either.right(value)),
+          settle(resourceSettleKey, either.right(value)),
           wisp.liftF,
           wisp.chain(() => park()),
         ),

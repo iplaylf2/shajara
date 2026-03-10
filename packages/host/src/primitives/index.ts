@@ -1,5 +1,5 @@
 export * from "./all";
-export * from "./await-future";
+export * from "./wait";
 export * from "./bind";
 export * from "./cede";
 export * from "./future";

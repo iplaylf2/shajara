@@ -109,26 +109,26 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 消息传递协议的正确性不依赖调度顺序——Send 在 Receive 到达前执行时，值入 buffer 而非丢弃；Receive 在 Send 到达前执行时，阻塞等待。任意 Processor 数量与调度策略下行为一致。
 
-### 2.8 FutureKey / FutureResolverKey 与单次收敛
+### 2.8 FutureKey / FutureSettleKey 与单次收敛
 
-`FutureKey<Value>` 与 `FutureResolverKey<Value>` 是成对出现的 phantom-typed 不透明令牌，其中 `Value` 约束为 `Either<Failure, unknown>`。它们共同标识 owner Scope 内一个 **单次收敛槽位**，而不是消息队列或独立运行实体。
+`FutureKey<Value>` 与 `FutureSettleKey<Value>` 是成对出现的 phantom-typed 不透明令牌，其中 `Value` 约束为 `Either<Failure, unknown>`。它们共同标识 owner Scope 内一个 **单次收敛槽位**，而不是消息队列或独立运行实体。
 
-普通 future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到一对 key：`[FutureKey, FutureResolverKey]`。future 本体的生命周期仍附着于 owner Scope。
+普通 future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到一对 key：`[FutureKey, FutureSettleKey]`。future 本体的生命周期仍附着于 owner Scope。
 
-每个 `(ownerScope, FutureKey, FutureResolverKey)` 组三元关系隐式维护一个二态单元：
+每个 `(ownerScope, FutureKey, FutureSettleKey)` 组三元关系隐式维护一个二态单元：
 
 - `pending`：尚未收敛
 - `settled(value)`：已以某个 `Either<Failure, T>` 结果收敛
 
 future 的语义中心是“同一结果可被重复观察”，而不是消息消费：
 
-- `AwaitFuture(futureKey)`：等待该 future 收敛，并返回同一个 settled 结果
-- `PollFuture(futureKey)`：非阻塞观察；未收敛返回 `None`，已收敛返回 `Some(result)`
-- `SettleFuture(futureResolverKey, result)`：将 pending future 收敛为某个结果
+- `Wait(futureKey)`：等待该 future 收敛，并返回同一个 settled 结果
+- `Poll(futureKey)`：非阻塞观察；未收敛返回 `None`，已收敛返回 `Some(result)`
+- `Settle(futureSettleKey, result)`：将 pending future 收敛为某个结果
 
 与 `MessageKey` 不同，future 不具备 FIFO、buffer 或单消费者语义。多个 Process 可以同时等待同一个 future；收敛后所有观察者都得到同一结果值。
 
-能力边界由 key 形状直接表达：`FutureKey` 只用于观察，`FutureResolverKey` 只用于收敛。settle 权限仍受 Scope 谱系约束：只有 owner Scope 或其后代 Scope 才能对该 future 执行 `SettleFuture`。
+能力边界由 key 形状直接表达：`FutureKey` 只用于观察，`FutureSettleKey` 只用于收敛。settle 权限仍受 Scope 谱系约束：只有 owner Scope 或其后代 Scope 才能对该 future 执行 `Settle`。
 
 owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 future 的结果域固定在 `Either<Failure, T>` 上，而不是额外引入第二条失败通道。
 
@@ -235,7 +235,7 @@ Process 与 Scope 均有三种互斥终态：
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
-通过 `AwaitFuture(scopeRef.exitFuture)` / `AwaitFuture(processRef.exitFuture)` 观察终态，仅提供结果可见性，不构成对上传策略的拦截。
+通过 `Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 观察终态，仅提供结果可见性，不构成对上传策略的拦截。
 
 ### 4.6 结构性收敛：Reaper
 
@@ -311,14 +311,14 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 调用方 Process 以 `Failed(failure)` 语义退出。该 Process 的 `Failed(failure)` 使其所属 Scope 进入 Closing（终态 Failed），并触发对后代 Scope 的终止级联。`failure` 为可选携带负载。
 
-#### Future() → [futureKey, futureResolverKey] `[Non-Blocking]`
+#### Future() → [futureKey, futureSettleKey] `[Non-Blocking]`
 
-在调用方 Scope 内创建一个 pending future，并返回其 `[FutureKey<Value>, FutureResolverKey<Value>]`。
+在调用方 Scope 内创建一个 pending future，并返回其 `[FutureKey<Value>, FutureSettleKey<Value>]`。
 
 - `Value` 的形状固定为 `Either<Failure, T>`。
 - owner Scope 固定为创建时的当前 Scope。
 
-#### AwaitFuture(futureKey) → result `[Blocking]`
+#### Wait(futureKey) → result `[Blocking]`
 
 等待目标 future 收敛。
 
@@ -326,9 +326,9 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 返回 result：`Either<Failure, T>`
 - 多个观察者可同时等待；future 收敛后都恢复到同一个结果。
 
-通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察生命周期终态时，`AwaitFuture` 的返回值分别为 `Right<ScopeExit<T>>` / `Right<ProcessExit<T>>`。`InLimbo` 为结构状态，不作为独立返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。
+通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察生命周期终态时，`Wait` 的返回值分别为 `Right<ScopeExit<T>>` / `Right<ProcessExit<T>>`。`InLimbo` 为结构状态，不作为独立返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。
 
-#### PollFuture(futureKey) → Option\<result\> `[Non-Blocking]`
+#### Poll(futureKey) → Option\<result\> `[Non-Blocking]`
 
 非阻塞观察目标 future 的当前状态。
 
@@ -336,11 +336,11 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 未收敛：返回 `None`
 - 已收敛：返回 `Some(Either<Failure, T>)`
 
-#### SettleFuture(futureResolverKey, result) → void `[Non-Blocking]`
+#### Settle(futureSettleKey, result) → void `[Non-Blocking]`
 
 将目标 future 收敛为给定结果。
 
-- 前置：futureResolverKey 对调用方可见，且调用方 Scope 必须是 owner Scope 或其后代 Scope。
+- 前置：futureSettleKey 对调用方可见，且调用方 Scope 必须是 owner Scope 或其后代 Scope。
 - `result` 的形状为 `Either<Failure, T>`。
 
 #### Send(scopeRef, messageKey, value) → void `[Non-Blocking]`
@@ -411,7 +411,7 @@ primitive 不等于 sigil：
 
 1. 创建 `SupervisorScope` 作为隔离容器。
 2. 在 supervisor 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. 对每个分支 Process 通过 `awaitFuture(processRef.exitFuture)` 等待终态（内部通过 in-band completed 路径收集值）。
+3. 对每个分支 Process 通过 `wait(processRef.exitFuture)` 等待终态（内部通过 in-band completed 路径收集值）。
 4. primitive 返回一个 future；外层 supervisor 的终态通过共享的 `forkFuture` relay 机制收敛到该 future。
 
 #### race(branches) → Wisp\<FutureKey\<Either\<Failure, ArrayValues\<T\>\>\>
@@ -420,7 +420,7 @@ primitive 不等于 sigil：
 
 1. 创建 `SupervisorScope`（arena）。
 2. arena 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. primitive 预先创建一个 race future；每个分支 Process 完成后对该 future 执行 `SettleFuture(Right(value))`，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
+3. primitive 预先创建一个 race future；每个分支 Process 完成后对该 future 执行 `Settle(Right(value))`，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
 4. arena 根 Process 在完成分支 Fork 后执行 `park` 挂起，等待由分支触发的收敛路径驱动 arena 终态。
 5. 一个后备 `forkFuture` relay 等待 arena 收敛；若在首个成功 settle 之前 arena 已收敛（例如最速失败），relay 会将该收敛结果转发给 race future。
 
@@ -433,25 +433,25 @@ primitive 不等于 sigil：
 在 supervisor boundary 内声明可恢复边界，并返回恢复结果 future。`resumable` 在失败时查找 `resumableDelegateKey`：
 
 - 未命中：失败保持为 `Left(failure)`。
-- 命中：在当前 Scope 内创建 recovery future，把 `failure + FutureResolverKey` 作为一次 recovery request 发送给委派点，并等待该 future 收敛。
+- 命中：在当前 Scope 内创建 recovery future，把 `failure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待该 future 收敛。
 
 ### 6.4 future、等待与控制 primitives
 
-#### future() → Wisp\<[FutureKey\<Either\<Failure, T\>\>, FutureResolverKey\<Either\<Failure, T\>\>]>
+#### future() → Wisp\<[FutureKey\<Either\<Failure, T\>\>, FutureSettleKey\<Either\<Failure, T\>\>]>
 
 封装 `Future` sigil，在当前 Scope 内创建一个 pending future，并返回其观察 key 与收敛 key。
 
-#### awaitFuture(futureKey) → Wisp\<Either\<Failure, T\>\>
+#### wait(futureKey) → Wisp\<Either\<Failure, T\>\>
 
-封装 `AwaitFuture` sigil，等待目标 future 收敛并返回结果。
+封装 `Wait` sigil，等待目标 future 收敛并返回结果。
 
-#### pollFuture(futureKey) → Wisp\<Option\<Either\<Failure, T\>\>\>
+#### poll(futureKey) → Wisp\<Option\<Either\<Failure, T\>\>\>
 
-封装 `PollFuture` sigil，非阻塞观察目标 future 的当前收敛状态。
+封装 `Poll` sigil，非阻塞观察目标 future 的当前收敛状态。
 
-#### settleFuture(futureResolverKey, result) → Wisp\<void\>
+#### settle(futureSettleKey, result) → Wisp\<void\>
 
-封装 `SettleFuture` sigil，对目标 future 执行单次收敛。
+封装 `Settle` sigil，对目标 future 执行单次收敛。
 
 #### spawn(ritual, options?) → Wisp\<ScopeRef\>
 
@@ -460,11 +460,11 @@ primitive 不等于 sigil：
 - 默认：创建 StandardScope；省略 `options` 等价于 `{ mode: "standard" }`。
 - `options.mode = "standard"`：创建 StandardScope。
 - `options.mode = "supervisor"`：创建 SupervisorScope，在该边界内收敛后代失败/终止。
-- `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收 recovery request，并直接 settle 请求携带的 future resolver。
+- `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收 recovery request，并直接 settle 请求携带的 future settle key。
 
 #### join(scopeRef) → Wisp\<Either\<Failure, T\>\>
 
-通过 `awaitFuture(scopeRef.exitFuture)` 等待目标 Scope 终态并收敛为 Either。
+通过 `wait(scopeRef.exitFuture)` 等待目标 Scope 终态并收敛为 Either。
 
 #### halt(failure?) → Wisp\<never\>
 

@@ -1,5 +1,5 @@
-import type { Failure, FutureKey, FutureResolverKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { awaitFuture, fork, future, lookup, send, settleFuture, spawn } from "#src/sigils";
+import type { Failure, FutureKey, FutureSettleKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import { fork, future, lookup, send, settle, spawn, wait } from "#src/sigils";
 import { resumableDelegateKey, resumableFailureMessageKey } from "#src/primitives-kit";
 import { wisp, wispEither, wispOption } from "#src/internal/fp";
 import type { Either } from "#src/utils";
@@ -15,9 +15,7 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Either<Fa
       pipe(
         future<Either<Failure, Relic>>(),
         wisp.liftF,
-        wisp.chainFirstF(([, resultResolverKey]) =>
-          fork(resumableRelay(scopeRef, resultResolverKey)),
-        ),
+        wisp.chainFirstF(([, resultSettleKey]) => fork(resumableRelay(scopeRef, resultSettleKey))),
         wisp.map(([resultFutureKey]) => resultFutureKey),
       ),
     ),
@@ -26,11 +24,11 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Either<Fa
 
 function resumableRelay<Relic>(
   supervisorRef: ScopeRef<Relic>,
-  recoveryKey: FutureResolverKey<Either<Failure, Relic>>,
+  recoverySettleKey: FutureSettleKey<Either<Failure, Relic>>,
 ): Ritual<void> {
   return () =>
     pipe(
-      awaitFuture(supervisorRef.exitFuture),
+      wait(supervisorRef.exitFuture),
       wisp.liftF,
       wispEither.matchE(
         (failure) =>
@@ -38,18 +36,18 @@ function resumableRelay<Relic>(
             lookup(resumableDelegateKey),
             wisp.liftF,
             wispOption.matchE(
-              () => pipe(settleFuture(recoveryKey, either.left(failure)), wisp.liftF),
+              () => pipe(settle(recoverySettleKey, either.left(failure)), wisp.liftF),
               (delegateScopeRef) =>
                 pipe(
                   send(delegateScopeRef, resumableFailureMessageKey, {
                     failure,
-                    recoveryKey,
+                    recoverySettleKey,
                   }),
                   wisp.liftF,
                 ),
             ),
           ),
-        (value) => pipe(settleFuture(recoveryKey, either.right(value)), wisp.liftF),
+        (value) => pipe(settle(recoverySettleKey, either.right(value)), wisp.liftF),
       ),
     );
 }

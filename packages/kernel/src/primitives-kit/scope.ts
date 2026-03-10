@@ -1,8 +1,8 @@
 import type { ScopeRef, Wisp } from "#src/contracts";
 import type { Right } from "#src/utils";
-import { awaitFuture } from "#src/primitives/await-future";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
+import { wait } from "#src/primitives/wait";
 import { wisp } from "#src/internal/fp";
 
 /**
@@ -11,7 +11,7 @@ import { wisp } from "#src/internal/fp";
  */
 export function awaitScopeInBand<Relic>(scopeRef: ScopeRef<Relic>): Wisp<Relic> {
   return pipe(
-    awaitFuture(scopeRef.exitFuture),
+    wait(scopeRef.exitFuture),
     wisp.map(narrowAs<Right<Relic>>()),
     wisp.map(({ right }) => right),
   );

@@ -1,7 +1,7 @@
 import type { Ritual, Wisp } from "./contracts/wisp";
 import type { Either } from "./utils";
 import type { Failure } from "./contracts/failure";
-import type { FutureResolverKey } from "./contracts/future-key";
+import type { FutureSettleKey } from "./contracts/future-key";
 import type { MessageKey } from "./contracts/message-key";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
@@ -51,10 +51,10 @@ export interface Executor {
    */
   send<Value>(scope: ScopeRef<unknown>, messageKey: MessageKey<Value>, value: Value): void;
   /**
-   * Settle a future result slot through its resolver capability.
+   * Settle a future result slot through its settlement capability.
    */
   settle<Value extends Either<Failure, unknown>>(
-    futureResolverKey: FutureResolverKey<Value>,
+    futureSettleKey: FutureSettleKey<Value>,
     result: Value,
   ): void;
   /**

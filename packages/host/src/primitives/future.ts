@@ -1,9 +1,9 @@
-import type { RiteCoroutine, RiteFuture, RiteFutureResolver } from "#src/contracts";
+import type { RiteCoroutine, RiteFuture, RiteFutureSettle } from "#src/contracts";
 import type { Either } from "@shajara/kernel/utils";
 import type { Failure } from "@shajara/kernel";
 import { encodeRitual } from "#src/boundary";
 import { future as kernelFuture } from "@shajara/kernel";
 
-export function future<Return>(): RiteCoroutine<[RiteFuture<Return>, RiteFutureResolver<Return>]> {
+export function future<Return>(): RiteCoroutine<[RiteFuture<Return>, RiteFutureSettle<Return>]> {
   return encodeRitual(() => kernelFuture<Either<Failure, Return>>())();
 }

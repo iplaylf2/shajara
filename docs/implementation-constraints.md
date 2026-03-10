@@ -32,7 +32,7 @@
 | `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                                      |
 | `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeSpec` 单源                                               |
 | `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                                       |
-| `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureResolverKey` 单源                                      |
+| `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey` 单源                                        |
 | `kernel/src/sigils/`                  | sigil 声明 + index                                                      |
 | `kernel/src/sigils.ts`                | sigil 公共入口                                                          |
 | `kernel/src/primitives/`              | 原语 + index                                                            |

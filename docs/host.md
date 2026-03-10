@@ -53,9 +53,9 @@ host 以 `launch` 为统一收敛锚点：
 
 `action`、`sleep`、`until` 等宿主操作在内部利用 future settlement capability 完成宿主回调到 kernel 的单次收敛闭环：
 
-- host 侧创建 `FutureKey / FutureResolverKey` 对。
-- kernel 侧通过 `awaitFuture(futureKey)` 等待收敛。
-- 宿主回调通过 `executor.settle(futureResolverKey, result)` 注入最终结果。
+- host 侧创建 `FutureKey / FutureSettleKey` 对。
+- kernel 侧通过 `wait(futureKey)` 等待收敛。
+- 宿主回调通过 `executor.settle(futureSettleKey, result)` 注入最终结果。
 
 同一套 `send/receive/messageKey` 仍作为用户可见的 mailbox 原语保留；宿主桥接不再借用消息队列去模拟单次 settlement。
 
@@ -74,4 +74,4 @@ host 直接消费 kernel 导出的引用类型，不重复定义同语义包装�
 
 ## 7. 内核索引
 
-运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Wisp、退出信息与等待者）、等待登记（Receive、AwaitFuture，包括对 `scopeRef.exitFuture` / `processRef.exitFuture` 的观察），以及各 Scope 上按 MessageKey 令牌分组的消息队列与等待者登记。host 仅消费这些能力，不复制维护状态机。
+运行期索引由 kernel 维护：Scope 树（父子关系与状态）、Process 表（当前 Wisp、退出信息与等待者）、等待登记（Receive、Wait，包括对 `scopeRef.exitFuture` / `processRef.exitFuture` 的观察），以及各 Scope 上按 MessageKey 令牌分组的消息队列与等待者登记。host 仅消费这些能力，不复制维护状态机。

@@ -1,4 +1,4 @@
-import type { ContextKey, Failure, FutureResolverKey, ScopeRef } from "#src/contracts";
+import type { ContextKey, Failure, FutureSettleKey, ScopeRef } from "#src/contracts";
 import { contextKey, messageKey } from "#src/contracts";
 import type { Either } from "#src/utils";
 
@@ -6,7 +6,7 @@ export const resumableDelegateKey: ContextKey<ScopeRef<unknown>> = contextKey<Sc
 
 export interface ResumableRecoveryRequest<Relic> {
   readonly failure: Failure;
-  readonly recoveryKey: FutureResolverKey<Either<Failure, Relic>>;
+  readonly recoverySettleKey: FutureSettleKey<Either<Failure, Relic>>;
 }
 
 export const resumableFailureMessageKey = messageKey<ResumableRecoveryRequest<unknown>>();

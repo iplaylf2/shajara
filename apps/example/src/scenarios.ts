@@ -2,7 +2,6 @@ import type { RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
 import { action, contextKey, messageKey, sleep, until } from "@shajara/host";
 import {
   all,
-  awaitFuture,
   bind,
   cede,
   halt,
@@ -17,6 +16,7 @@ import {
   send,
   spawn,
   unbind,
+  wait,
 } from "@shajara/host/primitives";
 import type { ResourceProvide } from "@shajara/host/primitives";
 
@@ -52,12 +52,12 @@ function* spawnRitual(): RiteCoroutine<void> {
 }
 
 function* resourceRitual(): RiteCoroutine<void> {
-  const providedValue = yield* awaitFuture(yield* resource(resourceBodyRitual));
+  const providedValue = yield* wait(yield* resource(resourceBodyRitual));
   consume(providedValue);
 }
 
 function* resumableRitual(): RiteCoroutine<void> {
-  const bodyResult = yield* awaitFuture(yield* resumable(childRitual));
+  const bodyResult = yield* wait(yield* resumable(childRitual));
   consume(bodyResult);
 }
 
@@ -78,19 +78,19 @@ function* resourceBodyRitual(provide: ResourceProvide<string>): RiteCoroutine<vo
 }
 
 function* allRitual(): RiteCoroutine<void> {
-  const bothDone = yield* awaitFuture(yield* all([cede, cede] as const));
+  const bothDone = yield* wait(yield* all([cede, cede] as const));
   consume(bothDone);
 }
 
 function* raceRitual(): RiteCoroutine<void> {
-  const winner = yield* awaitFuture(yield* race([cede, cede] as const));
+  const winner = yield* wait(yield* race([cede, cede] as const));
   consume(winner);
 }
 
 function* actionResolveRitual(): RiteCoroutine<void> {
   const pending = yield* action<string>();
   pending.resolve("action done");
-  const value = yield* awaitFuture(pending.future);
+  const value = yield* wait(pending.future);
   consume(value);
 }
 
