@@ -14,12 +14,11 @@ export function resource<ProvidedValue>(
   return pipe(
     wisp.Do,
     wisp.bindF("resourceFuture", () => future<Either<Failure, ProvidedValue>>()),
-    wisp.bindF("resourceSupervisorSelf", ({ resourceFuture: [, resourceResolverKey] }) =>
+    wisp.bindF("resourceSelf", ({ resourceFuture: [, resourceResolverKey] }) =>
       spawn(resourceSupervisor(body, resourceResolverKey), supervisorScopeSpec()),
     ),
-    wisp.chainFirst(
-      ({ resourceFuture: [, resourceResolverKey], resourceSupervisorSelf: { scopeRef } }) =>
-        forkFutureInto(scopeRef.exitFuture, resourceResolverKey, restingWisp),
+    wisp.chainFirst(({ resourceFuture: [, resourceResolverKey], resourceSelf: { scopeRef } }) =>
+      forkFutureInto(scopeRef.exitFuture, resourceResolverKey, restingWisp),
     ),
     wisp.map(({ resourceFuture: [resourceFutureKey] }) => resourceFutureKey),
   );

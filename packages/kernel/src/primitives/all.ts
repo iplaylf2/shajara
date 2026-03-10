@@ -16,7 +16,7 @@ export function all<BranchReturns extends UnknownArray>(
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     wisp.liftF,
-    wisp.chain(({ processRef }) => forkFuture(processRef.exitFuture, restingWisp)),
+    wisp.chain(({ scopeRef }) => forkFuture(scopeRef.exitFuture, restingWisp)),
   );
 }
 
