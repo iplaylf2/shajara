@@ -1,4 +1,6 @@
 export * from "./all";
+export * from "./poll";
+export * from "./settle";
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";

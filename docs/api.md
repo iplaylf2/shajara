@@ -106,6 +106,8 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | --------- | ---------------------------------------------------- | --------------------------------------------------------------- |
 | `join`    | `join(scopeRef) → T`                                 | 等待 spawn 句柄对应作用域完成并返回结果。                       |
 | `future`  | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前 Scope 内创建一个 pending future 及其 settle capability。 |
+| `poll`    | `poll(future) → T \| undefined`                      | 非阻塞观察 future；未收敛时返回 `undefined`。                   |
+| `settle`  | `settle(futureSettle, value) → void`                 | 通过 settle capability 将 future 收敛为成功值。                 |
 | `wait`    | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                                    |
 | `send`    | `send(scopeRef, messageKey, value) → void`           | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。        |
 | `receive` | `receive(messageKey) → T`                            | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。   |
