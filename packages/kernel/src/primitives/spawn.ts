@@ -1,6 +1,14 @@
-import type { Failure, Ritual, ScopeRef, Wisp } from "#src/contracts";
-import { awaitFuture, bind, fork, receive, self, settleFuture } from "#src/sigils";
-import { resumableDelegateKey, resumableFailureMessageKey, spawnScope } from "#src/primitives-kit";
+import type { Failure, Ritual, ScopeRef, ScopeSpec, Wisp } from "#src/contracts";
+import {
+  awaitFuture,
+  bind,
+  fork,
+  receive,
+  self,
+  settleFuture,
+  spawn as spawnSigil,
+} from "#src/sigils";
+import { resumableDelegateKey, resumableFailureMessageKey } from "#src/primitives-kit";
 import { standardScopeSpec, supervisorScopeSpec } from "#src/scopes";
 import type { Either } from "#src/utils";
 import type { ResumableRecoveryRequest } from "#src/primitives-kit";
@@ -32,6 +40,14 @@ export interface SpawnRecoveryOption {
 }
 
 export type SpawnRecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
+
+function spawnScope<Relic>(entry: Ritual<Relic>, spec: ScopeSpec): Wisp<ScopeRef<Relic>> {
+  return pipe(
+    spawnSigil(entry, spec),
+    wisp.liftF,
+    wisp.map(({ scopeRef }) => scopeRef),
+  );
+}
 
 function withRecoveryPoint<Relic>(
   entry: Ritual<Relic>,
