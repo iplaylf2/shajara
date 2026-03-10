@@ -457,7 +457,8 @@ primitive 不等于 sigil：
 
 封装 Spawn sigil，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
 
-- 默认：创建 StandardScope。
+- 默认：创建 StandardScope；省略 `options` 等价于 `{ mode: "standard" }`。
+- `options.mode = "standard"`：创建 StandardScope。
 - `options.mode = "supervisor"`：创建 SupervisorScope，在该边界内收敛后代失败/终止。
 - `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收 recovery request，并直接 settle 请求携带的 future resolver。
 

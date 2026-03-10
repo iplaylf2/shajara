@@ -92,7 +92,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 | 原语        | 签名概要                             | 说明                                                                                                              |
 | ----------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(ritual, options?) → ScopeRef` | 创建子 Scope 并引入并行分支；`options` 为 sum type：`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
+| `spawn`     | `spawn(ritual, options?) → ScopeRef` | 创建子 Scope 并引入并行分支；省略 `options` 时默认 `{ mode: "standard" }`，也可显式传入 `{ mode: "standard" }`、`{ mode: "supervisor" }` 或 `{ mode: "recovery", recover }`。 |
 | `all`       | `all(rituals) → T`                   | 聚合等待多个分支。                                                                                                |
 | `race`      | `race(rituals) → ArrayValues<T>`     | 选择最先完成者，触发其余分支收敛。`rituals` 为非空 tuple（至少一个分支）。                                        |
 | `scoped`    | `scoped(ritual) → T`                 | 创建 `SupervisorScope` 子 Scope 并立即等待收敛。                                                                  |

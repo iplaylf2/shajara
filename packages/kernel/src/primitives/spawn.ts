@@ -14,21 +14,30 @@ import type { Either } from "#src/utils";
 import type { ResumableRecoveryRequest } from "#src/primitives-kit";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
+import { unreachable } from "#src/utils";
 import { wisp } from "#src/internal/fp";
 
-export function spawn<Relic>(entry: Ritual<Relic>, options?: SpawnOptions): Wisp<ScopeRef<Relic>> {
-  if (options?.mode === "supervisor") {
-    return spawnScope(entry, supervisorScopeSpec());
+export function spawn<Relic>(
+  entry: Ritual<Relic>,
+  options: SpawnOptions = { mode: "standard" },
+): Wisp<ScopeRef<Relic>> {
+  switch (options.mode) {
+    case "standard":
+      return spawnScope(entry, standardScopeSpec());
+    case "supervisor":
+      return spawnScope(entry, supervisorScopeSpec());
+    case "recovery":
+      return spawnScope(withRecoveryPoint(entry, options.recover), standardScopeSpec());
+    default:
+      return unreachable();
   }
-
-  if (options?.mode === "recovery") {
-    return spawnScope(withRecoveryPoint(entry, options.recover), standardScopeSpec());
-  }
-
-  return spawnScope(entry, standardScopeSpec());
 }
 
-export type SpawnOptions = SpawnSupervisorOption | SpawnRecoveryOption;
+export type SpawnOptions = SpawnStandardOption | SpawnSupervisorOption | SpawnRecoveryOption;
+
+export interface SpawnStandardOption {
+  readonly mode: "standard";
+}
 
 export interface SpawnSupervisorOption {
   readonly mode: "supervisor";

@@ -4,19 +4,23 @@ import type {
   SpawnRecoveryHandler as KernelSpawnRecoveryHandler,
 } from "@shajara/kernel";
 import { decodeRitual, encodeRitual, fromFailure, toFailureUnknown } from "#src/boundary";
-import { left, right } from "@shajara/kernel/utils";
+import { left, right, unreachable } from "@shajara/kernel/utils";
 import type { Either } from "@shajara/kernel/utils";
 import { ShajaraError } from "#src/contracts";
 import { spawn as kernelSpawn } from "@shajara/kernel";
 
 export function spawn<Return>(
   entry: RiteRoutine<Return>,
-  options?: SpawnOptions,
+  options: SpawnOptions = { mode: "standard" },
 ): RiteCoroutine<ScopeRef<Return>> {
   return encodeRitual(() => kernelSpawn(decodeRitual(entry), toKernelSpawnOptions(options)))();
 }
 
-export type SpawnOptions = SpawnSupervisorOption | SpawnRecoveryOption;
+export type SpawnOptions = SpawnStandardOption | SpawnSupervisorOption | SpawnRecoveryOption;
+
+export interface SpawnStandardOption {
+  readonly mode: "standard";
+}
 
 export interface SpawnSupervisorOption {
   readonly mode: "supervisor";
@@ -29,19 +33,20 @@ export interface SpawnRecoveryOption {
 
 export type SpawnRecoveryHandler = (error: ShajaraError) => RiteCoroutine<unknown>;
 
-function toKernelSpawnOptions(options: SpawnOptions | undefined): KernelSpawnOptions | undefined {
-  if (!options) {
-    return;
+function toKernelSpawnOptions(options: SpawnOptions): KernelSpawnOptions {
+  switch (options.mode) {
+    case "standard":
+      return { mode: "standard" };
+    case "supervisor":
+      return { mode: "supervisor" };
+    case "recovery":
+      return {
+        mode: "recovery",
+        recover: toKernelSpawnRecoveryHandler(options.recover),
+      };
+    default:
+      return unreachable();
   }
-
-  if (options.mode === "supervisor") {
-    return { mode: "supervisor" };
-  }
-
-  return {
-    mode: "recovery",
-    recover: toKernelSpawnRecoveryHandler(options.recover),
-  };
 }
 
 function toKernelSpawnRecoveryHandler(recover: SpawnRecoveryHandler): KernelSpawnRecoveryHandler {
