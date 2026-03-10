@@ -1,8 +1,12 @@
-import type { ContextKey, Failure, ScopeRef } from "#src/contracts";
+import type { ContextKey, Failure, FutureResolverKey, ScopeRef } from "#src/contracts";
 import { contextKey, messageKey } from "#src/contracts";
-import type { Either } from "fp-ts/Either";
+import type { Either } from "#src/utils";
 
 export const resumableDelegateKey: ContextKey<ScopeRef<unknown>> = contextKey<ScopeRef<unknown>>();
 
-export const resumableFailureMessageKey = messageKey<Failure>();
-export const resumableRecoveryMessageKey = messageKey<Either<Failure, unknown>>();
+export interface ResumableRecoveryRequest<Relic> {
+  readonly failure: Failure;
+  readonly recoveryKey: FutureResolverKey<Either<Failure, Relic>>;
+}
+
+export const resumableFailureMessageKey = messageKey<ResumableRecoveryRequest<unknown>>();

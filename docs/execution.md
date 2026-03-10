@@ -8,8 +8,8 @@
 
 当前主目标是把 kernel 中“创建新 scope 的 primitive 返回 `FutureKey`”这条语义收敛成稳定机制，同时避免把阶段性状态混入产品文档。
 
-- 主阻塞：`resumable` 还没有按这条新语义完成重构，目前已回退到可继续演进的干净基线。  
-  证据：`packages/kernel/src/primitives/resumable.ts`
+- 当前主阻塞已收窄：`resumable` 的 recovery 回传路径已经切到 future settle，但仍需补一轮整体验证，确认没有留下旧 mailbox 依赖。  
+  证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/spawn.ts`
 - 协作文档边界已明确：阶段性状态放在执行文档，不放在 `docs/README.md`。  
   证据：`docs/README.md`
 
@@ -25,6 +25,9 @@
   证据：`packages/kernel/src/primitives/resource.ts`
 - `resumable` 已改为返回 `FutureKey<Either<Failure, T>>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
   证据：`packages/kernel/src/primitives/resumable.ts`
+- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureResolverKey` 后直接 settle future”，并且不再通过 `forkFuture` 派生结果 future。  
+  影响：去掉了 `delegateWorker` 那层额外 scope；`resumable` 现在由单个 result future + relay process 表达最终收敛，恢复结果走单次收敛语义而不是额外 mailbox。  
+  证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
 
 ## 3. 相对设计基线的新增增量
 
@@ -34,13 +37,13 @@
 - `scoped` 被 `spawn(..., supervisorScopeSpec())` 这一更基础的 supervisor boundary 表达替代。  
   影响：kernel primitive 面减少一个专门入口，supervisor 语义收口到 `spawn`。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/kernel/src/primitives/all.ts`
-- `resumable` 当前仍通过 `delegateWorker` + mailbox channel 回传 recovery 结果，而不是把 `FutureResolverKey` 传下去并由 recovery 路径直接 settle 对应 future。  
-  影响：现状会多占一个额外 scope；后续若改成传递 future resolver，可以去掉这层 channel 回传与额外 scope。  
-  证据：`packages/kernel/src/primitives/resumable.ts`
+- `resumable` recovery request 的消息载荷已从单纯 `failure` 扩展为 `{ failure, futureResolverKey }`。  
+  影响：消息仍只负责委派，结果回传已从 mailbox 语义切换为 future 收敛语义，契约更贴近 `FutureKey / FutureResolverKey` 的设计基线。  
+  证据：`packages/kernel/src/primitives-kit/resumable.ts`
 
 ## 4. 下一步（Build 聚焦）
 
-1. 把 `resumable` 的 `delegateWorker` 从 channel 回传改成直接 resolve future，去掉一层额外 process。
+1. 跑通 `@shajara/kernel` 的 typecheck / lint，确认 `resumable` 新契约没有遗漏类型窄化或未使用导入。
 2. 复核 `resource` 是否还能进一步收窄到更接近旧版主干的改法。
 3. 等 kernel 语义完全对齐后，再向上游包同步这些返回值变化。
 

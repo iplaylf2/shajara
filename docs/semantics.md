@@ -433,7 +433,7 @@ primitive 不等于 sigil：
 在 supervisor boundary 内声明可恢复边界，并返回恢复结果 future。`resumable` 在失败时查找 `resumableDelegateKey`：
 
 - 未命中：失败保持为 `Left(failure)`。
-- 命中：向委派点发送失败并等待恢复结果（`Either<Failure, T>`）返回。
+- 命中：在当前 Scope 内创建 recovery future，把 `failure + FutureResolverKey` 作为一次 recovery request 发送给委派点，并等待该 future 收敛。
 
 ### 6.4 future、等待与控制 primitives
 
@@ -459,7 +459,7 @@ primitive 不等于 sigil：
 
 - 默认：创建 StandardScope。
 - `options.mode = "supervisor"`：创建 SupervisorScope，在该边界内收敛后代失败/终止。
-- `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收失败请求并回发恢复结果。
+- `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收 recovery request，并直接 settle 请求携带的 future resolver。
 
 #### join(scopeRef) → Wisp\<Either\<Failure, T\>\>
 

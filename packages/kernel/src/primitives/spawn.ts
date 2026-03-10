@@ -3,12 +3,12 @@ import {
   awaitScopeConverged,
   resumableDelegateKey,
   resumableFailureMessageKey,
-  resumableRecoveryMessageKey,
   spawnScope,
 } from "#src/primitives-kit";
-import { bind, fork, receive, self, send } from "#src/sigils";
+import { bind, fork, receive, self, settleFuture } from "#src/sigils";
 import { standardScopeSpec, supervisorScopeSpec } from "#src/scopes";
 import type { Either } from "#src/utils";
+import type { ResumableRecoveryRequest } from "#src/primitives-kit";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
@@ -55,9 +55,9 @@ function recoveryWorker(recover: SpawnRecoveryHandler): Ritual<never> {
     return pipe(
       receive(resumableFailureMessageKey),
       wisp.liftF,
-      wisp.chain(({ from, value: failure }) =>
+      wisp.chain(({ value }) =>
         pipe(
-          fork(recoveryAttempt(from, failure, recover)),
+          fork(recoveryAttempt(value, recover)),
           wisp.liftF,
           wisp.chain(() => loop()),
         ),
@@ -75,15 +75,14 @@ function recoveryWorker(recover: SpawnRecoveryHandler): Ritual<never> {
 }
 
 function recoveryAttempt(
-  from: ScopeRef<unknown>,
-  failure: Failure,
+  request: ResumableRecoveryRequest<unknown>,
   recover: SpawnRecoveryHandler,
 ): Ritual<void> {
   return () =>
     pipe(
-      spawnScope(() => recover(failure), supervisorScopeSpec()),
+      spawnScope(() => recover(request.failure), supervisorScopeSpec()),
       wisp.chain(awaitScopeConverged),
       wisp.map(either.flatten),
-      wisp.chainF((recovery) => send(from, resumableRecoveryMessageKey, recovery)),
+      wisp.chainF((recovery) => settleFuture(request.recoveryKey, recovery)),
     );
 }
