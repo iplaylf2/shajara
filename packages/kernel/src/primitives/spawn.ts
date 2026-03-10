@@ -95,6 +95,6 @@ function recoveryAttempt(
       spawnScope(() => recover(request.failure), supervisorScopeSpec()),
       wisp.chainF((scopeRef) => wait(scopeRef.exitFuture)),
       wisp.map(either.flatten),
-      wisp.chainF((recovery) => settle(request.recoverySettleKey, recovery)),
+      wisp.chainF((recovery) => settle(request.recoverySettle, recovery)),
     );
 }

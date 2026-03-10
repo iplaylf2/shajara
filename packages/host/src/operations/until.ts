@@ -6,14 +6,14 @@ import { toFailureUnknown } from "#src/boundary";
 
 export function* until<Return>(thunk: PromiseThunk<Return>): RiteCoroutine<Return> {
   const executor = ensureExecutor();
-  const [settlementFuture, settlementSettleKey] = yield* future<Return>();
+  const [resultFuture, resultSettle] = yield* future<Return>();
 
   thunk().then(
-    (value: Return) => executor.settle(settlementSettleKey, right(value)),
-    (reason: unknown) => executor.settle(settlementSettleKey, left(toFailureUnknown(reason))),
+    (value: Return) => executor.settle(resultSettle, right(value)),
+    (reason: unknown) => executor.settle(resultSettle, left(toFailureUnknown(reason))),
   );
 
-  return yield* wait(settlementFuture);
+  return yield* wait(resultFuture);
 }
 
 export type PromiseThunk<Return> = () => PromiseLike<Return>;

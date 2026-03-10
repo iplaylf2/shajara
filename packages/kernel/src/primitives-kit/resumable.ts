@@ -6,7 +6,7 @@ export const resumableDelegateKey: ContextKey<ScopeRef<unknown>> = contextKey<Sc
 
 export interface ResumableRecoveryRequest<Relic> {
   readonly failure: Failure;
-  readonly recoverySettleKey: FutureSettleKey<Either<Failure, Relic>>;
+  readonly recoverySettle: FutureSettleKey<Either<Failure, Relic>>;
 }
 
 export const resumableFailureMessageKey = messageKey<ResumableRecoveryRequest<unknown>>();

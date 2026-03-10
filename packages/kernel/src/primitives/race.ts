@@ -14,14 +14,14 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
 ): Wisp<FutureKey<Either<Failure, ArrayValues<BranchReturns>>>> {
   return pipe(
     wisp.Do,
-    wisp.bindF("raceFuture", () => future<Either<Failure, ArrayValues<BranchReturns>>>()),
-    wisp.bindF("arenaSelf", ({ raceFuture: [, raceSettleKey] }) =>
-      spawn(raceArena(branches, raceSettleKey), supervisorScopeSpec()),
+    wisp.bindF("winner", () => future<Either<Failure, ArrayValues<BranchReturns>>>()),
+    wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
+      spawn(raceArena(branches, winnerSettle), supervisorScopeSpec()),
     ),
-    wisp.chainFirst(({ arenaSelf: { scopeRef: arenaRef }, raceFuture: [, raceSettleKey] }) =>
-      forkFutureInto(arenaRef.exitFuture, raceSettleKey, restingWisp),
+    wisp.chainFirst(({ arenaSelf: { scopeRef: arenaRef }, winner: [, winnerSettle] }) =>
+      forkFutureInto(arenaRef.exitFuture, winnerSettle, restingWisp),
     ),
-    wisp.map(({ raceFuture: [raceFutureKey] }) => raceFutureKey),
+    wisp.map(({ winner: [winnerFuture] }) => winnerFuture),
   );
 }
 
@@ -31,12 +31,12 @@ type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
 
 function raceArena(
   branches: ReadonlyArray<Ritual<unknown>>,
-  raceSettleKey: FutureSettleKey<Either<Failure, unknown>>,
+  winnerSettle: FutureSettleKey<Either<Failure, unknown>>,
 ): Ritual<never> {
   return () =>
     pipe(
       branches,
-      readonlyArray.map((branch) => pipe(fork(branchRunner(branch, raceSettleKey)), wisp.liftF)),
+      readonlyArray.map((branch) => pipe(fork(branchRunner(branch, winnerSettle)), wisp.liftF)),
       wisp.sequence,
       wisp.chain(() => park()),
     );
@@ -44,12 +44,12 @@ function raceArena(
 
 function branchRunner(
   branch: Ritual<unknown>,
-  raceSettleKey: FutureSettleKey<Either<Failure, unknown>>,
+  winnerSettle: FutureSettleKey<Either<Failure, unknown>>,
 ): Ritual<never> {
   return () =>
     pipe(
       branch(),
-      wisp.chainF((value) => settle(raceSettleKey, either.right(value))),
+      wisp.chainF((value) => settle(winnerSettle, either.right(value))),
       wisp.chainF(() => halt()),
     );
 }

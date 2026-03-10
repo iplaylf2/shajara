@@ -5,9 +5,9 @@ import { right } from "@shajara/kernel/utils";
 
 export function* sleep(milliseconds: number): RiteCoroutine<void> {
   const executor = ensureExecutor();
-  const [wakeFuture, wakeSettleKey] = yield* future<null>();
+  const [wakeFuture, wakeSettle] = yield* future<null>();
   const timeoutId = globalThis.setTimeout(() => {
-    executor.settle(wakeSettleKey, right(null));
+    executor.settle(wakeSettle, right(null));
   }, milliseconds);
 
   try {

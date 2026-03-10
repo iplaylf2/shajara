@@ -8,12 +8,15 @@ import { wisp } from "#src/internal/fp";
 export function forkFuture<
   Source extends either.Either<Failure, unknown>,
   Chained extends either.Either<Failure, unknown>,
->(futureKey: FutureKey<Source>, chain: (value: Source) => Wisp<Chained>): Wisp<FutureKey<Chained>> {
+>(
+  sourceFuture: FutureKey<Source>,
+  chain: (value: Source) => Wisp<Chained>,
+): Wisp<FutureKey<Chained>> {
   return pipe(
     future<Chained>(),
     wisp.liftF,
-    wisp.chainFirst(([, chainedSettleKey]) => forkFutureInto(futureKey, chainedSettleKey, chain)),
-    wisp.map(([chainedFutureKey]) => chainedFutureKey),
+    wisp.chainFirst(([, chainedSettle]) => forkFutureInto(sourceFuture, chainedSettle, chain)),
+    wisp.map(([chainedFuture]) => chainedFuture),
   );
 }
 
@@ -22,11 +25,11 @@ export function forkFutureInto<
   Source extends either.Either<Failure, unknown>,
   Chained extends either.Either<Failure, unknown>,
 >(
-  futureKey: FutureKey<Source>,
-  chainedSettleKey: FutureSettleKey<Chained>,
+  sourceFuture: FutureKey<Source>,
+  chainedSettle: FutureSettleKey<Chained>,
   chain: (value: Source) => Wisp<Chained>,
 ): Wisp<ProcessRef<void>> {
-  return pipe(fork(chainFuture(futureKey, chainedSettleKey, chain)), wisp.liftF);
+  return pipe(fork(chainFuture(sourceFuture, chainedSettle, chain)), wisp.liftF);
 }
 
 // oxlint-disable-next-line id-length
@@ -34,15 +37,15 @@ function chainFuture<
   Source extends either.Either<Failure, unknown>,
   Chained extends either.Either<Failure, unknown>,
 >(
-  futureKey: FutureKey<Source>,
-  chainedSettleKey: FutureSettleKey<Chained>,
+  sourceFuture: FutureKey<Source>,
+  chainedSettle: FutureSettleKey<Chained>,
   chain: (value: Source) => Wisp<Chained>,
 ): Ritual<void> {
   return () =>
     pipe(
-      wait(futureKey),
+      wait(sourceFuture),
       wisp.liftF,
       wisp.chain(chain),
-      wisp.chainF((result) => settle(chainedSettleKey, result)),
+      wisp.chainF((result) => settle(chainedSettle, result)),
     );
 }

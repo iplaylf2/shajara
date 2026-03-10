@@ -13,14 +13,14 @@ export function resource<ProvidedValue>(
 ): Wisp<FutureKey<Either<Failure, ProvidedValue>>> {
   return pipe(
     wisp.Do,
-    wisp.bindF("resourceFuture", () => future<Either<Failure, ProvidedValue>>()),
-    wisp.bindF("resourceSelf", ({ resourceFuture: [, resourceSettleKey] }) =>
-      spawn(resourceSupervisor(body, resourceSettleKey), supervisorScopeSpec()),
+    wisp.bindF("provided", () => future<Either<Failure, ProvidedValue>>()),
+    wisp.bindF("resourceSelf", ({ provided: [, providedSettle] }) =>
+      spawn(resourceSupervisor(body, providedSettle), supervisorScopeSpec()),
     ),
-    wisp.chainFirst(({ resourceFuture: [, resourceSettleKey], resourceSelf: { scopeRef } }) =>
-      forkFutureInto(scopeRef.exitFuture, resourceSettleKey, restingWisp),
+    wisp.chainFirst(({ provided: [, providedSettle], resourceSelf: { scopeRef } }) =>
+      forkFutureInto(scopeRef.exitFuture, providedSettle, restingWisp),
     ),
-    wisp.map(({ resourceFuture: [resourceFutureKey] }) => resourceFutureKey),
+    wisp.map(({ provided: [providedFuture] }) => providedFuture),
   );
 }
 
@@ -32,13 +32,13 @@ export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Wisp<neve
 
 function resourceSupervisor<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
-  resourceSettleKey: FutureSettleKey<Either<Failure, ProvidedValue>>,
+  providedSettle: FutureSettleKey<Either<Failure, ProvidedValue>>,
 ): Ritual<never> {
   return () =>
     pipe(
       body((value) =>
         pipe(
-          settle(resourceSettleKey, either.right(value)),
+          settle(providedSettle, either.right(value)),
           wisp.liftF,
           wisp.chain(() => park()),
         ),

@@ -15,8 +15,8 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Either<Fa
       pipe(
         future<Either<Failure, Relic>>(),
         wisp.liftF,
-        wisp.chainFirstF(([, resultSettleKey]) => fork(resumableRelay(scopeRef, resultSettleKey))),
-        wisp.map(([resultFutureKey]) => resultFutureKey),
+        wisp.chainFirstF(([, resultSettle]) => fork(resumableRelay(scopeRef, resultSettle))),
+        wisp.map(([resultFuture]) => resultFuture),
       ),
     ),
   );
@@ -24,7 +24,7 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Either<Fa
 
 function resumableRelay<Relic>(
   supervisorRef: ScopeRef<Relic>,
-  recoverySettleKey: FutureSettleKey<Either<Failure, Relic>>,
+  resultSettle: FutureSettleKey<Either<Failure, Relic>>,
 ): Ritual<void> {
   return () =>
     pipe(
@@ -36,18 +36,18 @@ function resumableRelay<Relic>(
             lookup(resumableDelegateKey),
             wisp.liftF,
             wispOption.matchE(
-              () => pipe(settle(recoverySettleKey, either.left(failure)), wisp.liftF),
+              () => pipe(settle(resultSettle, either.left(failure)), wisp.liftF),
               (delegateScopeRef) =>
                 pipe(
                   send(delegateScopeRef, resumableFailureMessageKey, {
                     failure,
-                    recoverySettleKey,
+                    recoverySettle: resultSettle,
                   }),
                   wisp.liftF,
                 ),
             ),
           ),
-        (value) => pipe(settle(recoverySettleKey, either.right(value)), wisp.liftF),
+        (value) => pipe(settle(resultSettle, either.right(value)), wisp.liftF),
       ),
     );
 }

@@ -5,16 +5,16 @@ import { future } from "#src/primitives";
 import { toFailure } from "#src/boundary";
 
 export function* action<Return>(): RiteCoroutine<Action<Return>> {
-  const [settlementFuture, settlementSettleKey] = yield* future<Return>();
+  const [actionFuture, actionSettle] = yield* future<Return>();
   const executor = ensureExecutor();
 
   return {
-    future: settlementFuture,
+    future: actionFuture,
     reject(reason: Error): void {
-      executor.settle(settlementSettleKey, left(toFailure(reason)));
+      executor.settle(actionSettle, left(toFailure(reason)));
     },
     resolve(value: Return): void {
-      executor.settle(settlementSettleKey, right(value));
+      executor.settle(actionSettle, right(value));
     },
   };
 }
