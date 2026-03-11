@@ -86,29 +86,26 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ## 4. 编排原语
 
-原语在 `RiteRoutine` 内通过 `yield*` 使用，直接得到 `RiteCoroutine`。
+原语调用返回 `RiteCoroutine`；在 `RiteRoutine` 内通过 `yield*` 使用时，得到该原语的结果值。
 
 ### 4.1 并发构造
 
-| 原语        | 签名概要                                     | 说明                                                                                                        |
-| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(ritual) → ScopeRef`                   | 创建 standard 子 Scope 并引入并行分支。                                                                     |
-| `guard`     | `guard(entry, recover) → RiteFuture<T>`      | 为 `entry` 内部的 `resumable` 提供 `recover` 恢复处理，并立即返回该边界收敛结果对应的 future。              |
-| `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                               |
-| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。   |
-| `scoped`    | `scoped(ritual) → T`                         | 创建显式 supervisor boundary，并等待该子树收敛。                                                            |
-| `resource`  | `resource(body) → RiteFuture<T>`             | 创建资源作用域并立即返回首个 `provide(value)` 的 future；资源作用域在 provide 后挂起，父 scope 回收时清理。 |
-| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明可恢复边界，并立即返回恢复结果 future。                                                                 |
+| 原语        | 签名概要                                     | 说明                                                                                                                                             |
+| ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `spawn`     | `spawn(ritual) → ScopeRef`                   | 创建 standard 子 Scope 并引入并行分支。                                                                                                          |
+| `scoped`    | `scoped(ritual) → T`                         | 创建显式 supervisor boundary，并等待该子树收敛。                                                                                                 |
+| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明可恢复边界，并立即返回恢复结果 future。                                                                                                      |
+| `guard`     | `guard(entry, recover) → RiteFuture<T>`      | 为 `entry` 内部的 `resumable` 提供 `recover` 恢复处理，并立即返回该边界收敛结果对应的 future。`recover` 返回值视为恢复成功，抛异常视为恢复失败。 |
+| `all`       | `all(rituals) → RiteFuture<T[]>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                                    |
+| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                                        |
+| `resource`  | `resource(body) → RiteFuture<T>`             | 创建资源作用域并立即返回首个 `provide(value)` 的 future；资源作用域在 provide 后挂起，父 scope 回收时清理。                                      |
 
-`recover` 仅影响 `resumable` 委派恢复路径：返回值视为恢复成功，抛异常视为恢复失败。
-
-并发原语以结构化并发传播语义为默认形态；`scoped` 提供显式的 supervisor boundary，`guard` 提供显式的恢复委派边界。
+并发原语以结构化并发传播语义为默认形态；显式的 supervisor 收敛边界由 `scoped` 表达。
 
 ### 4.2 基础
 
 | 原语          | 签名概要                                             | 说明                                                            |
 | ------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
-| `join`        | `join(scopeRef) → T`                                 | 等待 spawn 句柄对应作用域完成并返回结果。                       |
 | `future`      | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前 Scope 内创建一个 pending future 及其 settle capability。 |
 | `poll`        | `poll(future) → T \| undefined`                      | 非阻塞观察 future；未收敛时返回 `undefined`。                   |
 | `settle`      | `settle(futureSettle, value) → void`                 | 通过 settle capability 将 future 收敛为成功值。                 |
@@ -116,18 +113,12 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `wait`        | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                                    |
 | `send`        | `send(scopeRef, messageKey, value) → void`           | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。        |
 | `receive`     | `receive(messageKey) → T`                            | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。   |
+| `bind`        | `bind(ContextKey<T>, value) → void`                  | 在当前 Scope 绑定值。                                           |
+| `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 沿祖先链解析值；未命中时返回 `undefined`。                      |
+| `self`        | `self() → SelfDescriptor`                            | 读取当前执行实体的自省信息。                                    |
 | `halt`        | `halt() → never`                                     | 触发当前 Scope 的终止级联。                                     |
 | `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
 | `park`        | `park() → never`                                     | 持续挂起，直到父 scope 回收清理阶段触发。                       |
-
-### 4.3 上下文与自省
-
-| 原语         | 签名概要                                 | 说明                                       |
-| ------------ | ---------------------------------------- | ------------------------------------------ |
-| `bind`       | `bind(ContextKey<T>, value) → void`      | 在当前 Scope 绑定值。                      |
-| `lookup`     | `lookup(ContextKey<T>) → T \| undefined` | 沿祖先链解析值；未命中时返回 `undefined`。 |
-| `messageKey` | `messageKey<T>() → MessageKey<T>`        | 创建消息匹配 key，用于 `send/receive`。    |
-| `self`       | `self() → SelfDescriptor`                | 读取当前执行实体的自省信息。               |
 
 ---
 
@@ -136,7 +127,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 - 原语通过 `yield* 原语(...)` 调用，不使用 `yield* 原语(...)()` 形式。
 - 用户侧不直接接触 kernel 契约细节。
 - 用户可观察的生命周期粒度是 Scope，不是 Process。
-- 编排层通过 `spawn` 句柄配合 `join`、通过 `RiteFuture` 配合 `wait` 等待收敛，不透出底层 future/scope 结构细节。
+- 编排层通过 `spawn` 句柄上的 `exitFuture` 配合 `wait`、通过 `RiteFuture` 配合 `wait` 等待收敛，不透出底层 future/scope 结构细节。
 - generator 侧成功通过返回值表达，失败由 host 以异常抛出传播。
 - 控制面契约统一以 `*Ref` 表达能力句柄。
 - `createScope` 属于宿主入口（非 primitives），生命周期由 `halt()` 或 `asyncDispose` 治理。

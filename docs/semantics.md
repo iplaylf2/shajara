@@ -456,10 +456,6 @@ primitive 不等于 sigil：
 
 创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复委派点，同时返回该边界收敛结果对应的 future。`entry` 为该边界中的主体 ritual；`recover` 作为恢复处理器接收失败请求，并通过请求携带的 future settle key 回传恢复结果。
 
-#### join(scopeRef) → Wisp\<Either\<Failure, T\>\>
-
-通过 `wait(scopeRef.exitFuture)` 等待目标 Scope 终态并收敛为 Either。
-
 #### halt(failure?) → Wisp\<never\>
 
 封装 Halt sigil，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。

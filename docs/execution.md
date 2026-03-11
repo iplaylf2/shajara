@@ -28,6 +28,8 @@
   证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
 - 代码当前仍未导出 `scoped`，并且 `spawn` 仍暴露 supervisor / recovery 两类 mode。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/kernel/src/primitives/spawn.ts`
+- 代码当前仍保留 `join` primitive，文档基线已改为统一通过 `wait(scopeRef.exitFuture)` 等待 scope 收敛。  
+  证据：`packages/kernel/src/primitives/join.ts`、`packages/host/src/primitives/join.ts`、`docs/api.md`
 
 ## 3. 相对设计基线的新增增量
 
@@ -36,6 +38,9 @@
   证据：`docs/semantics.md`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives/resource.ts`
 - 设计基线现已明确：`spawn` 只创建 standard scope；`scoped` 创建 supervisor boundary 并阻塞收敛；`guard` 为 `resumable` 提供恢复委派点并返回该边界的 future。  
   影响：现有 `spawn(..., { mode: "supervisor" | "recovery" })` 需要拆回独立 primitive，`scoped` 需要从 future-returning 形态回到 blocking 形态，recovery mode 的返回面则迁到 `guard`。  
+  证据：`docs/semantics.md`、`docs/api.md`
+- 设计基线现已移除 `join`：scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
+  影响：后续代码清理可直接删除 kernel/host 的 `join` 包装层，并把示例与调用点收口到 `wait`。  
   证据：`docs/semantics.md`、`docs/api.md`
 - 部分并发构造 primitive 已不再承诺“以子 scope 作为正常收敛边界”，因此实现面可以从 scope 驱动收口到更轻的 process/future 组合。  
   影响：`all` / `race` 一类组合子后续可优先评估以 `fork`、局部 future 与显式 relay 直接表达编排，而不是继续保留 supervisor scope 外壳；`resource` 也可据此重新审视 body 与提供值路径的最小实现骨架。  
@@ -49,8 +54,9 @@
 1. 以文档基线为准，恢复 `scoped` 并把它收口为 blocking supervisor boundary。
 2. 引入 `guard(entry, recover)`，承接当前 `spawn` recovery mode 中的恢复委派协议与 future 返回面。
 3. 让 `spawn` 回到 standard-only，并让 `all` / `race` / `resource` 回到默认失败上传语义。
-4. 对不再承诺 scope 边界收敛的并发 primitive，优先评估以 `fork`、future 与最小 relay 直接表达实现，去掉为收敛而保留的 supervisor 外壳。
-5. 完成后再跑通 `@shajara/kernel` 的 typecheck / lint，并向上游包同步 API 变化。
+4. 移除 kernel/host 的 `join` 包装层，并把 scope 等待调用点统一收口到 `wait(scopeRef.exitFuture)`。
+5. 对不再承诺 scope 边界收敛的并发 primitive，优先评估以 `fork`、future 与最小 relay 直接表达实现，去掉为收敛而保留的 supervisor 外壳。
+6. 完成后再跑通 `@shajara/kernel` 的 typecheck / lint，并向上游包同步 API 变化。
 
 ## 5. 验证基线
 
