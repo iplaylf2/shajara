@@ -1,6 +1,7 @@
 export * from "./all";
 export * from "./poll";
 export * from "./settle";
+export * from "./settle-error";
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";

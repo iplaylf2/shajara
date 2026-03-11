@@ -102,18 +102,19 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ### 4.2 基础
 
-| 原语      | 签名概要                                                 | 说明                                                            |
-| --------- | -------------------------------------------------------- | --------------------------------------------------------------- |
-| `join`    | `join(scopeRef) → T`                                     | 等待 spawn 句柄对应作用域完成并返回结果。                       |
-| `future`  | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]`     | 在当前 Scope 内创建一个 pending future 及其 settle capability。 |
-| `poll`    | `poll(future) → T \| undefined`                          | 非阻塞观察 future；未收敛时返回 `undefined`。                   |
-| `settle`  | `settle(futureSettle, { resolve } \| { reject }) → void` | 通过 settle capability 将 future 收敛为成功值或 `Error` 失败。  |
-| `wait`    | `wait(future) → T`                                       | 等待 future 收敛并返回结果。                                    |
-| `send`    | `send(scopeRef, messageKey, value) → void`               | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。        |
-| `receive` | `receive(messageKey) → T`                                | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。   |
-| `halt`    | `halt() → never`                                         | 触发当前 Scope 的终止级联。                                     |
-| `cede`    | `cede() → void`                                          | 协作式让权。                                                    |
-| `park`    | `park() → never`                                         | 持续挂起，直到父 scope 回收清理阶段触发。                       |
+| 原语          | 签名概要                                             | 说明                                                            |
+| ------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
+| `join`        | `join(scopeRef) → T`                                 | 等待 spawn 句柄对应作用域完成并返回结果。                       |
+| `future`      | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前 Scope 内创建一个 pending future 及其 settle capability。 |
+| `poll`        | `poll(future) → T \| undefined`                      | 非阻塞观察 future；未收敛时返回 `undefined`。                   |
+| `settle`      | `settle(futureSettle, value) → void`                 | 通过 settle capability 将 future 收敛为成功值。                 |
+| `settleError` | `settleError(futureSettle, error) → void`            | 通过 settle capability 将 future 收敛为 `Error` 失败。          |
+| `wait`        | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                                    |
+| `send`        | `send(scopeRef, messageKey, value) → void`           | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。        |
+| `receive`     | `receive(messageKey) → T`                            | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。   |
+| `halt`        | `halt() → never`                                     | 触发当前 Scope 的终止级联。                                     |
+| `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
+| `park`        | `park() → never`                                     | 持续挂起，直到父 scope 回收清理阶段触发。                       |
 
 ### 4.3 上下文与自省
 
