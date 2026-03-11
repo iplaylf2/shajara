@@ -96,7 +96,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `scoped`    | `scoped(ritual) → T`                         | 创建显式 supervisor boundary，并等待该子树收敛。                                                                                                 |
 | `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明可恢复边界，并立即返回恢复结果 future。                                                                                                      |
 | `guard`     | `guard(entry, recover) → RiteFuture<T>`      | 为 `entry` 内部的 `resumable` 提供 `recover` 恢复处理，并立即返回该边界收敛结果对应的 future。`recover` 返回值视为恢复成功，抛异常视为恢复失败。 |
-| `all`       | `all(rituals) → RiteFuture<T[]>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                                    |
+| `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                                    |
 | `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                                        |
 | `resource`  | `resource(body) → RiteFuture<T>`             | 创建资源作用域并立即返回首个 `provide(value)` 的 future；资源作用域在 provide 后挂起，父 scope 回收时清理。                                      |
 
@@ -114,6 +114,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `send`        | `send(scopeRef, messageKey, value) → void`           | 向目标 Scope 上由 `messageKey` 选中的 mailbox 投递消息。        |
 | `receive`     | `receive(messageKey) → T`                            | 在当前 Scope 上等待指定 `messageKey` 的下一条消息并返回其值。   |
 | `bind`        | `bind(ContextKey<T>, value) → void`                  | 在当前 Scope 绑定值。                                           |
+| `unbind`      | `unbind(ContextKey<T>) → void`                       | 在当前 Scope 解绑值；后续 `lookup` 将继续沿祖先链解析。         |
 | `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 沿祖先链解析值；未命中时返回 `undefined`。                      |
 | `self`        | `self() → SelfDescriptor`                            | 读取当前执行实体的自省信息。                                    |
 | `halt`        | `halt() → never`                                     | 触发当前 Scope 的终止级联。                                     |
@@ -124,10 +125,8 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 ## 5. 使用约束
 
-- 原语通过 `yield* 原语(...)` 调用，不使用 `yield* 原语(...)()` 形式。
+- 原语通过 `yield* 原语(...)` 调用。
 - 用户侧不直接接触 kernel 契约细节。
 - 用户可观察的生命周期粒度是 Scope，不是 Process。
 - 编排层通过 `spawn` 句柄上的 `exitFuture` 配合 `wait`、通过 `RiteFuture` 配合 `wait` 等待收敛，不透出底层 future/scope 结构细节。
 - generator 侧成功通过返回值表达，失败由 host 以异常抛出传播。
-- 控制面契约统一以 `*Ref` 表达能力句柄。
-- `createScope` 属于宿主入口（非 primitives），生命周期由 `halt()` 或 `asyncDispose` 治理。

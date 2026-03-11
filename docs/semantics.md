@@ -474,6 +474,10 @@ primitive 不等于 sigil：
 
 在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。
 
+#### unbind(key) → Wisp\<void\>
+
+在当前 Scope 解绑值；后续查找会继续沿祖先链解析该 `key`。
+
 #### lookup(key) → Wisp\<T | undefined\>
 
 沿祖先链查找值；未命中时返回 `undefined`。
