@@ -1,19 +1,18 @@
-import type { Failure, FutureKey, FutureSettleKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import type { FutureKey, FutureSettleKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
 import { fork, future, lookup, send, settle, spawn, wait } from "#src/sigils";
 import { resumableDelegateKey, resumableFailureMessageKey } from "#src/primitives-kit";
 import { wisp, wispEither, wispOption } from "#src/internal/fp";
-import type { Either } from "#src/utils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
 
-export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Either<Failure, Relic>>> {
+export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
     spawn(entry, supervisorScopeSpec()),
     wisp.liftF,
     wisp.chain(({ scopeRef }) =>
       pipe(
-        future<Either<Failure, Relic>>(),
+        future<Relic>(),
         wisp.liftF,
         wisp.chainFirstF(([, resultSettle]) => fork(resumableRelay(scopeRef, resultSettle))),
         wisp.map(([resultFuture]) => resultFuture),
@@ -24,7 +23,7 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Either<Fa
 
 function resumableRelay<Relic>(
   supervisorRef: ScopeRef<Relic>,
-  resultSettle: FutureSettleKey<Either<Failure, Relic>>,
+  resultSettle: FutureSettleKey<Relic>,
 ): Ritual<void> {
   return () =>
     pipe(

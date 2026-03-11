@@ -1,8 +1,7 @@
-import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
+import type { FutureKey, Ritual, Wisp } from "#src/contracts";
 import { awaitProcessInBand, forkFuture } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
 import { fork, spawn } from "#src/sigils";
-import type { Either } from "#src/utils";
 import type { UnknownArray } from "type-fest";
 import { narrowArrayAs } from "#src/utils";
 import { readonlyArray } from "fp-ts";
@@ -12,7 +11,7 @@ import { wisp } from "#src/internal/fp";
 
 export function all<BranchReturns extends UnknownArray>(
   branches: AllBranches<BranchReturns>,
-): Wisp<FutureKey<Either<Failure, BranchReturns>>> {
+): Wisp<FutureKey<BranchReturns>> {
   return pipe(
     spawn(allSupervisor(branches), supervisorScopeSpec()),
     wisp.liftF,

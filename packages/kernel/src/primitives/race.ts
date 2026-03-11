@@ -1,9 +1,8 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { Failure, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
 import { either, readonlyArray } from "fp-ts";
 import { fork, future, halt, settle, spawn } from "#src/sigils";
 import { forkFutureInto, park } from "#src/primitives-kit";
-import type { Either } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { restingWisp } from "#src/contracts";
 import { supervisorScopeSpec } from "#src/scopes";
@@ -11,10 +10,10 @@ import { wisp } from "#src/internal/fp";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,
-): Wisp<FutureKey<Either<Failure, ArrayValues<BranchReturns>>>> {
+): Wisp<FutureKey<ArrayValues<BranchReturns>>> {
   return pipe(
     wisp.Do,
-    wisp.bindF("winner", () => future<Either<Failure, ArrayValues<BranchReturns>>>()),
+    wisp.bindF("winner", () => future<ArrayValues<BranchReturns>>()),
     wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
       spawn(raceArena(branches, winnerSettle), supervisorScopeSpec()),
     ),
@@ -31,7 +30,7 @@ type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
 
 function raceArena(
   branches: ReadonlyArray<Ritual<unknown>>,
-  winnerSettle: FutureSettleKey<Either<Failure, unknown>>,
+  winnerSettle: FutureSettleKey<unknown>,
 ): Ritual<never> {
   return () =>
     pipe(
@@ -44,7 +43,7 @@ function raceArena(
 
 function branchRunner(
   branch: Ritual<unknown>,
-  winnerSettle: FutureSettleKey<Either<Failure, unknown>>,
+  winnerSettle: FutureSettleKey<unknown>,
 ): Ritual<never> {
   return () =>
     pipe(

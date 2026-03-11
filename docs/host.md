@@ -53,7 +53,7 @@ host 以 `launch` 为统一收敛锚点：
 
 `action`、`sleep`、`until` 等宿主操作在内部利用 future settlement capability 完成宿主回调到 kernel 的单次收敛闭环：
 
-- host 侧创建 `FutureKey / FutureSettleKey` 对。
+- host 侧创建 `FutureKey<T> / FutureSettleKey<T>` 对；其内部收敛结果固定为 `Either<Failure, T>`。
 - kernel 侧通过 `wait(futureKey)` 等待收敛。
 - 宿主回调通过 `executor.settle(futureSettleKey, result)` 注入最终结果。
 

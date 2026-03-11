@@ -2,24 +2,16 @@ import type { Either } from "#src/utils";
 import type { Failure } from "./failure";
 import type { KEY_TOKEN } from "./token";
 
-declare const VALUE_TOKEN: unique symbol;
-
-// oxlint-disable-next-line id-length
-export type FutureKeyValue<K extends FutureKey<Either<Failure, unknown>>> =
-  K extends FutureKey<infer Value> ? Value : never;
-
-// oxlint-disable-next-line id-length
-export type FutureSettleKeyValue<
-  // oxlint-disable-next-line id-length
-  K extends FutureSettleKey<Either<Failure, unknown>>,
-> = K extends FutureSettleKey<infer Value> ? Value : never;
-
-export interface FutureKey<Value extends Either<Failure, unknown>> {
+export interface FutureKey<Result> {
   readonly [KEY_TOKEN]: "future";
-  readonly [VALUE_TOKEN]?: readonly [Value];
+  readonly [RESULT_TOKEN]?: readonly [FutureResult<Result>];
 }
 
-export interface FutureSettleKey<Value extends Either<Failure, unknown>> {
+export interface FutureSettleKey<Result> {
   readonly [KEY_TOKEN]: "future-settle";
-  readonly [VALUE_TOKEN]?: readonly [Value];
+  readonly [RESULT_TOKEN]?: readonly [FutureResult<Result>];
 }
+
+export type FutureResult<Result> = Either<Failure, Result>;
+
+declare const RESULT_TOKEN: unique symbol;

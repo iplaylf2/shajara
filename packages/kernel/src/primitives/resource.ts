@@ -1,7 +1,6 @@
-import type { Failure, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
 import { forkFutureInto, park } from "#src/primitives-kit";
 import { future, settle, spawn } from "#src/sigils";
-import type { Either } from "#src/utils";
 import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { restingWisp } from "#src/contracts";
@@ -10,10 +9,10 @@ import { wisp } from "#src/internal/fp";
 
 export function resource<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
-): Wisp<FutureKey<Either<Failure, ProvidedValue>>> {
+): Wisp<FutureKey<ProvidedValue>> {
   return pipe(
     wisp.Do,
-    wisp.bindF("provided", () => future<Either<Failure, ProvidedValue>>()),
+    wisp.bindF("provided", () => future<ProvidedValue>()),
     wisp.bindF("resourceSelf", ({ provided: [, providedSettle] }) =>
       spawn(resourceSupervisor(body, providedSettle), supervisorScopeSpec()),
     ),
@@ -32,7 +31,7 @@ export type ResourceProvide<ProvidedValue> = (value: ProvidedValue) => Wisp<neve
 
 function resourceSupervisor<ProvidedValue>(
   body: ResourceBody<ProvidedValue>,
-  providedSettle: FutureSettleKey<Either<Failure, ProvidedValue>>,
+  providedSettle: FutureSettleKey<ProvidedValue>,
 ): Ritual<never> {
   return () =>
     pipe(

@@ -17,13 +17,13 @@
 
 - `scoped` 已不再作为 kernel 公开 primitive 导出。  
   证据：`packages/kernel/src/primitives/index.ts`
-- `all` 已改为返回 `FutureKey<Either<Failure, T>>`，并直接复用 supervisor process 的 `exitFuture`。  
+- `all` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，并直接复用 supervisor process 的 `exitFuture`。  
   证据：`packages/kernel/src/primitives/all.ts`
-- `race` 已改为返回由 arena 内部 settle 的 `FutureKey<Either<Failure, T>>`，外层不再隐式 await。  
+- `race` 已改为返回由 arena 内部 settle 的 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，外层不再隐式 await。  
   证据：`packages/kernel/src/primitives/race.ts`
-- `resource` 已改为返回由 supervisor `exitFuture` 经 `forkFuture` relay 收敛的 `FutureKey<Either<Failure, T>>`。  
+- `resource` 已改为返回由 supervisor `exitFuture` 经 `forkFuture` relay 收敛的 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`。  
   证据：`packages/kernel/src/primitives/resource.ts`
-- `resumable` 已改为返回 `FutureKey<Either<Failure, T>>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
+- `resumable` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
   证据：`packages/kernel/src/primitives/resumable.ts`
 - `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureSettleKey` 后直接 settle future”，最终结果 future 现在直接由 `forkFuture(scopeRef.exitFuture, ...)` 派生。  
   影响：去掉了 `delegateWorker` 那层额外 scope；`resumable` 现在由单个 result future + `forkFuture` relay 表达最终收敛，恢复结果走单次收敛语义而不是额外 mailbox。  
