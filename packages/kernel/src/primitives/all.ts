@@ -1,25 +1,22 @@
 import type { FutureKey, Ritual, Wisp } from "#src/contracts";
-import { awaitProcessInBand, forkFuture } from "#src/primitives-kit";
 import { flow, pipe } from "fp-ts/function";
-import { fork, spawn } from "#src/sigils";
-import type { UnknownArray } from "type-fest";
+import { awaitProcessInBand } from "#src/primitives-kit";
+import { fork } from "#src/sigils";
 import { narrowArrayAs } from "#src/utils";
 import { readonlyArray } from "fp-ts";
-import { restingWisp } from "#src/contracts";
-import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
 
-export function all<BranchReturns extends UnknownArray>(
+export function all<BranchReturns extends readonly unknown[]>(
   branches: AllBranches<BranchReturns>,
 ): Wisp<FutureKey<BranchReturns>> {
   return pipe(
-    spawn(allSupervisor(branches), supervisorScopeSpec()),
+    fork(allAggregator(branches)),
     wisp.liftF,
-    wisp.chain(({ scopeRef }) => forkFuture(scopeRef.exitFuture, restingWisp)),
+    wisp.map((processRef) => processRef.exitFuture),
   );
 }
 
-function allSupervisor<BranchReturns extends UnknownArray>(
+function allAggregator<BranchReturns extends readonly unknown[]>(
   branches: AllBranches<BranchReturns>,
 ): Ritual<BranchReturns> {
   return () =>
@@ -33,6 +30,6 @@ function allSupervisor<BranchReturns extends UnknownArray>(
     );
 }
 
-type AllBranches<BranchReturns extends UnknownArray> = {
+type AllBranches<BranchReturns extends readonly unknown[]> = {
   readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
 };
