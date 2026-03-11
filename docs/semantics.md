@@ -37,9 +37,9 @@ cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口注册一次 cl
 
 sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
 
-`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §3.5）。
+`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §4.5）。
 
-`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §3.5）。
+`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §4.5）。
 
 ### 2.3 Scope
 
@@ -235,6 +235,8 @@ Process 与 Scope 均有三种互斥终态：
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
+kernel 的结构化并发以传播策略为默认形态：旁支失败沿 Scope 树向祖先链传播；`SupervisorScope` 承担显式收敛边界的职责。
+
 通过 `Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 观察终态，仅提供结果可见性，不构成对上传策略的拦截。
 
 ### 4.6 结构性收敛：Reaper
@@ -407,30 +409,23 @@ primitive 不等于 sigil：
 
 #### all(branches) → Wisp\<FutureKey\<T\>\>
 
-聚合等待多个分支。组合方式：
-
-1. 创建 `SupervisorScope` 作为隔离容器。
-2. 在 supervisor 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. 对每个分支 Process 通过 `wait(processRef.exitFuture)` 等待终态（内部通过 in-band completed 路径收集值）。
-4. primitive 返回一个 future；外层 supervisor 的终态通过共享的 `forkFuture` relay 机制收敛到该 future。
+聚合等待多个分支，并返回承载聚合结果的 future。`all` 采用默认的结构化并发传播语义；返回的 future 用于观察聚合结果。
 
 #### race(branches) → Wisp\<FutureKey\<ArrayValues\<T\>\>\>
 
-选择最先完成者，触发其余分支收敛。`branches` 为非空。组合方式：
+选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；返回的 future 用于观察 race 结果。
 
-1. 创建 `SupervisorScope`（arena）。
-2. arena 内部对每个 branch 调用 `Fork` 创建分支 Process。
-3. primitive 预先创建一个 race future；每个分支 Process 完成后对该 future 执行 `Settle(Right(value))`，并立即 `Halt`；该失败触发 arena Closing，剩余分支进入终止级联。
-4. arena 根 Process 在完成分支 Fork 后执行 `park` 挂起，等待由分支触发的收敛路径驱动 arena 终态。
-5. 一个后备 `forkFuture` relay 等待 arena 收敛；若在首个成功 settle 之前 arena 已收敛（例如最速失败），relay 会将该收敛结果转发给 race future。
+#### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
+
+创建一个显式 `SupervisorScope` 子 Scope，并等待该子 Scope 收敛。`scoped` 表达独立的 supervisor boundary，用于承载一个子树的收敛结果。
 
 #### resource(body) → Wisp\<FutureKey\<T\>\>
 
-创建资源作用域。body 接收 `provide: (value) → Wisp<never>`；primitive 返回首个 `provide` 结果对应的 future，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。
+创建资源作用域。body 接收 `provide: (value) → Wisp<never>`；primitive 返回首个 `provide` 结果对应的 future，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。`resource` 的 body 运行在默认的结构化并发传播语义中；需要显式收敛子树时，可在 body 内使用 `scoped`。
 
 #### resumable(ritual) → Wisp\<FutureKey\<T\>\>
 
-在 supervisor boundary 内声明可恢复边界，并返回恢复结果 future。`resumable` 在失败时查找 `resumableDelegateKey`：
+声明可恢复边界，并返回恢复结果 future。`resumable` 负责恢复协议。`resumable` 在失败时查找 `resumableDelegateKey`：
 
 - 未命中：失败保持为 `Left(failure)`。
 - 命中：在当前 Scope 内创建 recovery future，把 `failure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待该 future 收敛。
@@ -453,14 +448,13 @@ primitive 不等于 sigil：
 
 封装 `Settle` sigil，对目标 future 执行单次收敛。
 
-#### spawn(ritual, options?) → Wisp\<ScopeRef\>
+#### spawn(ritual) → Wisp\<ScopeRef\>
 
-封装 Spawn sigil，创建子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
+封装 Spawn sigil，创建 `StandardScope` 子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
 
-- 默认：创建 StandardScope；省略 `options` 等价于 `{ mode: "standard" }`。
-- `options.mode = "standard"`：创建 StandardScope。
-- `options.mode = "supervisor"`：创建 SupervisorScope，在该边界内收敛后代失败/终止。
-- `options.mode = "recovery"`：创建 StandardScope，在子 Scope 内建立 `resumable` 恢复委派点：绑定 `resumableDelegateKey`，接收 recovery request，并直接 settle 请求携带的 future settle key。
+#### guard(entry, recover) → Wisp\<FutureKey\<T\>\>
+
+创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复委派点，同时返回该边界收敛结果对应的 future。`entry` 为该边界中的主体 ritual；`recover` 作为恢复处理器接收失败请求，并通过请求携带的 future settle key 回传恢复结果。
 
 #### join(scopeRef) → Wisp\<Either\<Failure, T\>\>
 
