@@ -5,23 +5,23 @@ import type { Either } from "@shajara/kernel/utils";
 import { ShajaraError } from "#src/contracts";
 import { guard as kernelGuard } from "@shajara/kernel";
 
-export type GuardRecoveryHandler = (error: ShajaraError) => RiteCoroutine<unknown>;
+export type RecoveryHandler = (error: ShajaraError) => RiteCoroutine<unknown>;
 
 export function* guard<Return>(
   entry: RiteRoutine<Return>,
-  recover: GuardRecoveryHandler,
+  recover: RecoveryHandler,
 ): RiteCoroutine<RiteFuture<Return>> {
   return yield* encodeRitual(() =>
-    kernelGuard(decodeRitual(entry), toKernelGuardRecoveryHandler(recover)),
+    kernelGuard(decodeRitual(entry), toKernelRecoveryHandler(recover)),
   )();
 }
 
-function toKernelGuardRecoveryHandler(recover: GuardRecoveryHandler) {
+function toKernelRecoveryHandler(recover: RecoveryHandler) {
   return (failure: Failure) => decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
 }
 
 function* hostRecovery(
-  recover: GuardRecoveryHandler,
+  recover: RecoveryHandler,
   error: ShajaraError,
 ): RiteCoroutine<Either<Failure, unknown>> {
   try {

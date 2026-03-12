@@ -9,7 +9,7 @@ import { wisp } from "#src/internal/fp";
 
 export function guard<Relic>(
   entry: Ritual<Relic>,
-  recover: GuardRecoveryHandler,
+  recover: RecoveryHandler,
 ): Wisp<FutureKey<Relic>> {
   return pipe(
     spawn(withRecoveryPoint(entry, recover)),
@@ -18,12 +18,9 @@ export function guard<Relic>(
   );
 }
 
-export type GuardRecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
+export type RecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
 
-function withRecoveryPoint<Relic>(
-  entry: Ritual<Relic>,
-  recover: GuardRecoveryHandler,
-): Ritual<Relic> {
+function withRecoveryPoint<Relic>(entry: Ritual<Relic>, recover: RecoveryHandler): Ritual<Relic> {
   return () =>
     pipe(
       self(),
@@ -34,7 +31,7 @@ function withRecoveryPoint<Relic>(
     );
 }
 
-function recoveryWorker(recover: GuardRecoveryHandler): Ritual<never> {
+function recoveryWorker(recover: RecoveryHandler): Ritual<never> {
   return function loop(): Wisp<never> {
     return pipe(
       receive(resumableFailureKey),
@@ -47,7 +44,7 @@ function recoveryWorker(recover: GuardRecoveryHandler): Ritual<never> {
 
 function recoveryAttempt(
   request: ResumableRecoveryRequest<unknown>,
-  recover: GuardRecoveryHandler,
+  recover: RecoveryHandler,
 ): Ritual<void> {
   return () =>
     pipe(
