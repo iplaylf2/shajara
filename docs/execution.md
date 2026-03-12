@@ -10,8 +10,8 @@
 
 - 协作文档边界已明确：阶段性状态放在执行文档，不放在 `docs/README.md`。  
   证据：`docs/README.md`
-- 当前主阻塞已从 `spawn/guard/scoped` 的 primitive 拆分转移到后续清理项：`join` 仍保留在 kernel/host 包装面，且 `all` / `race` 仍保留 supervisor-driven 实现外壳。  
-  证据：`packages/kernel/src/primitives/join.ts`、`packages/host/src/primitives/join.ts`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
+- 当前主阻塞已从 `spawn/guard/scoped` 的 primitive 拆分转移到后续清理项：`all` / `race` 仍保留 supervisor-driven 实现外壳。  
+  证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
 
 ## 2. 当前已落地状态（Build 相关）
 
@@ -28,8 +28,8 @@
   证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/guard.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
 - `spawn` 已纯化为 standard-only primitive；supervisor boundary 与恢复委派已分别拆到 `scoped` 与 `guard`，并同步导出到 kernel / host 公共 primitive 面。  
   证据：`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives/scoped.ts`、`packages/kernel/src/primitives/guard.ts`、`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/spawn.ts`、`packages/host/src/primitives/scoped.ts`、`packages/host/src/primitives/guard.ts`、`packages/host/src/primitives/index.ts`
-- 代码当前仍保留 `join` primitive，文档基线已改为统一通过 `wait(scopeRef.exitFuture)` 等待 scope 收敛。  
-  证据：`packages/kernel/src/primitives/join.ts`、`packages/host/src/primitives/join.ts`、`docs/api.md`
+- `join` 包装层已从 kernel / host 删除；scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达，示例调用点也已同步收口。  
+  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`、`docs/api.md`
 
 ## 3. 相对设计基线的新增增量
 
@@ -43,8 +43,8 @@
   影响：`resumable` 继续返回 future，但其 future 只代表 entry result；boundary 级失败传播由独立的 propagation path 处理。  
   证据：`packages/kernel/src/primitives/resumable.ts`
 - 设计基线现已移除 `join`：scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
-  影响：后续代码清理可直接删除 kernel/host 的 `join` 包装层，并把示例与调用点收口到 `wait`。  
-  证据：`docs/semantics.md`、`docs/api.md`
+  影响：调用面已收口到单一等待模型，后续不再需要额外的 `join` 包装。  
+  证据：`docs/semantics.md`、`docs/api.md`、`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`
 - 部分并发构造 primitive 已不再承诺“以子 scope 作为正常收敛边界”，因此实现面可以从 scope 驱动收口到更轻的 process/future 组合。  
   影响：`all` / `race` 一类组合子后续可优先评估以 `fork`、局部 future 与显式 relay 直接表达编排，而不是继续保留 supervisor scope 外壳。  
   证据：`docs/semantics.md`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
@@ -57,9 +57,8 @@
 1. 以文档基线为准，恢复 `scoped` 并把它收口为 blocking supervisor boundary。
 2. 引入 `guard(entry, recover)`，承接当前 `spawn` recovery mode 中的恢复委派协议与 future 返回面。
 3. 让 `spawn` 回到 standard-only，并让 `all` / `race` 回到默认失败上传语义。
-4. 移除 kernel/host 的 `join` 包装层，并把 scope 等待调用点统一收口到 `wait(scopeRef.exitFuture)`。
-5. 基于当前 `resumable` 的 entry-result / late-failure 分离语义，继续评估 `guard` 与 `spawn` recovery mode 的收口方案。
-6. 完成后再跑通 `@shajara/kernel` 的 typecheck / lint，并向上游包同步 API 变化。
+4. 基于当前 `resumable` 的 entry-result / late-failure 分离语义，继续评估 `guard` 与 `spawn` recovery mode 的收口方案。
+5. 完成后再跑通 `@shajara/kernel` 的 typecheck / lint，并向上游包同步 API 变化。
 
 当前状态更新：
 
@@ -69,8 +68,10 @@
    证据：`packages/kernel/src/primitives/guard.ts`、`packages/host/src/primitives/guard.ts`
 3. `spawn` 已回到 standard-only，并完成 kernel / host API 同步。  
    证据：`packages/kernel/src/primitives/spawn.ts`、`packages/host/src/primitives/spawn.ts`
-4. 下一步聚焦在删除 `join` 包装层、清理调用点，以及继续评估 `all` / `race` 的实现收口。  
-   证据：`packages/kernel/src/primitives/join.ts`、`packages/host/src/primitives/join.ts`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
+4. `join` 包装层已删除，scope 等待调用点已统一收口到 `wait(scopeRef.exitFuture)`。  
+   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
+5. 下一步聚焦在继续评估 `all` / `race` 的实现收口。  
+   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
 
 ## 5. 验证基线
 

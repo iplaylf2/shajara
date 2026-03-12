@@ -7,13 +7,11 @@ import { guard as kernelGuard } from "@shajara/kernel";
 
 export type RecoveryHandler = (error: ShajaraError) => RiteCoroutine<unknown>;
 
-export function* guard<Return>(
+export function guard<Return>(
   entry: RiteRoutine<Return>,
   recover: RecoveryHandler,
 ): RiteCoroutine<RiteFuture<Return>> {
-  return yield* encodeRitual(() =>
-    kernelGuard(decodeRitual(entry), toKernelRecoveryHandler(recover)),
-  )();
+  return encodeRitual(() => kernelGuard(decodeRitual(entry), toKernelRecoveryHandler(recover)))();
 }
 
 function toKernelRecoveryHandler(recover: RecoveryHandler) {

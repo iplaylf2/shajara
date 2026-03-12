@@ -4,8 +4,8 @@ import { decodeRituals, encodeRitual } from "#src/boundary";
 import type { RiteRoutineTuple } from "#src/boundary";
 import { race as kernelRace } from "@shajara/kernel";
 
-export function* race<Returns extends NonEmptyTuple<unknown>>(
+export function race<Returns extends NonEmptyTuple<unknown>>(
   primitives: RiteRoutineTuple<Returns>,
 ): RiteCoroutine<RiteFuture<ArrayValues<Returns>>> {
-  return yield* encodeRitual(() => kernelRace<Returns>(decodeRituals(primitives)))();
+  return encodeRitual(() => kernelRace<Returns>(decodeRituals(primitives)))();
 }

@@ -4,7 +4,6 @@ export * from "./bind";
 export * from "./cede";
 export * from "./future";
 export * from "./halt";
-export * from "./join";
 export * from "./lookup";
 export * from "./poll";
 export * from "./park";

@@ -1,24 +1,23 @@
-import type { RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
+import type { RiteCoroutine, RiteRoutine, ScopeRef, ShajaraError } from "@shajara/host";
 import { action, contextKey, messageKey, sleep, until } from "@shajara/host";
 import {
   all,
   bind,
   cede,
+  guard,
   halt,
-  join,
   lookup,
   park,
   race,
   receive,
-  resource,
   resumable,
+  scoped,
   self,
   send,
   spawn,
   unbind,
   wait,
 } from "@shajara/host/primitives";
-import type { ResourceProvide } from "@shajara/host/primitives";
 
 function getExampleScenario(name: ExampleScenarioName): RiteRoutine<unknown> {
   return EXAMPLE_SCENARIOS[name];
@@ -29,13 +28,13 @@ const EXAMPLE_SCENARIOS = {
   all: allRitual,
   bindLookup: bindLookupRitual,
   cede: childRitual,
+  guard: guardRitual,
   halt: haltRitual,
-  join: spawnRitual,
   park: parkRitual,
   race: raceRitual,
-  resource: resourceRitual,
   resumable: resumableRitual,
   run: runRitual,
+  scoped: scopedRitual,
   self: selfRitual,
   sendReceive: sendReceiveRitual,
   sleep: sleepRitual,
@@ -47,13 +46,18 @@ type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
 function* spawnRitual(): RiteCoroutine<void> {
   const spawned = yield* spawn(childRitual);
-  const joinedValue = yield* join(spawned);
+  const joinedValue = yield* wait(spawned.exitFuture);
   consume(joinedValue);
 }
 
-function* resourceRitual(): RiteCoroutine<void> {
-  const providedValue = yield* wait(yield* resource(resourceBodyRitual));
-  consume(providedValue);
+function* scopedRitual(): RiteCoroutine<void> {
+  const scopedValue = yield* scoped(childRitual);
+  consume(scopedValue);
+}
+
+function* guardRitual(): RiteCoroutine<void> {
+  const recoveredValue = yield* wait(yield* guard(guardedEntryRitual, recoverGuardFailure));
+  consume(recoveredValue);
 }
 
 function* resumableRitual(): RiteCoroutine<void> {
@@ -66,15 +70,17 @@ function* childRitual(): RiteCoroutine<string> {
   return "child done";
 }
 
-function* resourceBodyRitual(provide: ResourceProvide<string>): RiteCoroutine<void> {
-  const resourceValue = "resource-ready";
+function* guardedEntryRitual(): RiteCoroutine<string> {
+  return yield* wait(yield* resumable(failingResumableRitual));
+}
 
-  try {
-    yield* provide(resourceValue);
-  } finally {
-    // Cleanup path: should run when parent scope reclaims this resource scope.
-    yield* cede();
-  }
+function failingResumableRitual(): RiteCoroutine<string> {
+  throw new Error("guarded failure");
+}
+
+function* recoverGuardFailure(_error: ShajaraError): RiteCoroutine<string> {
+  yield* cede();
+  return "recovered";
 }
 
 function* allRitual(): RiteCoroutine<void> {
@@ -106,7 +112,7 @@ function* sendReceiveRitual(): RiteCoroutine<void> {
   const spawned = yield* spawn(() => senderRitual(callerRef));
   const value = yield* receive(EXAMPLE_MESSAGE_KEY);
   consume(value);
-  const joinedValue = yield* join(spawned);
+  const joinedValue = yield* wait(spawned.exitFuture);
   consume(joinedValue);
 }
 
