@@ -1,10 +1,4 @@
-import type {
-  ResourceProvide,
-  RiteCoroutine,
-  RiteRoutine,
-  ScopeRef,
-  ShajaraError,
-} from "@shajara/host";
+import type { ResourceProvide, RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
 import { action, contextKey, messageKey, resource, sleep, until } from "@shajara/host";
 import {
   all,
@@ -90,7 +84,7 @@ function failingResumableRitual(): RiteCoroutine<string> {
   throw new Error("guarded failure");
 }
 
-function* recoverGuardFailure(_error: ShajaraError): RiteCoroutine<string> {
+function* recoverGuardFailure(_error: Error): RiteCoroutine<string> {
   yield* cede();
   return "recovered";
 }

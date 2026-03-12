@@ -18,7 +18,7 @@ export function toFailureUnknown(caught: unknown): Failure {
   return externalFailure(caught, () => String(caught));
 }
 
-export function fromFailure(failure: Failure): ShajaraError {
+export function fromFailure(failure: Failure): Error {
   switch (failure.kind) {
     case "scope-halted":
       return new ScopeHaltedError();
@@ -26,6 +26,9 @@ export function fromFailure(failure: Failure): ShajaraError {
       return new ScopeTerminatedError();
     case "external": {
       const external = failure as ExternalFailure;
+      if (external.raw instanceof Error) {
+        return external.raw;
+      }
       return new ExternalError(external.raw, external.message());
     }
     default:

@@ -34,9 +34,11 @@ host 不引入第二执行循环，仅通过执行入口把降解后的 Ritual �
 
 ## 3. 失败通道分层
 
-kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保持可组合与可推理。host 在 primitive 适配边界统一解包：`Right` 直接返回成功值，`Left` 映射为 `ShajaraError` 抛出。用户侧维持"成功返回值、失败抛异常"的标准模型。
+kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保持可组合与可推理。host 在 primitive 适配边界统一解包：`Right` 直接返回成功值，`Left` 映射为宿主侧 `Error` 抛出。用户侧维持"成功返回值、失败抛异常"的标准模型。
 
-`Failure`（kernel 共享失败契约）不向用户侧暴露；host 将其包装为 `ShajaraError`（继承 `Error`），`terminated` 映射为 `ScopeTerminatedError`。
+`Failure`（kernel 共享失败契约）不向用户侧暴露；结构性 failure 在 host 侧映射为 `ShajaraError`（继承 `Error`）子类，`terminated` 映射为 `ScopeTerminatedError`；外部 failure 若携带原始 `Error`，则直接复用该实例。
+
+因此 `run` / `wait` 与 `guard(entry, recover)` 的恢复回调在 external failure 上都尽量保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；只有结构性 failure 才映射为 `ShajaraError` 子类。
 
 ## 4. 执行入口
 
