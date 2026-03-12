@@ -421,10 +421,10 @@ primitive 不等于 sigil：
 
 #### resumable(ritual) → Wisp\<FutureKey\<T\>\>
 
-声明可恢复边界，并返回恢复结果 future。`resumable` 负责恢复协议。`resumable` 在失败时查找 `resumableDelegateKey`：
+声明可恢复边界，并返回恢复结果 future。`resumable` 负责恢复协议，但它本身不构成失败隔离边界；未恢复的失败仍按默认失败上传语义使调用方 Scope 失败。`resumable` 在失败时查找 `resumableDelegateKey`：
 
-- 未命中：失败保持为 `Left(failure)`。
-- 命中：在当前 Scope 内创建 recovery future，把 `failure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待该 future 收敛。
+- 未命中：先把结果 future 收敛为 `Left(failure)`，再在调用方 Scope 内触发 `halt(failure)`。
+- 命中：把 `failure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待结果 future 收敛；若最终仍为 `Left(failure)`，则在调用方 Scope 内触发 `halt(failure)`。
 
 ### 6.4 future、等待与控制 primitives
 

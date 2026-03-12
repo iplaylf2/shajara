@@ -1,6 +1,6 @@
 import type { Failure, Ritual, ScopeRef, ScopeSpec, Wisp } from "#src/contracts";
 import { bind, fork, receive, self, settle, spawn as spawnSigil, wait } from "#src/sigils";
-import { resumableDelegateKey, resumableFailureMessageKey } from "#src/primitives-kit";
+import { resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
 import { standardScopeSpec, supervisorScopeSpec } from "#src/scopes";
 import type { Either } from "#src/utils";
 import type { ResumableRecoveryRequest } from "#src/primitives-kit";
@@ -65,7 +65,7 @@ function withRecoveryPoint<Relic>(
 function recoveryWorker(recover: SpawnRecoveryHandler): Ritual<never> {
   function loop(): Wisp<never> {
     return pipe(
-      receive(resumableFailureMessageKey),
+      receive(resumableFailureKey),
       wisp.liftF,
       wisp.chain((value) =>
         pipe(

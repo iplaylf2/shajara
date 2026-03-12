@@ -78,6 +78,8 @@ export namespace wisp {
     fromIO: (fa) => Pointed.of(fa()),
   };
 
+  export const { of } = Pointed;
+
   export const map = pipeable.map(Functor);
   export const ap = pipeable.ap(Apply);
   export const chain = pipeable.chain(Chain);

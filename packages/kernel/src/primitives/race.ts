@@ -17,8 +17,8 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
     wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
       spawn(raceArena(branches, winnerSettle), supervisorScopeSpec()),
     ),
-    wisp.chainFirst(({ arenaSelf: { scopeRef: arenaRef }, winner: [winnerFuture] }) =>
-      pipe(fork(raceBackstop(arenaRef.exitFuture, winnerFuture)), wisp.liftF),
+    wisp.chainFirstF(({ arenaSelf: { scopeRef: arenaRef }, winner: [winnerFuture] }) =>
+      fork(raceBackstop(arenaRef.exitFuture, winnerFuture)),
     ),
     wisp.map(({ winner: [winnerFuture] }) => winnerFuture),
   );
@@ -31,40 +31,37 @@ type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
 function raceArena(
   branches: ReadonlyArray<Ritual<unknown>>,
   winnerSettle: FutureSettleKey<unknown>,
-): Ritual<never> {
+) {
   return () =>
     pipe(
       branches,
       readonlyArray.map((branch) => pipe(fork(branchRunner(branch, winnerSettle)), wisp.liftF)),
       wisp.sequence,
-      wisp.chain(() => park()),
+      wisp.chain(park),
     );
 }
 
 function raceBackstop(failureFuture: FutureKey<never>, winnerFuture: FutureKey<unknown>) {
   return () =>
     pipe(
-      wait(failureFuture),
-      wisp.liftF,
-      wisp.chain((failure) =>
+      wisp.Do,
+      wisp.bindF("failureResult", () => wait(failureFuture)),
+      wisp.bindF("winnerResult", () => poll(winnerFuture)),
+      wisp.map(({ failureResult, winnerResult }) =>
         pipe(
-          winnerFuture,
-          poll,
-          wisp.liftF,
-          wispOption.match(
-            () => pipe(failure, narrowAs<either.Left<Failure>>(), (id) => id.left, option.some),
+          winnerResult,
+          option.match(
+            () => option.some(failureResult),
             (_result) => option.none,
           ),
         ),
       ),
-      wispOption.chainF(halt),
+      wispOption.map(narrowAs<either.Left<Failure>>()),
+      wispOption.chainF(({ left }) => halt(left)),
     );
 }
 
-function branchRunner(
-  branch: Ritual<unknown>,
-  winnerSettle: FutureSettleKey<unknown>,
-): Ritual<never> {
+function branchRunner(branch: Ritual<unknown>, winnerSettle: FutureSettleKey<unknown>) {
   return () =>
     pipe(
       branch(),

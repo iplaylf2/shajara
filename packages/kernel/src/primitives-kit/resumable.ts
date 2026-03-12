@@ -8,4 +8,4 @@ export interface ResumableRecoveryRequest<Relic> {
   readonly recoverySettle: FutureSettleKey<Relic>;
 }
 
-export const resumableFailureMessageKey = messageKey<ResumableRecoveryRequest<unknown>>();
+export const resumableFailureKey = messageKey<ResumableRecoveryRequest<unknown>>();

@@ -102,7 +102,7 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 | ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `spawn`     | `spawn(ritual) → ScopeRef`                   | 创建 standard 子 Scope 并引入并行分支。                                                                                                          |
 | `scoped`    | `scoped(ritual) → T`                         | 创建显式 supervisor boundary，并等待该子树收敛。                                                                                                 |
-| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明可恢复边界，并立即返回恢复结果 future。                                                                                                      |
+| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明可恢复边界，并立即返回恢复结果 future。若失败未被恢复，结果 future 收敛为失败后仍会按默认失败上传语义使调用方 scope 失败。                   |
 | `guard`     | `guard(entry, recover) → RiteFuture<T>`      | 为 `entry` 内部的 `resumable` 提供 `recover` 恢复处理，并立即返回该边界收敛结果对应的 future。`recover` 返回值视为恢复成功，抛异常视为恢复失败。 |
 | `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                                    |
 | `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                                        |

@@ -39,6 +39,9 @@
 - 设计基线现已明确：`spawn` 只创建 standard scope；`scoped` 创建 supervisor boundary 并阻塞收敛；`guard` 为 `resumable` 提供恢复委派点并返回该边界的 future。  
   影响：现有 `spawn(..., { mode: "supervisor" | "recovery" })` 需要拆回独立 primitive，`scoped` 需要从 future-returning 形态回到 blocking 形态，recovery mode 的返回面则迁到 `guard`。  
   证据：`docs/semantics.md`、`docs/api.md`
+- `resumable` 的结果 future 现在只承担观察面，不再吞掉默认失败上传：child supervisor 或 recovery 最终收敛为 `Left(failure)` 时，relay 会在调用方 scope 内补发一次 `halt(failure)`。  
+  影响：`resumable` 与 `race` 的 backstop 语义对齐，未恢复失败即使只被 future 观察，也不会悄悄降级为“纯值失败”。  
+  证据：`packages/kernel/src/primitives/resumable.ts`
 - 设计基线现已移除 `join`：scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
   影响：后续代码清理可直接删除 kernel/host 的 `join` 包装层，并把示例与调用点收口到 `wait`。  
   证据：`docs/semantics.md`、`docs/api.md`

@@ -22,7 +22,7 @@ type AllBranches<BranchReturns extends readonly unknown[]> = {
 
 function allAggregator<BranchReturns extends readonly unknown[]>(
   branches: AllBranches<BranchReturns>,
-): Ritual<BranchReturns> {
+) {
   return () =>
     pipe(
       branches,
