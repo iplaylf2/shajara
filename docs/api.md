@@ -96,14 +96,14 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 
 ### 4.1 并发构造
 
-| 原语        | 签名概要                                     | 说明                                                                                                                      |
-| ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(ritual) → ScopeRef`                   | 创建 standard 子 Scope 并引入并行分支。                                                                                   |
-| `scoped`    | `scoped(ritual) → T`                         | 创建显式 supervisor boundary，并等待该子树收敛。                                                                          |
-| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并立即返回该 entry 的 future。                                                       |
-| `guard`     | `guard(entry, recover) → RiteFuture<T>`      | 建立恢复边界；`entry` 定义子树范围，子树内 `resumable` 上送的 failure 由 `recover` 处理；调用立即返回该 entry 的 future。 |
-| `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                             |
-| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                 |
+| 原语        | 签名概要                                     | 说明                                                                                                                             |
+| ----------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `spawn`     | `spawn(ritual) → ScopeRef`                   | 创建 standard 子 Scope 并引入并行分支。                                                                                          |
+| `scoped`    | `scoped(ritual) → T`                         | 创建显式 supervisor boundary，并等待该子树收敛。                                                                                 |
+| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回该 entry process 的 future。                                                          |
+| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 为 `entry` 对应的子树建立恢复边界；该子树内 `resumable` 上送的 failure 由 `recover` 处理，并返回该子树入口 scope 的完成 future。 |
+| `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                    |
+| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                        |
 
 并发原语以结构化并发传播语义为默认形态；显式的 supervisor 收敛边界由 `scoped` 表达。
 

@@ -63,8 +63,7 @@ function* scopedRitual(): RiteCoroutine<void> {
 }
 
 function* guardRitual(): RiteCoroutine<void> {
-  const recoveredValue = yield* wait(yield* guard(guardedEntryRitual, recoverGuardFailure));
-  consume(recoveredValue);
+  yield* wait(yield* guard(guardedEntryRitual, recoverGuardFailure));
 }
 
 function* resourceRitual(): RiteCoroutine<void> {
@@ -82,8 +81,9 @@ function* childRitual(): RiteCoroutine<string> {
   return "child done";
 }
 
-function* guardedEntryRitual(): RiteCoroutine<string> {
-  return yield* wait(yield* resumable(failingResumableRitual));
+function* guardedEntryRitual(): RiteCoroutine<void> {
+  const recoveredValue = yield* wait(yield* resumable(failingResumableRitual));
+  consume(recoveredValue);
 }
 
 function failingResumableRitual(): RiteCoroutine<string> {

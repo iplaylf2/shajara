@@ -451,9 +451,9 @@ primitive 不等于 sigil：
 
 封装 Spawn sigil，创建 `StandardScope` 子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
 
-#### guard(entry, recover) → Wisp\<FutureKey\<T\>\>
+#### guard(entry, recover) → Wisp\<FutureKey\<void\>\>
 
-创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回 `entry` process 收敛结果对应的 future。
+创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 scope 的 `exitFuture<void>`。
 
 #### halt(failure?) → Wisp\<never\>
 

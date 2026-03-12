@@ -6,20 +6,17 @@ import type { ResumableRecoveryRequest } from "#src/primitives-kit";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
 
-export function guard<Relic>(
-  entry: Ritual<Relic>,
-  recover: RecoveryHandler,
-): Wisp<FutureKey<Relic>> {
+export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<FutureKey<void>> {
   return pipe(
     spawn(withRecoveryPoint(entry, recover)),
     wisp.liftF,
-    wisp.map(({ processRef }) => processRef.exitFuture),
+    wisp.map(({ scopeRef }) => scopeRef.exitFuture),
   );
 }
 
 export type RecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
 
-function withRecoveryPoint<Relic>(entry: Ritual<Relic>, recover: RecoveryHandler): Ritual<Relic> {
+function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
   return () =>
     pipe(
       self(),
@@ -30,7 +27,7 @@ function withRecoveryPoint<Relic>(entry: Ritual<Relic>, recover: RecoveryHandler
     );
 }
 
-function recoveryWorker(recover: RecoveryHandler): Ritual<never> {
+function recoveryWorker(recover: RecoveryHandler) {
   return function loop(): Wisp<never> {
     return pipe(
       receive(resumableFailureKey),
@@ -41,10 +38,7 @@ function recoveryWorker(recover: RecoveryHandler): Ritual<never> {
   };
 }
 
-function recoveryAttempt(
-  request: ResumableRecoveryRequest<unknown>,
-  recover: RecoveryHandler,
-): Ritual<void> {
+function recoveryAttempt(request: ResumableRecoveryRequest<unknown>, recover: RecoveryHandler) {
   return () =>
     pipe(
       recover(request.failure),

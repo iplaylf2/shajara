@@ -36,7 +36,7 @@
 - 设计基线原本允许部分 primitive 在调用方 process 内隐式等待；当前增量是把这类“创建新 scope 的等待协议”外显成 `FutureKey`。  
   影响：启动结构与结果等待解耦，调用方需要显式决定是否以及何时 `wait`。  
   证据：`docs/semantics.md`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
-- 设计基线现已明确：`spawn` 只创建 standard scope；`scoped` 创建 supervisor boundary 并阻塞收敛；`guard` 为 `resumable` 提供恢复委派点并返回该边界的 future。  
+- 设计基线现已明确：`spawn` 只创建 standard scope；`scoped` 创建 supervisor boundary 并阻塞收敛；`guard` 为 `resumable` 提供恢复委派点，并返回 guarded subtree 入口 scope 的 `FutureKey<void>`。  
   影响：原先折叠在 `spawn(..., { mode: ... })` 的 supervisor / recovery 语义已拆回独立 primitive；后续调用点与文档应直接使用 `spawn` / `scoped` / `guard` 的分离模型。  
   证据：`docs/semantics.md`、`docs/api.md`
 - `resumable` 当前语义已收口为“entry failure 可恢复，entry success 之后的晚到 traced failure 只传播不恢复”。  
@@ -54,23 +54,23 @@
 
 ## 4. 下一步（Build 聚焦）
 
-1. 以文档基线为准，恢复 `scoped` 并把它收口为 blocking supervisor boundary。
-2. 引入 `guard(entry, recover)`，承接当前 `spawn` recovery mode 中的恢复委派协议与 future 返回面。
-3. 让 `spawn` 回到 standard-only，并让 `all` / `race` 回到默认失败上传语义。
-4. 基于当前 `resumable` 的 entry-result / late-failure 分离语义，继续评估 `guard` 与 `spawn` recovery mode 的收口方案。
-5. 完成后再跑通 `@shajara/kernel` 的 typecheck / lint，并向上游包同步 API 变化。
+1. 继续评估 `all` / `race` 的实现收口，判断是否保留当前 supervisor-driven 外壳。
+2. 基于当前 `resumable` 的 entry-result / late-failure 分离语义，继续验证 `guard` 的恢复委派边界是否稳定。
+3. 在后续实现收口过程中，持续同步 kernel / host / example 的 API 与示例调用面。
 
 当前状态更新：
 
 1. `scoped` 已恢复并收口为 blocking supervisor boundary。  
    证据：`packages/kernel/src/primitives/scoped.ts`、`packages/host/src/primitives/scoped.ts`
-2. `guard(entry, recover)` 已落地，并与 `resumable` 配对形成恢复边界；其返回面已收口到 entry-result future。  
+2. `guard(entry, recover)` 已落地，并与 `resumable` 配对形成恢复边界；其返回面已收口到 guarded subtree 入口 scope 的 `FutureKey<void>`。  
    证据：`packages/kernel/src/primitives/guard.ts`、`packages/host/src/primitives/guard.ts`
 3. `spawn` 已回到 standard-only，并完成 kernel / host API 同步。  
    证据：`packages/kernel/src/primitives/spawn.ts`、`packages/host/src/primitives/spawn.ts`
 4. `join` 包装层已删除，scope 等待调用点已统一收口到 `wait(scopeRef.exitFuture)`。  
    证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
-5. 下一步聚焦在继续评估 `all` / `race` 的实现收口。  
+5. `example` 已按新的 `guard` 契约完成类型同步。  
+   证据：`apps/example/src/scenarios.ts`
+6. 下一步聚焦在继续评估 `all` / `race` 的实现收口。  
    证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
 
 ## 5. 验证基线
@@ -84,4 +84,4 @@ yarn workspace @shajara/host lint
 
 当前与本次文档调整直接相关的验证状态：
 
-- 已执行并通过：`@shajara/kernel` 与 `@shajara/host` 的 `typecheck`、`lint`。
+- 已执行并通过：`@shajara/kernel`、`@shajara/host` 与仓库全量的 `typecheck`。
