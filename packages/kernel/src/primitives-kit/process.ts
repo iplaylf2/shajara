@@ -1,9 +1,10 @@
-import type { ProcessRef, Wisp } from "#src/contracts";
-import type { Right } from "#src/utils";
+import type { FutureKey, ProcessRef, Ritual, Wisp } from "#src/contracts";
+import { flow, pipe } from "fp-ts/function";
+import { fork, halt, spawn, wait } from "#src/sigils";
+import { wisp, wispEither } from "#src/internal/fp";
+import type { either } from "fp-ts";
 import { narrowAs } from "#src/utils";
-import { pipe } from "fp-ts/function";
-import { wait } from "#src/primitives/wait";
-import { wisp } from "#src/internal/fp";
+import { supervisorScopeSpec } from "#src/scopes";
 
 /**
  * Awaits a process through the in-band completion path only.
@@ -12,7 +13,21 @@ import { wisp } from "#src/internal/fp";
 export function awaitProcessInBand<Relic>(processRef: ProcessRef<Relic>): Wisp<Relic> {
   return pipe(
     wait(processRef.exitFuture),
-    wisp.map(narrowAs<Right<Relic>>()),
+    wisp.liftF,
+    wisp.map(narrowAs<either.Right<Relic>>()),
     wisp.map(({ right }) => right),
   );
+}
+
+export function resolvePrimary<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
+  return pipe(
+    spawn(entry, supervisorScopeSpec()),
+    wisp.liftF,
+    wisp.chainFirstF(({ scopeRef }) => fork(propagateFailure(scopeRef.exitFuture))),
+    wisp.map(({ processRef }) => processRef.exitFuture),
+  );
+}
+
+function propagateFailure(boundaryFuture: FutureKey<unknown>) {
+  return () => pipe(wait(boundaryFuture), wisp.liftF, wispEither.orElse(flow(halt, wisp.liftF)));
 }

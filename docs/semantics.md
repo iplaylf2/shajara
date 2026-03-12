@@ -453,7 +453,7 @@ primitive 不等于 sigil：
 
 #### guard(entry, recover) → Wisp\<FutureKey\<T\>\>
 
-创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复委派点，同时返回该边界收敛结果对应的 future。`entry` 为该边界中的主体 ritual；`recover` 作为恢复处理器接收失败请求，并通过请求携带的 future settle key 回传恢复结果。
+创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回 `entry` process 收敛结果对应的 future。
 
 #### halt(failure?) → Wisp\<never\>
 

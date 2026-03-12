@@ -13,6 +13,8 @@ export * from "./park";
 export * from "./receive";
 export * from "./race";
 export * from "./resumable";
+export * from "./guard";
+export * from "./scoped";
 export * from "./self";
 export * from "./send";
 export * from "./spawn";
