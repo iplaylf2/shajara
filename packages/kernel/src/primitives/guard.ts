@@ -30,7 +30,7 @@ function withRecoveryPoint<Relic>(
       wisp.liftF,
       wisp.chainF(({ scopeRef }) => bind(resumableDelegateKey, scopeRef)),
       wisp.chainF(() => fork(recoveryWorker(recover), { participation: "auxiliary" })),
-      wisp.chain(() => entry()),
+      wisp.chain(entry),
     );
 }
 
@@ -40,7 +40,7 @@ function recoveryWorker(recover: GuardRecoveryHandler): Ritual<never> {
       receive(resumableFailureKey),
       wisp.liftF,
       wisp.chainF((value) => fork(recoveryAttempt(value, recover))),
-      wisp.chain(() => loop()),
+      wisp.chain(loop),
     );
   };
 }

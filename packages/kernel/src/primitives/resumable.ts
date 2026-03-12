@@ -8,12 +8,12 @@ import { either } from "fp-ts";
 export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
     resolvePrimary(entry),
-    wisp.chainF((entryFuture) => fork(tryResume(entryFuture))),
+    wisp.chainF((entryFuture) => fork(resumeAttempt(entryFuture))),
     wisp.map(({ exitFuture }) => exitFuture),
   );
 }
 
-function tryResume<Relic>(entryFuture: FutureKey<Relic>) {
+function resumeAttempt<Relic>(entryFuture: FutureKey<Relic>) {
   return () =>
     pipe(
       wait(entryFuture),
