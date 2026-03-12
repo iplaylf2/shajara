@@ -82,6 +82,14 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 桥接一个 promise thunk，等待完成后返回结果值，reject 按异常传播。
 
+### resource
+
+```ts
+yield* resource<T>(body: (provide) => ...): RiteFuture<T>
+```
+
+声明一个带 cleanup 的作用域协议；`body` 通过 `provide(value)` 暴露值，并在所属 scope 回收时执行 cleanup。
+
 ---
 
 ## 4. 编排原语
@@ -98,7 +106,6 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `guard`     | `guard(entry, recover) → RiteFuture<T>`      | 为 `entry` 内部的 `resumable` 提供 `recover` 恢复处理，并立即返回该边界收敛结果对应的 future。`recover` 返回值视为恢复成功，抛异常视为恢复失败。 |
 | `all`       | `all(rituals) → RiteFuture<T>`               | 聚合启动多个分支，立即返回 future；需要配合 `wait` 显式等待。                                                                                    |
 | `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 选择最先完成者，触发其余分支收敛；调用本身不阻塞，需显式 `wait`。`rituals` 为非空 tuple（至少一个分支）。                                        |
-| `resource`  | `resource(body) → RiteFuture<T>`             | 创建资源作用域并立即返回首个 `provide(value)` 的 future；资源作用域在 provide 后挂起，父 scope 回收时清理。                                      |
 
 并发原语以结构化并发传播语义为默认形态；显式的 supervisor 收敛边界由 `scoped` 表达。
 

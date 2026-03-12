@@ -419,10 +419,6 @@ primitive 不等于 sigil：
 
 创建一个显式 `SupervisorScope` 子 Scope，并等待该子 Scope 收敛。`scoped` 表达独立的 supervisor boundary，用于承载一个子树的收敛结果。
 
-#### resource(body) → Wisp\<FutureKey\<T\>\>
-
-创建资源作用域。body 接收 `provide: (value) → Wisp<never>`；primitive 返回首个 `provide` 结果对应的 future，资源作用域在 provide 后持续挂起，在父 Scope 回收时清理。`resource` 的 body 运行在默认的结构化并发传播语义中；需要显式收敛子树时，可在 body 内使用 `scoped`。
-
 #### resumable(ritual) → Wisp\<FutureKey\<T\>\>
 
 声明可恢复边界，并返回恢复结果 future。`resumable` 负责恢复协议。`resumable` 在失败时查找 `resumableDelegateKey`：

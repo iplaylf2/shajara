@@ -16,6 +16,10 @@ export function all<BranchReturns extends readonly unknown[]>(
   );
 }
 
+type AllBranches<BranchReturns extends readonly unknown[]> = {
+  readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
+};
+
 function allAggregator<BranchReturns extends readonly unknown[]>(
   branches: AllBranches<BranchReturns>,
 ): Ritual<BranchReturns> {
@@ -29,7 +33,3 @@ function allAggregator<BranchReturns extends readonly unknown[]>(
       wisp.map(narrowArrayAs<BranchReturns>()),
     );
 }
-
-type AllBranches<BranchReturns extends readonly unknown[]> = {
-  readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
-};
