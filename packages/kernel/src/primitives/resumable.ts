@@ -10,15 +10,20 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
     spawn(entry, supervisorScopeSpec()),
     wisp.liftF,
-    wisp.chainF(({ scopeRef }) => fork(resumableBackstop(scopeRef.exitFuture))),
+    wisp.chainFirstF(({ scopeRef }) => fork(propagateFailure(scopeRef.exitFuture))),
+    wisp.chainF(({ processRef }) => fork(resolveEntry(processRef.exitFuture))),
     wisp.map(({ exitFuture }) => exitFuture),
   );
 }
 
-function resumableBackstop<Relic>(boundaryFuture: FutureKey<Relic>) {
+function propagateFailure(boundaryFuture: FutureKey<unknown>) {
+  return () => pipe(wait(boundaryFuture), wisp.liftF, wispEither.orElse(flow(halt, wisp.liftF)));
+}
+
+function resolveEntry<Relic>(entryFuture: FutureKey<Relic>) {
   return () =>
     pipe(
-      wait(boundaryFuture),
+      wait(entryFuture),
       wisp.liftF,
       wispEither.orElse((failure) =>
         pipe(

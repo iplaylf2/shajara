@@ -19,12 +19,12 @@
   证据：`packages/kernel/src/primitives/all.ts`
 - `race` 已改为返回由 arena 内部 settle 的 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，外层不再隐式 await。  
   证据：`packages/kernel/src/primitives/race.ts`
-- `resumable` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，外层通过 `scopeRef.exitFuture` 接到 recovery 逻辑。  
+- `resumable` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`；当前实现把 entry process 的结果归约与 traced scope 的后续失败传播拆成两条路径。  
   证据：`packages/kernel/src/primitives/resumable.ts`
 - `resource` 已从 kernel / host 的公开 primitive 面移除。当前判断是：它的主要语义与资源 cleanup 紧耦合，属于 host 资源协议而不是 kernel 并发代数；本轮仅移除，不引入替代 operation，也不下沉为 host bridge operation。  
   证据：`docs/api.md`、`docs/semantics.md`、`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`
-- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureSettleKey` 后直接 settle future”，最终结果 future 现在直接由 `forkFuture(scopeRef.exitFuture, ...)` 派生。  
-  影响：去掉了 `delegateWorker` 那层额外 scope；`resumable` 现在由单个 result future + `forkFuture` relay 表达最终收敛，恢复结果走单次收敛语义而不是额外 mailbox。  
+- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureSettleKey` 后直接 settle future”；当前 future 对应的是 entry process 的结果，而不是整个 supervisor boundary 的最终收敛。  
+  影响：去掉了 `delegateWorker` 那层额外 scope；恢复结果现在走单次收敛语义而不是额外 mailbox，同时避免了 “entry 已成功但又被后续 traced failure 改写为 recovery 值” 的冲突。  
   证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
 - 代码当前仍未导出 `scoped`，并且 `spawn` 仍暴露 supervisor / recovery 两类 mode。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/kernel/src/primitives/spawn.ts`
@@ -39,8 +39,8 @@
 - 设计基线现已明确：`spawn` 只创建 standard scope；`scoped` 创建 supervisor boundary 并阻塞收敛；`guard` 为 `resumable` 提供恢复委派点并返回该边界的 future。  
   影响：现有 `spawn(..., { mode: "supervisor" | "recovery" })` 需要拆回独立 primitive，`scoped` 需要从 future-returning 形态回到 blocking 形态，recovery mode 的返回面则迁到 `guard`。  
   证据：`docs/semantics.md`、`docs/api.md`
-- `resumable` 的结果 future 现在只承担观察面，不再吞掉默认失败上传：child supervisor 或 recovery 最终收敛为 `Left(failure)` 时，relay 会在调用方 scope 内补发一次 `halt(failure)`。  
-  影响：`resumable` 与 `race` 的 backstop 语义对齐，未恢复失败即使只被 future 观察，也不会悄悄降级为“纯值失败”。  
+- `resumable` 当前语义已收口为“entry failure 可恢复，entry success 之后的晚到 traced failure 只传播不恢复”。  
+  影响：`resumable` 继续返回 future，但其 future 只代表 entry result；boundary 级失败传播由独立的 propagation path 处理。  
   证据：`packages/kernel/src/primitives/resumable.ts`
 - 设计基线现已移除 `join`：scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
   影响：后续代码清理可直接删除 kernel/host 的 `join` 包装层，并把示例与调用点收口到 `wait`。  
@@ -58,7 +58,7 @@
 2. 引入 `guard(entry, recover)`，承接当前 `spawn` recovery mode 中的恢复委派协议与 future 返回面。
 3. 让 `spawn` 回到 standard-only，并让 `all` / `race` 回到默认失败上传语义。
 4. 移除 kernel/host 的 `join` 包装层，并把 scope 等待调用点统一收口到 `wait(scopeRef.exitFuture)`。
-5. 对不再承诺 scope 边界收敛的并发 primitive，优先评估以 `fork`、future 与最小 relay 直接表达实现，去掉为收敛而保留的 supervisor 外壳。
+5. 基于当前 `resumable` 的 entry-result / late-failure 分离语义，继续评估 `guard` 与 `spawn` recovery mode 的收口方案。
 6. 完成后再跑通 `@shajara/kernel` 的 typecheck / lint，并向上游包同步 API 变化。
 
 ## 5. 验证基线
