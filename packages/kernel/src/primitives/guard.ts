@@ -1,9 +1,8 @@
 import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
-import { bind, fork, receive, self, settle, spawn, wait } from "#src/sigils";
-import { resolvePrimary, resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
+import { bind, fork, receive, self, settle, spawn } from "#src/sigils";
+import { resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
 import type { Either } from "#src/utils";
 import type { ResumableRecoveryRequest } from "#src/primitives-kit";
-import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#src/internal/fp";
 
@@ -48,9 +47,7 @@ function recoveryAttempt(
 ): Ritual<void> {
   return () =>
     pipe(
-      resolvePrimary(() => recover(request.failure)),
-      wisp.chainF(wait),
-      wisp.map(either.flatten),
+      recover(request.failure),
       wisp.chainF((recovery) => settle(request.recoverySettle, recovery)),
     );
 }
