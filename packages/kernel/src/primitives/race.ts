@@ -4,7 +4,6 @@ import { either, option, readonlyArray } from "fp-ts";
 import { fork, future, halt, poll, settle, spawn, wait } from "#src/sigils";
 import { wisp, wispOption } from "#src/internal/fp";
 import { narrowAs } from "#src/utils";
-import { park } from "#src/primitives-kit";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
 
@@ -37,11 +36,10 @@ function raceArena(
       branches,
       readonlyArray.map((branch) => pipe(fork(branchRunner(branch, winnerSettle)), wisp.liftF)),
       wisp.sequence,
-      wisp.chain(park),
     );
 }
 
-function raceBackstop(failureFuture: FutureKey<never>, winnerFuture: FutureKey<unknown>) {
+function raceBackstop(failureFuture: FutureKey<unknown>, winnerFuture: FutureKey<unknown>) {
   return () =>
     pipe(
       wisp.Do,

@@ -1,6 +1,6 @@
-import { decodeRitual } from "#src/boundary";
 import type { RiteCoroutine, RiteFuture } from "#src/contracts";
 import { future, park, settle } from "#src/primitives";
+import { decodeRitual } from "#src/boundary";
 import { fork } from "@shajara/kernel/sigils";
 
 export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteFuture<Value>> {

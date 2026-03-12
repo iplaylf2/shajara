@@ -1,5 +1,5 @@
 import type { ECHO_TOKEN, ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
-import { standardScopeSpec } from "#src/scopes/standard";
+import { standardScopeSpec } from "#src/scopes";
 
 export function spawn<Relic>(
   entry: Ritual<Relic>,
