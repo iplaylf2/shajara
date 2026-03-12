@@ -21,8 +21,8 @@
   证据：`packages/kernel/src/primitives/race.ts`
 - `resumable` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`；当前实现把 entry process 的结果归约与 traced scope 的后续失败传播拆成两条路径。  
   证据：`packages/kernel/src/primitives/resumable.ts`
-- `resource` 已从 kernel / host 的公开 primitive 面移除。当前判断是：它的主要语义与资源 cleanup 紧耦合，属于 host 资源协议而不是 kernel 并发代数；本轮仅移除，不引入替代 operation，也不下沉为 host bridge operation。  
-  证据：`docs/api.md`、`docs/semantics.md`、`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`
+- `resource` 未回到 kernel primitive 面，但已作为 host operation 恢复。  
+  证据：`packages/host/src/operations/resource.ts`、`packages/host/src/operations/index.ts`、`docs/api.md`
 - `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureSettleKey` 后直接 settle future”；当前 future 对应的是 entry process 的结果，而不是整个 supervisor boundary 的最终收敛。  
   影响：去掉了 `delegateWorker` 那层额外 scope；恢复结果现在走单次收敛语义而不是额外 mailbox，同时避免了 “entry 已成功但又被后续 traced failure 改写为 recovery 值” 的冲突。  
   证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/guard.ts`、`packages/kernel/src/primitives-kit/resumable.ts`

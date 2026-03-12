@@ -1,5 +1,11 @@
-import type { RiteCoroutine, RiteRoutine, ScopeRef, ShajaraError } from "@shajara/host";
-import { action, contextKey, messageKey, sleep, until } from "@shajara/host";
+import type {
+  ResourceProvide,
+  RiteCoroutine,
+  RiteRoutine,
+  ScopeRef,
+  ShajaraError,
+} from "@shajara/host";
+import { action, contextKey, messageKey, resource, sleep, until } from "@shajara/host";
 import {
   all,
   bind,
@@ -32,6 +38,7 @@ const EXAMPLE_SCENARIOS = {
   halt: haltRitual,
   park: parkRitual,
   race: raceRitual,
+  resource: resourceRitual,
   resumable: resumableRitual,
   run: runRitual,
   scoped: scopedRitual,
@@ -60,6 +67,11 @@ function* guardRitual(): RiteCoroutine<void> {
   consume(recoveredValue);
 }
 
+function* resourceRitual(): RiteCoroutine<void> {
+  const providedValue = yield* wait(yield* resource(resourceBodyRitual));
+  consume(providedValue);
+}
+
 function* resumableRitual(): RiteCoroutine<void> {
   const bodyResult = yield* wait(yield* resumable(childRitual));
   consume(bodyResult);
@@ -81,6 +93,14 @@ function failingResumableRitual(): RiteCoroutine<string> {
 function* recoverGuardFailure(_error: ShajaraError): RiteCoroutine<string> {
   yield* cede();
   return "recovered";
+}
+
+function* resourceBodyRitual(provide: ResourceProvide<string>): RiteCoroutine<void> {
+  try {
+    yield* provide("resource-ready");
+  } finally {
+    yield* cede();
+  }
 }
 
 function* allRitual(): RiteCoroutine<void> {

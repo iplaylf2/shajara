@@ -82,6 +82,14 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 桥接一个 promise thunk，等待完成后返回结果值，reject 按异常传播。
 
+### resource
+
+```ts
+yield* resource<T>(body: (provide) => ...): RiteFuture<T>
+```
+
+声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并在所属 scope 回收时执行 cleanup。
+
 ## 4. 编排原语
 
 原语调用返回 `RiteCoroutine`；在 `RiteRoutine` 内通过 `yield*` 使用时，得到该原语的结果值。
