@@ -1,7 +1,7 @@
 import type { RiteCoroutine, RiteFuture } from "#src/contracts";
 import { future, park, settle } from "#src/primitives";
 import { decodeRitual } from "#src/boundary";
-import { fork } from "@shajara/kernel/sigils";
+import { spawn } from "@shajara/kernel/sigils";
 
 export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteFuture<Value>> {
   const [resourceFuture, resourceSettle] = yield* future<Value>();
@@ -11,7 +11,7 @@ export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteF
     return yield* park();
   }
 
-  yield fork(decodeRitual(() => body(provide)));
+  yield spawn(decodeRitual(() => body(provide)));
 
   return resourceFuture;
 }

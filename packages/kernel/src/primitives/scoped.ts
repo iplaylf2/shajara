@@ -1,5 +1,5 @@
 import type { Failure, Ritual, Wisp } from "#src/contracts";
-import { spawn, wait } from "#src/sigils";
+import { branch, wait } from "#src/sigils";
 import type { Either } from "#src/utils";
 import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
@@ -7,7 +7,7 @@ import { wisp } from "#src/internal/fp";
 
 export function scoped<Relic>(entry: Ritual<Relic>): Wisp<Either<Failure, Relic>> {
   return pipe(
-    spawn(entry, supervisorScopeSpec()),
+    branch(entry, supervisorScopeSpec()),
     wisp.liftF,
     wisp.chainF(({ scopeRef }) => wait(scopeRef.exitFuture)),
   );

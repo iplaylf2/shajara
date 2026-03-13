@@ -1,25 +1,29 @@
-import type { ECHO_TOKEN, ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
-import { standardScopeSpec } from "#src/scopes";
+import type { ECHO_TOKEN, ProcessRef, Ritual, Sigil } from "#src/contracts";
+import type { PartialDeep } from "type-fest";
+import defaults from "defaults";
 
-export function spawn<Relic>(
-  entry: Ritual<Relic>,
-  spec: ScopeSpec = standardScopeSpec(),
-): SpawnSigil<Relic> {
+export function spawn<Relic, Process extends ProcessRef<Relic>>(
+  ritual: Ritual<Relic>,
+  options?: PartialDeep<SpawnConfig>,
+): SpawnSigil<Relic, Process> {
+  const config = defaults(options ?? {}, { participation: "tracked" } as const);
+
   return {
-    entry,
     kind: "spawn",
-    spec,
+    participation: config.participation,
+    ritual,
   };
 }
 
-export interface SpawnSigil<Relic> extends Sigil {
+export interface SpawnSigil<Relic, Process extends ProcessRef<Relic>> extends Sigil {
   readonly kind: "spawn";
-  readonly entry: Ritual<Relic>;
-  readonly spec: ScopeSpec;
-  readonly [ECHO_TOKEN]?: readonly [SpawnDescriptor<Relic>];
+  readonly ritual: Ritual<Relic>;
+  readonly participation: SpawnParticipation;
+  readonly [ECHO_TOKEN]?: readonly [Process];
 }
 
-export interface SpawnDescriptor<Relic> {
-  readonly scopeRef: ScopeRef<Relic>;
-  readonly processRef: ProcessRef<Relic>;
+export interface SpawnConfig {
+  readonly participation: SpawnParticipation;
 }
+
+export type SpawnParticipation = "tracked" | "auxiliary";

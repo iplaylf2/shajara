@@ -8,7 +8,7 @@
 
 当前工作以文档基线收口为先。现行基线已经明确：
 
-- `fork` 是公开并发原语，返回分支结果的 `Future`
+- `spawn` 是公开并发原语，返回分支结果的 `Future`
 - `scoped`、`guard`、`resumable` 负责引入新的 `Scope`
 - future 与上下文值都归属当前 `Scope`
 
@@ -23,10 +23,10 @@
 
 ## 3. 当前已落地状态
 
-- `fork` 已成为公开并发 primitive，kernel/host 都直接返回分支结果 future。  
-  证据：`packages/kernel/src/primitives/fork.ts`、`packages/host/src/primitives/fork.ts`
-- `spawn` 已退出 public primitive 导出面，仅作为 kernel 内部 sigil 保留。  
-  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`packages/kernel/src/sigils/spawn.ts`
+- `spawn` 已成为公开并发 primitive，kernel/host 都直接返回分支结果 future。  
+  证据：`packages/kernel/src/primitives/spawn.ts`、`packages/host/src/primitives/spawn.ts`
+- `branch` 已退出 public primitive 导出面，仅作为 kernel 内部 sigil 保留。  
+  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`packages/kernel/src/sigils/branch.ts`
 - `send` / `receive` 已退出 public primitive 导出面；mailbox 仅保留为 kernel 内部消息协议能力。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
 - `all` 返回 `FutureKey<T>`。  
@@ -53,7 +53,7 @@
 
 ## 5. 下一步
 
-1. 评估 `all` / `race` 是否直接以 `fork` + future 组合表达。
+1. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
 2. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
 
 ## 6. 验证基线

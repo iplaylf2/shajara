@@ -1,5 +1,5 @@
 import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
-import { bind, fork, receive, self, settle, spawn } from "#src/sigils";
+import { bind, branch, receive, self, settle, spawn } from "#src/sigils";
 import { resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
 import type { Either } from "#src/utils";
 import type { ResumableRecoveryRequest } from "#src/primitives-kit";
@@ -8,7 +8,7 @@ import { wisp } from "#src/internal/fp";
 
 export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<FutureKey<void>> {
   return pipe(
-    spawn(withRecoveryPoint(entry, recover)),
+    branch(withRecoveryPoint(entry, recover)),
     wisp.liftF,
     wisp.map(({ scopeRef }) => scopeRef.exitFuture),
   );
@@ -22,7 +22,7 @@ function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
       self(),
       wisp.liftF,
       wisp.chainF(({ scopeRef }) => bind(resumableDelegateKey, scopeRef)),
-      wisp.chainF(() => fork(recoveryWorker(recover), { participation: "auxiliary" })),
+      wisp.chainF(() => spawn(recoveryWorker(recover), { participation: "auxiliary" })),
       wisp.chain(entry),
     );
 }
@@ -32,7 +32,7 @@ function recoveryWorker(recover: RecoveryHandler) {
     return pipe(
       receive(resumableFailureKey),
       wisp.liftF,
-      wisp.chainF((value) => fork(recoveryAttempt(value, recover))),
+      wisp.chainF((value) => spawn(recoveryAttempt(value, recover))),
       wisp.chain(loop),
     );
   };

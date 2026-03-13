@@ -1,7 +1,7 @@
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";
-export * from "./fork";
+export * from "./spawn";
 export * from "./future";
 export * from "./halt";
 export * from "./lookup";
@@ -9,6 +9,6 @@ export * from "./poll";
 export * from "./send";
 export * from "./receive";
 export * from "./self";
-export * from "./spawn";
+export * from "./branch";
 export * from "./settle";
 export * from "./unbind";

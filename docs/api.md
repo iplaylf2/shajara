@@ -112,7 +112,7 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 
 | 原语        | 签名概要                                     | 说明                                                                                                                 |
 | ----------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `fork`      | `fork(ritual) → RiteFuture<T>`               | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                       |
+| `spawn`     | `spawn(ritual) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                       |
 | `scoped`    | `scoped(ritual) → T`                         | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                 |
 | `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                           |
 | `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败交给 `recover(error)` 处理。                                      |
@@ -141,7 +141,7 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 ## 6. 使用方式
 
 - 原语通过 `yield* 原语(...)` 调用。
-- 需要并发结果句柄时，使用 `fork` 返回的 `RiteFuture`。
+- 需要并发结果句柄时，使用 `spawn` 返回的 `RiteFuture`。
 - 需要显式等待结果时，使用 `wait(future)`。
 - 需要独立收敛或恢复语义时，使用 `scoped`、`guard`、`resumable`。
 - generator 侧成功通过返回值表达，失败由 host 以异常抛出传播。

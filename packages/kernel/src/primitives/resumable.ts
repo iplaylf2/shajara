@@ -1,6 +1,6 @@
 import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
 import { flow, pipe } from "fp-ts/function";
-import { fork, future, halt, lookup, send, wait } from "#src/sigils";
+import { future, halt, lookup, send, spawn, wait } from "#src/sigils";
 import { resolvePrimary, resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
 import { wisp, wispEither } from "#src/internal/fp";
 import { either } from "fp-ts";
@@ -8,7 +8,7 @@ import { either } from "fp-ts";
 export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
     resolvePrimary(entry),
-    wisp.chainF((entryFuture) => fork(resumeAttempt(entryFuture))),
+    wisp.chainF((entryFuture) => spawn(resumeAttempt(entryFuture))),
     wisp.map(({ exitFuture }) => exitFuture),
   );
 }

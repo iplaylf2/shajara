@@ -154,12 +154,12 @@ owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会
 
 ### 3.1 调度原则：广度优先
 
-当前持有 Processor 的 Process 连续解释其 Wisp，直到遇到 `[Blocking]` sigil 或退出；`[Non-Blocking]` sigil（如 Spawn、Fork）创建的新 Process 进入 EventQueue 末端，不中断当前执行。
+当前持有 Processor 的 Process 连续解释其 Wisp，直到遇到 `[Blocking]` sigil 或退出；`[Non-Blocking]` sigil（如 Branch、Spawn）创建的新 Process 进入 EventQueue 末端，不中断当前执行。
 
 直接推论：
 
 - 同一 Process 内的连续 Non-Blocking sigil 序列在一次 Processor 持有期间原子完成。
-- Spawn/Fork 语义是"注册将来执行的 Process"，不是立即转移控制权。
+- Branch/Spawn 语义是"注册将来执行的 Process"，不是立即转移控制权。
 
 ### 3.2 反应相（Drain）
 
@@ -228,7 +228,7 @@ Process 与 Scope 均有三种互斥终态：
 
 ### 4.4 Closing 门控
 
-调用方 Scope 为 Closing 时：`Spawn/Fork` 失败；其他 sigil 按定义执行。
+调用方 Scope 为 Closing 时：`Branch/Spawn` 失败；其他 sigil 按定义执行。
 
 ### 4.5 终态上传策略
 
@@ -281,14 +281,14 @@ executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果�
 
 ### 6.1 创建
 
-#### Spawn(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
+#### Branch(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
 
 在调用方 Scope 下创建子 Scope 与根 Process。默认创建 `StandardScope`，可通过 `spec` 指定角色。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
 
-#### Fork(ritual, options?) → { processRef } `[Non-Blocking]`
+#### Spawn(ritual, options?) → { processRef } `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
@@ -298,7 +298,7 @@ executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果�
 
 #### 治理 Scope 创建 `[Non-Blocking]`
 
-kernel 支持通过 sigil 创建 `GovernorScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Spawn(ritual, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `GovernorScope → 执行子树根 Scope`。
+kernel 支持通过 sigil 创建 `GovernorScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Branch(ritual, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `GovernorScope → 执行子树根 Scope`。
 
 治理角色的 `spec` 契约：
 
@@ -396,7 +396,7 @@ Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
-- **封装 Process 脆弱性**：sigil 层暴露的 `Fork` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待、待定的 `Terminate(processRef)`）被封装在 primitive 内部；用户通过 `fork`、boundary primitive 与 future 观察面表达并发与收敛。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待、待定的 `Terminate(processRef)`）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
 
 primitive 不等于 sigil：
 
@@ -419,9 +419,9 @@ primitive 不等于 sigil：
 
 选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；参赛分支共享同一个 race `Scope`，返回的 future 用于观察 race 结果。
 
-#### fork(ritual) → Wisp\<FutureKey\<T\>\>
+#### spawn(ritual) → Wisp\<FutureKey\<T\>\>
 
-封装 `Fork` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`fork` 表达的是当前 `Scope` 内的并发分支，以及该分支结果的 future 观察面。
+封装 `Spawn` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`spawn` 表达的是当前 `Scope` 内的并发分支，以及该分支结果的 future 观察面。
 
 #### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
 

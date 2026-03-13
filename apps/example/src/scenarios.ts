@@ -4,7 +4,6 @@ import {
   all,
   bind,
   cede,
-  fork,
   guard,
   halt,
   lookup,
@@ -13,6 +12,7 @@ import {
   resumable,
   scoped,
   self,
+  spawn,
   unbind,
   wait,
 } from "@shajara/host/primitives";
@@ -26,7 +26,6 @@ const EXAMPLE_SCENARIOS = {
   all: allRitual,
   bindLookup: bindLookupRitual,
   cede: childRitual,
-  fork: forkRitual,
   guard: guardRitual,
   halt: haltRitual,
   park: parkRitual,
@@ -37,13 +36,14 @@ const EXAMPLE_SCENARIOS = {
   scoped: scopedRitual,
   self: selfRitual,
   sleep: sleepRitual,
+  spawn: spawnRitual,
   until: untilRitual,
 } satisfies Record<string, RiteRoutine<unknown>>;
 
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
-function* forkRitual(): RiteCoroutine<void> {
-  const branchFuture = yield* fork(childRitual);
+function* spawnRitual(): RiteCoroutine<void> {
+  const branchFuture = yield* spawn(childRitual);
   const joinedValue = yield* wait(branchFuture);
   consume(joinedValue);
 }

@@ -1,6 +1,6 @@
 import type { FutureKey, ProcessRef, Ritual, Wisp } from "#src/contracts";
+import { branch, halt, spawn, wait } from "#src/sigils";
 import { flow, pipe } from "fp-ts/function";
-import { fork, halt, spawn, wait } from "#src/sigils";
 import { wisp, wispEither } from "#src/internal/fp";
 import type { either } from "fp-ts";
 import { narrowAs } from "#src/utils";
@@ -21,9 +21,9 @@ export function awaitProcessInBand<Relic>(processRef: ProcessRef<Relic>): Wisp<R
 
 export function resolvePrimary<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
-    spawn(entry, supervisorScopeSpec()),
+    branch(entry, supervisorScopeSpec()),
     wisp.liftF,
-    wisp.chainFirstF(({ scopeRef }) => fork(propagateFailure(scopeRef.exitFuture))),
+    wisp.chainFirstF(({ scopeRef }) => spawn(propagateFailure(scopeRef.exitFuture))),
     wisp.map(({ processRef }) => processRef.exitFuture),
   );
 }

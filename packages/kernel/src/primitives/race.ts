@@ -1,7 +1,7 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import type { Failure, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
+import { branch, future, halt, poll, settle, spawn, wait } from "#src/sigils";
 import { either, option, readonlyArray } from "fp-ts";
-import { fork, future, halt, poll, settle, spawn, wait } from "#src/sigils";
 import { wisp, wispOption } from "#src/internal/fp";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
@@ -14,10 +14,10 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
     wisp.Do,
     wisp.bindF("winner", () => future<ArrayValues<BranchReturns>>()),
     wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
-      spawn(raceArena(branches, winnerSettle), supervisorScopeSpec()),
+      branch(raceArena(branches, winnerSettle), supervisorScopeSpec()),
     ),
     wisp.chainFirstF(({ arenaSelf: { scopeRef: arenaRef }, winner: [winnerFuture] }) =>
-      fork(raceBackstop(arenaRef.exitFuture, winnerFuture)),
+      spawn(raceBackstop(arenaRef.exitFuture, winnerFuture)),
     ),
     wisp.map(({ winner: [winnerFuture] }) => winnerFuture),
   );
@@ -34,7 +34,7 @@ function raceArena(
   return () =>
     pipe(
       branches,
-      readonlyArray.map((branch) => pipe(fork(branchRunner(branch, winnerSettle)), wisp.liftF)),
+      readonlyArray.map((ritual) => pipe(spawn(runBranch(ritual, winnerSettle)), wisp.liftF)),
       wisp.sequence,
     );
 }
@@ -59,10 +59,10 @@ function raceBackstop(failureFuture: FutureKey<unknown>, winnerFuture: FutureKey
     );
 }
 
-function branchRunner(branch: Ritual<unknown>, winnerSettle: FutureSettleKey<unknown>) {
+function runBranch(ritual: Ritual<unknown>, winnerSettle: FutureSettleKey<unknown>) {
   return () =>
     pipe(
-      branch(),
+      ritual(),
       wisp.chainF((value) => settle(winnerSettle, either.right(value))),
       wisp.chainF(() => halt()),
     );

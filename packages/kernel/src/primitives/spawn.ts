@@ -1,11 +1,11 @@
 import type { FutureKey, Ritual, Wisp } from "#src/contracts";
-import { fork as forkSigil } from "#src/sigils";
 import { pipe } from "fp-ts/function";
+import { spawn as spawnSigil } from "#src/sigils";
 import { wisp } from "#src/internal/fp";
 
-export function fork<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
+export function spawn<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
-    forkSigil(entry),
+    spawnSigil(entry),
     wisp.liftF,
     wisp.map((processRef) => processRef.exitFuture),
   );

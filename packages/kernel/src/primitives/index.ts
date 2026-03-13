@@ -2,7 +2,7 @@ export * from "./all";
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";
-export * from "./fork";
+export * from "./spawn";
 export * from "./future";
 export * from "./halt";
 export * from "./lookup";
