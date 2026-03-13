@@ -1,5 +1,5 @@
 import { ExternalError, ScopeHaltedError, ScopeTerminatedError } from "#src/errors";
-import type { ExternalFailure } from "@shajara/kernel";
+import type { ExternalFailure, FailureShape } from "@shajara/kernel";
 import type { Failure } from "#src/contracts";
 import { ShajaraError } from "#src/contracts";
 import { externalFailure } from "@shajara/kernel";
@@ -18,7 +18,7 @@ export function toFailureUnknown(caught: unknown): Failure {
   return externalFailure(caught, () => String(caught));
 }
 
-export function fromFailure(failure: Failure): Error {
+export function fromFailure(failure: FailureShape): Error {
   switch (failure.kind) {
     case "scope-halted":
       return new ScopeHaltedError();
@@ -32,6 +32,6 @@ export function fromFailure(failure: Failure): Error {
       return new ExternalError(external.raw, external.message());
     }
     default:
-      throw new Error(`Unsupported failure kind in host mapping: ${failure.kind}`);
+      return new ExternalError(failure, failure.message());
   }
 }

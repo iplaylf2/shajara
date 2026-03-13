@@ -1,4 +1,11 @@
-import type { ECHO_TOKEN, ProcessRef, Ritual, ScopeRef, ScopeSpec, Sigil } from "#src/contracts";
+import type {
+  ECHO_TOKEN,
+  ProcessRef,
+  Ritual,
+  ScopeRef,
+  ScopeSpec,
+  SigilShape,
+} from "#src/contracts";
 import { standardScopeSpec } from "#src/scopes";
 
 export function branch<Relic>(
@@ -12,7 +19,7 @@ export function branch<Relic>(
   };
 }
 
-export interface BranchSigil<Relic> extends Sigil {
+export interface BranchSigil<Relic> extends SigilShape {
   readonly kind: "branch";
   readonly entry: Ritual<Relic>;
   readonly spec: ScopeSpec;

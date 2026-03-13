@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, MessageKey, ScopeRef, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, MessageKey, ScopeRef, SigilShape } from "#src/contracts";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,
@@ -13,7 +13,7 @@ export function send<Value>(
   };
 }
 
-export interface SendSigil<Value> extends Sigil {
+export interface SendSigil<Value> extends SigilShape {
   readonly kind: "send";
   readonly scope: ScopeRef<unknown>;
   readonly messageKey: MessageKey<Value>;

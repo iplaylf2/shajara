@@ -1,4 +1,4 @@
-import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
+import type { FailureShape, FutureKey, Ritual, Wisp } from "#src/contracts";
 import { flow, pipe } from "fp-ts/function";
 import { future, halt, lookup, send, spawn, wait } from "#src/sigils";
 import { resolvePrimary, resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
@@ -35,6 +35,6 @@ function resumeAttempt<Relic>(entryFuture: FutureKey<Relic>) {
           wisp.map(either.flatten),
         ),
       ),
-      wispEither.getOrElse<Failure, Relic>(flow(halt, wisp.liftF)),
+      wispEither.getOrElse<FailureShape, Relic>(flow(halt, wisp.liftF)),
     );
 }

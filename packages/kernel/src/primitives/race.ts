@@ -1,5 +1,5 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { Failure, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
+import type { FailureShape, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
 import { branch, future, halt, poll, settle, spawn, wait } from "#src/sigils";
 import { either, option, readonlyArray } from "fp-ts";
 import { wisp, wispOption } from "#src/internal/fp";
@@ -54,7 +54,7 @@ function raceBackstop(failureFuture: FutureKey<unknown>, winnerFuture: FutureKey
           ),
         ),
       ),
-      wispOption.map(narrowAs<either.Left<Failure>>()),
+      wispOption.map(narrowAs<either.Left<FailureShape>>()),
       wispOption.chainF(({ left }) => halt(left)),
     );
 }

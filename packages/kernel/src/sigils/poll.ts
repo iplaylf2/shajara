@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureKey, FutureResult, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#src/contracts";
 import type { Option } from "#src/utils";
 
 export function poll<Result>(future: FutureKey<Result>): PollSigil<Result> {
@@ -8,7 +8,7 @@ export function poll<Result>(future: FutureKey<Result>): PollSigil<Result> {
   };
 }
 
-export interface PollSigil<Result> extends Sigil {
+export interface PollSigil<Result> extends SigilShape {
   readonly kind: "poll";
   readonly future: FutureKey<Result>;
   readonly [ECHO_TOKEN]?: readonly [Option<FutureResult<Result>>];

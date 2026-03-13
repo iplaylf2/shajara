@@ -1,6 +1,6 @@
 import type { FutureResult, FutureSettleKey } from "./contracts/future-key";
 import type { Ritual, Wisp } from "./contracts/wisp";
-import type { Failure } from "./contracts/failure";
+import type { Failure } from "./failures";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
@@ -25,10 +25,6 @@ export interface LaunchHandle<Return> {
    */
   onSettled(listener: (result: LaunchResult<Return>) => void): void;
   state(): LaunchState;
-}
-
-export interface Processor {
-  readonly kind: "processor";
 }
 
 export interface Executor {

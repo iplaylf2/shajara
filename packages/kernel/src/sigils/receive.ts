@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, MessageKey, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, MessageKey, SigilShape } from "#src/contracts";
 
 export function receive<ReceiveValue>(
   messageKey: MessageKey<ReceiveValue>,
@@ -9,7 +9,7 @@ export function receive<ReceiveValue>(
   };
 }
 
-export interface ReceiveSigil<Value> extends Sigil {
+export interface ReceiveSigil<Value> extends SigilShape {
   readonly kind: "receive";
   readonly messageKey: MessageKey<Value>;
   readonly [ECHO_TOKEN]?: readonly [Value];

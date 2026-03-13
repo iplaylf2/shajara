@@ -1,4 +1,4 @@
-import type { ContextKey, ECHO_TOKEN, Sigil } from "#src/contracts";
+import type { ContextKey, ECHO_TOKEN, SigilShape } from "#src/contracts";
 
 export function unbind(key: ContextKey<unknown>): UnbindSigil {
   return {
@@ -7,7 +7,7 @@ export function unbind(key: ContextKey<unknown>): UnbindSigil {
   };
 }
 
-export interface UnbindSigil extends Sigil {
+export interface UnbindSigil extends SigilShape {
   readonly kind: "unbind";
   readonly key: ContextKey<unknown>;
   readonly [ECHO_TOKEN]?: readonly [void];

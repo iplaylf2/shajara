@@ -1,4 +1,4 @@
-import type { Failure, FutureKey, Ritual, Wisp } from "#src/contracts";
+import type { FailureShape, FutureKey, Ritual, Wisp } from "#src/contracts";
 import { bind, branch, receive, self, settle, spawn } from "#src/sigils";
 import { resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
 import type { Either } from "#src/utils";
@@ -14,7 +14,7 @@ export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<Futur
   );
 }
 
-export type RecoveryHandler = (failure: Failure) => Wisp<Either<Failure, unknown>>;
+export type RecoveryHandler = (failure: FailureShape) => Wisp<Either<FailureShape, unknown>>;
 
 function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
   return () =>

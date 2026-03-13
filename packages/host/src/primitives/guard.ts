@@ -2,6 +2,7 @@ import type { Failure, RiteCoroutine, RiteFuture, RiteRoutine } from "#src/contr
 import { decodeRitual, encodeRitual, fromFailure, toFailureUnknown } from "#src/boundary";
 import { left, right } from "@shajara/kernel/utils";
 import type { Either } from "@shajara/kernel/utils";
+import type { FailureShape } from "@shajara/kernel";
 import { guard as kernelGuard } from "@shajara/kernel";
 
 export type RecoveryHandler = (error: Error) => RiteCoroutine<unknown>;
@@ -14,7 +15,8 @@ export function guard(
 }
 
 function toKernelRecoveryHandler(recover: RecoveryHandler) {
-  return (failure: Failure) => decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
+  return (failure: FailureShape) =>
+    decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
 }
 
 function* hostRecovery(

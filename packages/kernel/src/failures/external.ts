@@ -1,4 +1,4 @@
-import type { Failure } from "#src/contracts";
+import type { FailureShape } from "#src/contracts";
 
 export function externalFailure(raw: unknown, message: () => string): ExternalFailure {
   return {
@@ -8,7 +8,7 @@ export function externalFailure(raw: unknown, message: () => string): ExternalFa
   };
 }
 
-export interface ExternalFailure extends Failure {
+export interface ExternalFailure extends FailureShape {
   readonly kind: "external";
   readonly raw: unknown;
 }

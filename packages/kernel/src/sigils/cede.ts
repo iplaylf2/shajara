@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, SigilShape } from "#src/contracts";
 
 export function cede(): CedeSigil {
   return {
@@ -6,7 +6,7 @@ export function cede(): CedeSigil {
   };
 }
 
-export interface CedeSigil extends Sigil {
+export interface CedeSigil extends SigilShape {
   readonly kind: "cede";
   readonly [ECHO_TOKEN]?: readonly [void];
 }

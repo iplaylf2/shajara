@@ -1,4 +1,4 @@
-import type { Failure } from "#src/contracts";
+import type { FailureShape } from "#src/contracts";
 
 export function scopeTerminated(): ScopeTerminatedFailure {
   return {
@@ -9,6 +9,6 @@ export function scopeTerminated(): ScopeTerminatedFailure {
   };
 }
 
-export interface ScopeTerminatedFailure extends Failure {
+export interface ScopeTerminatedFailure extends FailureShape {
   readonly kind: "scope-terminated";
 }

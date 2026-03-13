@@ -1,4 +1,4 @@
-import type { ContextKey, ECHO_TOKEN, Sigil } from "#src/contracts";
+import type { ContextKey, ECHO_TOKEN, SigilShape } from "#src/contracts";
 
 export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Value> {
   return {
@@ -8,7 +8,7 @@ export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Val
   };
 }
 
-export interface BindSigil<Value> extends Sigil {
+export interface BindSigil<Value> extends SigilShape {
   readonly kind: "bind";
   readonly key: ContextKey<Value>;
   readonly [ECHO_TOKEN]?: readonly [void];

@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { Sigil, Wisp } from "#src/contracts";
+import type { SigilShape, Wisp } from "#src/contracts";
 import type { applicative, apply, functor, monad, option, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, optionT, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";
@@ -65,7 +65,7 @@ export namespace wispOption {
     of: Pointed.of,
   };
 
-  export const Lifting: lifting.Lifting<URI, sigil.URI, Sigil> = {
+  export const Lifting: lifting.Lifting<URI, sigil.URI, SigilShape> = {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,

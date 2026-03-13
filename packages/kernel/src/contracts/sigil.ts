@@ -1,10 +1,10 @@
 import type { ECHO_TOKEN } from "./token";
 
-// oxlint-disable id-length
-export type Echo<S extends Sigil> =
-  NonNullable<S[typeof ECHO_TOKEN]> extends readonly [infer E] ? E : never;
+export type Echo<Sigil extends SigilShape> =
+  // oxlint-disable-next-line id-length
+  NonNullable<Sigil[typeof ECHO_TOKEN]> extends readonly [infer E] ? E : never;
 
-export interface Sigil {
+export interface SigilShape {
   readonly kind: string;
   readonly [ECHO_TOKEN]?: readonly [unknown];
 }

@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureKey, FutureResult, Sigil } from "#src/contracts";
+import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#src/contracts";
 
 export function wait<Result>(future: FutureKey<Result>): WaitSigil<Result> {
   return {
@@ -7,7 +7,7 @@ export function wait<Result>(future: FutureKey<Result>): WaitSigil<Result> {
   };
 }
 
-export interface WaitSigil<Result> extends Sigil {
+export interface WaitSigil<Result> extends SigilShape {
   readonly kind: "wait";
   readonly future: FutureKey<Result>;
   readonly [ECHO_TOKEN]?: readonly [FutureResult<Result>];

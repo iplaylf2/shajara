@@ -1,5 +1,5 @@
 import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
-import type { Ritual, Sigil, Wisp } from "@shajara/kernel";
+import type { Ritual, SigilShape, Wisp } from "@shajara/kernel";
 import { ensureExecutor, halt, restingWisp, stirringWisp } from "@shajara/kernel";
 import { isLeft, tryCatch } from "@shajara/kernel/utils";
 import { toFailureUnknown } from "./failure-mapping";
@@ -36,7 +36,7 @@ function lowerCoroutineNext<Relic>(
 
 function lowerCoroutineStep<Relic>(
   coroutine: RiteCoroutine<Relic>,
-  step: IteratorResult<Sigil, Relic>,
+  step: IteratorResult<SigilShape, Relic>,
 ): Wisp<Relic> {
   if (step.done) {
     return restingWisp(step.value);
