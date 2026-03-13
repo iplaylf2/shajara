@@ -1,9 +1,10 @@
 import type { Failure, FutureKey } from "./kernel";
-import type { FutureSettleKey, SigilShape } from "@shajara/kernel";
+import type { FutureSettleKey } from "@shajara/kernel";
+import type { Sigil } from "@shajara/kernel/sigils";
 
 export type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 
-export type RiteCoroutine<Return> = Generator<SigilShape, Return, unknown>;
+export type RiteCoroutine<Return> = Generator<Sigil, Return, unknown>;
 
 export type RiteFuture<Result> = FutureKey<Result>;
 export type RiteFutureSettle<Result> = FutureSettleKey<Result>;

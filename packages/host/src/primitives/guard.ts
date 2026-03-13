@@ -16,7 +16,7 @@ export function guard(
 
 function toKernelRecoveryHandler(recover: RecoveryHandler) {
   return (failure: FailureShape) =>
-    decodeRitual(() => hostRecovery(recover, fromFailure(failure)))();
+    decodeRitual(() => hostRecovery(recover, fromFailure(failure as Failure)))();
 }
 
 function* hostRecovery(

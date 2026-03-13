@@ -1,5 +1,6 @@
 import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
 import type { Ritual, Wisp } from "@shajara/kernel";
+import type { Sigil } from "@shajara/kernel/sigils";
 
 export function encodeRitual<Relic>(ritual: Ritual<Relic>): RiteRoutine<Relic> {
   return function* encoded(): RiteCoroutine<Relic> {
@@ -12,7 +13,7 @@ function* liftStep<Relic>(wisp: Wisp<Relic>): RiteCoroutine<Relic> {
     return wisp.relic;
   }
 
-  const echo: unknown = yield wisp.sigil;
+  const echo: unknown = yield wisp.sigil as Sigil;
 
   const nextWisp = wisp.resonate(echo);
 

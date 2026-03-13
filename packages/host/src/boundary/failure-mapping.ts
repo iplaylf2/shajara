@@ -1,5 +1,4 @@
 import { ExternalError, ScopeHaltedError, ScopeTerminatedError } from "#src/errors";
-import type { ExternalFailure, FailureShape } from "@shajara/kernel";
 import type { Failure } from "#src/contracts";
 import { ShajaraError } from "#src/contracts";
 import { externalFailure } from "@shajara/kernel";
@@ -18,20 +17,18 @@ export function toFailureUnknown(caught: unknown): Failure {
   return externalFailure(caught, () => String(caught));
 }
 
-export function fromFailure(failure: FailureShape): Error {
+export function fromFailure(failure: Failure): Error {
   switch (failure.kind) {
     case "scope-halted":
       return new ScopeHaltedError();
     case "scope-terminated":
       return new ScopeTerminatedError();
     case "external": {
-      const external = failure as ExternalFailure;
-      if (external.raw instanceof Error) {
-        return external.raw;
+      if (failure.raw instanceof Error) {
+        return failure.raw;
       }
-      return new ExternalError(external.raw, external.message());
+
+      return new ExternalError(failure.raw, failure.message());
     }
-    default:
-      return new ExternalError(failure, failure.message());
   }
 }
