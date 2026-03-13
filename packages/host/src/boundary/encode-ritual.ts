@@ -13,7 +13,7 @@ function* liftStep<Relic>(wisp: Wisp<Relic>): RiteCoroutine<Relic> {
     return wisp.relic;
   }
 
-  const echo: unknown = yield wisp.sigil as Sigil;
+  const echo = yield wisp.sigil as Sigil;
 
   const nextWisp = wisp.resonate(echo);
 
