@@ -16,8 +16,6 @@
 
 ## 2. 当前实现与基线的差异
 
-- 代码仍保留 `spawn` 作为 public primitive。  
-  证据：`packages/kernel/src/primitives/spawn.ts`、`packages/host/src/primitives/spawn.ts`
 - `all` / `race` 仍带有 supervisor-driven 实现外壳。  
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
 - mailbox 语义仍存在于实现层，并继续承担部分恢复委派协议。  
@@ -25,6 +23,12 @@
 
 ## 3. 当前已落地状态
 
+- `fork` 已成为公开并发 primitive，kernel/host 都直接返回分支结果 future。  
+  证据：`packages/kernel/src/primitives/fork.ts`、`packages/host/src/primitives/fork.ts`
+- `spawn` 已退出 public primitive 导出面，仅作为 kernel 内部 sigil 保留。  
+  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`packages/kernel/src/sigils/spawn.ts`
+- `send` / `receive` 已退出 public primitive 导出面；mailbox 仅保留为 kernel 内部消息协议能力。  
+  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
 - `all` 返回 `FutureKey<T>`。  
   证据：`packages/kernel/src/primitives/all.ts`
 - `race` 返回 `FutureKey<T>`。  
@@ -49,9 +53,8 @@
 
 ## 5. 下一步
 
-1. 让代码导出面与文档基线一致，去掉 `spawn` 的 public primitive 地位。
-2. 评估 `all` / `race` 是否直接以 `fork` + future 组合表达。
-3. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
+1. 评估 `all` / `race` 是否直接以 `fork` + future 组合表达。
+2. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
 
 ## 6. 验证基线
 
@@ -64,4 +67,4 @@ yarn workspace @shajara/host lint
 
 当前与本轮文档调整直接相关的验证状态：
 
-- 已执行并通过：`@shajara/kernel`、`@shajara/host` 与仓库全量的 `typecheck`。
+- 已执行并通过：`@shajara/kernel build`、`@shajara/kernel lint`、`@shajara/host build`、`@shajara/host typecheck`、`@shajara/host lint`、`@shajara/example build`、`@shajara/example typecheck`。

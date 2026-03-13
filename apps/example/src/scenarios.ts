@@ -1,20 +1,18 @@
-import type { ResourceProvide, RiteCoroutine, RiteRoutine, ScopeRef } from "@shajara/host";
-import { action, contextKey, messageKey, resource, sleep, until } from "@shajara/host";
+import type { ResourceProvide, RiteCoroutine, RiteRoutine } from "@shajara/host";
+import { action, contextKey, resource, sleep, until } from "@shajara/host";
 import {
   all,
   bind,
   cede,
+  fork,
   guard,
   halt,
   lookup,
   park,
   race,
-  receive,
   resumable,
   scoped,
   self,
-  send,
-  spawn,
   unbind,
   wait,
 } from "@shajara/host/primitives";
@@ -28,6 +26,7 @@ const EXAMPLE_SCENARIOS = {
   all: allRitual,
   bindLookup: bindLookupRitual,
   cede: childRitual,
+  fork: forkRitual,
   guard: guardRitual,
   halt: haltRitual,
   park: parkRitual,
@@ -37,17 +36,15 @@ const EXAMPLE_SCENARIOS = {
   run: runRitual,
   scoped: scopedRitual,
   self: selfRitual,
-  sendReceive: sendReceiveRitual,
   sleep: sleepRitual,
-  spawn: spawnRitual,
   until: untilRitual,
 } satisfies Record<string, RiteRoutine<unknown>>;
 
 type ExampleScenarioName = keyof typeof EXAMPLE_SCENARIOS;
 
-function* spawnRitual(): RiteCoroutine<void> {
-  const spawned = yield* spawn(childRitual);
-  const joinedValue = yield* wait(spawned.exitFuture);
+function* forkRitual(): RiteCoroutine<void> {
+  const branchFuture = yield* fork(childRitual);
+  const joinedValue = yield* wait(branchFuture);
   consume(joinedValue);
 }
 
@@ -121,15 +118,6 @@ function* bindLookupRitual(): RiteCoroutine<void> {
   yield* unbind(TRACE_ID_KEY);
 }
 
-function* sendReceiveRitual(): RiteCoroutine<void> {
-  const { scopeRef: callerRef } = yield* self();
-  const spawned = yield* spawn(() => senderRitual(callerRef));
-  const value = yield* receive(EXAMPLE_MESSAGE_KEY);
-  consume(value);
-  const joinedValue = yield* wait(spawned.exitFuture);
-  consume(joinedValue);
-}
-
 function* selfRitual(): RiteCoroutine<void> {
   const descriptor = yield* self();
   consume(descriptor);
@@ -149,11 +137,6 @@ function* runRitual(): RiteCoroutine<string> {
   return "run done";
 }
 
-function* senderRitual(callerRef: ScopeRef<unknown>): RiteCoroutine<"sent"> {
-  yield* send(callerRef, EXAMPLE_MESSAGE_KEY, "message from child");
-  return "sent";
-}
-
 function* haltRitual(): RiteCoroutine<never> {
   yield* halt();
   throw new Error("Not implemented: halt() never returns.");
@@ -170,7 +153,6 @@ function consume<Value>(value: Value): Value {
 
 const EXAMPLE_SLEEP_MILLISECONDS = 10;
 const TRACE_ID_KEY = contextKey<string>();
-const EXAMPLE_MESSAGE_KEY = messageKey<string>();
 
 export { EXAMPLE_SCENARIOS, getExampleScenario };
 export type { ExampleScenarioName };
