@@ -1,7 +1,6 @@
 import type { FutureResult, FutureSettleKey } from "./contracts/future-key";
 import type { Ritual, Wisp } from "./contracts/wisp";
 import type { Failure } from "./contracts/failure";
-import type { MessageKey } from "./contracts/message-key";
 import type { ScopeRef } from "./contracts/scope";
 import { notImplemented } from "./internal/not-implemented";
 
@@ -17,18 +16,14 @@ export type LaunchResult<Return> =
   | { readonly kind: "terminated" };
 export type LaunchState = "open" | "closing" | "closed";
 
-export interface LaunchFuture<Return> {
+export interface LaunchHandle<Return> {
+  readonly ref: ExecutionScopeRef;
   /**
    * Register a callback for the single settlement result.
    * Kernel invokes listener at most once.
    * If already settled, invocation is synchronous.
    */
-  onResult(listener: (result: LaunchResult<Return>) => void): void;
-}
-
-export interface LaunchHandle<Return> {
-  readonly ref: ExecutionScopeRef;
-  readonly result: LaunchFuture<Return>;
+  onSettled(listener: (result: LaunchResult<Return>) => void): void;
   state(): LaunchState;
 }
 
@@ -45,10 +40,6 @@ export interface Executor {
    * Launch a ritual under the given scope.
    */
   launch<Return>(scope: ExecutionScopeRef, ritual: Ritual<Return>): LaunchHandle<Return>;
-  /**
-   * Send a value into the target scope's mailbox selected by the message key.
-   */
-  send<Value>(scope: ScopeRef<unknown>, messageKey: MessageKey<Value>, value: Value): void;
   /**
    * Settle a future result slot through its settlement capability.
    */

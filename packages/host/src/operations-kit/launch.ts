@@ -64,7 +64,7 @@ export interface StatefulPromise<Return> extends PromiseLike<Return> {
 
 function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Return> {
   return new Promise<Return>((resolve, reject) => {
-    execution.result.onResult((result: LaunchResult<Return>) => {
+    execution.onSettled((result: LaunchResult<Return>) => {
       switch (result.kind) {
         case "success":
           resolve(result.value);

@@ -45,7 +45,7 @@ kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保�
 host 以 `launch` 为统一收敛锚点：
 
 1. 调用 `executor.launch(scope, ritual)` 获取 `LaunchHandle<T>`。
-2. 将 `LaunchResult<T>`（`success | failure | terminated`）收敛为 Promise 语义。
+2. 通过 `handle.onSettled(...)` 观察单次 `LaunchResult<T>`（`success | failure | terminated`）并收敛为 Promise 语义。
 3. 返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state()`）。
 4. 可选 `AbortSignal` 映射为 `executor.terminate(ref)`。
 
