@@ -19,16 +19,16 @@ const myTask: RiteRoutine<string> = function* () {
 
 ---
 
-## 2. 边界
+## 2. Scope
 
-每段 ritual 都运行在某个边界内。边界决定：
+每段 ritual 都运行在某个 `Scope` 内。把 `Scope` 理解成一段计算的边界时，它决定：
 
 - 生命周期归属
 - 上下文值的可见范围
 - future 的归属范围
 - 子流程的失败传播与收敛位置
 
-边界在 API 中由 `Scope` 承载。不同原语会以不同方式使用边界：有的在当前边界内展开并发，有的引入新的边界，有的让一组子流程共享同一个组合边界。
+不同原语会以不同方式使用 `Scope`：有的在当前 `Scope` 内展开并发，有的创建新的 `Scope`，有的让一组子流程共享同一个组合 `Scope`。
 
 ---
 
@@ -54,15 +54,15 @@ run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulProm
 createScope(): Scope
 ```
 
-创建一个托管运行边界。返回：
+创建一个托管 `Scope`。返回：
 
-| 成员                           | 说明                                            |
-| ------------------------------ | ----------------------------------------------- |
-| `scope.run(ritual, options?)`  | 在该边界下启动 ritual，行为与顶层 `run` 一致。  |
-| `scope.halt()`                 | 终止该边界并等待收敛。                          |
-| `scope.state`                  | 同步状态快照：`open \| closing \| closed`。     |
-| `scope.closed`                 | 清理完成后 resolve；终止/失败时按对应类型抛出。 |
-| `scope[Symbol.asyncDispose]()` | 等价于 `scope.halt()`。                         |
+| 成员                           | 说明                                                |
+| ------------------------------ | --------------------------------------------------- |
+| `scope.run(ritual, options?)`  | 在该 `Scope` 下启动 ritual，行为与顶层 `run` 一致。 |
+| `scope.halt()`                 | 终止该 `Scope` 并等待收敛。                         |
+| `scope.state`                  | 同步状态快照：`open \| closing \| closed`。         |
+| `scope.closed`                 | 清理完成后 resolve；终止/失败时按对应类型抛出。     |
+| `scope[Symbol.asyncDispose]()` | 等价于 `scope.halt()`。                             |
 
 ---
 
@@ -100,7 +100,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 ```
 
-声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并在所属边界回收时执行 cleanup。
+声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并在所属 `Scope` 回收时执行 cleanup。
 
 ---
 
@@ -110,31 +110,31 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 
 ### 5.1 并发构造
 
-| 原语        | 签名概要                                     | 说明                                                                                                            |
-| ----------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `fork`      | `fork(ritual) → RiteFuture<T>`               | 在当前边界内启动一个并行分支，并返回该分支结果的 future。                                                       |
-| `scoped`    | `scoped(ritual) → T`                         | 运行一段带独立收敛边界的子流程，并等待它完成。                                                                  |
-| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                      |
-| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败交给 `recover(error)` 处理。                                 |
-| `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                             |
-| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速边界的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。 |
+| 原语        | 签名概要                                     | 说明                                                                                                                 |
+| ----------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `fork`      | `fork(ritual) → RiteFuture<T>`               | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                       |
+| `scoped`    | `scoped(ritual) → T`                         | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                 |
+| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                           |
+| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败交给 `recover(error)` 处理。                                      |
+| `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                                  |
+| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速 `Scope` 的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。 |
 
 ### 5.2 基础
 
-| 原语          | 签名概要                                             | 说明                                                       |
-| ------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
-| `future`      | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前边界创建一个 pending future 及其 settle capability。 |
-| `poll`        | `poll(future) → T \| undefined`                      | 非阻塞观察 future；未收敛时返回 `undefined`。              |
-| `settle`      | `settle(futureSettle, value) → void`                 | 将 future 收敛为成功值。                                   |
-| `settleError` | `settleError(futureSettle, error) → void`            | 将 future 收敛为失败。                                     |
-| `wait`        | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                               |
-| `bind`        | `bind(ContextKey<T>, value) → void`                  | 在当前边界绑定一个上下文值。                               |
-| `unbind`      | `unbind(ContextKey<T>) → void`                       | 在当前边界解绑一个上下文值。                               |
-| `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 读取当前边界可见的上下文值；未命中时返回 `undefined`。     |
-| `self`        | `self() → SelfDescriptor`                            | 读取当前执行信息。                                         |
-| `halt`        | `halt() → never`                                     | 终止当前流程。                                             |
-| `cede`        | `cede() → void`                                      | 协作式让权。                                               |
-| `park`        | `park() → never`                                     | 持续挂起，直到外部结束该流程。                             |
+| 原语          | 签名概要                                             | 说明                                                            |
+| ------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
+| `future`      | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前 `Scope` 创建一个 pending future 及其 settle capability。 |
+| `poll`        | `poll(future) → T \| undefined`                      | 非阻塞观察 future；未收敛时返回 `undefined`。                   |
+| `settle`      | `settle(futureSettle, value) → void`                 | 将 future 收敛为成功值。                                        |
+| `settleError` | `settleError(futureSettle, error) → void`            | 将 future 收敛为失败。                                          |
+| `wait`        | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                                    |
+| `bind`        | `bind(ContextKey<T>, value) → void`                  | 在当前 `Scope` 绑定一个上下文值。                               |
+| `unbind`      | `unbind(ContextKey<T>) → void`                       | 在当前 `Scope` 解绑一个上下文值。                               |
+| `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 读取当前 `Scope` 可见的上下文值；未命中时返回 `undefined`。     |
+| `self`        | `self() → SelfDescriptor`                            | 读取当前执行信息。                                              |
+| `halt`        | `halt() → never`                                     | 终止当前流程。                                                  |
+| `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
+| `park`        | `park() → never`                                     | 持续挂起，直到外部结束该流程。                                  |
 
 ---
 

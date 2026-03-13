@@ -45,7 +45,7 @@ sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统�
 
 Scope 是生命周期、身份与上下文的统一载体，承载父子关系与 Process 归属。每个 Scope 拥有唯一 `ScopeRef`（控制面 capability handle），Scope 构成严格树（除根外每个 Scope 恰有一个父 Scope）。
 
-文档中提到的“边界”指的就是某段计算对应的 Scope：生命周期、上下文继承、future 归属与失败传播范围，都由该 Scope 承载。
+文档中提到“边界”时，指的是某段计算对应的 Scope。需要精确指称时，以 `Scope` 为准：生命周期、上下文继承、future 归属与失败传播范围，都由该 Scope 承载。
 
 `ScopeRef` 除了表达身份与控制面可见性，也显式携带 `exitFuture`。该 future-like 观察面用于等待该 Scope 的生命周期终态，其值域固定为 `Right<ScopeExit<T>>`。
 
@@ -100,7 +100,7 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 
 `MessageKey<T>` 是 phantom-typed 不透明令牌，由 `messageKey<T>()` 创建。它标识的是 Scope 内 mailbox 的匹配 key，而不是一个脱离 Scope 独立存在的通道。持有令牌即具备发送或接收能力（capability 模型）。
 
-mailbox 语义用于表达显式消息协议；future 与 Scope 边界承担结果收敛和结构化并发的主路径。
+mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果收敛和结构化并发的主路径。
 
 每个 `(Scope, MessageKey)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
 
@@ -417,11 +417,11 @@ primitive 不等于 sigil：
 
 #### race(branches) → Wisp\<FutureKey\<ArrayValues\<T\>\>\>
 
-选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；参赛分支共享同一个 race 边界，返回的 future 用于观察 race 结果。
+选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；参赛分支共享同一个 race `Scope`，返回的 future 用于观察 race 结果。
 
 #### fork(ritual) → Wisp\<FutureKey\<T\>\>
 
-封装 `Fork` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`fork` 表达的是当前边界内的并发分支，以及该分支结果的 future 观察面。
+封装 `Fork` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`fork` 表达的是当前 `Scope` 内的并发分支，以及该分支结果的 future 观察面。
 
 #### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
 
@@ -441,7 +441,7 @@ primitive 不等于 sigil：
 
 #### future() → Wisp\<[FutureKey\<T\>, FutureSettleKey\<T\>]>
 
-封装 `Future` sigil，在当前 Scope 内创建一个 pending future，并返回其观察 key 与收敛 key。future 的归属随当前 Scope，也就是当前边界。
+封装 `Future` sigil，在当前 Scope 内创建一个 pending future，并返回其观察 key 与收敛 key。future 的归属随当前 Scope。
 
 #### wait(futureKey) → Wisp\<Either\<Failure, T\>\>
 
@@ -475,7 +475,7 @@ primitive 不等于 sigil：
 
 #### bind(key, value) → Wisp\<void\>
 
-在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。绑定值的可见范围随当前 Scope，也就是当前边界。
+在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。绑定值的可见范围随当前 Scope。
 
 #### unbind(key) → Wisp\<void\>
 

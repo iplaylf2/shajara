@@ -9,8 +9,8 @@
 当前工作以文档基线收口为先。现行基线已经明确：
 
 - `fork` 是公开并发原语，返回分支结果的 `Future`
-- `scoped`、`guard`、`resumable` 负责引入边界
-- future 与上下文值都归属当前边界
+- `scoped`、`guard`、`resumable` 负责引入新的 `Scope`
+- future 与上下文值都归属当前 `Scope`
 
 证据：`docs/api.md`、`docs/semantics.md`
 
@@ -42,16 +42,16 @@
 
 - `api.md` 现在只承担使用者 API 文档职责，围绕入口、编排模型和原语使用方式组织。  
   证据：`docs/api.md`
-- `semantics.md` 把边界与 Scope 的关系收口为单一定义：边界就是某段计算对应的 Scope。  
+- `semantics.md` 把“边界”收口为 `Scope` 的辅助说明词，并以 `Scope` 作为精确定义用语。  
   证据：`docs/semantics.md`
-- `host.md` 只描述 host 如何承接边界、并发与结果收敛，不再代替 API 文档解释使用心智。  
+- `host.md` 只描述 host 如何承接 `Scope`、并发与结果收敛，不再代替 API 文档解释使用心智。  
   证据：`docs/host.md`
 
 ## 5. 下一步
 
 1. 让代码导出面与文档基线一致，去掉 `spawn` 的 public primitive 地位。
 2. 评估 `all` / `race` 是否直接以 `fork` + future 组合表达。
-3. 在恢复委派路径上继续收口 mailbox 与 future 的职责边界。
+3. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
 
 ## 6. 验证基线
 
