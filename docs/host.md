@@ -59,18 +59,19 @@ host 以 `launch` 为统一收敛锚点：
 - kernel 侧通过 `wait(futureKey)` 等待收敛。
 - 宿主回调通过 `executor.settle(futureSettleKey, result)` 注入最终结果。
 
-同一套 `send/receive/messageKey` 仍作为用户可见的 mailbox 原语保留；宿主桥接不再借用消息队列去模拟单次 settlement。
+宿主桥接通过 future settlement capability 完成单次收敛。消息协议由 kernel 的 `MessageKey` 语义承载；边界、并发与结果收敛在 host 公开 API 中分别落在 `createScope`、`fork` 与 future 相关原语上。
 
 ## 6. 边界引用类型
 
+host 与 kernel 的契约中，边界由 `Scope` 与相关引用类型承载。
+
 host 直接消费 kernel 导出的引用类型，不重复定义同语义包装：
 
-| 类型                          | 来源   | 用途                    |
-| ----------------------------- | ------ | ----------------------- |
-| `ScopeRef`                    | kernel | 结构层引用              |
-| `ExecutionScopeRef`           | kernel | 执行入口引用（含 root） |
-| `SelfDescriptor`              | kernel | 自省信息                |
-| `SpawnRef`（SpawnDescriptor） | kernel | 编排侧子作用域引用      |
+| 类型                | 来源   | 用途                    |
+| ------------------- | ------ | ----------------------- |
+| `ScopeRef`          | kernel | 结构层引用              |
+| `ExecutionScopeRef` | kernel | 执行入口引用（含 root） |
+| `SelfDescriptor`    | kernel | 自省信息                |
 
 命名规则：角色用 `*Scope`，控制面句柄用 `*Ref`。
 

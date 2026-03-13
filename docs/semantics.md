@@ -45,6 +45,8 @@ sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统�
 
 Scope 是生命周期、身份与上下文的统一载体，承载父子关系与 Process 归属。每个 Scope 拥有唯一 `ScopeRef`（控制面 capability handle），Scope 构成严格树（除根外每个 Scope 恰有一个父 Scope）。
 
+文档中提到的“边界”指的就是某段计算对应的 Scope：生命周期、上下文继承、future 归属与失败传播范围，都由该 Scope 承载。
+
 `ScopeRef` 除了表达身份与控制面可见性，也显式携带 `exitFuture`。该 future-like 观察面用于等待该 Scope 的生命周期终态，其值域固定为 `Right<ScopeExit<T>>`。
 
 角色按语义来源分两层：
@@ -97,6 +99,8 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 ### 2.7 MessageKey 与消息传递
 
 `MessageKey<T>` 是 phantom-typed 不透明令牌，由 `messageKey<T>()` 创建。它标识的是 Scope 内 mailbox 的匹配 key，而不是一个脱离 Scope 独立存在的通道。持有令牌即具备发送或接收能力（capability 模型）。
+
+mailbox 语义用于表达显式消息协议；future 与 Scope 边界承担结果收敛和结构化并发的主路径。
 
 每个 `(Scope, MessageKey)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
 
@@ -392,7 +396,7 @@ Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
-- **封装 Process 脆弱性**：sigil 层暴露的 `Fork` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待、待定的 `Terminate(processRef)`）被封装在 primitive 内部（如 `spawn` 丢弃 `ProcessRef` 只返回 `ScopeRef`），用户操控粒度始终为 Scope。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Fork` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待、待定的 `Terminate(processRef)`）被封装在 primitive 内部；用户通过 `fork`、boundary primitive 与 future 观察面表达并发与收敛。
 
 primitive 不等于 sigil：
 
@@ -413,7 +417,11 @@ primitive 不等于 sigil：
 
 #### race(branches) → Wisp\<FutureKey\<ArrayValues\<T\>\>\>
 
-选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；返回的 future 用于观察 race 结果。
+选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；参赛分支共享同一个 race 边界，返回的 future 用于观察 race 结果。
+
+#### fork(ritual) → Wisp\<FutureKey\<T\>\>
+
+封装 `Fork` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`fork` 表达的是当前边界内的并发分支，以及该分支结果的 future 观察面。
 
 #### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
 
@@ -421,7 +429,7 @@ primitive 不等于 sigil：
 
 #### resumable(ritual) → Wisp\<FutureKey\<T\>\>
 
-声明可恢复计算，并返回 entry result 对应的 future。`resumable` 把 entry process 的结果与其所在 traced scope 的后续失败拆开处理：
+声明可恢复计算，并返回 entry result 对应的 future。`resumable` 会为其 traced subtree 建立新的 Scope；它把 entry process 的结果与其所在 traced scope 的后续失败拆开处理：
 
 - entry process 成功：结果 future 立即收敛为 `Right(value)`。
 - entry process 失败：查找 `resumableDelegateKey`。
@@ -433,7 +441,7 @@ primitive 不等于 sigil：
 
 #### future() → Wisp\<[FutureKey\<T\>, FutureSettleKey\<T\>]>
 
-封装 `Future` sigil，在当前 Scope 内创建一个 pending future，并返回其观察 key 与收敛 key。
+封装 `Future` sigil，在当前 Scope 内创建一个 pending future，并返回其观察 key 与收敛 key。future 的归属随当前 Scope，也就是当前边界。
 
 #### wait(futureKey) → Wisp\<Either\<Failure, T\>\>
 
@@ -446,10 +454,6 @@ primitive 不等于 sigil：
 #### settle(futureSettleKey, result) → Wisp\<void\>
 
 封装 `Settle` sigil，对目标 future 执行单次收敛。
-
-#### spawn(ritual) → Wisp\<ScopeRef\>
-
-封装 Spawn sigil，创建 `StandardScope` 子 Scope 并返回 ScopeRef（丢弃 ProcessRef）。
 
 #### guard(entry, recover) → Wisp\<FutureKey\<void\>\>
 
@@ -471,7 +475,7 @@ primitive 不等于 sigil：
 
 #### bind(key, value) → Wisp\<void\>
 
-在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。
+在当前 Scope 绑定值。`key` 为 `ContextKey<T>` 令牌，由 `contextKey<T>()` 创建。绑定值的可见范围随当前 Scope，也就是当前边界。
 
 #### unbind(key) → Wisp\<void\>
 

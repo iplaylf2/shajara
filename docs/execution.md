@@ -4,76 +4,56 @@
 
 ---
 
-## 1. 当前目标与阻塞
+## 1. 当前目标
 
-当前主目标是先把 primitives 的失败传播契约收敛成稳定文档基线，再按该基线重构代码；当前设计基线是“默认失败上传，由 `scoped` 承载显式隔离边界，由 `guard` 承载 `resumable` 的恢复委派边界”。
+当前工作以文档基线收口为先。现行基线已经明确：
 
-- 协作文档边界已明确：阶段性状态放在执行文档，不放在 `docs/README.md`。  
-  证据：`docs/README.md`
-- 当前主阻塞已从 `spawn/guard/scoped` 的 primitive 拆分转移到后续清理项：`all` / `race` 仍保留 supervisor-driven 实现外壳。  
+- `fork` 是公开并发原语，返回分支结果的 `Future`
+- `scoped`、`guard`、`resumable` 负责引入边界
+- future 与上下文值都归属当前边界
+
+证据：`docs/api.md`、`docs/semantics.md`
+
+## 2. 当前实现与基线的差异
+
+- 代码仍保留 `spawn` 作为 public primitive。  
+  证据：`packages/kernel/src/primitives/spawn.ts`、`packages/host/src/primitives/spawn.ts`
+- `all` / `race` 仍带有 supervisor-driven 实现外壳。  
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
-
-## 2. 当前已落地状态（Build 相关）
-
-- `all` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，并直接复用 supervisor process 的 `exitFuture`。  
-  证据：`packages/kernel/src/primitives/all.ts`
-- `race` 已改为返回由 arena 内部 settle 的 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`，外层不再隐式 await。  
-  证据：`packages/kernel/src/primitives/race.ts`
-- `resumable` 已改为返回 `FutureKey<T>`，其内部结算结果固定为 `Either<Failure, T>`；当前实现把 entry process 的结果归约与 traced scope 的后续失败传播拆成两条路径。  
-  证据：`packages/kernel/src/primitives/resumable.ts`
-- `resource` 未回到 kernel primitive 面，但已作为 host operation 恢复。  
-  证据：`packages/host/src/operations/resource.ts`、`packages/host/src/operations/index.ts`、`docs/api.md`
-- `resumable` recovery 路径已从 “mailbox 回传结果” 切换为 “传递 `FutureSettleKey` 后直接 settle future”；当前 future 对应的是 entry process 的结果，而不是整个 supervisor boundary 的最终收敛。  
-  影响：去掉了 `delegateWorker` 那层额外 scope；恢复结果现在走单次收敛语义而不是额外 mailbox，同时避免了 “entry 已成功但又被后续 traced failure 改写为 recovery 值” 的冲突。  
-  证据：`packages/kernel/src/primitives/resumable.ts`、`packages/kernel/src/primitives/guard.ts`、`packages/kernel/src/primitives-kit/resumable.ts`
-- `spawn` 已纯化为 standard-only primitive；supervisor boundary 与恢复委派已分别拆到 `scoped` 与 `guard`，并同步导出到 kernel / host 公共 primitive 面。  
-  证据：`packages/kernel/src/primitives/spawn.ts`、`packages/kernel/src/primitives/scoped.ts`、`packages/kernel/src/primitives/guard.ts`、`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/spawn.ts`、`packages/host/src/primitives/scoped.ts`、`packages/host/src/primitives/guard.ts`、`packages/host/src/primitives/index.ts`
-- `join` 包装层已从 kernel / host 删除；scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达，示例调用点也已同步收口。  
-  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`、`docs/api.md`
-
-## 3. 相对设计基线的新增增量
-
-- 设计基线原本允许部分 primitive 在调用方 process 内隐式等待；当前增量是把这类“创建新 scope 的等待协议”外显成 `FutureKey`。  
-  影响：启动结构与结果等待解耦，调用方需要显式决定是否以及何时 `wait`。  
-  证据：`docs/semantics.md`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
-- 设计基线现已明确：`spawn` 只创建 standard scope；`scoped` 创建 supervisor boundary 并阻塞收敛；`guard` 为 `resumable` 提供恢复委派点，并返回 guarded subtree 入口 scope 的 `FutureKey<void>`。  
-  影响：原先折叠在 `spawn(..., { mode: ... })` 的 supervisor / recovery 语义已拆回独立 primitive；后续调用点与文档应直接使用 `spawn` / `scoped` / `guard` 的分离模型。  
-  证据：`docs/semantics.md`、`docs/api.md`
-- `resumable` 当前语义已收口为“entry failure 可恢复，entry success 之后的晚到 traced failure 只传播不恢复”。  
-  影响：`resumable` 继续返回 future，但其 future 只代表 entry result；boundary 级失败传播由独立的 propagation path 处理。  
-  证据：`packages/kernel/src/primitives/resumable.ts`
-- 设计基线现已移除 `join`：scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
-  影响：调用面已收口到单一等待模型，后续不再需要额外的 `join` 包装。  
-  证据：`docs/semantics.md`、`docs/api.md`、`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`
-- 部分并发构造 primitive 已不再承诺“以子 scope 作为正常收敛边界”，因此实现面可以从 scope 驱动收口到更轻的 process/future 组合。  
-  影响：`all` / `race` 一类组合子后续可优先评估以 `fork`、局部 future 与显式 relay 直接表达编排，而不是继续保留 supervisor scope 外壳。  
-  证据：`docs/semantics.md`、`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
-- `resumable` recovery request 的消息载荷已从单纯 `failure` 扩展为 `{ failure, recoverySettleKey }`。  
-  影响：消息仍只负责委派，结果回传已从 mailbox 语义切换为 future 收敛语义，契约更贴近 `FutureKey / FutureSettleKey` 的设计基线。  
+- mailbox 语义仍存在于实现层，并继续承担部分恢复委派协议。  
   证据：`packages/kernel/src/primitives-kit/resumable.ts`
 
-## 4. 下一步（Build 聚焦）
+## 3. 当前已落地状态
 
-1. 继续评估 `all` / `race` 的实现收口，判断是否保留当前 supervisor-driven 外壳。
-2. 基于当前 `resumable` 的 entry-result / late-failure 分离语义，继续验证 `guard` 的恢复委派边界是否稳定。
-3. 在后续实现收口过程中，持续同步 kernel / host / example 的 API 与示例调用面。
+- `all` 返回 `FutureKey<T>`。  
+  证据：`packages/kernel/src/primitives/all.ts`
+- `race` 返回 `FutureKey<T>`。  
+  证据：`packages/kernel/src/primitives/race.ts`
+- `resumable` 返回 `FutureKey<T>`，并把 entry result 与 traced scope 的后续失败传播拆开处理。  
+  证据：`packages/kernel/src/primitives/resumable.ts`
+- `guard(entry, recover)` 已落地，返回 guarded subtree 入口 scope 的 `FutureKey<void>`。  
+  证据：`packages/kernel/src/primitives/guard.ts`、`packages/host/src/primitives/guard.ts`
+- `scoped` 已落地为 blocking supervisor boundary。  
+  证据：`packages/kernel/src/primitives/scoped.ts`、`packages/host/src/primitives/scoped.ts`
+- `join` 包装层已删除，scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
+  证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
 
-当前状态更新：
+## 4. 本轮新增文档锚点
 
-1. `scoped` 已恢复并收口为 blocking supervisor boundary。  
-   证据：`packages/kernel/src/primitives/scoped.ts`、`packages/host/src/primitives/scoped.ts`
-2. `guard(entry, recover)` 已落地，并与 `resumable` 配对形成恢复边界；其返回面已收口到 guarded subtree 入口 scope 的 `FutureKey<void>`。  
-   证据：`packages/kernel/src/primitives/guard.ts`、`packages/host/src/primitives/guard.ts`
-3. `spawn` 已回到 standard-only，并完成 kernel / host API 同步。  
-   证据：`packages/kernel/src/primitives/spawn.ts`、`packages/host/src/primitives/spawn.ts`
-4. `join` 包装层已删除，scope 等待调用点已统一收口到 `wait(scopeRef.exitFuture)`。  
-   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
-5. `example` 已按新的 `guard` 契约完成类型同步。  
-   证据：`apps/example/src/scenarios.ts`
-6. 下一步聚焦在继续评估 `all` / `race` 的实现收口。  
-   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
+- `api.md` 现在只承担使用者 API 文档职责，围绕入口、编排模型和原语使用方式组织。  
+  证据：`docs/api.md`
+- `semantics.md` 把边界与 Scope 的关系收口为单一定义：边界就是某段计算对应的 Scope。  
+  证据：`docs/semantics.md`
+- `host.md` 只描述 host 如何承接边界、并发与结果收敛，不再代替 API 文档解释使用心智。  
+  证据：`docs/host.md`
 
-## 5. 验证基线
+## 5. 下一步
+
+1. 让代码导出面与文档基线一致，去掉 `spawn` 的 public primitive 地位。
+2. 评估 `all` / `race` 是否直接以 `fork` + future 组合表达。
+3. 在恢复委派路径上继续收口 mailbox 与 future 的职责边界。
+
+## 6. 验证基线
 
 ```sh
 yarn workspace @shajara/kernel typecheck
@@ -82,6 +62,6 @@ yarn workspace @shajara/host typecheck
 yarn workspace @shajara/host lint
 ```
 
-当前与本次文档调整直接相关的验证状态：
+当前与本轮文档调整直接相关的验证状态：
 
 - 已执行并通过：`@shajara/kernel`、`@shajara/host` 与仓库全量的 `typecheck`。
