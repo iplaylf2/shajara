@@ -1,4 +1,4 @@
-import type { Executor } from "./contracts";
+import type { Executor } from "./create";
 import { ExecutorInterpreter } from "#src/interpreters";
 import { createExecutor } from "./create";
 
