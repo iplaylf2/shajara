@@ -15,7 +15,7 @@ export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> 
     const coroutine = startedRoutine.right;
 
     const executor = ensureExecutor();
-    executor.registerCleanup(decoded, () => lowerCoroutineReturn(coroutine));
+    executor.registerCleanup(decoded, () => lowerCoroutineReturn(coroutine) as Wisp<void>);
 
     return lowerCoroutineNext(coroutine, null);
   }

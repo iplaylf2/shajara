@@ -1,4 +1,4 @@
-import type { FutureResult, FutureSettleKey, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#src/contracts";
 import type { Failure } from "#src/failures";
 import type { Interpreter } from "#src/interpreter";
 import { notImplemented } from "#src/internal/not-implemented";
@@ -23,12 +23,11 @@ export interface LaunchHandle<Return> {
 }
 
 export interface Executor {
-  readonly interpreter: Interpreter;
   readonly rootScope: ExecutionScopeRef;
   launch<Return>(scope: ExecutionScopeRef, ritual: Ritual<Return>): LaunchHandle<Return>;
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): void;
   terminate(scope: ExecutionScopeRef): void;
-  registerCleanup(ritual: Ritual<unknown>, cleanup: () => Wisp<unknown>): void;
+  registerCleanup(ritual: Ritual<unknown>, cleanup: Ritual<void>): void;
 }
 
 export function createExecutor(interpreter: Interpreter): Executor {
