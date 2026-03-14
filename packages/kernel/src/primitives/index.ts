@@ -11,7 +11,7 @@ export * from "./park";
 export * from "./race";
 export * from "./resumable";
 export * from "./guard";
-export * from "./scoped";
+export * from "./enclose";
 export * from "./self";
 export * from "./settle";
 export * from "./unbind";

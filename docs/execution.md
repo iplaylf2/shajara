@@ -9,7 +9,7 @@
 当前工作以文档基线收口为先。现行基线已经明确：
 
 - `spawn` 是公开并发原语，返回分支结果的 `Future`
-- `scoped`、`guard`、`resumable` 负责引入新的 `Scope`
+- `enclose`、`guard`、`resumable` 负责引入新的 `Scope`
 - future 与上下文值都归属当前 `Scope`
 
 证据：`docs/api.md`、`docs/semantics.md`
@@ -37,8 +37,8 @@
   证据：`packages/kernel/src/primitives/resumable.ts`
 - `guard(entry, recover)` 已落地，返回 guarded subtree 入口 scope 的 `FutureKey<void>`。  
   证据：`packages/kernel/src/primitives/guard.ts`、`packages/host/src/primitives/guard.ts`
-- `scoped` 已落地为 blocking supervisor boundary。  
-  证据：`packages/kernel/src/primitives/scoped.ts`、`packages/host/src/primitives/scoped.ts`
+- `enclose` 已落地为 blocking supervisor boundary。  
+  证据：`packages/kernel/src/primitives/enclose.ts`、`packages/host/src/primitives/enclose.ts`
 - `join` 包装层已删除，scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
 

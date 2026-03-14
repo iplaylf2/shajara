@@ -5,7 +5,7 @@ import { pipe } from "fp-ts/function";
 import { supervisorScopeSpec } from "#src/scopes";
 import { wisp } from "#src/internal/fp";
 
-export function scoped<Relic>(entry: Ritual<Relic>): Wisp<Either<FailureShape, Relic>> {
+export function enclose<Relic>(entry: Ritual<Relic>): Wisp<Either<FailureShape, Relic>> {
   return pipe(
     branch(entry, supervisorScopeSpec()),
     wisp.liftF,

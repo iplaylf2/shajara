@@ -4,13 +4,13 @@ import {
   all,
   bind,
   cede,
+  enclose,
   guard,
   halt,
   lookup,
   park,
   race,
   resumable,
-  scoped,
   self,
   spawn,
   unbind,
@@ -26,6 +26,7 @@ const EXAMPLE_SCENARIOS = {
   all: allRitual,
   bindLookup: bindLookupRitual,
   cede: childRitual,
+  enclose: encloseRitual,
   guard: guardRitual,
   halt: haltRitual,
   park: parkRitual,
@@ -33,7 +34,6 @@ const EXAMPLE_SCENARIOS = {
   resource: resourceRitual,
   resumable: resumableRitual,
   run: runRitual,
-  scoped: scopedRitual,
   self: selfRitual,
   sleep: sleepRitual,
   spawn: spawnRitual,
@@ -48,9 +48,9 @@ function* spawnRitual(): RiteCoroutine<void> {
   consume(joinedValue);
 }
 
-function* scopedRitual(): RiteCoroutine<void> {
-  const scopedValue = yield* scoped(childRitual);
-  consume(scopedValue);
+function* encloseRitual(): RiteCoroutine<void> {
+  const enclosedValue = yield* enclose(childRitual);
+  consume(enclosedValue);
 }
 
 function* guardRitual(): RiteCoroutine<void> {

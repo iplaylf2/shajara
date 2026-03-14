@@ -423,9 +423,9 @@ primitive 不等于 sigil：
 
 封装 `Spawn` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`spawn` 表达的是当前 `Scope` 内的并发分支，以及该分支结果的 future 观察面。
 
-#### scoped(ritual) → Wisp\<Either\<Failure, T\>\>
+#### enclose(ritual) → Wisp\<Either\<Failure, T\>\>
 
-创建一个显式 `SupervisorScope` 子 Scope，并等待该子 Scope 收敛。`scoped` 表达独立的 supervisor boundary，用于承载一个子树的收敛结果。
+创建一个显式 `SupervisorScope` 子 Scope，并等待该子 Scope 收敛。`enclose` 表达独立的 supervisor boundary，用于承载一个子树的收敛结果。
 
 #### resumable(ritual) → Wisp\<FutureKey\<T\>\>
 
