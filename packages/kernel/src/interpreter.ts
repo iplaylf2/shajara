@@ -1,4 +1,6 @@
-import type { FutureKey, FutureResult, ProcessRef, Ritual, ScopeRef } from "./contracts";
+import type { FutureKey, FutureResult, ProcessRef, Ritual, ScopeRef, Wisp } from "./contracts";
+import type { Failure } from "./failures";
+import { wisp } from "./internal/fp";
 
 export abstract class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {}
@@ -10,6 +12,15 @@ export abstract class Interpreter {
   public abstract observe<Result>(future: FutureKey<Result>): FutureHandle<Result>;
 
   protected abstract onReady(processWrap: ProcessWrap<unknown>): void;
+
+  // oxlint-disable-next-line class-methods-use-this
+  protected onClose(
+    failure: Failure,
+    _scope: ScopeRef<unknown>,
+    _processes: ProcessRef<unknown>[],
+  ): Wisp<Failure> {
+    return wisp.liftF(failure);
+  }
 }
 
 export interface FutureHandle<Result> {

@@ -1,5 +1,6 @@
 import type { FutureHandle, ProcessState, ProcessWrap } from "#src/interpreter";
-import type { FutureKey, ProcessRef, Ritual, ScopeRef } from "#src/contracts";
+import type { FutureKey, ProcessRef, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import type { Failure } from "#src/failures";
 import { Interpreter } from "#src/interpreter";
 import { notImplemented } from "#src/internal/not-implemented";
 
@@ -21,6 +22,14 @@ export class DomainInterpreter extends Interpreter {
 
   public override observe<Result>(_future: FutureKey<Result>): FutureHandle<Result> {
     return notImplemented(`observing a future in ${this.constructor.name}`);
+  }
+
+  protected override onClose(
+    _failure: Failure,
+    _scope: ScopeRef<unknown>,
+    _processes: ProcessRef<unknown>[],
+  ): Wisp<Failure> {
+    return notImplemented(`handling a scope closure in ${this.constructor.name}`);
   }
 
   protected override onReady(_processWrap: ProcessWrap<unknown>): void {
