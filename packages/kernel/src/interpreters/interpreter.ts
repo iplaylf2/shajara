@@ -1,26 +1,42 @@
+// oxlint-disable class-methods-use-this
 import type { FutureKey, FutureResult, ProcessRef, Ritual, ScopeRef, Wisp } from "#src/contracts";
 import type { Failure } from "#src/failures";
-import { scopeTerminated } from "#src/failures";
+import { notImplemented } from "#src/internal/not-implemented.js";
 import { wisp } from "#src/internal/fp";
 
 export abstract class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {}
 
-  public abstract perform<Relic>(process: ProcessRef<Relic>): ProcessState<Relic>;
+  public perform<Relic>(_process: ProcessRef<Relic>): ProcessState<Relic> {
+    return notImplemented("");
+  }
 
-  public abstract spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic>;
+  public spawn<Relic>(_scope: ScopeRef<unknown>, _worker: Ritual<Relic>): ProcessRef<Relic> {
+    return notImplemented("");
+  }
 
-  public abstract observe<Result>(future: FutureKey<Result>): FutureHandle<Result>;
+  public observe<Result>(_future: FutureKey<Result>): FutureHandle<Result> {
+    return notImplemented("");
+  }
 
-  protected abstract onReady(process: ProcessRef<unknown>): Wisp<Processor>;
+  public get scopeRoot(): ScopeRef<unknown> {
+    return notImplemented("");
+  }
 
-  // oxlint-disable-next-line class-methods-use-this
-  protected onClose(_scope: ScopeRef<unknown>, _processes: ProcessRef<unknown>[]): Wisp<Failure> {
-    return wisp.liftF(scopeTerminated());
+  public get processRoot(): ProcessRef<unknown> {
+    return notImplemented("");
+  }
+
+  public get isClosed(): boolean {
+    return notImplemented("");
+  }
+
+  protected onReady(_process: ProcessRef<unknown>): void {
+    //
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  protected onHalt(
+  protected onClose(
     _scope: ScopeRef<unknown>,
     _process: ProcessRef<unknown>,
     failure: Failure,
