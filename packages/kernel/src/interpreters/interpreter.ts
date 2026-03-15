@@ -1,6 +1,7 @@
-import type { FutureKey, FutureResult, ProcessRef, Ritual, ScopeRef, Wisp } from "./contracts";
-import type { Failure } from "./failures";
-import { wisp } from "./internal/fp";
+import type { FutureKey, FutureResult, ProcessRef, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import type { Failure } from "#src/failures";
+import { scopeTerminated } from "#src/failures";
+import { wisp } from "#src/internal/fp";
 
 export abstract class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {}
@@ -11,16 +12,25 @@ export abstract class Interpreter {
 
   public abstract observe<Result>(future: FutureKey<Result>): FutureHandle<Result>;
 
-  protected abstract onReady(processWrap: ProcessWrap<unknown>): void;
+  protected abstract onReady(process: ProcessRef<unknown>): Wisp<Processor>;
 
   // oxlint-disable-next-line class-methods-use-this
-  protected onClose(
-    failure: Failure,
+  protected onClose(_scope: ScopeRef<unknown>, _processes: ProcessRef<unknown>[]): Wisp<Failure> {
+    return wisp.liftF(scopeTerminated());
+  }
+
+  // oxlint-disable-next-line class-methods-use-this
+  protected onHalt(
     _scope: ScopeRef<unknown>,
-    _processes: ProcessRef<unknown>[],
+    _process: ProcessRef<unknown>,
+    failure: Failure,
   ): Wisp<Failure> {
     return wisp.liftF(failure);
   }
+}
+
+export interface ProcessState<Relic> {
+  readonly _processStateTodo?: Relic;
 }
 
 export interface FutureHandle<Result> {
@@ -30,14 +40,6 @@ export interface FutureHandle<Result> {
 
 export interface FutureState<Result> {
   readonly _futureStateTodo?: Result;
-}
-
-export interface ProcessWrap<Relic> {
-  readonly _processWrapTodo?: Relic;
-}
-
-export interface ProcessState<Relic> {
-  readonly _processStateTodo?: Relic;
 }
 
 export interface Processor {

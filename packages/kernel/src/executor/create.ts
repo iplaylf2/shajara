@@ -1,6 +1,6 @@
 import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#src/contracts";
 import type { Failure } from "#src/failures";
-import type { Interpreter } from "#src/interpreter";
+import type { Interpreter } from "#src/interpreters";
 import { notImplemented } from "#src/internal/not-implemented";
 
 const EXECUTION_SCOPE_REF_TOKEN: unique symbol = Symbol("execution-scope-ref");
