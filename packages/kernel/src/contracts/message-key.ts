@@ -1,5 +1,4 @@
 import type { KEY_TOKEN } from "./token";
-import { notImplemented } from "#src/internal/not-implemented";
 
 declare const VALUE_TOKEN: unique symbol;
 
@@ -8,7 +7,7 @@ export type MessageKeyValue<K extends MessageKey<unknown>> =
   K extends MessageKey<infer Value> ? Value : never;
 
 export function messageKey<Value>(): MessageKey<Value> {
-  return notImplemented("message key token creation");
+  return {} as MessageKey<Value>;
 }
 
 export interface MessageKey<Value> {

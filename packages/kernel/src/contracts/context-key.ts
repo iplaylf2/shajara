@@ -1,5 +1,4 @@
 import type { KEY_TOKEN } from "./token";
-import { notImplemented } from "#src/internal/not-implemented";
 
 declare const VALUE_TOKEN: unique symbol;
 
@@ -8,7 +7,7 @@ export type ContextKeyValue<K extends ContextKey<unknown>> =
   K extends ContextKey<infer Value> ? Value : never;
 
 export function contextKey<Value>(): ContextKey<Value> {
-  return notImplemented("context key token creation");
+  return {} as ContextKey<Value>;
 }
 
 export interface ContextKey<Value> {
