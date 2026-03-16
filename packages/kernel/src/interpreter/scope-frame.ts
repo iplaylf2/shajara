@@ -19,7 +19,6 @@ import {
 } from "./runtime";
 import { isSome, none, some } from "#src/utils";
 import type { Option } from "#src/utils";
-import type { ProcessStep } from "./process-step";
 
 export class ScopeFrame {
   public static create(
@@ -136,26 +135,16 @@ export class ScopeFrame {
     return process;
   }
 
-  public completeProcess<Relic>(
-    process: RuntimeProcess<Relic>,
-    value: unknown,
-  ): ProcessStep<Relic> {
+  public completeProcess(process: RuntimeProcess, value: unknown): void {
     const result = completeProcess(process, value);
 
     this.#onProcessExited(process, result);
-
-    return { kind: "completed", process: process.ref, value: value as Relic };
   }
 
-  public failProcess<Relic>(
-    process: RuntimeProcess<Relic>,
-    failure: FailureShape,
-  ): ProcessStep<Relic> {
+  public failProcess(process: RuntimeProcess, failure: FailureShape): void {
     const result = failProcess(process, failure);
 
     this.#onProcessExited(process, result);
-
-    return { failure, kind: "failed", process: process.ref };
   }
 
   public get ref(): ScopeRef<unknown> {

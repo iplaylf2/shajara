@@ -53,6 +53,25 @@
 
 - 它表达一次推进，而不是持续运行到挂起或结束。
 - 它返回的是一次步进的结果，而不是整个解释环境的最终结论。
+- 它的粒度允许把“解释 sigil”和“执行 `resonate`”拆成两个外部可见步骤。
+
+一次步进的结果语义应与具体 sigil 语义分开理解：
+
+- `blocked` 表示该步遇到了需要等待的条件。
+- `ceded` 表示该步解释了 `Cede`，当前 Process 主动协作式让出控制权；对应的 `resonate(void)` 已排入待执行 continuation。
+- `interpreted` 表示该步刚刚解释完一个 sigil，并把对应的 `echo` 排入待执行 continuation。
+- `resonated` 表示该步执行了一次已排队的 `resonate(echo)`，并产出了新的当前 `wisp`。
+- `completed` / `failed` / `exited` 表示该 Process 已进入对应生命周期状态。
+
+因此，`ceded`、`interpreted` 与 `resonated` 的划分是解释器步进契约本身的一部分。`Cede` 不再与普通 sigil 共用同一个步进结果；驱动者可以直接把 `ceded` 当作一次显式让权信号，而之后是否继续执行对应的 `resonate`，仍由驱动者决定何时再调用下一次 `step`。
+
+更具体地说，当前 `step` 的步进单位是：
+
+- 若当前是 `RestingWisp`，该步直接把 Process 收敛到完成态。
+- 若当前 Process 持有一段待执行 continuation，该步只执行一次 `resonate(echo)`，并把 Process 的当前 `wisp` 更新为得到的下一段 Wisp。
+- 若当前是携带 sigil 的 `StirringWisp`，该步只解释该 sigil；若是 `Cede`，返回 `ceded` 并把 `resonate + void echo` 排入待执行 continuation；若是其他可立刻得到 echo 的 sigil，则返回 `interpreted` 并把 `resonate + echo` 排入 Process 的待执行 continuation；若该 sigil 会阻塞，则把 continuation 保存在 blocker 中，等待恢复信号到来后再转成待执行 continuation。
+
+因此，当前模型就是“sigil 一步、`resonate` 一步”。驱动者若想得到旧的“归约一个 `StirringWisp` 头节点”的体验，可以在看到 `ceded` 或 `interpreted` 后继续对同一 Process 调用一次 `step`，把紧随其后的 `resonated` 一并吃掉。
 
 `step` 是封闭环境在外部驱动下向前推进的基础入口。
 

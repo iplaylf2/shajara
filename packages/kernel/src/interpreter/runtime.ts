@@ -39,9 +39,16 @@ export interface RuntimeBlocker {
   readonly resume: (result: FutureResult<unknown>) => Wisp<unknown>;
 }
 
+export interface RuntimeContinuation {
+  readonly echo: unknown;
+  readonly kind: "resonate";
+  readonly resume: (echo: unknown) => Wisp<unknown>;
+}
+
 export interface RuntimeProcess<Relic = unknown> {
   blocker: RuntimeBlocker | null;
   readonly exitFuture: RuntimeFuture;
+  continuation: RuntimeContinuation | null;
   readonly participation: "tracked" | "auxiliary";
   readonly ref: ProcessRef<Relic>;
   result: FutureResult<Relic> | null;
@@ -72,6 +79,7 @@ export function createProcess<Relic>(
 ): RuntimeProcess<Relic> {
   return {
     blocker: null,
+    continuation: null,
     exitFuture: createFuturePair(ref.exitFuture).future,
     participation,
     ref,
@@ -103,6 +111,7 @@ export function completeProcess(process: RuntimeProcess, value: unknown): Future
   const result = right(value);
 
   process.blocker = null;
+  process.continuation = null;
   process.result = result;
   process.status = "exited";
 
@@ -113,6 +122,7 @@ export function failProcess(process: RuntimeProcess, failure: FailureShape): Fut
   const result = left(failure);
 
   process.blocker = null;
+  process.continuation = null;
   process.result = result;
   process.status = "exited";
 
@@ -138,10 +148,26 @@ export function unblockProcess(process: RuntimeProcess, result: FutureResult<unk
     return;
   }
 
-  process.wisp = process.blocker.resume(result);
+  process.continuation = {
+    echo: result,
+    kind: "resonate",
+    resume: process.blocker.resume as (echo: unknown) => Wisp<unknown>,
+  };
   process.blocker.future.waitingProcesses.delete(process);
   process.blocker = null;
   process.status = "ready";
+}
+
+export function queueContinuation(
+  process: RuntimeProcess,
+  resume: (echo: unknown) => Wisp<unknown>,
+  echo: unknown,
+): void {
+  process.continuation = {
+    echo,
+    kind: "resonate",
+    resume,
+  };
 }
 
 export function settleFuture(

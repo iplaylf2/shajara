@@ -268,10 +268,15 @@ GovernorScope 的 reaper handler 触发语义：
 
 executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
 
+这里的“一个原子步骤”仅覆盖 sigil 解释本身，不自动包含后继的 `resonate(echo)`：
+
+- 对能立刻得到 echo 的 sigil，该步产出 echo，并把对应 `resonate` 排入待执行 continuation。
+- 对 `[Blocking]` sigil，该步只完成阻塞登记；对应的 `resonate` 在恢复信号到来后转成待执行 continuation，并由后续独立步进执行。
+
 ### 5.3 阻塞分类
 
-- **`[Non-Blocking]`**：调用方保留 Processor，`resonate` 立刻继续。
-- **`[Blocking]`**：调用方释放 Processor，阻塞条件满足时微内核恢复该 Process。
+- **`[Non-Blocking]`**：调用方保留 Processor，并立即得到可供后续 `resonate` 使用的 echo。
+- **`[Blocking]`**：调用方释放 Processor；阻塞条件满足时微内核只恢复该 Process 的 continuation 可执行性，不在恢复瞬间直接执行 `resonate`。
 
 ---
 

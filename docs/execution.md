@@ -20,6 +20,8 @@
   证据：`packages/kernel/src/primitives/all.ts`、`packages/kernel/src/primitives/race.ts`
 - mailbox 语义仍存在于实现层，并继续承担部分恢复委派协议。  
   证据：`packages/kernel/src/primitives-kit/resumable.ts`
+- `halt` 的解释仍未落实为完整的 scope 关闭、失败传播与后代级联终止流程。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts`
 
 ## 3. 当前已落地状态
 
