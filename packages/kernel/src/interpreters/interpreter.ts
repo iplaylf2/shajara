@@ -1,13 +1,22 @@
 // oxlint-disable class-methods-use-this
-import type { FutureKey, FutureResult, ProcessRef, Ritual, ScopeRef, Wisp } from "#src/contracts";
+import type {
+  ContextKey,
+  FutureKey,
+  FutureResult,
+  ProcessRef,
+  Ritual,
+  ScopeRef,
+  Wisp,
+} from "#src/contracts";
 import type { Failure } from "#src/failures";
+import type { Option } from "#src/utils";
 import { notImplemented } from "#src/internal/not-implemented.js";
 import { wisp } from "#src/internal/fp";
 
 export abstract class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {}
 
-  public perform<Relic>(_process: ProcessRef<Relic>): ProcessState<Relic> {
+  public step<Relic>(_process: ProcessRef<Relic>): ProcessStep<Relic> {
     return notImplemented("");
   }
 
@@ -15,7 +24,18 @@ export abstract class Interpreter {
     return notImplemented("");
   }
 
-  public observe<Result>(_future: FutureKey<Result>): FutureHandle<Result> {
+  public lookup<Value>(_scope: ScopeRef<unknown>, _contextKey: ContextKey<Value>): Option<Value> {
+    return notImplemented("");
+  }
+
+  public poll<Result>(_future: FutureKey<Result>): Option<FutureResult<Result>> {
+    return notImplemented("");
+  }
+
+  public wait<Result>(
+    _future: FutureKey<Result>,
+    _onSettled: (result: FutureResult<Result>) => void,
+  ): void {
     return notImplemented("");
   }
 
@@ -45,17 +65,8 @@ export abstract class Interpreter {
   }
 }
 
-export interface ProcessState<Relic> {
-  readonly _processStateTodo?: Relic;
-}
-
-export interface FutureHandle<Result> {
-  onSettled(listener: (result: FutureResult<Result>) => void): void;
-  state(): FutureState<Result>;
-}
-
-export interface FutureState<Result> {
-  readonly _futureStateTodo?: Result;
+export interface ProcessStep<Relic> {
+  readonly _processStepTodo?: Relic;
 }
 
 export interface Processor {
