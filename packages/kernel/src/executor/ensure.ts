@@ -1,4 +1,4 @@
-import { DomainInterpreter } from "#src/interpreters";
+import { DomainInterpreter } from "./domain-interpreter";
 import type { Executor } from "./create";
 import { createExecutor } from "./create";
 

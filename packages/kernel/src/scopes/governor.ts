@@ -1,6 +1,5 @@
 import type { FailureShape, ProcessRef, ScopeSpec, Wisp } from "#src/contracts";
 import type { Option } from "#src/utils";
-import type { Processor } from "#src/interpreters";
 
 export function governorScopeSpec(config: GovernorScopeSpecConfig): GovernorScopeSpec {
   return {
@@ -37,6 +36,10 @@ export interface GovernorFullCapabilities {
   readonly coverage: "full";
   readonly scheduler: SchedulerHandler;
   readonly reaper: ReaperHandler;
+}
+
+export interface Processor {
+  readonly _processorTodo?: never;
 }
 
 export type SchedulerHandler = (readyProcess: ProcessRef<unknown>) => Wisp<Processor>;

@@ -1,4 +1,4 @@
-import { Interpreter } from "#src/interpreters/interpreter.js";
+import { Interpreter } from "#src/interpreter";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export class DomainInterpreter extends Interpreter {

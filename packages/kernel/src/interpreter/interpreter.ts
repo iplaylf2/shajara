@@ -13,7 +13,7 @@ import type { Option } from "#src/utils";
 import { notImplemented } from "#src/internal/not-implemented.js";
 import { wisp } from "#src/internal/fp";
 
-export abstract class Interpreter {
+export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {}
 
   public step<Relic>(_process: ProcessRef<Relic>): ProcessStep<Relic> {
@@ -67,8 +67,4 @@ export abstract class Interpreter {
 
 export interface ProcessStep<Relic> {
   readonly _processStepTodo?: Relic;
-}
-
-export interface Processor {
-  readonly _processorTodo?: never;
 }

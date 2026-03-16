@@ -16,7 +16,13 @@
 - executor 侧派生句柄不反向定义 kernel 基础概念；`Processor`、`ExecutionScopeRef` 这类 executor 衍生句柄落在 `executor.ts`，不回流到 `contracts/`。
 - cleanup 注册以 `Ritual` 为锚点：同一条启动入口注册一次 cleanup。
 
-## 2. 类型与命名治理
+## 2. 异常策略
+
+- kernel 包实现不承担异常恢复职责。
+- 实现中通常不围绕运行路径添加异常捕获；异常默认视为运行时已经进入失败状态。
+- 一旦出现未预期异常，语义预期是整个运行时失败退出，而不是在 kernel 内部继续尝试局部恢复或降级。
+
+## 3. 类型与命名治理
 
 - kernel 公开类型参数不使用语义兜底默认值（如 `= unknown`）来隐式放宽约束。
 - kernel 语义层优先使用 `Relic`（复数 `Relics`）命名结果语义；host 宿主承载层保留 `Return`（复数 `Returns`）；运行时值字段统一命名 `value`。
@@ -24,29 +30,31 @@
 - 角色命名使用 `*Scope`，控制面句柄使用 `*Ref`，消息/查找/future capability 令牌使用 `*Key`。
 - 字段全必填时使用 `*Config`，不使用 `*Options`。
 
-## 3. 实现落位
+## 4. 实现落位
 
-| 路径                                  | 职责                                                                    |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| `kernel/src/contracts/`               | 核心类型契约                                                            |
-| `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                                      |
-| `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeSpec` 单源                                               |
-| `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                                       |
-| `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey` 单源                                        |
-| `kernel/src/sigils/`                  | sigil 声明 + index                                                      |
-| `kernel/src/sigils.ts`                | sigil 公共入口                                                          |
-| `kernel/src/primitives/`              | 原语 + index                                                            |
-| `kernel/src/scopes/`                  | 角色条目                                                                |
-| `kernel/src/executor.ts`              | 执行入口契约与 executor 衍生句柄（如 `ExecutionScopeRef`、`Processor`） |
-| `host/src/contracts/`                 | host 公共契约（`RiteCoroutine/RiteRoutine`）                            |
-| `host/src/primitives/`                | 原语 + index                                                            |
-| `host/src/operations/`                | 宿主操作 + index                                                        |
-| `host/src/operations-kit/`            | 操作共享支撑                                                            |
-| `host/src/boundary/`                  | host↔kernel 边界共享支撑                                                |
-| `host/src/errors/`                    | 错误类型                                                                |
+| 路径                                  | 职责                                                       |
+| ------------------------------------- | ---------------------------------------------------------- |
+| `kernel/src/contracts/`               | 核心类型契约                                               |
+| `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                         |
+| `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeSpec` 单源                                  |
+| `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                          |
+| `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey` 单源                           |
+| `kernel/src/sigils/`                  | sigil 声明 + index                                         |
+| `kernel/src/sigils.ts`                | sigil 公共入口                                             |
+| `kernel/src/primitives/`              | 原语 + index                                               |
+| `kernel/src/scopes/`                  | 角色条目                                                   |
+| `kernel/src/interpreter/`             | `Interpreter` 单源                                         |
+| `kernel/src/interpreter.ts`           | `Interpreter` 公共入口                                     |
+| `kernel/src/executor/`                | 执行入口契约与 executor 衍生句柄（如 `ExecutionScopeRef`） |
+| `host/src/contracts/`                 | host 公共契约（`RiteCoroutine/RiteRoutine`）               |
+| `host/src/primitives/`                | 原语 + index                                               |
+| `host/src/operations/`                | 宿主操作 + index                                           |
+| `host/src/operations-kit/`            | 操作共享支撑                                               |
+| `host/src/boundary/`                  | host↔kernel 边界共享支撑                                   |
+| `host/src/errors/`                    | 错误类型                                                   |
 
 - kernel 对外导出采用根入口分组导出，`@shajara/kernel/scopes` 为 scope spec 公开子路径。
 
-## 4. 示例约束
+## 5. 示例约束
 
 - example 以 generator 形态演示 host 用户侧写法，仅依赖 host 公共入口与 primitives，不触达 host 内部桥接或 kernel 细节。
