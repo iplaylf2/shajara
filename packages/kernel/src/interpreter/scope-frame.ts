@@ -8,7 +8,7 @@ import type {
   ScopeRef,
   ScopeSpec,
 } from "#src/contracts";
-import type { RuntimeFuture, RuntimeProcess, RuntimeScope } from "./runtime";
+import type { RuntimeFuture, RuntimeFuturePair, RuntimeProcess, RuntimeScope } from "./runtime";
 import {
   closeScopeIfSettled,
   completeProcess,
@@ -33,6 +33,7 @@ export class ScopeFrame {
         futureByKey: new WeakMap(),
         futureBySettle: new WeakMap(),
         processByRef: new WeakMap(),
+        processReadyListeners: new Set(),
       },
       ScopeFrame.#origin,
     );
@@ -96,6 +97,14 @@ export class ScopeFrame {
     return future;
   }
 
+  public createFuture<Result>(): RuntimeFuturePair<Result> {
+    const future = createFuture<Result>();
+
+    this.#scope.futures.add(future.future);
+    this.registerFuture(future.future);
+    return future;
+  }
+
   public requireFuture<Result>(future: FutureKey<Result>): RuntimeFuture {
     return this.#requireFuture(future);
   }
@@ -108,6 +117,25 @@ export class ScopeFrame {
     }
 
     throw new Error("Unknown future settle reference.");
+  }
+
+  public settleFuture<Result>(
+    futureSettle: FutureSettleKey<Result>,
+    result: FutureResult<Result>,
+  ): void {
+    const future = this.requireFutureBySettle(futureSettle);
+    const unblocked = settleFuture(future, result as FutureResult<unknown>);
+
+    for (const process of unblocked) {
+      this.#notifyProcessReady(process.ref);
+    }
+  }
+
+  public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
+    this.#processReadyListeners.add(listener);
+    return () => {
+      this.#processReadyListeners.delete(listener);
+    };
   }
 
   public bind<Value>(contextKey: ContextKey<Value>, value: Value): void {
@@ -132,6 +160,7 @@ export class ScopeFrame {
     this.registerFuture(process.exitFuture);
     this.resolve(process.scopeRef).runtime.processes.add(process);
     this.#processByRef.set(process.ref, process);
+    this.#notifyProcessReady(process.ref);
     return process;
   }
 
@@ -189,6 +218,7 @@ export class ScopeFrame {
       children: new Set(),
       closed: false,
       exitFuture,
+      futures: new Set(),
       parent: this.#parent === ScopeFrame.#origin ? null : this.#parent.runtime,
       processRef: null as unknown as ProcessRef<unknown>,
       processes: new Set(),
@@ -227,6 +257,12 @@ export class ScopeFrame {
     }
   }
 
+  #notifyProcessReady(process: ProcessRef<unknown>): void {
+    for (const listener of this.#processReadyListeners) {
+      listener(process);
+    }
+  }
+
   static readonly #origin = null as unknown as ScopeFrame;
   readonly #children = new Set<ScopeFrame>();
   readonly #parent: ScopeFrame;
@@ -248,11 +284,16 @@ export class ScopeFrame {
   get #processByRef(): WeakMap<ProcessRef<unknown>, RuntimeProcess> {
     return this.#shared.processByRef;
   }
+
+  get #processReadyListeners(): Set<(process: ProcessRef<unknown>) => void> {
+    return this.#shared.processReadyListeners;
+  }
 }
 
 interface ScopeFrameSharedConfig {
   readonly framesByRef: WeakMap<ScopeRef<unknown>, ScopeFrame>;
   readonly futureByKey: WeakMap<FutureKey<unknown>, RuntimeFuture>;
   readonly futureBySettle: WeakMap<FutureSettleKey<unknown>, RuntimeFuture>;
+  readonly processReadyListeners: Set<(process: ProcessRef<unknown>) => void>;
   readonly processByRef: WeakMap<ProcessRef<unknown>, RuntimeProcess>;
 }

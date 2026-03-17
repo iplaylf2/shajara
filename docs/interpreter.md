@@ -96,6 +96,8 @@
 - 新 Process 被创建并注册进解释环境后。
 - 阻塞中的 Process 因 future 收敛等原因重新回到 ready 态后。
 
+这些 ready 通知当前由 `ScopeFrame` 维护注册与分发；`Interpreter` 只把它作为公开观察接口转发给外部。
+
 它的用途是把最小驱动闭环暴露给解释器外部：外部可以据此组织 ready queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
 ### 4.4 只读观察接口
@@ -135,3 +137,16 @@
 - 在封闭环境内完成并发演算。
 
 实现时应优先保持这条主线清晰：`Interpreter` 是一个可步进、可观察、可在内部生成并发 Process 的解释器对象。
+
+为降低 `#interpretWisp` 的阅读成本，当前实现还额外约束其 `switch (sigil.kind)` 的 case 风格：
+
+- 每个 sigil case 通常按三步组织：
+  1. 解释 sigil。
+  2. 分离并安置对应的 `resonate`。
+  3. 包装并返回本步的 `ProcessStage`。
+- 前两步允许修改解释环境状态，例如写入 scope、创建 process、登记 blocker、排队 continuation 或收敛 future；第三步则应尽量保持为纯粹的 stage 包装。
+- 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。
+- 命名应表达“解释这个 sigil”，而不是转写成额外的观察性或描述性措辞；例如优先使用 `#poll`，而不是 `#inspectFuture`。
+- 这类私有方法存在的主要目的，不是抽象复用，而是维持 `#interpretWisp` 的 top-down case 结构，让每个 sigil 分支都保持统一的阅读节奏。
+
+这不是 kernel 语义本身的一部分，但它是当前实现的重要阅读锚点；若后续实现继续沿用 `switch` 步进风格，应尽量保持这一约束不漂移。

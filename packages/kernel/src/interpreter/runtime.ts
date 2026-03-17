@@ -27,6 +27,7 @@ export interface RuntimeScope {
   readonly children: Set<RuntimeScope>;
   closed: boolean;
   readonly exitFuture: RuntimeFuture;
+  readonly futures: Set<RuntimeFuture>;
   readonly parent: RuntimeScope | null;
   readonly processRef: ProcessRef<unknown>;
   readonly processes: Set<RuntimeProcess>;

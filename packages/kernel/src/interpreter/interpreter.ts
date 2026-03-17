@@ -27,14 +27,7 @@ import type {
   ScopeRef,
   Wisp,
 } from "#src/contracts";
-import {
-  blockOnFuture,
-  createFuture,
-  createProcess,
-  createProcessRef,
-  queueContinuation,
-  settleFuture,
-} from "./runtime";
+import { blockOnFuture, createProcess, createProcessRef, queueContinuation } from "./runtime";
 import {
   blockedProcessStage,
   cededProcessStage,
@@ -93,10 +86,7 @@ export class Interpreter {
   }
 
   public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
-    this.#processReadyListeners.add(listener);
-    return () => {
-      this.#processReadyListeners.delete(listener);
-    };
+    return this.#rootFrame.onProcessReady(listener);
   }
 
   protected onClose(
@@ -148,19 +138,19 @@ export class Interpreter {
         this.#setContinuation(process, current.resonate, unitEcho());
         return cededProcessStage(process.ref);
       case "future":
-        this.#setContinuation(process, current.resonate, this.#future());
+        this.#setContinuation(process, current.resonate, this.#future(process));
         return interpretedProcessStage(process.ref);
       case "halt":
         this.#halt(process, sigil);
         return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
       case "lookup":
-        this.#setContinuation(process, current.resonate, this.#lookupInScope(process, sigil));
+        this.#setContinuation(process, current.resonate, this.#lookup(process, sigil));
         return interpretedProcessStage(process.ref);
       case "poll":
-        this.#setContinuation(process, current.resonate, this.#inspectFuture(sigil));
+        this.#setContinuation(process, current.resonate, this.#poll(sigil));
         return interpretedProcessStage(process.ref);
       case "self":
-        this.#setContinuation(process, current.resonate, this.#describeSelf(process));
+        this.#setContinuation(process, current.resonate, this.#self(process));
         return interpretedProcessStage(process.ref);
       case "settle":
         this.#settle(sigil);
@@ -174,7 +164,7 @@ export class Interpreter {
         this.#setContinuation(process, current.resonate, unitEcho());
         return interpretedProcessStage(process.ref);
       case "wait": {
-        const settled = this.#pollFuture(sigil.future);
+        const settled = this.poll(sigil.future);
 
         if (isSome(settled)) {
           this.#setContinuation(process, current.resonate, settled.value);
@@ -213,9 +203,8 @@ export class Interpreter {
     return branchFrame.entryProcess.branchHandle();
   }
 
-  #future(): readonly [FutureKey<unknown>, FutureSettleKey<unknown>] {
-    const created = createFuture<unknown>();
-    this.#rootFrame.registerFuture(created.future);
+  #future(process: RuntimeProcess): readonly [FutureKey<unknown>, FutureSettleKey<unknown>] {
+    const created = this.#rootFrame.resolve(process.scopeRef).createFuture<unknown>();
     return [created.key, created.settleKey];
   }
 
@@ -224,12 +213,7 @@ export class Interpreter {
   }
 
   #settle(sigil: SettleSigil<unknown>): void {
-    const future = this.#rootFrame.requireFutureBySettle(sigil.futureSettle);
-    const unblocked = settleFuture(future, sigil.result as FutureResult<unknown>);
-
-    for (const readyProcess of unblocked) {
-      this.#notifyProcessReady(readyProcess.ref);
-    }
+    this.#rootFrame.settleFuture(sigil.futureSettle, sigil.result);
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
@@ -241,20 +225,16 @@ export class Interpreter {
     return spawned.ref;
   }
 
-  #lookupInScope(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
+  #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
     return this.lookup(process.scopeRef, sigil.key);
   }
 
-  #inspectFuture(sigil: PollSigil<unknown>): Option<FutureResult<unknown>> {
+  #poll(sigil: PollSigil<unknown>): Option<FutureResult<unknown>> {
     return this.poll(sigil.future);
   }
 
-  #describeSelf(process: RuntimeProcess): SelfHandle<ScopeRef<unknown>> {
+  #self(process: RuntimeProcess): SelfHandle<ScopeRef<unknown>> {
     return process.selfHandle();
-  }
-
-  #pollFuture<Result>(futureRef: FutureKey<Result>): Option<FutureResult<Result>> {
-    return this.#rootFrame.poll(futureRef);
   }
 
   #waitFuture(
@@ -320,9 +300,7 @@ export class Interpreter {
       this.#rootFrame.registerFuture(frame.runtime.exitFuture);
     }
 
-    const process = this.#registerProcess(createProcess(frame.ref, ritual, participation, ref));
-    this.#notifyProcessReady(process.ref);
-    return process;
+    return this.#registerProcess(createProcess(frame.ref, ritual, participation, ref));
   }
 
   #createProcessRefOf<Relic>(frame: ScopeFrame): ProcessRef<Relic> {
@@ -344,14 +322,6 @@ export class Interpreter {
   #registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
     return this.#rootFrame.registerProcess(process);
   }
-
-  #notifyProcessReady(process: ProcessRef<unknown>): void {
-    for (const listener of this.#processReadyListeners) {
-      listener(process);
-    }
-  }
-
-  readonly #processReadyListeners = new Set<(process: ProcessRef<unknown>) => void>();
   readonly #rootFrame: ScopeFrame;
 }
 
