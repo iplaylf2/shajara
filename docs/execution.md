@@ -43,11 +43,11 @@
   证据：`packages/kernel/src/primitives/enclose.ts`、`packages/host/src/primitives/enclose.ts`
 - `join` 包装层已删除，scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
-- `Interpreter` 已把 process ready 信号公开为 `onProcessReady(listener)`，不再以 `onReady` 保护钩子承担调度接缝。  
+- `Interpreter` 已把 process runnable 信号公开为 `observeRunnable(listener)`，不再以 `onReady` 保护钩子承担调度接缝。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeProcess` 已收口为显式持有状态迁移的实例；`Interpreter` 在 resonance / future unblock / handle 产出路径上不再直接改写 process 内部细节。  
   证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- `RuntimeProcess.resonate()` 现在会在 resonance 产出 `RestingWisp` 时直接把 process 收敛为 exited；`Interpreter` 不再显式提醒 `ScopeFrame` 完成 process，`ScopeFrame` 只承接 exited 之后的结构性后处理。  
+- `RuntimeProcess.resonate()` 现在会在 resonance 产出 `RestingWisp` 时直接把 process 收敛为 completed；`Interpreter` 不再显式提醒 `ScopeFrame` 完成 process，`ScopeFrame` 只承接 completed 之后的结构性后处理。  
   证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeProcess` 只保留 `scopeRef`，不再直接持有 `RuntimeScope`；scope runtime 实体解析统一经由 `ScopeFrame`。  
   证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/scope-frame.ts`
@@ -59,7 +59,7 @@
   证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - 普通 future 已按创建时的当前 Scope 归属登记，不再默认挂到 root；`ScopeFrame` 现保有 owner scope 上的 future 集合。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/runtime.ts`
-- process ready 通知的注册与分发已收回 `ScopeFrame`；`Interpreter.onProcessReady(...)` 现在只是对根 frame 的公开代理。  
+- process runnable 通知的注册与分发已收回 `ScopeFrame`；`Interpreter.observeRunnable(...)` 现在只是对根 frame 的公开代理。  
   证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime.ts`
@@ -67,6 +67,8 @@
   证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `halt` 的主调用链已先行收口：`Interpreter` 现在负责把 `halt` 转写为对 `ScopeFrame.halt(...)` 的调用，并把 `onClosing(scope, processes, failure)` 包装成 closing worker factory 交给 `ScopeFrame`；`ScopeFrame` 侧的 closing 协议签名已经固定，但具体关闭流程仍是占位实现。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/scope-frame.ts`
+- `Interpreter.step(...)` 已先按 `RuntimeProcess.status` 分派，再在 `runnable` 分支内细分 interpret / resonate；其公开返回值也已从 `ProcessStage` 收口为 `ProcessStep`，并以 `disposition` 表达本次步进结果而不是复写 runtime `status`。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/process-step.ts`、`docs/interpreter.md`
 
 ## 4. 本轮新增文档锚点
 
@@ -82,7 +84,7 @@
   证据：`docs/interpreter.md`
 - `interpreter.md` 现进一步记录 `ScopeFrame` 对 entry ritual / mailbox 的职责，以及 `send` 应从 sender scope 上下文发起的交互约束。  
   证据：`docs/interpreter.md`
-- `interpreter.md` 现进一步记录 `resonate` 路径上的退出收敛边界：`RuntimeProcess` 负责 process 局部终态收敛，`ScopeFrame` 只负责 exited 后的结构性后处理。  
+- `interpreter.md` 现进一步记录 `resonate` 路径上的退出收敛边界：`RuntimeProcess` 负责 process 局部终态收敛，`ScopeFrame` 只负责 completed 之后的结构性后处理。  
   证据：`docs/interpreter.md`
 - `interpreter.md` 现进一步记录 `onClosing(scope, processes, failure)` 的参数语义，以及 `halt` 目前按“Interpreter 组织调用，ScopeFrame 承载 closing 协议签名”的方向收口。  
   证据：`docs/interpreter.md`
@@ -93,7 +95,7 @@
 
 1. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
 2. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
-3. 基于 `Interpreter.onProcessReady(...)` 明确最小 `perform` / ready-queue 驱动闭环的落点。
+3. 基于 `Interpreter.observeRunnable(...)` 明确最小 `perform` / runnable-queue 驱动闭环的落点。
 
 ## 6. 验证基线
 

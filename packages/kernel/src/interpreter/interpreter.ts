@@ -29,15 +29,15 @@ import type {
   Wisp,
 } from "#src/contracts";
 import {
-  blockedProcessStage,
-  cededProcessStage,
-  exitedProcessStage,
-  interpretedProcessStage,
-  resonatedProcessStage,
-} from "./process-stage";
+  processCededStep,
+  processExitedStep,
+  processInterpretedStep,
+  processResonatedStep,
+  processWaitingStep,
+} from "./process-step";
 import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
-import type { ProcessStage } from "./process-stage";
+import type { ProcessStep } from "./process-step";
 import type { RuntimeProcess } from "./runtime";
 import { ScopeFrame } from "./scope-frame";
 import { evoke } from "#src/contracts";
@@ -49,26 +49,25 @@ export class Interpreter {
     this.#rootFrame = ScopeFrame.create(entry, standardScopeSpec());
   }
 
-  public step<Relic>(processRef: ProcessRef<Relic>): ProcessStage<Relic> {
+  public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
     const process = this.#rootFrame.readProcess(processRef);
 
-    if (process.status === "blocked") {
-      return blockedProcessStage(processRef);
-    }
+    switch (process.status) {
+      case "waiting":
+        return processWaitingStep(processRef);
+      case "completed":
+        return processExitedStep(processRef, process.result as FutureResult<Relic>);
+      case "runnable":
+        if (process.hasQueuedContinuation) {
+          return this.#resonateWisp(process);
+        }
 
-    if (process.status === "exited") {
-      return exitedProcessStage(processRef, process.result as FutureResult<Relic>);
+        return this.#interpretWisp(process);
     }
-
-    if (process.hasQueuedContinuation) {
-      return this.#resonateWisp(process);
-    }
-
-    return this.#interpretWisp(process);
   }
 
-  public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
-    return this.#rootFrame.onProcessReady(listener);
+  public observeRunnable(listener: (process: ProcessRef<unknown>) => void): () => void {
+    return this.#rootFrame.observeRunnable(listener);
   }
 
   public get scopeRoot(): ScopeRef<unknown> {
@@ -111,9 +110,9 @@ export class Interpreter {
   }
 
   // oxlint-disable-next-line max-statements
-  #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
+  #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     // `Step` only reaches `#interpretWisp` when there is no queued continuation.
-    // Process is not exited here, so the current wisp must still be stirring.
+    // Process is not completed here, so the current wisp must still be stirring.
     const current = process.wisp as StirringWisp<Sigil, Relic>;
     const sigil = current.sigil as Sigil;
 
@@ -121,78 +120,78 @@ export class Interpreter {
       case "bind":
         this.#bind(process, sigil);
         this.#setContinuation(process, current.resonate, null);
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "branch":
         this.#setContinuation(process, current.resonate, this.#branch(process, sigil));
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "cede":
         this.#setContinuation(process, current.resonate, null);
-        return cededProcessStage(process.ref);
+        return processCededStep(process.ref);
       case "future":
         this.#setContinuation(process, current.resonate, this.#future(process));
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "halt":
         this.#halt(process, sigil);
-        return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
+        return processExitedStep(process.ref, process.result as FutureResult<Relic>);
       case "lookup":
         this.#setContinuation(process, current.resonate, this.#lookup(process, sigil));
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "poll":
         this.#setContinuation(process, current.resonate, this.#poll(sigil));
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "self":
         this.#setContinuation(process, current.resonate, this.#self(process));
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "settle":
         this.#settle(sigil);
         this.#setContinuation(process, current.resonate, null);
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "spawn":
         this.#setContinuation(process, current.resonate, this.#spawn(process, sigil));
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "unbind":
         this.#unbind(process, sigil);
         this.#setContinuation(process, current.resonate, null);
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
       case "wait": {
         const settled = this.poll(sigil.future);
 
         if (isSome(settled)) {
           this.#setContinuation(process, current.resonate, settled.value);
-          return interpretedProcessStage(process.ref);
+          return processInterpretedStep(process.ref);
         }
 
         this.#wait(process, sigil);
         this.#primeContinuation(process, current.resonate);
-        return blockedProcessStage(process.ref);
+        return processWaitingStep(process.ref);
       }
       case "receive": {
         const received = this.#tryReceive(process, sigil);
 
         if (isSome(received)) {
           this.#setContinuation(process, current.resonate, received.value);
-          return interpretedProcessStage(process.ref);
+          return processInterpretedStep(process.ref);
         }
 
         this.#receive(process, sigil);
         this.#primeContinuation(process, current.resonate);
-        return blockedProcessStage(process.ref);
+        return processWaitingStep(process.ref);
       }
       case "send":
         this.#send(process, sigil);
         this.#setContinuation(process, current.resonate, null);
-        return interpretedProcessStage(process.ref);
+        return processInterpretedStep(process.ref);
     }
   }
 
-  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
+  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     process.resonate();
 
-    if (process.status === "exited") {
-      return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
+    if (process.status === "completed") {
+      return processExitedStep(process.ref, process.result as FutureResult<Relic>);
     }
 
-    return resonatedProcessStage(process.ref);
+    return processResonatedStep(process.ref);
   }
 
   #bind(process: RuntimeProcess, sigil: BindSigil<unknown>): void {

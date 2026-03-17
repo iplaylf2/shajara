@@ -64,7 +64,7 @@ export class RuntimeProcess<Relic = unknown> {
   public blocker: RuntimeBlocker | null = null;
   public continuation: RuntimeContinuation | null = null;
   public result: FutureResult<Relic> | null = null;
-  public status: "ready" | "blocked" | "exited" = "ready";
+  public status: "runnable" | "waiting" | "completed" = "runnable";
   public wisp: Wisp<unknown>;
 
   public constructor(config: RuntimeProcessConfig<Relic>) {
@@ -111,7 +111,7 @@ export class RuntimeProcess<Relic = unknown> {
       future,
       kind: "future",
     };
-    this.status = "blocked";
+    this.status = "waiting";
     future.waitingProcesses.add(this);
   }
 
@@ -121,7 +121,7 @@ export class RuntimeProcess<Relic = unknown> {
       future: null,
       kind: "receive",
     };
-    this.status = "blocked";
+    this.status = "waiting";
   }
 
   public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
@@ -136,30 +136,30 @@ export class RuntimeProcess<Relic = unknown> {
     this.setContinuation(this.blocker.continuation, echo);
     this.blocker.future?.waitingProcesses.delete(this);
     this.blocker = null;
-    this.status = "ready";
+    this.status = "runnable";
   }
 
   public complete(value: unknown): void {
-    if (this.status === "exited") {
+    if (this.status === "completed") {
       return;
     }
 
     this.blocker = null;
     this.continuation = null;
     this.result = right(value) as FutureResult<Relic>;
-    this.status = "exited";
+    this.status = "completed";
     this.#onExited(this);
   }
 
   public fail(failure: FailureShape): void {
-    if (this.status === "exited") {
+    if (this.status === "completed") {
       return;
     }
 
     this.blocker = null;
     this.continuation = null;
     this.result = left(failure) as FutureResult<Relic>;
-    this.status = "exited";
+    this.status = "completed";
     this.#onExited(this);
   }
 
@@ -290,7 +290,7 @@ export function closeScopeIfSettled(scope: RuntimeScope): RuntimeScope | null {
   }
 
   for (const process of scope.processes) {
-    if (process.status !== "exited") {
+    if (process.status !== "completed") {
       return null;
     }
   }

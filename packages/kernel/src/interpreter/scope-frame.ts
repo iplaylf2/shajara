@@ -37,7 +37,7 @@ export class ScopeFrame {
         futureByKey: new WeakMap(),
         futureBySettle: new WeakMap(),
         processByRef: new WeakMap(),
-        processReadyListeners: new Set(),
+        runnableObservers: new Set(),
       },
       ScopeFrame.#origin,
     );
@@ -122,7 +122,7 @@ export class ScopeFrame {
     const process = sendMessage(this.resolve(to).#mailbox(messageKey), this.ref, value);
 
     if (process !== null) {
-      this.#notifyProcessReady(process.ref);
+      this.#notifyRunnable(process.ref);
     }
   }
 
@@ -154,14 +154,14 @@ export class ScopeFrame {
     const unblocked = settleFuture(future, result as FutureResult<unknown>);
 
     for (const process of unblocked) {
-      this.#notifyProcessReady(process.ref);
+      this.#notifyRunnable(process.ref);
     }
   }
 
-  public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
-    this.#processReadyListeners.add(listener);
+  public observeRunnable(listener: (process: ProcessRef<unknown>) => void): () => void {
+    this.#runnableObservers.add(listener);
     return () => {
-      this.#processReadyListeners.delete(listener);
+      this.#runnableObservers.delete(listener);
     };
   }
 
@@ -195,7 +195,7 @@ export class ScopeFrame {
     this.registerFuture(process.exitFuture);
     this.resolve(process.scopeRef).runtime.processes.add(process);
     this.#processByRef.set(process.ref, process);
-    this.#notifyProcessReady(process.ref);
+    this.#notifyRunnable(process.ref);
     return process;
   }
 
@@ -315,8 +315,8 @@ export class ScopeFrame {
     }
   }
 
-  #notifyProcessReady(process: ProcessRef<unknown>): void {
-    for (const listener of this.#processReadyListeners) {
+  #notifyRunnable(process: ProcessRef<unknown>): void {
+    for (const listener of this.#runnableObservers) {
       listener(process);
     }
   }
@@ -339,8 +339,8 @@ export class ScopeFrame {
   get #processByRef(): WeakMap<ProcessRef<unknown>, RuntimeProcess> {
     return this.#shared.processByRef;
   }
-  get #processReadyListeners(): Set<(process: ProcessRef<unknown>) => void> {
-    return this.#shared.processReadyListeners;
+  get #runnableObservers(): Set<(process: ProcessRef<unknown>) => void> {
+    return this.#shared.runnableObservers;
   }
 }
 
@@ -348,8 +348,8 @@ interface ScopeFrameSharedConfig {
   readonly framesByRef: WeakMap<ScopeRef<unknown>, ScopeFrame>;
   readonly futureByKey: WeakMap<FutureKey<unknown>, RuntimeFuture>;
   readonly futureBySettle: WeakMap<FutureSettleKey<unknown>, RuntimeFuture>;
-  readonly processReadyListeners: Set<(process: ProcessRef<unknown>) => void>;
   readonly processByRef: WeakMap<ProcessRef<unknown>, RuntimeProcess>;
+  readonly runnableObservers: Set<(process: ProcessRef<unknown>) => void>;
 }
 
 export type ClosingWorkerFactory = (

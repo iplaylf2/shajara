@@ -55,17 +55,17 @@
 
 ### 4.1 `step`
 
-`step(processRef)` 表示对目标 Process 执行一次步进解释，并返回该步把 Process 推进到的当前阶段（`ProcessStage`）。
+`step(processRef)` 表示对目标 Process 执行一次步进解释，并返回该步的步进结果（`ProcessStep`）。
 
-这里的“阶段”强调：
+这里的“步进结果”强调：
 
 - 它表达一次推进，而不是持续运行到挂起或结束。
 - 它返回的是该次推进后 Process 所处的可观察阶段，而不是整个解释环境的最终结论。
 - 它的粒度允许把“解释 sigil”和“执行 `resonate`”拆成两个外部可见步骤。
 
-`ProcessStage` 的语义应与具体 sigil 语义分开理解：
+`ProcessStep` 的语义应与具体 sigil 语义分开理解：
 
-- `blocked` 表示该步遇到了需要等待的条件。
+- `waiting` 表示该步遇到了需要等待的条件，或当前 Process 仍停留在等待态。
 - `ceded` 表示该步解释了 `Cede`，当前 Process 主动协作式让出控制权；对应的 `resonate(void)` 已排入待执行 continuation。
 - `interpreted` 表示该步刚刚解释完一个 sigil，并把对应的 `echo` 排入待执行 continuation。
 - `resonated` 表示该步执行了一次已排队的 `resonate(echo)`，并产出了新的当前 `wisp`。
@@ -76,7 +76,7 @@
 更具体地说，当前 `step` 的步进单位是：
 
 - 若当前是 `RestingWisp`，该步直接把 Process 收敛到完成态。
-- 若当前 Process 持有一段待执行 continuation，该步只执行一次 `resonate(echo)`，并把 Process 的当前 `wisp` 更新为得到的下一段 Wisp；若这次 resonance 已把 Wisp 推到终态，则该步直接返回 `exited`。
+- 若当前 Process 处于 `runnable` 且持有一段待执行 continuation，该步只执行一次 `resonate(echo)`，并把 Process 的当前 `wisp` 更新为得到的下一段 Wisp；若这次 resonance 已把 Wisp 推到终态，则该步直接返回 `exited`。
 - 若当前是携带 sigil 的 `StirringWisp`，该步只解释该 sigil；若是 `Cede`，返回 `ceded` 并把 `resonate + void echo` 排入待执行 continuation；若是其他可立刻得到 echo 的 sigil，则返回 `interpreted` 并把 `resonate + echo` 排入 Process 的待执行 continuation；若该 sigil 会阻塞，则把 continuation 保存在 blocker 中，等待恢复信号到来后再转成待执行 continuation。
 
 因此，当前模型就是“sigil 一步、`resonate` 一步”。驱动者若想得到旧的“归约一个 `StirringWisp` 头节点”的体验，可以在看到 `ceded` 或 `interpreted` 后继续对同一 Process 调用一次 `step`，把紧随其后的 `resonated` 一并吃掉。
@@ -89,18 +89,18 @@
 
 它的职责不是单纯构造一个引用，而是专门执行那些会影响解释环境的副作用型 sigil 所需要的 Process 生成行为。换言之，`spawn` 是解释环境内部“新增并发参与者”的统一入口。
 
-### 4.3 `onProcessReady`
+### 4.3 `observeRunnable`
 
-`onProcessReady(listener)` 用于登记 Process ready 通知。
+`observeRunnable(listener)` 用于登记 Process runnable 通知。
 
 其返回值是取消登记函数；解释器不维护调度循环策略本身，只承诺在以下时机发出通知：
 
 - 新 Process 被创建并注册进解释环境后。
-- 阻塞中的 Process 因 future 收敛等原因重新回到 ready 态后。
+- 等待中的 Process 因 future 收敛等原因重新回到 runnable 态后。
 
-这些 ready 通知当前由 `ScopeFrame` 维护注册与分发；`Interpreter` 只把它作为公开观察接口转发给外部。
+这些 runnable 通知当前由 `ScopeFrame` 维护注册与分发；`Interpreter` 只把它作为公开观察接口转发给外部。
 
-它的用途是把最小驱动闭环暴露给解释器外部：外部可以据此组织 ready queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
+它的用途是把最小驱动闭环暴露给解释器外部：外部可以据此组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
 ### 4.4 只读观察接口
 
@@ -155,8 +155,9 @@
 - 每个 sigil case 通常按三步组织：
   1. 解释 sigil。
   2. 分离并安置对应的 `resonate`。
-  3. 包装并返回本步的 `ProcessStage`。
+  3. 包装并返回本步的 `ProcessStep`。
 - 前两步允许修改解释环境状态，例如写入 scope、创建 process、登记 blocker、排队 continuation 或收敛 future；第三步则应尽量保持为纯粹的 stage 包装。
+- `step` 的顶层控制流应先按 `RuntimeProcess.status` 分派，再在 `runnable` 分支内细分“解释当前 sigil”还是“执行已排队的 resonance”；`ProcessStep` 不应直接复写 runtime `status`，而应表达本次步进对外呈现出的结果。
 - 当 sigil 需要阻塞时，第二步通常继续拆成两个相邻动作：
   1. 让 Process 进入相应的等待态。
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
