@@ -1,3 +1,4 @@
+// oxlint-disable max-lines
 import type { BranchHandle, SelfHandle } from "#src/sigils";
 import type {
   ContextKey,
@@ -5,6 +6,7 @@ import type {
   FutureKey,
   FutureResult,
   FutureSettleKey,
+  MessageKey,
   ProcessRef,
   Ritual,
   ScopeRef,
@@ -28,11 +30,22 @@ export interface RuntimeScope {
   closed: boolean;
   readonly exitFuture: RuntimeFuture;
   readonly futures: Set<RuntimeFuture>;
+  readonly mailboxes: Map<MessageKey<unknown>, RuntimeMailbox>;
   readonly parent: RuntimeScope | null;
   readonly processRef: ProcessRef<unknown>;
   readonly processes: Set<RuntimeProcess>;
   readonly ref: ScopeRef<unknown>;
   readonly spec: ScopeSpec;
+}
+
+export interface RuntimeMailbox {
+  readonly buffer: RuntimeMessage[];
+  readonly waitingProcesses: RuntimeProcess[];
+}
+
+export interface RuntimeMessage {
+  readonly from: ScopeRef<unknown>;
+  readonly value: unknown;
 }
 
 export interface RuntimeBlocker {
@@ -96,6 +109,15 @@ export class RuntimeProcess<Relic = unknown> {
     future.waitingProcesses.add(this);
   }
 
+  public receive(): void {
+    this.blocker = {
+      continuation: null,
+      future: null,
+      kind: "receive",
+    };
+    this.status = "blocked";
+  }
+
   public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
     this.blocker!.continuation = continuation;
   }
@@ -136,23 +158,52 @@ export function createFuture<Result>(): RuntimeFuturePair<Result> {
   return createFuturePair(createFutureKey<Result>());
 }
 
-export function createProcessRef<Relic>(): ProcessRef<Relic> {
-  return { exitFuture: createFutureKey<Relic>() } as ProcessRef<Relic>;
-}
-
 export function createProcess<Relic>(
   scopeRef: ScopeRef<unknown>,
   ritual: Ritual<Relic>,
   participation: "tracked" | "auxiliary",
-  ref: ProcessRef<Relic> = createProcessRef<Relic>(),
 ): RuntimeProcess<Relic> {
+  const { future: exitFuture, key } = createFuture<Relic>();
+  const ref = { exitFuture: key } as ProcessRef<Relic>;
+
   return new RuntimeProcess({
-    exitFuture: createFuturePair(ref.exitFuture).future,
+    exitFuture,
     participation,
     ref,
     ritual,
     scopeRef,
   });
+}
+
+export function receiveMessage(mailbox: RuntimeMailbox): Option<unknown> {
+  const message = mailbox.buffer.shift();
+
+  if (typeof message === "undefined") {
+    return none;
+  }
+
+  return some(message.value);
+}
+
+export function waitForMessage(mailbox: RuntimeMailbox, process: RuntimeProcess): void {
+  process.receive();
+  mailbox.waitingProcesses.push(process);
+}
+
+export function sendMessage(
+  mailbox: RuntimeMailbox,
+  from: ScopeRef<unknown>,
+  value: unknown,
+): RuntimeProcess | null {
+  const waitingProcess = mailbox.waitingProcesses.shift();
+
+  if (typeof waitingProcess === "undefined") {
+    mailbox.buffer.push({ from, value });
+    return null;
+  }
+
+  waitingProcess.unblock(value);
+  return waitingProcess;
 }
 
 function createFuturePair<Result>(key: FutureKey<Result>): RuntimeFuturePair<Result> {

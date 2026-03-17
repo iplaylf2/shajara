@@ -33,8 +33,9 @@
 在实现分层上，当前边界进一步收口为：
 
 - `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复，以及 `self` / `branch` 所需 handle 的产出。
-- `ScopeFrame` 负责 scope 树、runtime scope 索引、future 索引，以及“某个 scope 的 entry process”这一结构性关系。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `ScopeFrame` 重新解释 scope 与 entry process 的关系。
+- `ScopeFrame` 负责 scope 树、runtime scope 索引、future 索引、mailbox 索引，以及“某个 scope 的 entry process”这一结构性关系。
+- `ScopeFrame` 直接接收 `entry ritual` 并生成 entry process；`Interpreter` 不再为此提供额外 hook。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `ScopeFrame` 重新解释 scope、entry process 与 mailbox waiting 的关系。
 
 ## 3. 驱动模型
 
@@ -148,10 +149,12 @@
 - 当 sigil 需要阻塞时，第二步通常继续拆成两个相邻动作：
   1. 让 Process 进入相应的等待态。
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
+- 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `ScopeFrame`；它不应提前替 `ScopeFrame` 暴露或模拟内部落点。
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。
 - 对同时存在“尝试立即完成”和“进入阻塞等待”两条路径的 sigil，应显式区分这两层动作；例如 `receive` 当前按 `#tryReceive` 与 `#receive` 两步命名，以区分“尝试读取 mailbox”与“在 mailbox 上等待消息”。
+- `send` 的解释风格也遵循同一原则：`Interpreter` 站在 sender scope 的 frame 上下文发起动作，再把目标 `scopeRef`、`messageKey` 与 `value` 交给 `ScopeFrame` 处理，而不是先替它 resolve 到 target frame。
 - 命名应表达“解释这个 sigil”，而不是转写成额外的观察性或描述性措辞；例如优先使用 `#poll`，而不是 `#inspectFuture`。
 - 这类私有方法存在的主要目的，不是抽象复用，而是维持 `#interpretWisp` 的 top-down case 结构，让每个 sigil 分支都保持统一的阅读节奏。
 

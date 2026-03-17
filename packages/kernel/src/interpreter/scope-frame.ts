@@ -1,10 +1,13 @@
+// oxlint-disable max-lines
 import type {
   ContextKey,
   FailureShape,
   FutureKey,
   FutureResult,
   FutureSettleKey,
+  MessageKey,
   ProcessRef,
+  Ritual,
   ScopeRef,
   ScopeSpec,
 } from "#src/contracts";
@@ -13,21 +16,22 @@ import {
   closeScopeIfSettled,
   completeProcess,
   createFuture,
+  createProcess,
   failProcess,
   mirrorScopeExit,
+  receiveMessage,
+  sendMessage,
   settleFuture,
+  waitForMessage,
 } from "./runtime";
 import { isSome, none, some } from "#src/utils";
 import type { Option } from "#src/utils";
 
 export class ScopeFrame {
-  public static create(
-    spec: ScopeSpec,
-    createEntryProcess: (frame: ScopeFrame) => RuntimeProcess,
-  ): ScopeFrame {
+  public static create(entry: Ritual<unknown>, spec: ScopeSpec): ScopeFrame {
     return new ScopeFrame(
+      entry,
       spec,
-      createEntryProcess,
       {
         framesByRef: new WeakMap(),
         futureByKey: new WeakMap(),
@@ -39,11 +43,8 @@ export class ScopeFrame {
     );
   }
 
-  public branch(
-    spec: ScopeSpec,
-    createEntryProcess: (frame: ScopeFrame) => RuntimeProcess,
-  ): ScopeFrame {
-    const child = new ScopeFrame(spec, createEntryProcess, this.#shared, this);
+  public branch(entry: Ritual<unknown>, spec: ScopeSpec): ScopeFrame {
+    const child = new ScopeFrame(entry, spec, this.#shared, this);
 
     this.#children.add(child);
     this.runtime.children.add(child.runtime);
@@ -109,6 +110,22 @@ export class ScopeFrame {
     return this.#requireFuture(future);
   }
 
+  public tryReceive<Value>(messageKey: MessageKey<Value>): Option<Value> {
+    return receiveMessage(this.#mailbox(messageKey)) as Option<Value>;
+  }
+
+  public receive(process: ProcessRef<unknown>, messageKey: MessageKey<unknown>): void {
+    waitForMessage(this.#mailbox(messageKey), this.readProcess(process));
+  }
+
+  public send<Value>(to: ScopeRef<unknown>, messageKey: MessageKey<Value>, value: Value): void {
+    const process = sendMessage(this.resolve(to).#mailbox(messageKey), this.ref, value);
+
+    if (process !== null) {
+      this.#notifyProcessReady(process.ref);
+    }
+  }
+
   public requireFutureBySettle<Result>(future: FutureSettleKey<Result>): RuntimeFuture {
     const runtimeFuture = this.#futureBySettle.get(future);
 
@@ -141,7 +158,6 @@ export class ScopeFrame {
   public bind<Value>(contextKey: ContextKey<Value>, value: Value): void {
     this.#scope.bindings.set(contextKey, value);
   }
-
   public unbind(contextKey: ContextKey<unknown>): void {
     this.#scope.bindings.delete(contextKey);
   }
@@ -156,7 +172,14 @@ export class ScopeFrame {
     throw new Error("Unknown process reference.");
   }
 
-  public registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
+  public spawn<Relic>(
+    worker: Ritual<Relic>,
+    participation: "tracked" | "auxiliary",
+  ): RuntimeProcess<Relic> {
+    return this.#registerProcess(createProcess(this.ref, worker, participation));
+  }
+
+  #registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
     this.registerFuture(process.exitFuture);
     this.resolve(process.scopeRef).runtime.processes.add(process);
     this.#processByRef.set(process.ref, process);
@@ -179,26 +202,22 @@ export class ScopeFrame {
   public get ref(): ScopeRef<unknown> {
     return this.#scope.ref;
   }
-
   public get processRef(): ProcessRef<unknown> {
     return this.#scope.processRef;
   }
-
   public get entryProcess(): RuntimeProcess {
     return this.readProcess(this.processRef);
   }
-
   public get isClosed(): boolean {
     return this.#scope.closed;
   }
-
   public get runtime(): RuntimeScope {
     return this.#scope;
   }
 
   private constructor(
+    entry: Ritual<unknown>,
     spec: ScopeSpec,
-    createEntryProcess: (frame: ScopeFrame) => RuntimeProcess,
     shared: ScopeFrameSharedConfig,
     parent: ScopeFrame,
   ) {
@@ -208,7 +227,7 @@ export class ScopeFrame {
 
     this.#scope = scope;
     this.#framesByRef.set(this.#scope.ref, this);
-    scope.processRef = createEntryProcess(this).ref;
+    scope.processRef = this.spawn(entry, "tracked").ref;
   }
 
   #createScope(spec: ScopeSpec): RuntimeScope {
@@ -219,6 +238,7 @@ export class ScopeFrame {
       closed: false,
       exitFuture,
       futures: new Set(),
+      mailboxes: new Map(),
       parent: this.#parent === ScopeFrame.#origin ? null : this.#parent.runtime,
       processRef: null as unknown as ProcessRef<unknown>,
       processes: new Set(),
@@ -237,6 +257,22 @@ export class ScopeFrame {
     }
 
     throw new Error("Unknown future reference.");
+  }
+
+  #mailbox(messageKey: MessageKey<unknown>) {
+    const existing = this.#scope.mailboxes.get(messageKey);
+
+    if (typeof existing !== "undefined") {
+      return existing;
+    }
+
+    const mailbox = {
+      buffer: [],
+      waitingProcesses: [],
+    };
+
+    this.#scope.mailboxes.set(messageKey, mailbox);
+    return mailbox;
   }
 
   #onProcessExited(process: RuntimeProcess, result: FutureResult<unknown>): void {
@@ -272,19 +308,15 @@ export class ScopeFrame {
   get #framesByRef(): WeakMap<ScopeRef<unknown>, ScopeFrame> {
     return this.#shared.framesByRef;
   }
-
   get #futureByKey(): WeakMap<FutureKey<unknown>, RuntimeFuture> {
     return this.#shared.futureByKey;
   }
-
   get #futureBySettle(): WeakMap<FutureSettleKey<unknown>, RuntimeFuture> {
     return this.#shared.futureBySettle;
   }
-
   get #processByRef(): WeakMap<ProcessRef<unknown>, RuntimeProcess> {
     return this.#shared.processByRef;
   }
-
   get #processReadyListeners(): Set<(process: ProcessRef<unknown>) => void> {
     return this.#shared.processReadyListeners;
   }

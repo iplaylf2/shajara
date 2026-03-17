@@ -53,12 +53,16 @@
   证据：`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/self.ts`、`packages/kernel/src/primitives/self.ts`
 - `ScopeFrame` 已直接暴露 branch scope 的 `entryProcess`，`Interpreter` 不再通过全局 process 表回查 branch 入口 process。  
   证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- `ScopeFrame.create(...)` / `branch(...)` 现直接接收 `entry ritual` 并在内部生成 entry process；原先由 `Interpreter` 提供的 entry-process 创建 hook 已删除。  
+  证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - 普通 future 已按创建时的当前 Scope 归属登记，不再默认挂到 root；`ScopeFrame` 现保有 owner scope 上的 future 集合。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/runtime.ts`
 - process ready 通知的注册与分发已收回 `ScopeFrame`；`Interpreter.onProcessReady(...)` 现在只是对根 frame 的公开代理。  
   证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime.ts`
+- mailbox runtime 已落位到 `ScopeFrame` / `RuntimeScope`：每个 scope 现直接维护按 `MessageKey` 分组的 mailbox，`send` / `receive` 的等待与恢复由 `ScopeFrame` 组织，`Interpreter` 只负责选定 sender scope 的上下文并发出状态变更意图。  
+  证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 
 ## 4. 本轮新增文档锚点
 
@@ -71,6 +75,8 @@
 - `interpreter.md` 已补充 `#interpretWisp` 的三段式 case 风格锚点，用于约束实现阅读结构而不是补充 kernel 语义。  
   证据：`docs/interpreter.md`
 - `interpreter.md` 现进一步记录阻塞路径上的 `setContinuation / primeContinuation` 区分，以及 `tryReceive / receive` 的双层命名约束。  
+  证据：`docs/interpreter.md`
+- `interpreter.md` 现进一步记录 `ScopeFrame` 对 entry ritual / mailbox 的职责，以及 `send` 应从 sender scope 上下文发起的交互约束。  
   证据：`docs/interpreter.md`
 
 ## 5. 下一步
@@ -90,4 +96,4 @@ yarn workspace @shajara/host lint
 
 当前与本轮文档调整直接相关的验证状态：
 
-- 已执行并通过：`@shajara/kernel build`、`@shajara/kernel lint`、`@shajara/host build`、`@shajara/host typecheck`、`@shajara/host lint`、`@shajara/example build`、`@shajara/example typecheck`。
+- 已执行并通过：`@shajara/kernel typecheck`、`@shajara/kernel lint`。

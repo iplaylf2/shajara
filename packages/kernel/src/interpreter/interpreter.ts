@@ -1,4 +1,3 @@
-// oxlint-disable max-statements
 // oxlint-disable max-lines-per-function
 // oxlint-disable class-methods-use-this
 import type {
@@ -34,7 +33,6 @@ import {
   interpretedProcessStage,
   resonatedProcessStage,
 } from "./process-stage";
-import { createProcess, createProcessRef } from "./runtime";
 import type { Option } from "#src/utils";
 import type { ProcessStage } from "./process-stage";
 import type { RuntimeProcess } from "./runtime";
@@ -45,17 +43,13 @@ import { notImplemented } from "#src/internal/not-implemented";
 import { standardScopeSpec } from "#src/scopes";
 import { unitEcho } from "./step-support";
 
-const PROCESS_COUNT_EMPTY = 0;
-
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
-    this.#rootFrame = ScopeFrame.create(standardScopeSpec(), (frame) =>
-      this.#createProcess(frame, entry, "tracked"),
-    );
+    this.#rootFrame = ScopeFrame.create(entry, standardScopeSpec());
   }
 
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStage<Relic> {
-    const process = this.#readProcess(processRef);
+    const process = this.#rootFrame.readProcess(processRef);
 
     if (process.status === "blocked") {
       return blockedProcessStage(processRef);
@@ -98,7 +92,7 @@ export class Interpreter {
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    return this.#createProcess(this.#rootFrame.resolve(scope), worker, "tracked").ref;
+    return this.#rootFrame.resolve(scope).spawn(worker, "tracked").ref;
   }
 
   public lookup<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>): Option<Value> {
@@ -116,6 +110,7 @@ export class Interpreter {
     this.#rootFrame.wait(future, onSettled);
   }
 
+  // oxlint-disable-next-line max-statements
   #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
     const current = process.wisp;
 
@@ -188,7 +183,7 @@ export class Interpreter {
         return blockedProcessStage(process.ref);
       }
       case "send":
-        this.#send(sigil);
+        this.#send(process, sigil);
         this.#setContinuation(process, current.resonate, unitEcho());
         return interpretedProcessStage(process.ref);
     }
@@ -199,9 +194,7 @@ export class Interpreter {
   }
 
   #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
-    const branchFrame = this.#rootFrame
-      .resolve(process.scopeRef)
-      .branch(sigil.spec, (frame) => this.#createProcess(frame, sigil.entry, "tracked"));
+    const branchFrame = this.#rootFrame.resolve(process.scopeRef).branch(sigil.entry, sigil.spec);
     return branchFrame.entryProcess.branchHandle();
   }
 
@@ -219,11 +212,9 @@ export class Interpreter {
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    const spawned = this.#createProcess(
-      this.#rootFrame.resolve(process.scopeRef),
-      sigil.ritual,
-      sigil.participation,
-    );
+    const spawned = this.#rootFrame
+      .resolve(process.scopeRef)
+      .spawn(sigil.ritual, sigil.participation);
     return spawned.ref;
   }
 
@@ -247,16 +238,16 @@ export class Interpreter {
     this.#rootFrame.resolve(process.scopeRef).unbind(sigil.key);
   }
 
-  #tryReceive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): Option<unknown> {
-    return notImplemented("Interpreter.receive sigil execution");
+  #tryReceive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): Option<unknown> {
+    return this.#rootFrame.resolve(process.scopeRef).tryReceive(sigil.messageKey);
   }
 
-  #receive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): void {
-    notImplemented("Interpreter.receive sigil blocking");
+  #receive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): void {
+    this.#rootFrame.resolve(process.scopeRef).receive(process.ref, sigil.messageKey);
   }
 
-  #send(_sigil: SendSigil<unknown>): void {
-    notImplemented("Interpreter.send sigil execution");
+  #send(process: RuntimeProcess, sigil: SendSigil<unknown>): void {
+    this.#rootFrame.resolve(process.scopeRef).send(sigil.scope, sigil.messageKey, sigil.value);
   }
 
   #setContinuation(
@@ -271,40 +262,5 @@ export class Interpreter {
     process.primeContinuation(resonate);
   }
 
-  #createProcess<Relic>(
-    frame: ScopeFrame,
-    ritual: Ritual<Relic>,
-    participation: "tracked" | "auxiliary",
-  ): RuntimeProcess<Relic> {
-    const ref = this.#createProcessRefOf<Relic>(frame);
-
-    if (this.#isEntryProcess(frame)) {
-      this.#rootFrame.registerFuture(frame.runtime.exitFuture);
-    }
-
-    return this.#registerProcess(createProcess(frame.ref, ritual, participation, ref));
-  }
-
-  #createProcessRefOf<Relic>(frame: ScopeFrame): ProcessRef<Relic> {
-    if (this.#isEntryProcess(frame)) {
-      return frame.processRef as ProcessRef<Relic>;
-    }
-
-    return createProcessRef<Relic>();
-  }
-
-  #isEntryProcess(frame: ScopeFrame): boolean {
-    return frame.runtime.processes.size === PROCESS_COUNT_EMPTY;
-  }
-
-  #readProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
-    return this.#rootFrame.readProcess(processRef);
-  }
-
-  #registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
-    return this.#rootFrame.registerProcess(process);
-  }
   readonly #rootFrame: ScopeFrame;
 }
-
-export type * from "./process-stage";
