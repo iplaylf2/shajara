@@ -10,7 +10,7 @@ shajara 由两层构成：
 | 文档                                                           | 职责                                                               |
 | -------------------------------------------------------------- | ------------------------------------------------------------------ |
 | [semantics.md](semantics.md)                                   | kernel 语义单源：核心语义、对象模型、执行循环、收敛与 sigil 协议。 |
-| [interpreter.md](interpreter.md)                               | `Interpreter` 的职责、驱动模型、观察接口与扩展缝隙。               |
+| [interpreter.md](interpreter.md)                               | `Interpreter` 的职责、驱动模型、观察接口，以及 `RuntimeScope` / `RuntimeProcess` 的边界。 |
 | [executor.md](executor.md)                                     | `executor` 的环境治理职责，以及它如何建立在 `Interpreter` 之上。   |
 | [host.md](host.md)                                             | host 分层架构与 kernel 适配协议。                                  |
 | [api.md](api.md)                                               | 用户侧公开 API 与使用约束。                                        |

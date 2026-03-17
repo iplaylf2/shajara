@@ -38,19 +38,19 @@ import {
 import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import type { ProcessStep } from "./process-step";
-import type { RuntimeProcess } from "./runtime";
-import { ScopeFrame } from "./scope-frame";
+import type { RuntimeProcess } from "./runtime-process";
+import { RuntimeScope } from "./runtime-scope";
 import { evoke } from "#src/contracts";
 import { isSome } from "#src/utils";
 import { standardScopeSpec } from "#src/scopes";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
-    this.#rootFrame = ScopeFrame.create(entry, standardScopeSpec());
+    this.#rootScope = RuntimeScope.create(entry, standardScopeSpec());
   }
 
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
-    const process = this.#rootFrame.readProcess(processRef);
+    const process = this.#rootScope.readProcess(processRef);
 
     switch (process.status) {
       case "waiting":
@@ -67,19 +67,19 @@ export class Interpreter {
   }
 
   public observeRunnable(listener: (process: ProcessRef<unknown>) => void): () => void {
-    return this.#rootFrame.observeRunnable(listener);
+    return this.#rootScope.observeRunnable(listener);
   }
 
   public get scopeRoot(): ScopeRef<unknown> {
-    return this.#rootFrame.ref;
+    return this.#rootScope.ref;
   }
 
   public get processRoot(): ProcessRef<unknown> {
-    return this.#rootFrame.processRef;
+    return this.#rootScope.processRef;
   }
 
   public get isClosed(): boolean {
-    return this.#rootFrame.isClosed;
+    return this.#rootScope.closed;
   }
 
   protected onClosing(
@@ -91,22 +91,22 @@ export class Interpreter {
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    return this.#rootFrame.resolve(scope).spawn(worker, "tracked").ref;
+    return this.#rootScope.resolve(scope).spawn(worker, "tracked").ref;
   }
 
   public lookup<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>): Option<Value> {
-    return this.#rootFrame.resolve(scope).lookup(contextKey);
+    return this.#rootScope.resolve(scope).lookup(contextKey);
   }
 
   public poll<Result>(future: FutureKey<Result>): Option<FutureResult<Result>> {
-    return this.#rootFrame.poll(future);
+    return this.#rootScope.poll(future);
   }
 
   public wait<Result>(
     future: FutureKey<Result>,
     onSettled: (result: FutureResult<Result>) => void,
   ): void {
-    this.#rootFrame.wait(future, onSettled);
+    this.#rootScope.wait(future, onSettled);
   }
 
   // oxlint-disable-next-line max-statements
@@ -195,21 +195,20 @@ export class Interpreter {
   }
 
   #bind(process: RuntimeProcess, sigil: BindSigil<unknown>): void {
-    this.#rootFrame.resolve(process.scopeRef).bind(sigil.key, sigil.value);
+    this.#rootScope.resolve(process.scopeRef).bind(sigil.key, sigil.value);
   }
 
   #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
-    const branchFrame = this.#rootFrame.resolve(process.scopeRef).branch(sigil.entry, sigil.spec);
-    return branchFrame.entryProcess.branchHandle();
+    const branchScope = this.#rootScope.resolve(process.scopeRef).branch(sigil.entry, sigil.spec);
+    return branchScope.entryProcess.branchHandle();
   }
 
   #future(process: RuntimeProcess): readonly [FutureKey<unknown>, FutureSettleKey<unknown>] {
-    const created = this.#rootFrame.resolve(process.scopeRef).createFuture<unknown>();
-    return [created.key, created.settleKey];
+    return this.#rootScope.resolve(process.scopeRef).createFuture<unknown>();
   }
 
   #halt(process: RuntimeProcess, sigil: HaltSigil): void {
-    this.#rootFrame
+    this.#rootScope
       .resolve(process.scopeRef)
       .halt(
         process.ref,
@@ -219,11 +218,11 @@ export class Interpreter {
   }
 
   #settle(sigil: SettleSigil<unknown>): void {
-    this.#rootFrame.settleFuture(sigil.futureSettle, sigil.result);
+    this.#rootScope.settleFuture(sigil.futureSettle, sigil.result);
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    const spawned = this.#rootFrame
+    const spawned = this.#rootScope
       .resolve(process.scopeRef)
       .spawn(sigil.ritual, sigil.participation);
     return spawned.ref;
@@ -242,23 +241,23 @@ export class Interpreter {
   }
 
   #wait(process: RuntimeProcess, sigil: { readonly future: FutureKey<unknown> }): void {
-    process.wait(this.#rootFrame.requireFuture(sigil.future));
+    process.wait(this.#rootScope.requireFuture(sigil.future));
   }
 
   #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
-    this.#rootFrame.resolve(process.scopeRef).unbind(sigil.key);
+    this.#rootScope.resolve(process.scopeRef).unbind(sigil.key);
   }
 
   #tryReceive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): Option<unknown> {
-    return this.#rootFrame.resolve(process.scopeRef).tryReceive(sigil.messageKey);
+    return this.#rootScope.resolve(process.scopeRef).tryReceive(sigil.messageKey);
   }
 
   #receive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): void {
-    this.#rootFrame.resolve(process.scopeRef).receive(process.ref, sigil.messageKey);
+    this.#rootScope.resolve(process.scopeRef).receive(process.ref, sigil.messageKey);
   }
 
   #send(process: RuntimeProcess, sigil: SendSigil<unknown>): void {
-    this.#rootFrame.resolve(process.scopeRef).send(sigil.scope, sigil.messageKey, sigil.value);
+    this.#rootScope.resolve(process.scopeRef).send(sigil.scope, sigil.messageKey, sigil.value);
   }
 
   #setContinuation(
@@ -273,5 +272,5 @@ export class Interpreter {
     process.primeContinuation(resonate);
   }
 
-  readonly #rootFrame: ScopeFrame;
+  readonly #rootScope: RuntimeScope;
 }

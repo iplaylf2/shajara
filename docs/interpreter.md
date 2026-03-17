@@ -33,10 +33,11 @@
 在实现分层上，当前边界进一步收口为：
 
 - `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复、`resonate` 后的终态收敛，以及 `self` / `branch` 所需 handle 的产出。
-- `ScopeFrame` 负责 scope 树、runtime scope 索引、future 索引、mailbox 索引，以及“某个 scope 的 entry process”这一结构性关系。
-- `ScopeFrame` 直接接收 `entry ritual` 并生成 entry process；`Interpreter` 不再为此提供额外 hook。
-- `ScopeFrame` 负责 process 退出后的结构性后处理，例如 process exit future 收敛、scope exit mirror 与 scope close 检查。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `ScopeFrame` 重新解释 scope、entry process、mailbox waiting 与 process exit 的关系。
+- `RuntimeScope` 负责 scope 树、scope 索引、future 索引、mailbox 索引，以及“某个 scope 的 entry process”这一结构性关系。
+- 这两类 runtime 实体现分别落位到 `runtime-process.ts` 与 `runtime-scope.ts`；前者承载 process 局部行为，后者承载 scope 结构关系与解释环境内的共享索引。
+- `RuntimeScope` 直接接收 `entry ritual` 并生成 entry process；`Interpreter` 不再为此提供额外 hook。
+- `RuntimeScope` 负责 process 退出后的结构性后处理，例如 process exit future 收敛、scope exit mirror 与 scope close 检查。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `RuntimeScope` 重新解释 scope、entry process、mailbox waiting 与 process exit 的关系。
 
 ## 3. 驱动模型
 
@@ -98,7 +99,7 @@
 - 新 Process 被创建并注册进解释环境后。
 - 等待中的 Process 因 future 收敛等原因重新回到 runnable 态后。
 
-这些 runnable 通知当前由 `ScopeFrame` 维护注册与分发；`Interpreter` 只把它作为公开观察接口转发给外部。
+这些 runnable 通知当前由 `RuntimeScope` 维护注册与分发；`Interpreter` 只把它作为公开观察接口转发给外部。
 
 它的用途是把最小驱动闭环暴露给解释器外部：外部可以据此组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
@@ -161,14 +162,14 @@
 - 当 sigil 需要阻塞时，第二步通常继续拆成两个相邻动作：
   1. 让 Process 进入相应的等待态。
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
-- 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `ScopeFrame`；它不应提前替 `ScopeFrame` 暴露或模拟内部落点。
-- 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 也不应额外提醒 `ScopeFrame` 去完成 process；`RuntimeProcess` 自身应负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `ScopeFrame` 只承接 exited 之后的结构性后处理。
-- `halt` 的解释也遵循同一方向：`Interpreter` 负责识别 `halt` sigil，并把当前 scope、当前 process 以及 `onClosing` 包装出的 closing worker factory 交给 `ScopeFrame`；closing 子树扩散、leaf-to-root 的 closing worker 组织和最终 failure 固定，属于 `ScopeFrame` 的关闭协议，而不是 `Interpreter` 直接手写的流程。
+- 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `RuntimeScope`；它不应提前替 `RuntimeScope` 暴露或模拟内部落点。
+- 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 也不应额外提醒 `RuntimeScope` 去完成 process；`RuntimeProcess` 自身应负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `RuntimeScope` 只承接 exited 之后的结构性后处理。
+- `halt` 的解释也遵循同一方向：`Interpreter` 负责识别 `halt` sigil，并把当前 scope、当前 process 以及 `onClosing` 包装出的 closing worker factory 交给 `RuntimeScope`；closing 子树扩散、leaf-to-root 的 closing worker 组织和最终 failure 固定，属于 `RuntimeScope` 的关闭协议，而不是 `Interpreter` 直接手写的流程。
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。
 - 对同时存在“尝试立即完成”和“进入阻塞等待”两条路径的 sigil，应显式区分这两层动作；例如 `receive` 当前按 `#tryReceive` 与 `#receive` 两步命名，以区分“尝试读取 mailbox”与“在 mailbox 上等待消息”。
-- `send` 的解释风格也遵循同一原则：`Interpreter` 站在 sender scope 的 frame 上下文发起动作，再把目标 `scopeRef`、`messageKey` 与 `value` 交给 `ScopeFrame` 处理，而不是先替它 resolve 到 target frame。
+- `send` 的解释风格也遵循同一原则：`Interpreter` 站在 sender scope 的 runtime scope 上下文发起动作，再把目标 `scopeRef`、`messageKey` 与 `value` 交给 `RuntimeScope` 处理，而不是先替它 resolve 到 target scope。
 - 命名应表达“解释这个 sigil”，而不是转写成额外的观察性或描述性措辞；例如优先使用 `#poll`，而不是 `#inspectFuture`。
 - 这类私有方法存在的主要目的，不是抽象复用，而是维持 `#interpretWisp` 的 top-down case 结构，让每个 sigil 分支都保持统一的阅读节奏。
 
