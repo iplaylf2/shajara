@@ -1,37 +1,33 @@
-import type { BranchHandle, SelfHandle } from "#src/sigils";
+// oxlint-disable class-methods-use-this
 import type {
-  FailureShape,
   FutureKey,
   FutureResult,
+  FutureSettleKey,
+  MessageKey,
   ProcessRef,
   Ritual,
   ScopeRef,
   Wisp,
 } from "#src/contracts";
-import { left, right } from "#src/utils";
+import type { Option } from "#src/utils";
+import type { SelfHandle } from "#src/sigils";
+import { notImplemented } from "#src/internal/not-implemented";
+import { right } from "#src/utils";
 
 export class RuntimeProcess<Relic = unknown> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
     exitFuture: FutureKey<Relic>,
-    ritual: Ritual<Relic>,
-    participation: "tracked" | "auxiliary",
+    config: RuntimeProcessConfig<Relic>,
   ) {
-    this.participation = participation;
+    this.participation = config.participation;
     this.ref = { exitFuture } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
-    this.wisp = ritual() as Wisp<unknown>;
+    this.wisp = config.ritual() as Wisp<unknown>;
   }
 
   public get hasQueuedContinuation(): boolean {
     return this.continuation !== null;
-  }
-
-  public branchHandle(): BranchHandle<Relic> {
-    return {
-      processRef: this.ref,
-      scopeRef: this.scopeRef as ScopeRef<Relic>,
-    };
   }
 
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
@@ -56,7 +52,7 @@ export class RuntimeProcess<Relic = unknown> {
     this.wisp = continuation.resonate(continuation.echo);
 
     if (this.wisp.bearing === "resting") {
-      this.complete(this.wisp.relic);
+      this.#complete(this.wisp.relic);
     }
   }
 
@@ -67,15 +63,32 @@ export class RuntimeProcess<Relic = unknown> {
       kind: "future",
     };
     this.status = "waiting";
+    notImplemented("RuntimeProcess.wait");
   }
 
-  public receive(): void {
+  public receive(_messageKey: MessageKey<unknown>): void {
     this.blocker = {
       continuation: null,
       future: null,
       kind: "receive",
     };
     this.status = "waiting";
+    notImplemented("RuntimeProcess.receive");
+  }
+
+  public tryReceive<Value>(_messageKey: MessageKey<Value>): Option<Value> {
+    return notImplemented("RuntimeProcess.tryReceive");
+  }
+
+  public poll<Result>(_future: FutureKey<Result>): Option<FutureResult<Result>> {
+    return notImplemented("RuntimeProcess.poll");
+  }
+
+  public settle<Result>(
+    _futureSettle: FutureSettleKey<Result>,
+    _result: FutureResult<Result>,
+  ): void {
+    notImplemented("RuntimeProcess.settle");
   }
 
   public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
@@ -92,7 +105,7 @@ export class RuntimeProcess<Relic = unknown> {
     this.status = "runnable";
   }
 
-  public complete(value: unknown): void {
+  #complete(value: unknown): void {
     if (this.status === "completed") {
       return;
     }
@@ -100,17 +113,6 @@ export class RuntimeProcess<Relic = unknown> {
     this.blocker = null;
     this.continuation = null;
     this.result = right(value) as FutureResult<Relic>;
-    this.status = "completed";
-  }
-
-  public fail(failure: FailureShape): void {
-    if (this.status === "completed") {
-      return;
-    }
-
-    this.blocker = null;
-    this.continuation = null;
-    this.result = left(failure) as FutureResult<Relic>;
     this.status = "completed";
   }
 
@@ -134,4 +136,9 @@ export interface RuntimeContinuation {
   readonly echo: unknown;
   readonly kind: "resonate";
   readonly resonate: (echo: unknown) => Wisp<unknown>;
+}
+
+export interface RuntimeProcessConfig<Relic> {
+  readonly participation: "tracked" | "auxiliary";
+  readonly ritual: Ritual<Relic>;
 }

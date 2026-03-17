@@ -1,4 +1,5 @@
 // oxlint-disable max-lines
+// oxlint-disable class-methods-use-this
 import type {
   ContextKey,
   FailureShape,
@@ -15,18 +16,16 @@ import { none, some } from "#src/utils";
 import type { Failure } from "#src/failures";
 import type { FutureRecord } from "./future-record";
 import type { Option } from "#src/utils";
+import { RuntimeProcess } from "./runtime-process";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export class RuntimeScope {
-  public static create(
-    spec: ScopeSpec,
-    admitEntryProcessRef: EntryProcessRefFactory,
-  ): RuntimeScope {
-    return new RuntimeScope(spec, RuntimeScope.#sentinel, admitEntryProcessRef);
+  public static create(spec: ScopeSpec, entry: Ritual<unknown>): RuntimeScope {
+    return new RuntimeScope(spec, RuntimeScope.#sentinel, entry);
   }
 
-  public branch(spec: ScopeSpec, admitEntryProcessRef: EntryProcessRefFactory): RuntimeScope {
-    const child = new RuntimeScope(spec, this, admitEntryProcessRef);
+  public branch(spec: ScopeSpec, entry: Ritual<unknown>): RuntimeScope {
+    const child = new RuntimeScope(spec, this, entry);
 
     this.children.add(child);
     return child;
@@ -52,31 +51,47 @@ export class RuntimeScope {
     this.bindings.delete(contextKey);
   }
 
-  public tryReceive<Value>(messageKey: MessageKey<Value>): Option<Value> {
-    return receiveMessage(this.#mailbox(messageKey)) as Option<Value>;
+  public poll<Result>(_future: FutureKey<Result>): Option<FutureResult<Result>> {
+    return notImplemented("RuntimeScope.poll");
   }
 
-  public receive(process: ProcessRef<unknown>, messageKey: MessageKey<unknown>): void {
-    waitForMessage(this.#mailbox(messageKey), process);
+  public wait<Result>(
+    _future: FutureKey<Result>,
+    _onSettled: (result: FutureResult<Result>) => void,
+  ): void {
+    notImplemented("RuntimeScope.wait");
+  }
+
+  public settle<Result>(
+    _futureSettle: FutureSettleKey<Result>,
+    _result: FutureResult<Result>,
+  ): void {
+    notImplemented("RuntimeScope.settle");
   }
 
   public send<Value>(
-    messageKey: MessageKey<Value>,
-    from: ScopeRef<unknown>,
-    value: Value,
-  ): ProcessRef<unknown> | null {
-    return sendMessage(this.#mailbox(messageKey), from, value);
+    _scope: ScopeRef<unknown>,
+    _messageKey: MessageKey<Value>,
+    _value: Value,
+  ): void {
+    notImplemented("RuntimeScope.send");
   }
 
-  public spawn<Relic>(spawnProcessRef: SpawnProcessRefFactory<Relic>): ProcessRef<Relic> {
-    const exitFuture = this.issueProcessExitFuture<Relic>();
-    const processRef = spawnProcessRef(exitFuture);
+  public spawn<Relic>(
+    ritual: Ritual<Relic>,
+    participation: RuntimeParticipation,
+  ): RuntimeProcess<Relic> {
+    const exitFuture = this.#issueProcessExitFuture<Relic>();
+    const process = new RuntimeProcess<Relic>(this.ref, exitFuture, {
+      participation,
+      ritual,
+    });
 
-    this.processes.add(processRef);
-    return processRef;
+    this.processes.add(process as RuntimeProcess<unknown>);
+    return process;
   }
 
-  public issueProcessExitFuture<Relic>(): FutureKey<Relic> {
+  #issueProcessExitFuture<Relic>(): FutureKey<Relic> {
     const [exitFuture] = this.createFuture<Relic>();
     return exitFuture;
   }
@@ -105,9 +120,13 @@ export class RuntimeScope {
   public readonly bindings = new Map<ContextKey<unknown>, unknown>();
   public readonly children = new Set<RuntimeScope>();
   public readonly mailboxes = new Map<MessageKey<unknown>, RuntimeMailbox>();
-  public readonly processes = new Set<ProcessRef<unknown>>();
+  public readonly processes = new Set<RuntimeProcess>();
   public closed = false;
-  public processRef: ProcessRef<unknown>;
+  public readonly process: RuntimeProcess;
+
+  public get processRef(): ProcessRef<unknown> {
+    return this.process.ref;
+  }
 
   public requireFuture<Result>(future: FutureKey<Result>): FutureRecord {
     const resolved = this.#futureByKey.get(future as FutureKey<unknown>);
@@ -141,22 +160,6 @@ export class RuntimeScope {
     notImplemented("RuntimeScope.enter closing subtree");
   }
 
-  #mailbox(messageKey: MessageKey<unknown>): RuntimeMailbox {
-    const existing = this.mailboxes.get(messageKey);
-
-    if (typeof existing !== "undefined") {
-      return existing;
-    }
-
-    const mailbox: RuntimeMailbox = {
-      buffer: [],
-      waitingProcesses: [],
-    };
-
-    this.mailboxes.set(messageKey, mailbox);
-    return mailbox;
-  }
-
   static #spawnClosingWorker(
     _scope: RuntimeScope,
     _process: ProcessRef<unknown>,
@@ -170,25 +173,26 @@ export class RuntimeScope {
     return scope === RuntimeScope.#sentinel;
   }
 
-  private constructor(
-    spec: ScopeSpec,
-    parent: RuntimeScope,
-    admitEntryProcessRef: EntryProcessRefFactory,
-  ) {
+  private constructor(spec: ScopeSpec, parent: RuntimeScope, entry: Ritual<unknown>) {
     const { future: exitFuture, key } = createFutureRecord<unknown>();
-    const entryExitFuture = this.issueProcessExitFuture<unknown>();
+    const entryExitFuture = this.#issueProcessExitFuture<unknown>();
 
     this.#futureByKey.set(exitFuture.key, exitFuture);
     this.#futureBySettle.set(exitFuture.settleKey, exitFuture);
     this.parent = parent;
     this.ref = { exitFuture: key } as ScopeRef<unknown>;
-    this.processRef = this.#branchEntryProcess(admitEntryProcessRef(this, entryExitFuture));
     this.spec = spec;
+    this.process = this.#branchEntryProcess(
+      new RuntimeProcess(this.ref, entryExitFuture, {
+        participation: "tracked",
+        ritual: entry,
+      }),
+    );
   }
 
-  #branchEntryProcess(processRef: ProcessRef<unknown>): ProcessRef<unknown> {
-    this.processes.add(processRef);
-    return processRef;
+  #branchEntryProcess(process: RuntimeProcess): RuntimeProcess {
+    this.processes.add(process);
+    return process;
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
@@ -203,41 +207,7 @@ export type ClosingWorkerFactory = (
   failure: Failure,
 ) => Ritual<Failure>;
 
-export type EntryProcessRefFactory = (
-  scope: RuntimeScope,
-  exitFuture: FutureKey<unknown>,
-) => ProcessRef<unknown>;
-
-export type SpawnProcessRefFactory<Relic> = (exitFuture: FutureKey<Relic>) => ProcessRef<Relic>;
-
-function receiveMessage(mailbox: RuntimeMailbox): Option<unknown> {
-  const message = mailbox.buffer.shift();
-
-  if (typeof message === "undefined") {
-    return none;
-  }
-
-  return some(message.value);
-}
-
-function waitForMessage(mailbox: RuntimeMailbox, process: ProcessRef<unknown>): void {
-  mailbox.waitingProcesses.push(process);
-}
-
-function sendMessage(
-  mailbox: RuntimeMailbox,
-  from: ScopeRef<unknown>,
-  value: unknown,
-): ProcessRef<unknown> | null {
-  const waitingProcess = mailbox.waitingProcesses.shift();
-
-  if (typeof waitingProcess === "undefined") {
-    mailbox.buffer.push({ from, value });
-    return null;
-  }
-
-  return waitingProcess;
-}
+export type RuntimeParticipation = "tracked" | "auxiliary";
 
 interface RuntimeMailbox {
   readonly buffer: RuntimeMessage[];

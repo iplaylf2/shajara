@@ -33,14 +33,17 @@
 在实现分层上，当前边界进一步收口为：
 
 - `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复、`resonate` 后的终态收敛，以及 `self` / `branch` 所需 handle 的产出。
-- `RuntimeScope` 负责 scope 树、scope 局部 future 记录、mailbox 与“某个 scope 的 entry process”这一结构性关系。
+- `RuntimeScope` 负责 scope 树、scope 局部 future 记录、mailbox，以及 scope 内各个 process 的结构性归属关系。
 - `RuntimeScope` 的构造契约要求 `parent` 永不为 `null`；根 scope 通过一个仅供内部使用的私有 sentinel 哨兵承接 create 路径，而不是把空值传播进正常实例关系。
-- `RuntimeScope` 与 `RuntimeProcess` 当前都不直接依赖对方实例；`Interpreter` 负责在 `scopeRef` / `processRef` 与对应 runtime 实体之间做编排。
-- `RuntimeScope.create(...)` / `branch(...)` 当前通过 hook 接收 entry process ref；scope 先签发 entry process 的 exit future，再由 `Interpreter` 构造并注册对应的 `RuntimeProcess`。
-- `RuntimeScope.spawn(...)` 当前也通过 hook 接收 spawned process ref；scope 先签发 spawned process 的 exit future，再由 `Interpreter` 在 hook 内构造并注册 process。
-- `RuntimeGraph` 当前只承担 ref/key 的快速寻址、future 等待队列与 settle 索引；它不负责 future 的创建语义，也不应回流成 `RuntimeScope` / `RuntimeProcess` 的共享状态宿主。
+- `RuntimeScope` 直接依赖并持有其局部 `RuntimeProcess` 是正当的，因为 process 的运行态本来就是 scope 内部的局部状态，而不是与 scope 平行的另一套一级对象。
+- `RuntimeProcess` 仍应只通过 `scopeRef` 与 scope 语义关联，而不直接反向依赖 `RuntimeScope`；这样 process 局部状态对象仍保持边界句柄视角，不把 scope 内部结构倒灌回 process。
+- `Interpreter` 的职责应收口在“解释当前 sigil 并发出状态变更意图”；它不应长期承担大部分 `scopeRef` / `processRef` 到 runtime 实体的寻址与跨对象编排，否则像“从中间关闭某个 scope”这类场景会把关闭协议的复杂度错误地推回解释器。
+- `RuntimeScope.create(...)` / `branch(...)` / `spawn(...)` 现在都按这一方向收口：scope 直接接收 entry / spawn 所需的 `Ritual`，并在内部建立和持有对应的 `RuntimeProcess`；`Interpreter` 不再承担这些结构关系的构造职责。
+- `RuntimeGraph` 当前只保留 register/resolve 两类 registry 职责，并进一步统一成 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess` 这组命名；它不再试图表现成更高层的 future/mailbox 语义宿主。
+- future 的运行时承载当前仍处在不稳定区：把 future 操作放进 `RuntimeScope` 往往会显得过宽，放进 `RuntimeProcess` 又不总是贴合其局部状态边界。后续需要单独评估 `RuntimeFuture` 一类建模来承接这组语义，但这不是当前迭代要立即落地的对象。
 - 这两类 runtime 实体现分别落位到 `runtime-process.ts` 与 `runtime-scope.ts`；`RuntimeGraph` 暂时位于第三个文件中，但其命名与长期边界仍未最终定案。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `RuntimeScope` 重新解释 scope、entry process 与 mailbox waiting 的关系。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不应绕过 `RuntimeScope` 重新解释 scope 内 process 归属、entry process、mailbox waiting 与 closing 路径。
+- 当前 `RuntimeProcess` / `RuntimeScope` 上已经补出一批 interpreter 需要依赖的 future/mailbox 方法签名，但其中多项仍明确保持 `notImplemented(...)` 占位；本轮目标是先把解释器依赖的对象形状摆正，而不是在错误边界上补全运行逻辑。
 
 ## 3. 驱动模型
 
@@ -160,14 +163,14 @@
 - 当 sigil 需要阻塞时，第二步通常继续拆成两个相邻动作：
   1. 让 Process 进入相应的等待态。
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
-- 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `RuntimeScope`；它不应提前替 `RuntimeScope` 暴露或模拟内部落点。
+- 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `RuntimeScope` 或 `RuntimeProcess`；它不应长期替 runtime 实体承担大段 runtime 寻址与结构拼装逻辑。
 - 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 不应在得知 process 已终态后再额外补做 step-time 后处理；`RuntimeProcess` 自身负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `step` 在看见终态时只返回 `ProcessStep.exited`。
-- `halt` 的解释也遵循同一方向：`Interpreter` 负责识别 `halt` sigil，并把当前 scope、当前 process 以及 `onClosing` 包装出的 closing worker factory 交给 `RuntimeScope`；closing 子树扩散、leaf-to-root 的 closing worker 组织和最终 failure 固定，属于 `RuntimeScope` 的关闭协议，而不是 `Interpreter` 直接手写的流程。
+- `halt` 的解释也遵循同一方向：`Interpreter` 负责识别 `halt` sigil，并把当前 process 所在 scope 的关闭意图交给 `RuntimeScope`；closing 子树扩散、leaf-to-root 的 closing worker 组织、局部 process 终止与最终 failure 固定，属于 `RuntimeScope` 的关闭协议，而不是 `Interpreter` 直接手写的流程。
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。
 - 对同时存在“尝试立即完成”和“进入阻塞等待”两条路径的 sigil，应显式区分这两层动作；例如 `receive` 当前按 `#tryReceive` 与 `#receive` 两步命名，以区分“尝试读取 mailbox”与“在 mailbox 上等待消息”。
-- `send` 的解释风格也遵循同一原则：`Interpreter` 站在 sender scope 的 runtime scope 上下文发起动作，再把目标 `scopeRef`、`messageKey` 与 `value` 交给 `RuntimeScope` 处理，而不是先替它 resolve 到 target scope。
+- `send` 的解释风格也遵循同一原则：`Interpreter` 在当前 process 的 scope 上下文里解释 `send`，并把 mailbox 投递动作交给 `RuntimeScope.send(...)` 表达，而不是让 `RuntimeProcess` 自身承担 scope-to-scope 投递语义。
 - 命名应表达“解释这个 sigil”，而不是转写成额外的观察性或描述性措辞；例如优先使用 `#poll`，而不是 `#inspectFuture`。
 - 这类私有方法存在的主要目的，不是抽象复用，而是维持 `#interpretWisp` 的 top-down case 结构，让每个 sigil 分支都保持统一的阅读节奏。
 
