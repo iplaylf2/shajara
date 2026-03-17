@@ -59,10 +59,10 @@
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeScope.spawn(...)` 也已改为直接接收 spawned `Ritual` 与 `participation`，由 scope 内部构造 process，再交由 `Interpreter` 做 registry 登记。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- `RuntimeGraph` 当前公开面已进一步收紧为 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess`；它只承担 registry/locator 角色，不再暴露额外的运行语义入口。  
-  证据：`packages/kernel/src/interpreter/runtime-graph.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- future 当前实现仍以 `RuntimeScope` 内部记录为准：`FutureKey` / `FutureSettleKey` 只是 token，`RuntimeGraph` 只保留 future record 的登记索引，不再承担 future 创建语义。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-graph.ts`
+- `RuntimeIndex` 当前公开面已进一步收紧为 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess`；它只承担 index/locator 角色，不再暴露额外的运行语义入口，内部索引容器也已改为 `WeakMap`。  
+  证据：`packages/kernel/src/interpreter/runtime-index.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- future 当前实现仍以 `RuntimeScope` 内部记录为准：`FutureKey` / `FutureSettleKey` 只是 token，`RuntimeIndex` 只保留 future record 的登记索引，不再承担 future 创建语义。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-index.ts`
 - future 的运行时建模当前仍未稳定：放在 `RuntimeScope` 与放在 `RuntimeProcess` 都会出现不顺手的边界压力，因此已登记后续评估 `RuntimeFuture` 一类独立对象的需要；但这一方向当前只做设计留意，不进入本轮实现。  
   证据：`docs/interpreter.md`、`docs/execution.md`
 - `observeRunnable(...)` 目前仍明确占位为 `notImplemented(...)`；runnable 事件应由 `Interpreter` 还是其他 runtime 协调层触发，尚未定案。  
@@ -105,10 +105,10 @@
 
 1. 继续完成 `Interpreter` review；重点不再是维持 `RuntimeScope` / `RuntimeProcess` 的绝对解耦，而是把 runtime 寻址和结构装配从 `Interpreter` 回收到 `RuntimeScope` 主导的模型。
 2. 重做 process / scope 关系：应由 `RuntimeScope` 直接持有并组织本地 `RuntimeProcess` 状态，而 `RuntimeProcess` 继续只通过 `scopeRef` 与 scope 语义关联，不反向依赖 `RuntimeScope`。
-3. 重做 future 处理：当前实现仍把 future record 暴露给 `RuntimeGraph` 做索引与等待队列管理，但后续更可能改成“由 locator 快速定位 owner scope，再由 `RuntimeScope` 完成 future 处理”。
+3. 重做 future 处理：当前实现仍把 future record 暴露给 `RuntimeIndex` 做索引与等待队列管理，但后续更可能改成“由 locator 快速定位 owner scope，再由 `RuntimeScope` 完成 future 处理”。
    同时需要保留一个未决观察：若 future 操作继续卡在 `RuntimeScope` / `RuntimeProcess` 二者之间来回摆动，应转向评估 `RuntimeFuture` 一类独立建模。
 4. 继续补完 `halt` / closing 协议；当前 `RuntimeScope.halt(...)`、closing subtree 扩散与 closing worker 形成仍是占位实现，而这部分正是检验依赖方向是否合理的关键场景。
-5. 重新评估 `RuntimeGraph` 的命名；虽然其公开面现已收口为 registry/locator 风格，但名字是否最终改成 `RuntimeRegistry` 一类更贴近“登记/定位”的命名，仍待定。
+5. 继续观察 `RuntimeIndex` 这一命名是否稳定；当前它已经比 `RuntimeGraph` 更贴近其 index/locator 职责，但长期是否仍需进一步细化边界，仍待后续迭代验证。
 6. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
 7. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
 

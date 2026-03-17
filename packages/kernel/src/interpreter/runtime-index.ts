@@ -3,7 +3,7 @@ import type { FutureRecord } from "./future-record";
 import type { RuntimeProcess } from "./runtime-process";
 import type { RuntimeScope } from "./runtime-scope";
 
-export class RuntimeGraph {
+export class RuntimeIndex {
   public registerScope(scope: RuntimeScope): void {
     this.#scopeByRef.set(scope.ref as ScopeRef<unknown>, scope);
     this.#registerFuture(scope.requireFuture(scope.ref.exitFuture));
@@ -45,10 +45,10 @@ export class RuntimeGraph {
       | undefined;
   }
 
-  readonly #futureByKey = new Map<FutureKey<unknown>, FutureRecord>();
-  readonly #futureBySettle = new Map<FutureSettleKey<unknown>, FutureRecord>();
-  readonly #processByRef = new Map<ProcessRef<unknown>, RuntimeProcess>();
-  readonly #scopeByRef = new Map<ScopeRef<unknown>, RuntimeScope>();
+  readonly #futureByKey = new WeakMap<FutureKey<unknown>, FutureRecord>();
+  readonly #futureBySettle = new WeakMap<FutureSettleKey<unknown>, FutureRecord>();
+  readonly #processByRef = new WeakMap<ProcessRef<unknown>, RuntimeProcess>();
+  readonly #scopeByRef = new WeakMap<ScopeRef<unknown>, RuntimeScope>();
 
   #registerFuture(future: FutureRecord): void {
     this.#futureByKey.set(future.key, future);

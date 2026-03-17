@@ -39,7 +39,7 @@ import {
 import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import type { ProcessStep } from "./process-step";
-import { RuntimeGraph } from "./runtime-graph";
+import { RuntimeIndex } from "./runtime-index";
 import type { RuntimeParticipation } from "./runtime-scope";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
@@ -51,7 +51,7 @@ import { standardScopeSpec } from "#src/scopes";
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(standardScopeSpec(), entry);
-    this.#runtime.registerScope(this.#rootScope);
+    this.#runtimeIndex.registerScope(this.#rootScope);
   }
 
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
@@ -206,7 +206,7 @@ export class Interpreter {
   #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
     const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.spec, sigil.entry);
 
-    this.#runtime.registerScope(branchScope);
+    this.#runtimeIndex.registerScope(branchScope);
 
     return {
       processRef: branchScope.processRef,
@@ -218,7 +218,7 @@ export class Interpreter {
     const scope = this.#resolveScope(process.scopeRef);
     const [future, settle] = scope.createFuture();
 
-    this.#runtime.registerFuture(scope, future);
+    this.#runtimeIndex.registerFuture(scope, future);
 
     return [future, settle];
   }
@@ -290,19 +290,19 @@ export class Interpreter {
   ): ProcessRef<Relic> {
     const process = scope.spawn(ritual, participation);
 
-    this.#runtime.registerProcess(process);
+    this.#runtimeIndex.registerProcess(process);
 
     return process.ref;
   }
 
   readonly #rootScope: RuntimeScope;
-  readonly #runtime = new RuntimeGraph();
+  readonly #runtimeIndex = new RuntimeIndex();
 
   #resolveScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
-    return this.#runtime.resolveScope(scopeRef);
+    return this.#runtimeIndex.resolveScope(scopeRef);
   }
 
   #readProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
-    return this.#runtime.resolveProcess(processRef);
+    return this.#runtimeIndex.resolveProcess(processRef);
   }
 }
