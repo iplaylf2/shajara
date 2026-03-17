@@ -1,6 +1,7 @@
 import type { BranchHandle, SelfHandle } from "#src/sigils";
 import type {
   FailureShape,
+  FutureKey,
   FutureResult,
   ProcessRef,
   Ritual,
@@ -8,16 +9,18 @@ import type {
   Wisp,
 } from "#src/contracts";
 import { left, right } from "#src/utils";
-import type { RuntimeFuture } from "./runtime-scope";
 
 export class RuntimeProcess<Relic = unknown> {
-  public constructor(config: RuntimeProcessConfig<Relic>) {
-    this.exitFuture = config.exitFuture;
-    this.#onExited = config.onExited;
-    this.participation = config.participation;
-    this.ref = config.ref;
-    this.scopeRef = config.scopeRef;
-    this.wisp = config.ritual() as Wisp<unknown>;
+  public constructor(
+    scopeRef: ScopeRef<unknown>,
+    exitFuture: FutureKey<Relic>,
+    ritual: Ritual<Relic>,
+    participation: "tracked" | "auxiliary",
+  ) {
+    this.participation = participation;
+    this.ref = { exitFuture } as ProcessRef<Relic>;
+    this.scopeRef = scopeRef;
+    this.wisp = ritual() as Wisp<unknown>;
   }
 
   public get hasQueuedContinuation(): boolean {
@@ -57,14 +60,13 @@ export class RuntimeProcess<Relic = unknown> {
     }
   }
 
-  public wait(future: RuntimeFuture): void {
+  public wait(future: FutureKey<unknown>): void {
     this.blocker = {
       continuation: null,
       future,
       kind: "future",
     };
     this.status = "waiting";
-    future.waitingProcesses.add(this);
   }
 
   public receive(): void {
@@ -86,7 +88,6 @@ export class RuntimeProcess<Relic = unknown> {
     }
 
     this.setContinuation(this.blocker.continuation, echo);
-    this.blocker.future?.waitingProcesses.delete(this);
     this.blocker = null;
     this.status = "runnable";
   }
@@ -100,7 +101,6 @@ export class RuntimeProcess<Relic = unknown> {
     this.continuation = null;
     this.result = right(value) as FutureResult<Relic>;
     this.status = "completed";
-    this.#onExited(this);
   }
 
   public fail(failure: FailureShape): void {
@@ -112,10 +112,8 @@ export class RuntimeProcess<Relic = unknown> {
     this.continuation = null;
     this.result = left(failure) as FutureResult<Relic>;
     this.status = "completed";
-    this.#onExited(this);
   }
 
-  public readonly exitFuture: RuntimeFuture;
   public readonly participation: "tracked" | "auxiliary";
   public readonly ref: ProcessRef<Relic>;
   public readonly scopeRef: ScopeRef<unknown>;
@@ -124,13 +122,11 @@ export class RuntimeProcess<Relic = unknown> {
   public result: FutureResult<Relic> | null = null;
   public status: "runnable" | "waiting" | "completed" = "runnable";
   public wisp: Wisp<unknown>;
-
-  readonly #onExited: (process: RuntimeProcess) => void;
 }
 
 export interface RuntimeBlocker {
   continuation: ((echo: unknown) => Wisp<unknown>) | null;
-  future: RuntimeFuture | null;
+  future: FutureKey<unknown> | null;
   readonly kind: "future" | "receive";
 }
 
@@ -138,13 +134,4 @@ export interface RuntimeContinuation {
   readonly echo: unknown;
   readonly kind: "resonate";
   readonly resonate: (echo: unknown) => Wisp<unknown>;
-}
-
-export interface RuntimeProcessConfig<Relic> {
-  readonly exitFuture: RuntimeFuture;
-  readonly onExited: (process: RuntimeProcess) => void;
-  readonly participation: "tracked" | "auxiliary";
-  readonly ref: ProcessRef<Relic>;
-  readonly ritual: Ritual<Relic>;
-  readonly scopeRef: ScopeRef<unknown>;
 }

@@ -33,11 +33,14 @@
 在实现分层上，当前边界进一步收口为：
 
 - `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复、`resonate` 后的终态收敛，以及 `self` / `branch` 所需 handle 的产出。
-- `RuntimeScope` 负责 scope 树、scope 索引、future 索引、mailbox 索引，以及“某个 scope 的 entry process”这一结构性关系。
-- 这两类 runtime 实体现分别落位到 `runtime-process.ts` 与 `runtime-scope.ts`；前者承载 process 局部行为，后者承载 scope 结构关系与解释环境内的共享索引。
-- `RuntimeScope` 直接接收 `entry ritual` 并生成 entry process；`Interpreter` 不再为此提供额外 hook。
-- `RuntimeScope` 负责 process 退出后的结构性后处理，例如 process exit future 收敛、scope exit mirror 与 scope close 检查。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `RuntimeScope` 重新解释 scope、entry process、mailbox waiting 与 process exit 的关系。
+- `RuntimeScope` 负责 scope 树、scope 局部 future 记录、mailbox 与“某个 scope 的 entry process”这一结构性关系。
+- `RuntimeScope` 的构造契约要求 `parent` 永不为 `null`；根 scope 通过一个仅供内部使用的私有 sentinel 哨兵承接 create 路径，而不是把空值传播进正常实例关系。
+- `RuntimeScope` 与 `RuntimeProcess` 当前都不直接依赖对方实例；`Interpreter` 负责在 `scopeRef` / `processRef` 与对应 runtime 实体之间做编排。
+- `RuntimeScope.create(...)` / `branch(...)` 当前通过 hook 接收 entry process ref；scope 先签发 entry process 的 exit future，再由 `Interpreter` 构造并注册对应的 `RuntimeProcess`。
+- `RuntimeScope.spawn(...)` 当前也通过 hook 接收 spawned process ref；scope 先签发 spawned process 的 exit future，再由 `Interpreter` 在 hook 内构造并注册 process。
+- `RuntimeGraph` 当前只承担 ref/key 的快速寻址、future 等待队列与 settle 索引；它不负责 future 的创建语义，也不应回流成 `RuntimeScope` / `RuntimeProcess` 的共享状态宿主。
+- 这两类 runtime 实体现分别落位到 `runtime-process.ts` 与 `runtime-scope.ts`；`RuntimeGraph` 暂时位于第三个文件中，但其命名与长期边界仍未最终定案。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `RuntimeScope` 重新解释 scope、entry process 与 mailbox waiting 的关系。
 
 ## 3. 驱动模型
 
@@ -92,16 +95,11 @@
 
 ### 4.3 `observeRunnable`
 
-`observeRunnable(listener)` 用于登记 Process runnable 通知。
+`observeRunnable(listener)` 预留给解释环境对外暴露 runnable 通知。
 
-其返回值是取消登记函数；解释器不维护调度循环策略本身，只承诺在以下时机发出通知：
+它的长期方向仍然是为最小驱动闭环提供事件面，让外部能够组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
-- 新 Process 被创建并注册进解释环境后。
-- 等待中的 Process 因 future 收敛等原因重新回到 runnable 态后。
-
-这些 runnable 通知当前由 `RuntimeScope` 维护注册与分发；`Interpreter` 只把它作为公开观察接口转发给外部。
-
-它的用途是把最小驱动闭环暴露给解释器外部：外部可以据此组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
+但当前这条能力还没有定案：runnable 通知究竟应由 `Interpreter` 触发，还是由其他 runtime 协调层承接，目前仍在设计中，因此实现暂时保持 `notImplemented(...)`。
 
 ### 4.4 只读观察接口
 
@@ -163,7 +161,7 @@
   1. 让 Process 进入相应的等待态。
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
 - 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `RuntimeScope`；它不应提前替 `RuntimeScope` 暴露或模拟内部落点。
-- 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 也不应额外提醒 `RuntimeScope` 去完成 process；`RuntimeProcess` 自身应负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `RuntimeScope` 只承接 exited 之后的结构性后处理。
+- 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 不应在得知 process 已终态后再额外补做 step-time 后处理；`RuntimeProcess` 自身负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `step` 在看见终态时只返回 `ProcessStep.exited`。
 - `halt` 的解释也遵循同一方向：`Interpreter` 负责识别 `halt` sigil，并把当前 scope、当前 process 以及 `onClosing` 包装出的 closing worker factory 交给 `RuntimeScope`；closing 子树扩散、leaf-to-root 的 closing worker 组织和最终 failure 固定，属于 `RuntimeScope` 的关闭协议，而不是 `Interpreter` 直接手写的流程。
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
