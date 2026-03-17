@@ -69,6 +69,7 @@ export class RuntimeProcess<Relic = unknown> {
 
   public constructor(config: RuntimeProcessConfig<Relic>) {
     this.exitFuture = config.exitFuture;
+    this.#onExited = config.onExited;
     this.participation = config.participation;
     this.ref = config.ref;
     this.scopeRef = config.scopeRef;
@@ -79,6 +80,7 @@ export class RuntimeProcess<Relic = unknown> {
   public readonly participation: "tracked" | "auxiliary";
   public readonly ref: ProcessRef<Relic>;
   public readonly scopeRef: ScopeRef<unknown>;
+  readonly #onExited: (process: RuntimeProcess) => void;
 
   public get hasQueuedContinuation(): boolean {
     return this.continuation !== null;
@@ -97,6 +99,10 @@ export class RuntimeProcess<Relic = unknown> {
 
     this.continuation = null;
     this.wisp = continuation.resonate(continuation.echo);
+
+    if (this.wisp.bearing === "resting") {
+      this.complete(this.wisp.relic);
+    }
   }
 
   public wait(future: RuntimeFuture): void {
@@ -133,6 +139,30 @@ export class RuntimeProcess<Relic = unknown> {
     this.status = "ready";
   }
 
+  public complete(value: unknown): void {
+    if (this.status === "exited") {
+      return;
+    }
+
+    this.blocker = null;
+    this.continuation = null;
+    this.result = right(value) as FutureResult<Relic>;
+    this.status = "exited";
+    this.#onExited(this);
+  }
+
+  public fail(failure: FailureShape): void {
+    if (this.status === "exited") {
+      return;
+    }
+
+    this.blocker = null;
+    this.continuation = null;
+    this.result = left(failure) as FutureResult<Relic>;
+    this.status = "exited";
+    this.#onExited(this);
+  }
+
   public branchHandle(): BranchHandle<Relic> {
     return {
       processRef: this.ref,
@@ -162,12 +192,14 @@ export function createProcess<Relic>(
   scopeRef: ScopeRef<unknown>,
   ritual: Ritual<Relic>,
   participation: "tracked" | "auxiliary",
+  onExited: (process: RuntimeProcess) => void,
 ): RuntimeProcess<Relic> {
   const { future: exitFuture, key } = createFuture<Relic>();
   const ref = { exitFuture: key } as ProcessRef<Relic>;
 
   return new RuntimeProcess({
     exitFuture,
+    onExited,
     participation,
     ref,
     ritual,
@@ -224,24 +256,14 @@ function createFutureKey<Result>(): FutureKey<Result> {
 }
 
 export function completeProcess(process: RuntimeProcess, value: unknown): FutureResult<unknown> {
-  const result = right(value);
-
-  process.blocker = null;
-  process.continuation = null;
-  process.result = result;
-  process.status = "exited";
-
+  process.complete(value);
+  const result = process.result!;
   return result;
 }
 
 export function failProcess(process: RuntimeProcess, failure: FailureShape): FutureResult<unknown> {
-  const result = left(failure);
-
-  process.blocker = null;
-  process.continuation = null;
-  process.result = result;
-  process.status = "exited";
-
+  process.fail(failure);
+  const result = process.result!;
   return result;
 }
 
@@ -313,6 +335,7 @@ function releaseWaitingProcesses(
 
 interface RuntimeProcessConfig<Relic> {
   readonly exitFuture: RuntimeFuture;
+  readonly onExited: (process: RuntimeProcess) => void;
   readonly participation: "tracked" | "auxiliary";
   readonly ref: ProcessRef<Relic>;
   readonly ritual: Ritual<Relic>;

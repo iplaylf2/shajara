@@ -32,10 +32,11 @@
 
 在实现分层上，当前边界进一步收口为：
 
-- `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复，以及 `self` / `branch` 所需 handle 的产出。
+- `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复、`resonate` 后的终态收敛，以及 `self` / `branch` 所需 handle 的产出。
 - `ScopeFrame` 负责 scope 树、runtime scope 索引、future 索引、mailbox 索引，以及“某个 scope 的 entry process”这一结构性关系。
 - `ScopeFrame` 直接接收 `entry ritual` 并生成 entry process；`Interpreter` 不再为此提供额外 hook。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `ScopeFrame` 重新解释 scope、entry process 与 mailbox waiting 的关系。
+- `ScopeFrame` 负责 process 退出后的结构性后处理，例如 process exit future 收敛、scope exit mirror 与 scope close 检查。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `ScopeFrame` 重新解释 scope、entry process、mailbox waiting 与 process exit 的关系。
 
 ## 3. 驱动模型
 
@@ -75,7 +76,7 @@
 更具体地说，当前 `step` 的步进单位是：
 
 - 若当前是 `RestingWisp`，该步直接把 Process 收敛到完成态。
-- 若当前 Process 持有一段待执行 continuation，该步只执行一次 `resonate(echo)`，并把 Process 的当前 `wisp` 更新为得到的下一段 Wisp。
+- 若当前 Process 持有一段待执行 continuation，该步只执行一次 `resonate(echo)`，并把 Process 的当前 `wisp` 更新为得到的下一段 Wisp；若这次 resonance 已把 Wisp 推到终态，则该步直接返回 `exited`。
 - 若当前是携带 sigil 的 `StirringWisp`，该步只解释该 sigil；若是 `Cede`，返回 `ceded` 并把 `resonate + void echo` 排入待执行 continuation；若是其他可立刻得到 echo 的 sigil，则返回 `interpreted` 并把 `resonate + echo` 排入 Process 的待执行 continuation；若该 sigil 会阻塞，则把 continuation 保存在 blocker 中，等待恢复信号到来后再转成待执行 continuation。
 
 因此，当前模型就是“sigil 一步、`resonate` 一步”。驱动者若想得到旧的“归约一个 `StirringWisp` 头节点”的体验，可以在看到 `ceded` 或 `interpreted` 后继续对同一 Process 调用一次 `step`，把紧随其后的 `resonated` 一并吃掉。
@@ -150,6 +151,7 @@
   1. 让 Process 进入相应的等待态。
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
 - 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `ScopeFrame`；它不应提前替 `ScopeFrame` 暴露或模拟内部落点。
+- 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 也不应额外提醒 `ScopeFrame` 去完成 process；`RuntimeProcess` 自身应负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `ScopeFrame` 只承接 exited 之后的结构性后处理。
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。

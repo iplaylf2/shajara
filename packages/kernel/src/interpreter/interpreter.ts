@@ -24,6 +24,7 @@ import type {
   ProcessRef,
   Ritual,
   ScopeRef,
+  StirringWisp,
   Wisp,
 } from "#src/contracts";
 import {
@@ -60,11 +61,14 @@ export class Interpreter {
     }
 
     if (process.hasQueuedContinuation) {
-      process.resonate();
-      return resonatedProcessStage(process.ref);
+      return this.#resonateWisp(process);
     }
 
     return this.#interpretWisp(process);
+  }
+
+  public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
+    return this.#rootFrame.onProcessReady(listener);
   }
 
   public get scopeRoot(): ScopeRef<unknown> {
@@ -77,10 +81,6 @@ export class Interpreter {
 
   public get isClosed(): boolean {
     return this.#rootFrame.isClosed;
-  }
-
-  public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
-    return this.#rootFrame.onProcessReady(listener);
   }
 
   protected onClose(
@@ -112,13 +112,9 @@ export class Interpreter {
 
   // oxlint-disable-next-line max-statements
   #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
-    const current = process.wisp;
-
-    if (current.bearing === "resting") {
-      this.#rootFrame.completeProcess(process, current.relic);
-      return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
-    }
-
+    // `Step` only reaches `#interpretWisp` when there is no queued continuation.
+    // Process is not exited here, so the current wisp must still be stirring.
+    const current = process.wisp as StirringWisp<Sigil, Relic>;
     const sigil = current.sigil as Sigil;
 
     switch (sigil.kind) {
@@ -187,6 +183,16 @@ export class Interpreter {
         this.#setContinuation(process, current.resonate, unitEcho());
         return interpretedProcessStage(process.ref);
     }
+  }
+
+  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
+    process.resonate();
+
+    if (process.status === "exited") {
+      return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
+    }
+
+    return resonatedProcessStage(process.ref);
   }
 
   #bind(process: RuntimeProcess, sigil: BindSigil<unknown>): void {

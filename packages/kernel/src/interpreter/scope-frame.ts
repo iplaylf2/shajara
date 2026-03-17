@@ -1,7 +1,6 @@
 // oxlint-disable max-lines
 import type {
   ContextKey,
-  FailureShape,
   FutureKey,
   FutureResult,
   FutureSettleKey,
@@ -14,10 +13,8 @@ import type {
 import type { RuntimeFuture, RuntimeFuturePair, RuntimeProcess, RuntimeScope } from "./runtime";
 import {
   closeScopeIfSettled,
-  completeProcess,
   createFuture,
   createProcess,
-  failProcess,
   mirrorScopeExit,
   receiveMessage,
   sendMessage,
@@ -176,7 +173,9 @@ export class ScopeFrame {
     worker: Ritual<Relic>,
     participation: "tracked" | "auxiliary",
   ): RuntimeProcess<Relic> {
-    return this.#registerProcess(createProcess(this.ref, worker, participation));
+    return this.#registerProcess(
+      createProcess(this.ref, worker, participation, (process) => this.#onProcessExited(process)),
+    );
   }
 
   #registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
@@ -185,18 +184,6 @@ export class ScopeFrame {
     this.#processByRef.set(process.ref, process);
     this.#notifyProcessReady(process.ref);
     return process;
-  }
-
-  public completeProcess(process: RuntimeProcess, value: unknown): void {
-    const result = completeProcess(process, value);
-
-    this.#onProcessExited(process, result);
-  }
-
-  public failProcess(process: RuntimeProcess, failure: FailureShape): void {
-    const result = failProcess(process, failure);
-
-    this.#onProcessExited(process, result);
   }
 
   public get ref(): ScopeRef<unknown> {
@@ -275,8 +262,9 @@ export class ScopeFrame {
     return mailbox;
   }
 
-  #onProcessExited(process: RuntimeProcess, result: FutureResult<unknown>): void {
+  #onProcessExited(process: RuntimeProcess): void {
     let scope: RuntimeScope | null = this.resolve(process.scopeRef).runtime;
+    const result = process.result as FutureResult<unknown>;
 
     settleFuture(process.exitFuture, result);
 

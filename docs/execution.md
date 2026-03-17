@@ -47,6 +47,8 @@
   证据：`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeProcess` 已收口为显式持有状态迁移的实例；`Interpreter` 在 resonance / future unblock / handle 产出路径上不再直接改写 process 内部细节。  
   证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- `RuntimeProcess.resonate()` 现在会在 resonance 产出 `RestingWisp` 时直接把 process 收敛为 exited；`Interpreter` 不再显式提醒 `ScopeFrame` 完成 process，`ScopeFrame` 只承接 exited 之后的结构性后处理。  
+  证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeProcess` 只保留 `scopeRef`，不再直接持有 `RuntimeScope`；scope runtime 实体解析统一经由 `ScopeFrame`。  
   证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/scope-frame.ts`
 - `branch` / `self` 的 echo 公开语义已统一收口为 `*Handle`，不再使用 `*Descriptor` 命名。  
@@ -77,6 +79,8 @@
 - `interpreter.md` 现进一步记录阻塞路径上的 `setContinuation / primeContinuation` 区分，以及 `tryReceive / receive` 的双层命名约束。  
   证据：`docs/interpreter.md`
 - `interpreter.md` 现进一步记录 `ScopeFrame` 对 entry ritual / mailbox 的职责，以及 `send` 应从 sender scope 上下文发起的交互约束。  
+  证据：`docs/interpreter.md`
+- `interpreter.md` 现进一步记录 `resonate` 路径上的退出收敛边界：`RuntimeProcess` 负责 process 局部终态收敛，`ScopeFrame` 只负责 exited 后的结构性后处理。  
   证据：`docs/interpreter.md`
 
 ## 5. 下一步
