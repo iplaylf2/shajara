@@ -36,9 +36,9 @@ export interface RuntimeScope {
 }
 
 export interface RuntimeBlocker {
-  readonly future: RuntimeFuture;
-  readonly kind: "future";
-  readonly resonate: (result: FutureResult<unknown>) => Wisp<unknown>;
+  continuation: ((echo: unknown) => Wisp<unknown>) | null;
+  future: RuntimeFuture | null;
+  readonly kind: "future" | "receive";
 }
 
 export interface RuntimeContinuation {
@@ -71,7 +71,7 @@ export class RuntimeProcess<Relic = unknown> {
     return this.continuation !== null;
   }
 
-  public queueContinuation(resonate: (echo: unknown) => Wisp<unknown>, echo: unknown): void {
+  public setContinuation(resonate: (echo: unknown) => Wisp<unknown>, echo: unknown): void {
     this.continuation = {
       echo,
       kind: "resonate",
@@ -86,26 +86,27 @@ export class RuntimeProcess<Relic = unknown> {
     this.wisp = continuation.resonate(continuation.echo);
   }
 
-  public blockOnFuture(
-    future: RuntimeFuture,
-    resonate: (result: FutureResult<unknown>) => Wisp<unknown>,
-  ): void {
+  public wait(future: RuntimeFuture): void {
     this.blocker = {
+      continuation: null,
       future,
       kind: "future",
-      resonate,
     };
     this.status = "blocked";
     future.waitingProcesses.add(this);
   }
 
-  public unblock(result: FutureResult<unknown>): void {
-    if (this.blocker === null) {
+  public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
+    this.blocker!.continuation = continuation;
+  }
+
+  public unblock(echo: unknown): void {
+    if (this.blocker === null || this.blocker.continuation === null) {
       return;
     }
 
-    this.queueContinuation(this.blocker.resonate as (echo: unknown) => Wisp<unknown>, result);
-    this.blocker.future.waitingProcesses.delete(this);
+    this.setContinuation(this.blocker.continuation, echo);
+    this.blocker.future?.waitingProcesses.delete(this);
     this.blocker = null;
     this.status = "ready";
   }
@@ -193,24 +194,8 @@ export function failProcess(process: RuntimeProcess, failure: FailureShape): Fut
   return result;
 }
 
-export function blockOnFuture(
-  process: RuntimeProcess,
-  future: RuntimeFuture,
-  resonate: (result: FutureResult<unknown>) => Wisp<unknown>,
-): void {
-  process.blockOnFuture(future, resonate);
-}
-
 export function unblockProcess(process: RuntimeProcess, result: FutureResult<unknown>): void {
   process.unblock(result);
-}
-
-export function queueContinuation(
-  process: RuntimeProcess,
-  resonate: (echo: unknown) => Wisp<unknown>,
-  echo: unknown,
-): void {
-  process.queueContinuation(resonate, echo);
 }
 
 export function settleFuture(

@@ -145,7 +145,13 @@
   2. 分离并安置对应的 `resonate`。
   3. 包装并返回本步的 `ProcessStage`。
 - 前两步允许修改解释环境状态，例如写入 scope、创建 process、登记 blocker、排队 continuation 或收敛 future；第三步则应尽量保持为纯粹的 stage 包装。
+- 当 sigil 需要阻塞时，第二步通常继续拆成两个相邻动作：
+  1. 让 Process 进入相应的等待态。
+  2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
+- `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
+  前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。
+- 对同时存在“尝试立即完成”和“进入阻塞等待”两条路径的 sigil，应显式区分这两层动作；例如 `receive` 当前按 `#tryReceive` 与 `#receive` 两步命名，以区分“尝试读取 mailbox”与“在 mailbox 上等待消息”。
 - 命名应表达“解释这个 sigil”，而不是转写成额外的观察性或描述性措辞；例如优先使用 `#poll`，而不是 `#inspectFuture`。
 - 这类私有方法存在的主要目的，不是抽象复用，而是维持 `#interpretWisp` 的 top-down case 结构，让每个 sigil 分支都保持统一的阅读节奏。
 

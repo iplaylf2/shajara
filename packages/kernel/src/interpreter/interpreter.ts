@@ -27,7 +27,6 @@ import type {
   ScopeRef,
   Wisp,
 } from "#src/contracts";
-import { blockOnFuture, createProcess, createProcessRef, queueContinuation } from "./runtime";
 import {
   blockedProcessStage,
   cededProcessStage,
@@ -35,6 +34,7 @@ import {
   interpretedProcessStage,
   resonatedProcessStage,
 } from "./process-stage";
+import { createProcess, createProcessRef } from "./runtime";
 import type { Option } from "#src/utils";
 import type { ProcessStage } from "./process-stage";
 import type { RuntimeProcess } from "./runtime";
@@ -171,18 +171,20 @@ export class Interpreter {
           return interpretedProcessStage(process.ref);
         }
 
-        this.#waitFuture(process, sigil.future, current.resonate);
+        this.#wait(process, sigil);
+        this.#primeContinuation(process, current.resonate);
         return blockedProcessStage(process.ref);
       }
       case "receive": {
-        const received = this.#receive(process, sigil);
+        const received = this.#tryReceive(process, sigil);
 
         if (isSome(received)) {
           this.#setContinuation(process, current.resonate, received.value);
           return interpretedProcessStage(process.ref);
         }
 
-        this.#blockReceive(process, sigil, current.resonate);
+        this.#receive(process, sigil);
+        this.#primeContinuation(process, current.resonate);
         return blockedProcessStage(process.ref);
       }
       case "send":
@@ -237,20 +239,24 @@ export class Interpreter {
     return process.selfHandle();
   }
 
-  #waitFuture(
-    process: RuntimeProcess,
-    futureRef: FutureKey<unknown>,
-    resonate: (echo: unknown) => Wisp<unknown>,
-  ): void {
-    this.#blockFuture(process, futureRef, resonate);
+  #wait(process: RuntimeProcess, sigil: { readonly future: FutureKey<unknown> }): void {
+    process.wait(this.#rootFrame.requireFuture(sigil.future));
   }
 
-  #queueContinuation(
-    process: RuntimeProcess,
-    resonate: (echo: unknown) => Wisp<unknown>,
-    echo: unknown,
-  ): void {
-    queueContinuation(process, resonate, echo);
+  #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
+    this.#rootFrame.resolve(process.scopeRef).unbind(sigil.key);
+  }
+
+  #tryReceive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): Option<unknown> {
+    return notImplemented("Interpreter.receive sigil execution");
+  }
+
+  #receive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): void {
+    notImplemented("Interpreter.receive sigil blocking");
+  }
+
+  #send(_sigil: SendSigil<unknown>): void {
+    notImplemented("Interpreter.send sigil execution");
   }
 
   #setContinuation(
@@ -258,35 +264,11 @@ export class Interpreter {
     resonate: (echo: unknown) => Wisp<unknown>,
     echo: unknown,
   ): void {
-    this.#queueContinuation(process, resonate, echo);
+    process.setContinuation(resonate, echo);
   }
 
-  #blockFuture(
-    process: RuntimeProcess,
-    futureRef: FutureKey<unknown>,
-    resonate: (echo: unknown) => Wisp<unknown>,
-  ): void {
-    blockOnFuture(process, this.#rootFrame.requireFuture(futureRef), resonate);
-  }
-
-  #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
-    this.#rootFrame.resolve(process.scopeRef).unbind(sigil.key);
-  }
-
-  #receive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): Option<unknown> {
-    return notImplemented("Interpreter.receive sigil execution");
-  }
-
-  #blockReceive(
-    _process: RuntimeProcess,
-    _sigil: ReceiveSigil<unknown>,
-    _resonate: (echo: unknown) => Wisp<unknown>,
-  ): void {
-    notImplemented("Interpreter.receive sigil blocking");
-  }
-
-  #send(_sigil: SendSigil<unknown>): void {
-    notImplemented("Interpreter.send sigil execution");
+  #primeContinuation(process: RuntimeProcess, resonate: (echo: unknown) => Wisp<unknown>): void {
+    process.primeContinuation(resonate);
   }
 
   #createProcess<Relic>(
