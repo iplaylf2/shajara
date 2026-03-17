@@ -120,9 +120,19 @@
 
 ## 6. 扩展缝隙
 
-`Interpreter` 当前只保留一个受保护扩展点：`onClose`。
+`Interpreter` 当前只保留一个受保护扩展点：`onClosing`。
 
 它用于在 Scope 关闭路径上追加有限干预，而不是接管解释器的常规驱动模型。
+
+当前约定下，`onClosing(scope, processes, failure)` 的三个参数分别表示：
+
+- 正在进入 closing 的当前 `Scope`
+- 当前 `Scope` 内因本次 closing 被终止的 `Process` 集合
+- 当前 closing 路径上承载的 `Failure`
+
+这里的 `processes` 不表示整棵子树的所有 Process，也不单独强调最初触发 closing 的 origin process；origin 信息若有需要，应优先进入 failure 细节或未来独立的 closing context，而不是占据 `onClosing` 的固定参数位。
+
+当前还能先明确一条 failure 来源约束：直接触发 closing 的 scope 承接触发方带来的 failure；被迫随祖先 closing 而取消的子树，则承接一类默认的“被终止 failure”。这类 termination failure 的具体定义与细分形态尚未设计完成，但其来源方向已经固定，不应与直接触发 closing 的 origin failure 混用。
 
 这里的边界是：
 
@@ -152,6 +162,7 @@
   2. `primeContinuation(...)`，把尚缺恢复 `echo` 的 continuation 预置到 blocker 上。
 - 对需要解析 scope 上下文的副作用型 sigil，`Interpreter` 先选定当前解释上下文，再把希望产生的状态变更交给 `ScopeFrame`；它不应提前替 `ScopeFrame` 暴露或模拟内部落点。
 - 对 `resonate` 路径上的 process 局部状态推进，`Interpreter` 也不应额外提醒 `ScopeFrame` 去完成 process；`RuntimeProcess` 自身应负责把 resonance 产出的终态 Wisp 收敛为 exited，而 `ScopeFrame` 只承接 exited 之后的结构性后处理。
+- `halt` 的解释也遵循同一方向：`Interpreter` 负责识别 `halt` sigil，并把当前 scope、当前 process 以及 `onClosing` 包装出的 closing worker factory 交给 `ScopeFrame`；closing 子树扩散、leaf-to-root 的 closing worker 组织和最终 failure 固定，属于 `ScopeFrame` 的关闭协议，而不是 `Interpreter` 直接手写的流程。
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。

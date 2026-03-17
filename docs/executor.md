@@ -172,11 +172,11 @@ reaper 的仲裁结果决定两种路径：
 
 第二种是通过受保护扩展点间接干预解释过程：
 
-- `onClose`
+- `onClosing`
 
 此外，`executor` 也可以使用 `Interpreter.onProcessReady(listener)` 订阅 ready process 通知，把自己的调度循环接到解释器发出的 ready 信号上。
 
-如果 `executor` 需要更紧密地组织关闭或收敛过程，可以通过派生 `Interpreter` 并覆写 `onClose`，把治理能力接入解释过程。
+如果 `executor` 需要更紧密地组织关闭或收敛过程，可以通过派生 `Interpreter` 并覆写 `onClosing`，把治理能力接入解释过程。
 
 但这里的边界应当保持清楚：`Interpreter` 仍只负责解释主题，复杂环境组织仍然属于 `executor`。
 

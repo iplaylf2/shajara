@@ -65,6 +65,8 @@
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime.ts`
 - mailbox runtime 已落位到 `ScopeFrame` / `RuntimeScope`：每个 scope 现直接维护按 `MessageKey` 分组的 mailbox，`send` / `receive` 的等待与恢复由 `ScopeFrame` 组织，`Interpreter` 只负责选定 sender scope 的上下文并发出状态变更意图。  
   证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- `halt` 的主调用链已先行收口：`Interpreter` 现在负责把 `halt` 转写为对 `ScopeFrame.halt(...)` 的调用，并把 `onClosing(scope, processes, failure)` 包装成 closing worker factory 交给 `ScopeFrame`；`ScopeFrame` 侧的 closing 协议签名已经固定，但具体关闭流程仍是占位实现。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/scope-frame.ts`
 
 ## 4. 本轮新增文档锚点
 
@@ -81,6 +83,10 @@
 - `interpreter.md` 现进一步记录 `ScopeFrame` 对 entry ritual / mailbox 的职责，以及 `send` 应从 sender scope 上下文发起的交互约束。  
   证据：`docs/interpreter.md`
 - `interpreter.md` 现进一步记录 `resonate` 路径上的退出收敛边界：`RuntimeProcess` 负责 process 局部终态收敛，`ScopeFrame` 只负责 exited 后的结构性后处理。  
+  证据：`docs/interpreter.md`
+- `interpreter.md` 现进一步记录 `onClosing(scope, processes, failure)` 的参数语义，以及 `halt` 目前按“Interpreter 组织调用，ScopeFrame 承载 closing 协议签名”的方向收口。  
+  证据：`docs/interpreter.md`
+- `interpreter.md` 现进一步记录 closing 路径上的 failure 来源：直接触发 closing 的 scope 继承 origin failure，被迫取消的子树承接默认 termination failure；后者的具体 failure 形状仍待设计。  
   证据：`docs/interpreter.md`
 
 ## 5. 下一步

@@ -17,13 +17,14 @@ import type {
 } from "#src/sigils";
 import type {
   ContextKey,
-  FailureShape,
   FutureKey,
   FutureResult,
   FutureSettleKey,
   ProcessRef,
+  Resonance,
   Ritual,
   ScopeRef,
+  SigilShape,
   StirringWisp,
   Wisp,
 } from "#src/contracts";
@@ -34,15 +35,14 @@ import {
   interpretedProcessStage,
   resonatedProcessStage,
 } from "./process-stage";
+import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import type { ProcessStage } from "./process-stage";
 import type { RuntimeProcess } from "./runtime";
 import { ScopeFrame } from "./scope-frame";
 import { evoke } from "#src/contracts";
 import { isSome } from "#src/utils";
-import { notImplemented } from "#src/internal/not-implemented";
 import { standardScopeSpec } from "#src/scopes";
-import { unitEcho } from "./step-support";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
@@ -83,11 +83,11 @@ export class Interpreter {
     return this.#rootFrame.isClosed;
   }
 
-  protected onClose(
+  protected onClosing(
     _scope: ScopeRef<unknown>,
-    _process: ProcessRef<unknown>,
-    failure: FailureShape,
-  ): Wisp<FailureShape> {
+    _processes: readonly ProcessRef<unknown>[],
+    failure: Failure,
+  ): Wisp<Failure> {
     return evoke(failure);
   }
 
@@ -120,13 +120,13 @@ export class Interpreter {
     switch (sigil.kind) {
       case "bind":
         this.#bind(process, sigil);
-        this.#setContinuation(process, current.resonate, unitEcho());
+        this.#setContinuation(process, current.resonate, null);
         return interpretedProcessStage(process.ref);
       case "branch":
         this.#setContinuation(process, current.resonate, this.#branch(process, sigil));
         return interpretedProcessStage(process.ref);
       case "cede":
-        this.#setContinuation(process, current.resonate, unitEcho());
+        this.#setContinuation(process, current.resonate, null);
         return cededProcessStage(process.ref);
       case "future":
         this.#setContinuation(process, current.resonate, this.#future(process));
@@ -145,14 +145,14 @@ export class Interpreter {
         return interpretedProcessStage(process.ref);
       case "settle":
         this.#settle(sigil);
-        this.#setContinuation(process, current.resonate, unitEcho());
+        this.#setContinuation(process, current.resonate, null);
         return interpretedProcessStage(process.ref);
       case "spawn":
         this.#setContinuation(process, current.resonate, this.#spawn(process, sigil));
         return interpretedProcessStage(process.ref);
       case "unbind":
         this.#unbind(process, sigil);
-        this.#setContinuation(process, current.resonate, unitEcho());
+        this.#setContinuation(process, current.resonate, null);
         return interpretedProcessStage(process.ref);
       case "wait": {
         const settled = this.poll(sigil.future);
@@ -180,7 +180,7 @@ export class Interpreter {
       }
       case "send":
         this.#send(process, sigil);
-        this.#setContinuation(process, current.resonate, unitEcho());
+        this.#setContinuation(process, current.resonate, null);
         return interpretedProcessStage(process.ref);
     }
   }
@@ -209,8 +209,14 @@ export class Interpreter {
     return [created.key, created.settleKey];
   }
 
-  #halt(_process: RuntimeProcess, _sigil: HaltSigil): void {
-    notImplemented("Interpreter.halt sigil execution");
+  #halt(process: RuntimeProcess, sigil: HaltSigil): void {
+    this.#rootFrame
+      .resolve(process.scopeRef)
+      .halt(
+        process.ref,
+        sigil.failure,
+        (scope, processes, failure) => () => this.onClosing(scope, processes, failure),
+      );
   }
 
   #settle(sigil: SettleSigil<unknown>): void {
@@ -258,13 +264,13 @@ export class Interpreter {
 
   #setContinuation(
     process: RuntimeProcess,
-    resonate: (echo: unknown) => Wisp<unknown>,
+    resonate: Resonance<SigilShape, unknown>,
     echo: unknown,
   ): void {
     process.setContinuation(resonate, echo);
   }
 
-  #primeContinuation(process: RuntimeProcess, resonate: (echo: unknown) => Wisp<unknown>): void {
+  #primeContinuation(process: RuntimeProcess, resonate: Resonance<SigilShape, unknown>): void {
     process.primeContinuation(resonate);
   }
 

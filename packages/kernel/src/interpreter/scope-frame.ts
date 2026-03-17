@@ -1,6 +1,7 @@
 // oxlint-disable max-lines
 import type {
   ContextKey,
+  FailureShape,
   FutureKey,
   FutureResult,
   FutureSettleKey,
@@ -22,7 +23,9 @@ import {
   waitForMessage,
 } from "./runtime";
 import { isSome, none, some } from "#src/utils";
+import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
+import { notImplemented } from "#src/internal/not-implemented";
 
 export class ScopeFrame {
   public static create(entry: Ritual<unknown>, spec: ScopeSpec): ScopeFrame {
@@ -121,6 +124,16 @@ export class ScopeFrame {
     if (process !== null) {
       this.#notifyProcessReady(process.ref);
     }
+  }
+
+  public halt(
+    process: ProcessRef<unknown>,
+    failure: FailureShape,
+    createClosingWorker: ClosingWorkerFactory,
+  ): void {
+    ScopeFrame.#haltProcess(this, process, failure);
+    ScopeFrame.#enterClosing(this, failure);
+    ScopeFrame.#spawnClosingWorker(this, process, failure, createClosingWorker);
   }
 
   public requireFutureBySettle<Result>(future: FutureSettleKey<Result>): RuntimeFuture {
@@ -246,6 +259,18 @@ export class ScopeFrame {
     throw new Error("Unknown future reference.");
   }
 
+  static #haltProcess(
+    _frame: ScopeFrame,
+    _process: ProcessRef<unknown>,
+    _failure: FailureShape,
+  ): void {
+    notImplemented("ScopeFrame.halt process exit");
+  }
+
+  static #enterClosing(_frame: ScopeFrame, _failure: FailureShape): void {
+    notImplemented("ScopeFrame.enter closing subtree");
+  }
+
   #mailbox(messageKey: MessageKey<unknown>) {
     const existing = this.#scope.mailboxes.get(messageKey);
 
@@ -260,6 +285,15 @@ export class ScopeFrame {
 
     this.#scope.mailboxes.set(messageKey, mailbox);
     return mailbox;
+  }
+
+  static #spawnClosingWorker(
+    _frame: ScopeFrame,
+    _process: ProcessRef<unknown>,
+    _failure: FailureShape,
+    _createClosingWorker: ClosingWorkerFactory,
+  ): void {
+    notImplemented("ScopeFrame.spawn closing worker");
   }
 
   #onProcessExited(process: RuntimeProcess): void {
@@ -317,3 +351,9 @@ interface ScopeFrameSharedConfig {
   readonly processReadyListeners: Set<(process: ProcessRef<unknown>) => void>;
   readonly processByRef: WeakMap<ProcessRef<unknown>, RuntimeProcess>;
 }
+
+export type ClosingWorkerFactory = (
+  scope: ScopeRef<unknown>,
+  processes: readonly ProcessRef<unknown>[],
+  failure: Failure,
+) => Ritual<Failure>;
