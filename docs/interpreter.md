@@ -47,23 +47,23 @@
 
 ### 4.1 `step`
 
-`step(processRef)` 表示对目标 Process 执行一次步进解释。
+`step(processRef)` 表示对目标 Process 执行一次步进解释，并返回该步把 Process 推进到的当前阶段（`ProcessStage`）。
 
-这里的“步进”强调：
+这里的“阶段”强调：
 
 - 它表达一次推进，而不是持续运行到挂起或结束。
-- 它返回的是一次步进的结果，而不是整个解释环境的最终结论。
+- 它返回的是该次推进后 Process 所处的可观察阶段，而不是整个解释环境的最终结论。
 - 它的粒度允许把“解释 sigil”和“执行 `resonate`”拆成两个外部可见步骤。
 
-一次步进的结果语义应与具体 sigil 语义分开理解：
+`ProcessStage` 的语义应与具体 sigil 语义分开理解：
 
 - `blocked` 表示该步遇到了需要等待的条件。
 - `ceded` 表示该步解释了 `Cede`，当前 Process 主动协作式让出控制权；对应的 `resonate(void)` 已排入待执行 continuation。
 - `interpreted` 表示该步刚刚解释完一个 sigil，并把对应的 `echo` 排入待执行 continuation。
 - `resonated` 表示该步执行了一次已排队的 `resonate(echo)`，并产出了新的当前 `wisp`。
-- `completed` / `failed` / `exited` 表示该 Process 已进入对应生命周期状态。
+- `exited` 表示该 Process 已进入终态；成功或失败由其中携带的 `result` 决定。
 
-因此，`ceded`、`interpreted` 与 `resonated` 的划分是解释器步进契约本身的一部分。`Cede` 不再与普通 sigil 共用同一个步进结果；驱动者可以直接把 `ceded` 当作一次显式让权信号，而之后是否继续执行对应的 `resonate`，仍由驱动者决定何时再调用下一次 `step`。
+因此，`ceded`、`interpreted` 与 `resonated` 的划分是解释器步进契约本身的一部分。`Cede` 不再与普通 sigil 共用同一个阶段；驱动者可以直接把 `ceded` 当作一次显式让权信号，而之后是否继续执行对应的 `resonate`，仍由驱动者决定何时再调用下一次 `step`。
 
 更具体地说，当前 `step` 的步进单位是：
 

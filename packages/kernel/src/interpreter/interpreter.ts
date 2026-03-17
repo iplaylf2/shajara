@@ -2,6 +2,19 @@
 // oxlint-disable max-lines-per-function
 // oxlint-disable class-methods-use-this
 import type {
+  BindSigil,
+  BranchSigil,
+  HaltSigil,
+  LookupSigil,
+  PollSigil,
+  ReceiveSigil,
+  SendSigil,
+  SettleSigil,
+  Sigil,
+  SpawnSigil,
+  UnbindSigil,
+} from "#src/sigils";
+import type {
   ContextKey,
   FailureShape,
   FutureKey,
@@ -21,20 +34,17 @@ import {
   settleFuture,
 } from "./runtime";
 import {
-  blockedProcessStep,
-  cededProcessStep,
-  completedProcessStep,
-  exitedProcessStep,
-  failedProcessStep,
-  interpretedProcessStep,
-  resonatedProcessStep,
-} from "./process-step";
+  blockedProcessStage,
+  cededProcessStage,
+  exitedProcessStage,
+  interpretedProcessStage,
+  resonatedProcessStage,
+} from "./process-stage";
 import { branchDescriptor, selfDescriptor } from "./runtime-access";
 import type { Option } from "#src/utils";
-import type { ProcessStep } from "./process-step";
+import type { ProcessStage } from "./process-stage";
 import type { RuntimeProcess } from "./runtime";
 import { ScopeFrame } from "./scope-frame";
-import type { Sigil } from "#src/sigils";
 import { evoke } from "#src/contracts";
 import { isSome } from "#src/utils";
 import { notImplemented } from "#src/internal/not-implemented";
@@ -50,15 +60,15 @@ export class Interpreter {
     );
   }
 
-  public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
+  public step<Relic>(processRef: ProcessRef<Relic>): ProcessStage<Relic> {
     const process = this.#readProcess(processRef);
 
     if (process.status === "blocked") {
-      return blockedProcessStep(processRef);
+      return blockedProcessStage(processRef);
     }
 
     if (process.status === "exited") {
-      return exitedProcessStep(processRef, process.result as FutureResult<Relic>);
+      return exitedProcessStage(processRef, process.result as FutureResult<Relic>);
     }
 
     if (process.continuation !== null) {
@@ -111,12 +121,12 @@ export class Interpreter {
     this.#rootFrame.wait(future, onSettled);
   }
 
-  #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
+  #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
     const current = process.wisp;
 
     if (current.bearing === "resting") {
       this.#rootFrame.completeProcess(process, current.relic);
-      return completedProcessStep(process.ref, current.relic as Relic);
+      return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
     }
 
     const sigil = current.sigil as Sigil;
@@ -125,69 +135,69 @@ export class Interpreter {
       case "bind":
         this.#bind(process, sigil);
         this.#setContinuation(process, current.resonate, unitEcho());
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "branch":
         this.#setContinuation(process, current.resonate, this.#branch(process, sigil));
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "cede":
         this.#setContinuation(process, current.resonate, unitEcho());
-        return cededProcessStep(process.ref);
+        return cededProcessStage(process.ref);
       case "future":
         this.#setContinuation(process, current.resonate, this.#future());
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "halt":
         this.#halt(process, sigil);
-        return failedProcessStep(process.ref, sigil.failure);
+        return exitedProcessStage(process.ref, process.result as FutureResult<Relic>);
       case "lookup":
         this.#setContinuation(process, current.resonate, this.#lookupInScope(process, sigil));
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "poll":
         this.#setContinuation(process, current.resonate, this.#inspectFuture(sigil));
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "self":
         this.#setContinuation(process, current.resonate, this.#describeSelf(process));
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "settle":
         this.#settle(sigil);
         this.#setContinuation(process, current.resonate, unitEcho());
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "spawn":
         this.#setContinuation(process, current.resonate, this.#spawn(process, sigil));
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "unbind":
         this.#unbind(process, sigil);
         this.#setContinuation(process, current.resonate, unitEcho());
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
       case "wait": {
         const settled = this.#pollFuture(sigil.future);
 
         if (isSome(settled)) {
           this.#setContinuation(process, current.resonate, settled.value);
-          return interpretedProcessStep(process.ref);
+          return interpretedProcessStage(process.ref);
         }
 
         this.#waitFuture(process, sigil.future, current.resonate);
-        return blockedProcessStep(process.ref);
+        return blockedProcessStage(process.ref);
       }
       case "receive": {
         const received = this.#receive(process, sigil);
 
         if (isSome(received)) {
           this.#setContinuation(process, current.resonate, received.value);
-          return interpretedProcessStep(process.ref);
+          return interpretedProcessStage(process.ref);
         }
 
         this.#blockReceive(process, sigil, current.resonate);
-        return blockedProcessStep(process.ref);
+        return blockedProcessStage(process.ref);
       }
       case "send":
         this.#send(sigil);
         this.#setContinuation(process, current.resonate, unitEcho());
-        return interpretedProcessStep(process.ref);
+        return interpretedProcessStage(process.ref);
     }
   }
 
-  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
+  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
     const { continuation } = process;
 
     if (continuation === null) {
@@ -196,16 +206,16 @@ export class Interpreter {
 
     process.continuation = null;
     process.wisp = continuation.resume(continuation.echo);
-    return resonatedProcessStep(process.ref);
+    return resonatedProcessStage(process.ref);
   }
 
-  #bind(process: RuntimeProcess, sigil: Extract<Sigil, { kind: "bind" }>): void {
+  #bind(process: RuntimeProcess, sigil: BindSigil<unknown>): void {
     this.#rootFrame.resolve(process.scope.ref).bind(sigil.key, sigil.value);
   }
 
   #branch(
     process: RuntimeProcess,
-    sigil: Extract<Sigil, { kind: "branch" }>,
+    sigil: BranchSigil<unknown>,
   ): ReturnType<typeof branchDescriptor> {
     const branchFrame = this.#rootFrame
       .resolve(process.scope.ref)
@@ -220,11 +230,11 @@ export class Interpreter {
     return [created.key, created.settleKey];
   }
 
-  #halt(_process: RuntimeProcess, _sigil: Extract<Sigil, { kind: "halt" }>): void {
+  #halt(_process: RuntimeProcess, _sigil: HaltSigil): void {
     notImplemented("Interpreter.halt sigil execution");
   }
 
-  #settle(sigil: Extract<Sigil, { kind: "settle" }>): void {
+  #settle(sigil: SettleSigil<unknown>): void {
     const future = this.#rootFrame.requireFutureBySettle(sigil.futureSettle);
     const unblocked = settleFuture(future, sigil.result as FutureResult<unknown>);
 
@@ -233,7 +243,7 @@ export class Interpreter {
     }
   }
 
-  #spawn(process: RuntimeProcess, sigil: Extract<Sigil, { kind: "spawn" }>): ProcessRef<unknown> {
+  #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
     const spawned = this.#createProcess(
       this.#rootFrame.resolve(process.scope.ref),
       sigil.ritual,
@@ -242,14 +252,11 @@ export class Interpreter {
     return spawned.ref;
   }
 
-  #lookupInScope(
-    process: RuntimeProcess,
-    sigil: Extract<Sigil, { kind: "lookup" }>,
-  ): Option<unknown> {
+  #lookupInScope(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
     return this.lookup(process.scope.ref, sigil.key);
   }
 
-  #inspectFuture(sigil: Extract<Sigil, { kind: "poll" }>): Option<FutureResult<unknown>> {
+  #inspectFuture(sigil: PollSigil<unknown>): Option<FutureResult<unknown>> {
     return this.poll(sigil.future);
   }
 
@@ -293,23 +300,23 @@ export class Interpreter {
     blockOnFuture(process, this.#rootFrame.requireFuture(futureRef), resume);
   }
 
-  #unbind(process: RuntimeProcess, sigil: Extract<Sigil, { kind: "unbind" }>): void {
+  #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
     this.#rootFrame.resolve(process.scope.ref).unbind(sigil.key);
   }
 
-  #receive(_process: RuntimeProcess, _sigil: Extract<Sigil, { kind: "receive" }>): Option<unknown> {
+  #receive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): Option<unknown> {
     return notImplemented("Interpreter.receive sigil execution");
   }
 
   #blockReceive(
     _process: RuntimeProcess,
-    _sigil: Extract<Sigil, { kind: "receive" }>,
+    _sigil: ReceiveSigil<unknown>,
     _resume: (echo: unknown) => Wisp<unknown>,
   ): void {
     notImplemented("Interpreter.receive sigil blocking");
   }
 
-  #send(_sigil: Extract<Sigil, { kind: "send" }>): void {
+  #send(_sigil: SendSigil<unknown>): void {
     notImplemented("Interpreter.send sigil execution");
   }
 
@@ -352,4 +359,4 @@ export class Interpreter {
   readonly #rootFrame: ScopeFrame;
 }
 
-export type * from "./process-step";
+export type * from "./process-stage";
