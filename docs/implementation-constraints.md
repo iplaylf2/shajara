@@ -11,7 +11,7 @@
 ## 1. 边界与依赖
 
 - host 负责 generator 编排与宿主桥接，不将 generator 细节下沉到 kernel。
-- 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SelfDescriptor`）由 kernel 单源定义并导出，host 直接消费，不重复定义同语义包装。
+- 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SelfHandle`）由 kernel 单源定义并导出，host 直接消费，不重复定义同语义包装。
 - 依赖方向固定为 `executor → contracts/sigils`；kernel 基础契约不反向依赖 executor。
 - executor 侧派生句柄不反向定义 kernel 基础概念；`Processor`、`ExecutionScopeRef` 这类 executor 衍生句柄落在 `executor.ts`，不回流到 `contracts/`。
 - cleanup 注册以 `Ritual` 为锚点：同一条启动入口注册一次 cleanup。

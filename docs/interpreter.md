@@ -30,6 +30,12 @@
 
 `Interpreter` 只负责解释环境内部的并发演算，不直接承担更高层的入口治理、全局环境管理或生命周期编排。
 
+在实现分层上，当前边界进一步收口为：
+
+- `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复，以及 `self` / `branch` 所需 handle 的产出。
+- `ScopeFrame` 负责 scope 树、runtime scope 索引、future 索引，以及“某个 scope 的 entry process”这一结构性关系。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不绕过 `ScopeFrame` 重新解释 scope 与 entry process 的关系。
+
 ## 3. 驱动模型
 
 `Interpreter` 不以“一次调用持续解释到挂起或结束”为核心模型，而是以步进推进为核心模型。
@@ -81,7 +87,18 @@
 
 它的职责不是单纯构造一个引用，而是专门执行那些会影响解释环境的副作用型 sigil 所需要的 Process 生成行为。换言之，`spawn` 是解释环境内部“新增并发参与者”的统一入口。
 
-### 4.3 只读观察接口
+### 4.3 `onProcessReady`
+
+`onProcessReady(listener)` 用于登记 Process ready 通知。
+
+其返回值是取消登记函数；解释器不维护调度循环策略本身，只承诺在以下时机发出通知：
+
+- 新 Process 被创建并注册进解释环境后。
+- 阻塞中的 Process 因 future 收敛等原因重新回到 ready 态后。
+
+它的用途是把最小驱动闭环暴露给解释器外部：外部可以据此组织 ready queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
+
+### 4.4 只读观察接口
 
 `Interpreter` 提供一组只读接口，用于观察封闭环境中的状态，而不直接改变环境：
 
@@ -99,15 +116,15 @@
 
 ## 6. 扩展缝隙
 
-`onReady` 与 `onClose` 是 `Interpreter` 为解释过程预留的受保护扩展点。
+`Interpreter` 当前只保留一个受保护扩展点：`onClose`。
 
-这两个接口存在的目的，是允许派生实现间接干预解释过程，例如在 Process 变为就绪时接管调度组织，或在 Scope 关闭时追加额外处理。
+它用于在 Scope 关闭路径上追加有限干预，而不是接管解释器的常规驱动模型。
 
-这类扩展点属于妥协性设计：
+这里的边界是：
 
-- 它们不改变 `Interpreter` 的基本主题。
-- 它们只提供有限干预能力。
-- 它们不应反向把 `Interpreter` 本身变成复杂执行入口框架。
+- 公开 hook 只暴露事件，不暴露内部可变状态。
+- 受保护扩展点只提供有限干预能力。
+- 它们都不应反向把 `Interpreter` 本身变成复杂执行入口框架。
 
 ## 7. 实现导向
 

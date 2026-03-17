@@ -43,6 +43,16 @@
   证据：`packages/kernel/src/primitives/enclose.ts`、`packages/host/src/primitives/enclose.ts`
 - `join` 包装层已删除，scope 等待统一经由 `wait(scopeRef.exitFuture)` 表达。  
   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
+- `Interpreter` 已把 process ready 信号公开为 `onProcessReady(listener)`，不再以 `onReady` 保护钩子承担调度接缝。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts`
+- `RuntimeProcess` 已收口为显式持有状态迁移的实例；`Interpreter` 在 resonance / future unblock / handle 产出路径上不再直接改写 process 内部细节。  
+  证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- `RuntimeProcess` 只保留 `scopeRef`，不再直接持有 `RuntimeScope`；scope runtime 实体解析统一经由 `ScopeFrame`。  
+  证据：`packages/kernel/src/interpreter/runtime.ts`、`packages/kernel/src/interpreter/scope-frame.ts`
+- `branch` / `self` 的 echo 公开语义已统一收口为 `*Handle`，不再使用 `*Descriptor` 命名。  
+  证据：`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/self.ts`、`packages/kernel/src/primitives/self.ts`
+- `ScopeFrame` 已直接暴露 branch scope 的 `entryProcess`，`Interpreter` 不再通过全局 process 表回查 branch 入口 process。  
+  证据：`packages/kernel/src/interpreter/scope-frame.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 
 ## 4. 本轮新增文档锚点
 
@@ -57,6 +67,7 @@
 
 1. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
 2. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
+3. 基于 `Interpreter.onProcessReady(...)` 明确最小 `perform` / ready-queue 驱动闭环的落点。
 
 ## 6. 验证基线
 

@@ -3,11 +3,13 @@
 // oxlint-disable class-methods-use-this
 import type {
   BindSigil,
+  BranchHandle,
   BranchSigil,
   HaltSigil,
   LookupSigil,
   PollSigil,
   ReceiveSigil,
+  SelfHandle,
   SendSigil,
   SettleSigil,
   Sigil,
@@ -40,7 +42,6 @@ import {
   interpretedProcessStage,
   resonatedProcessStage,
 } from "./process-stage";
-import { branchDescriptor, selfDescriptor } from "./runtime-access";
 import type { Option } from "#src/utils";
 import type { ProcessStage } from "./process-stage";
 import type { RuntimeProcess } from "./runtime";
@@ -71,8 +72,9 @@ export class Interpreter {
       return exitedProcessStage(processRef, process.result as FutureResult<Relic>);
     }
 
-    if (process.continuation !== null) {
-      return this.#resonateWisp(process);
+    if (process.hasQueuedContinuation) {
+      process.resonate();
+      return resonatedProcessStage(process.ref);
     }
 
     return this.#interpretWisp(process);
@@ -90,8 +92,11 @@ export class Interpreter {
     return this.#rootFrame.isClosed;
   }
 
-  protected onReady(_process: ProcessRef<unknown>): void {
-    //
+  public onProcessReady(listener: (process: ProcessRef<unknown>) => void): () => void {
+    this.#processReadyListeners.add(listener);
+    return () => {
+      this.#processReadyListeners.delete(listener);
+    };
   }
 
   protected onClose(
@@ -197,31 +202,15 @@ export class Interpreter {
     }
   }
 
-  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStage<Relic> {
-    const { continuation } = process;
-
-    if (continuation === null) {
-      throw new Error("Expected a queued continuation before resonance.");
-    }
-
-    process.continuation = null;
-    process.wisp = continuation.resume(continuation.echo);
-    return resonatedProcessStage(process.ref);
-  }
-
   #bind(process: RuntimeProcess, sigil: BindSigil<unknown>): void {
-    this.#rootFrame.resolve(process.scope.ref).bind(sigil.key, sigil.value);
+    this.#rootFrame.resolve(process.scopeRef).bind(sigil.key, sigil.value);
   }
 
-  #branch(
-    process: RuntimeProcess,
-    sigil: BranchSigil<unknown>,
-  ): ReturnType<typeof branchDescriptor> {
+  #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
     const branchFrame = this.#rootFrame
-      .resolve(process.scope.ref)
+      .resolve(process.scopeRef)
       .branch(sigil.spec, (frame) => this.#createProcess(frame, sigil.entry, "tracked"));
-    const branchProcess = this.#readProcess(branchFrame.processRef);
-    return branchDescriptor(branchProcess, branchFrame.runtime);
+    return branchFrame.entryProcess.branchHandle();
   }
 
   #future(): readonly [FutureKey<unknown>, FutureSettleKey<unknown>] {
@@ -239,13 +228,13 @@ export class Interpreter {
     const unblocked = settleFuture(future, sigil.result as FutureResult<unknown>);
 
     for (const readyProcess of unblocked) {
-      this.onReady(readyProcess.ref);
+      this.#notifyProcessReady(readyProcess.ref);
     }
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
     const spawned = this.#createProcess(
-      this.#rootFrame.resolve(process.scope.ref),
+      this.#rootFrame.resolve(process.scopeRef),
       sigil.ritual,
       sigil.participation,
     );
@@ -253,15 +242,15 @@ export class Interpreter {
   }
 
   #lookupInScope(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
-    return this.lookup(process.scope.ref, sigil.key);
+    return this.lookup(process.scopeRef, sigil.key);
   }
 
   #inspectFuture(sigil: PollSigil<unknown>): Option<FutureResult<unknown>> {
     return this.poll(sigil.future);
   }
 
-  #describeSelf(process: RuntimeProcess): ReturnType<typeof selfDescriptor> {
-    return selfDescriptor(process);
+  #describeSelf(process: RuntimeProcess): SelfHandle<ScopeRef<unknown>> {
+    return process.selfHandle();
   }
 
   #pollFuture<Result>(futureRef: FutureKey<Result>): Option<FutureResult<Result>> {
@@ -271,37 +260,37 @@ export class Interpreter {
   #waitFuture(
     process: RuntimeProcess,
     futureRef: FutureKey<unknown>,
-    resume: (echo: unknown) => Wisp<unknown>,
+    resonate: (echo: unknown) => Wisp<unknown>,
   ): void {
-    this.#blockFuture(process, futureRef, resume);
+    this.#blockFuture(process, futureRef, resonate);
   }
 
   #queueContinuation(
     process: RuntimeProcess,
-    resume: (echo: unknown) => Wisp<unknown>,
+    resonate: (echo: unknown) => Wisp<unknown>,
     echo: unknown,
   ): void {
-    queueContinuation(process, resume, echo);
+    queueContinuation(process, resonate, echo);
   }
 
   #setContinuation(
     process: RuntimeProcess,
-    resume: (echo: unknown) => Wisp<unknown>,
+    resonate: (echo: unknown) => Wisp<unknown>,
     echo: unknown,
   ): void {
-    this.#queueContinuation(process, resume, echo);
+    this.#queueContinuation(process, resonate, echo);
   }
 
   #blockFuture(
     process: RuntimeProcess,
     futureRef: FutureKey<unknown>,
-    resume: (echo: unknown) => Wisp<unknown>,
+    resonate: (echo: unknown) => Wisp<unknown>,
   ): void {
-    blockOnFuture(process, this.#rootFrame.requireFuture(futureRef), resume);
+    blockOnFuture(process, this.#rootFrame.requireFuture(futureRef), resonate);
   }
 
   #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
-    this.#rootFrame.resolve(process.scope.ref).unbind(sigil.key);
+    this.#rootFrame.resolve(process.scopeRef).unbind(sigil.key);
   }
 
   #receive(_process: RuntimeProcess, _sigil: ReceiveSigil<unknown>): Option<unknown> {
@@ -311,7 +300,7 @@ export class Interpreter {
   #blockReceive(
     _process: RuntimeProcess,
     _sigil: ReceiveSigil<unknown>,
-    _resume: (echo: unknown) => Wisp<unknown>,
+    _resonate: (echo: unknown) => Wisp<unknown>,
   ): void {
     notImplemented("Interpreter.receive sigil blocking");
   }
@@ -325,15 +314,14 @@ export class Interpreter {
     ritual: Ritual<Relic>,
     participation: "tracked" | "auxiliary",
   ): RuntimeProcess<Relic> {
-    const scope = frame.runtime;
     const ref = this.#createProcessRefOf<Relic>(frame);
 
     if (this.#isEntryProcess(frame)) {
-      this.#rootFrame.registerFuture(scope.exitFuture);
+      this.#rootFrame.registerFuture(frame.runtime.exitFuture);
     }
 
-    const process = this.#registerProcess(createProcess(scope, ritual, participation, ref));
-    this.onReady(process.ref);
+    const process = this.#registerProcess(createProcess(frame.ref, ritual, participation, ref));
+    this.#notifyProcessReady(process.ref);
     return process;
   }
 
@@ -356,6 +344,14 @@ export class Interpreter {
   #registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
     return this.#rootFrame.registerProcess(process);
   }
+
+  #notifyProcessReady(process: ProcessRef<unknown>): void {
+    for (const listener of this.#processReadyListeners) {
+      listener(process);
+    }
+  }
+
+  readonly #processReadyListeners = new Set<(process: ProcessRef<unknown>) => void>();
   readonly #rootFrame: ScopeFrame;
 }
 

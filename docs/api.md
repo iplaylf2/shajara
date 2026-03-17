@@ -131,7 +131,7 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 | `bind`        | `bind(ContextKey<T>, value) → void`                  | 在当前 `Scope` 绑定一个上下文值。                               |
 | `unbind`      | `unbind(ContextKey<T>) → void`                       | 在当前 `Scope` 解绑一个上下文值。                               |
 | `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 读取当前 `Scope` 可见的上下文值；未命中时返回 `undefined`。     |
-| `self`        | `self() → SelfDescriptor`                            | 读取当前执行信息。                                              |
+| `self`        | `self() → SelfHandle`                                | 读取当前执行信息。                                              |
 | `halt`        | `halt() → never`                                     | 终止当前流程。                                                  |
 | `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
 | `park`        | `park() → never`                                     | 持续挂起，直到外部结束该流程。                                  |

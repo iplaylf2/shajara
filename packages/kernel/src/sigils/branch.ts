@@ -23,10 +23,10 @@ export interface BranchSigil<Relic> extends SigilShape {
   readonly kind: "branch";
   readonly entry: Ritual<Relic>;
   readonly spec: ScopeSpec;
-  readonly [ECHO_TOKEN]?: readonly [BranchDescriptor<Relic>];
+  readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic>];
 }
 
-export interface BranchDescriptor<Relic> {
+export interface BranchHandle<Relic> {
   readonly scopeRef: ScopeRef<Relic>;
   readonly processRef: ProcessRef<Relic>;
 }

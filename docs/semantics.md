@@ -490,6 +490,6 @@ primitive 不等于 sigil：
 
 沿祖先链查找值；未命中时返回 `undefined`。
 
-#### self() → Wisp\<SelfDescriptor\>
+#### self() → Wisp\<SelfHandle\>
 
 返回当前执行实体的自省信息。

@@ -130,7 +130,7 @@ export class ScopeFrame {
 
   public registerProcess<Relic>(process: RuntimeProcess<Relic>): RuntimeProcess<Relic> {
     this.registerFuture(process.exitFuture);
-    process.scope.processes.add(process);
+    this.resolve(process.scopeRef).runtime.processes.add(process);
     this.#processByRef.set(process.ref, process);
     return process;
   }
@@ -153,6 +153,10 @@ export class ScopeFrame {
 
   public get processRef(): ProcessRef<unknown> {
     return this.#scope.processRef;
+  }
+
+  public get entryProcess(): RuntimeProcess {
+    return this.readProcess(this.processRef);
   }
 
   public get isClosed(): boolean {
@@ -206,8 +210,7 @@ export class ScopeFrame {
   }
 
   #onProcessExited(process: RuntimeProcess, result: FutureResult<unknown>): void {
-    const { scope: processScope } = process;
-    let scope: RuntimeScope | null = processScope;
+    let scope: RuntimeScope | null = this.resolve(process.scopeRef).runtime;
 
     settleFuture(process.exitFuture, result);
 

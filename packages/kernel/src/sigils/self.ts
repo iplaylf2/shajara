@@ -8,10 +8,10 @@ export function self<Scope extends ScopeRef<unknown>>(): SelfSigil<Scope> {
 
 export interface SelfSigil<Scope extends ScopeRef<unknown>> extends SigilShape {
   readonly kind: "self";
-  readonly [ECHO_TOKEN]?: readonly [SelfDescriptor<Scope>];
+  readonly [ECHO_TOKEN]?: readonly [SelfHandle<Scope>];
 }
 
-export interface SelfDescriptor<Scope extends ScopeRef<unknown>> {
+export interface SelfHandle<Scope extends ScopeRef<unknown>> {
   readonly scopeRef: Scope;
   readonly processRef: ProcessRef<unknown>;
 }

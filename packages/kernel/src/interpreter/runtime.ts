@@ -1,3 +1,4 @@
+import type { BranchHandle, SelfHandle } from "#src/sigils";
 import type {
   ContextKey,
   FailureShape,
@@ -36,25 +37,91 @@ export interface RuntimeScope {
 export interface RuntimeBlocker {
   readonly future: RuntimeFuture;
   readonly kind: "future";
-  readonly resume: (result: FutureResult<unknown>) => Wisp<unknown>;
+  readonly resonate: (result: FutureResult<unknown>) => Wisp<unknown>;
 }
 
 export interface RuntimeContinuation {
   readonly echo: unknown;
   readonly kind: "resonate";
-  readonly resume: (echo: unknown) => Wisp<unknown>;
+  readonly resonate: (echo: unknown) => Wisp<unknown>;
 }
 
-export interface RuntimeProcess<Relic = unknown> {
-  blocker: RuntimeBlocker | null;
-  readonly exitFuture: RuntimeFuture;
-  continuation: RuntimeContinuation | null;
-  readonly participation: "tracked" | "auxiliary";
-  readonly ref: ProcessRef<Relic>;
-  result: FutureResult<Relic> | null;
-  readonly scope: RuntimeScope;
-  status: "ready" | "blocked" | "exited";
-  wisp: Wisp<unknown>;
+export class RuntimeProcess<Relic = unknown> {
+  public blocker: RuntimeBlocker | null = null;
+  public continuation: RuntimeContinuation | null = null;
+  public result: FutureResult<Relic> | null = null;
+  public status: "ready" | "blocked" | "exited" = "ready";
+  public wisp: Wisp<unknown>;
+
+  public constructor(config: RuntimeProcessConfig<Relic>) {
+    this.exitFuture = config.exitFuture;
+    this.participation = config.participation;
+    this.ref = config.ref;
+    this.scopeRef = config.scopeRef;
+    this.wisp = config.ritual() as Wisp<unknown>;
+  }
+
+  public readonly exitFuture: RuntimeFuture;
+  public readonly participation: "tracked" | "auxiliary";
+  public readonly ref: ProcessRef<Relic>;
+  public readonly scopeRef: ScopeRef<unknown>;
+
+  public get hasQueuedContinuation(): boolean {
+    return this.continuation !== null;
+  }
+
+  public queueContinuation(resonate: (echo: unknown) => Wisp<unknown>, echo: unknown): void {
+    this.continuation = {
+      echo,
+      kind: "resonate",
+      resonate,
+    };
+  }
+
+  public resonate(): void {
+    const continuation = this.continuation!;
+
+    this.continuation = null;
+    this.wisp = continuation.resonate(continuation.echo);
+  }
+
+  public blockOnFuture(
+    future: RuntimeFuture,
+    resonate: (result: FutureResult<unknown>) => Wisp<unknown>,
+  ): void {
+    this.blocker = {
+      future,
+      kind: "future",
+      resonate,
+    };
+    this.status = "blocked";
+    future.waitingProcesses.add(this);
+  }
+
+  public unblock(result: FutureResult<unknown>): void {
+    if (this.blocker === null) {
+      return;
+    }
+
+    this.queueContinuation(this.blocker.resonate as (echo: unknown) => Wisp<unknown>, result);
+    this.blocker.future.waitingProcesses.delete(this);
+    this.blocker = null;
+    this.status = "ready";
+  }
+
+  public branchHandle(): BranchHandle<Relic> {
+    return {
+      processRef: this.ref,
+      scopeRef: this.scopeRef as ScopeRef<Relic>,
+    };
+  }
+
+  public selfHandle(): SelfHandle<ScopeRef<unknown>> {
+    return {
+      processRef: this.ref,
+      scopeRef: this.scopeRef,
+    };
+  }
 }
 
 export interface RuntimeFuturePair<Result> {
@@ -72,22 +139,18 @@ export function createProcessRef<Relic>(): ProcessRef<Relic> {
 }
 
 export function createProcess<Relic>(
-  scope: RuntimeScope,
+  scopeRef: ScopeRef<unknown>,
   ritual: Ritual<Relic>,
   participation: "tracked" | "auxiliary",
   ref: ProcessRef<Relic> = createProcessRef<Relic>(),
 ): RuntimeProcess<Relic> {
-  return {
-    blocker: null,
-    continuation: null,
+  return new RuntimeProcess({
     exitFuture: createFuturePair(ref.exitFuture).future,
     participation,
     ref,
-    result: null,
-    scope,
-    status: "ready",
-    wisp: ritual() as Wisp<unknown>,
-  };
+    ritual,
+    scopeRef,
+  });
 }
 
 function createFuturePair<Result>(key: FutureKey<Result>): RuntimeFuturePair<Result> {
@@ -132,42 +195,21 @@ export function failProcess(process: RuntimeProcess, failure: FailureShape): Fut
 export function blockOnFuture(
   process: RuntimeProcess,
   future: RuntimeFuture,
-  resume: (result: FutureResult<unknown>) => Wisp<unknown>,
+  resonate: (result: FutureResult<unknown>) => Wisp<unknown>,
 ): void {
-  process.blocker = {
-    future,
-    kind: "future",
-    resume,
-  };
-  process.status = "blocked";
-  future.waitingProcesses.add(process);
+  process.blockOnFuture(future, resonate);
 }
 
 export function unblockProcess(process: RuntimeProcess, result: FutureResult<unknown>): void {
-  if (process.blocker === null) {
-    return;
-  }
-
-  process.continuation = {
-    echo: result,
-    kind: "resonate",
-    resume: process.blocker.resume as (echo: unknown) => Wisp<unknown>,
-  };
-  process.blocker.future.waitingProcesses.delete(process);
-  process.blocker = null;
-  process.status = "ready";
+  process.unblock(result);
 }
 
 export function queueContinuation(
   process: RuntimeProcess,
-  resume: (echo: unknown) => Wisp<unknown>,
+  resonate: (echo: unknown) => Wisp<unknown>,
   echo: unknown,
 ): void {
-  process.continuation = {
-    echo,
-    kind: "resonate",
-    resume,
-  };
+  process.queueContinuation(resonate, echo);
 }
 
 export function settleFuture(
@@ -230,4 +272,12 @@ function releaseWaitingProcesses(
 
   future.waitingProcesses.clear();
   return unblocked;
+}
+
+interface RuntimeProcessConfig<Relic> {
+  readonly exitFuture: RuntimeFuture;
+  readonly participation: "tracked" | "auxiliary";
+  readonly ref: ProcessRef<Relic>;
+  readonly ritual: Ritual<Relic>;
+  readonly scopeRef: ScopeRef<unknown>;
 }

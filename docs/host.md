@@ -71,7 +71,7 @@ host 直接消费 kernel 导出的引用类型，不重复定义同语义包装�
 | ------------------- | ------ | ----------------------- |
 | `ScopeRef`          | kernel | 结构层引用              |
 | `ExecutionScopeRef` | kernel | 执行入口引用（含 root） |
-| `SelfDescriptor`    | kernel | 自省信息                |
+| `SelfHandle`        | kernel | 自省信息                |
 
 命名规则：角色用 `*Scope`，控制面句柄用 `*Ref`。
 
