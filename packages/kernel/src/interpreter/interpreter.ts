@@ -75,12 +75,12 @@ export class Interpreter {
     return this.#resolveScope(scope).observeRunnable(listener);
   }
 
-  public get scopeRoot(): ScopeRef<unknown> {
-    return this.#rootScope.ref;
+  public get scopeRoot(): ScopeRef<void> {
+    return this.#rootScope.ref as ScopeRef<void>;
   }
 
-  public get processRoot(): ProcessRef<unknown> {
-    return this.#rootScope.processRef;
+  public get processRoot(): ProcessRef<void> {
+    return this.#rootScope.processRef as ProcessRef<void>;
   }
 
   public get isClosed(): boolean {
