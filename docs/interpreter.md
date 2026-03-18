@@ -32,18 +32,18 @@
 
 在实现分层上，当前边界进一步收口为：
 
-- `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、future 阻塞/恢复、`resonate` 后的终态收敛，以及 `self` / `branch` 所需 handle 的产出。
-- `RuntimeScope` 负责 scope 树、scope 局部 future 记录、mailbox，以及 scope 内各个 process 的结构性归属关系。
+- `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、进入 future/mailbox 阻塞态、恢复后的 `resonate` 推进，以及 `self` / `branch` 所需 handle 的产出。
+- `RuntimeScope` 负责 scope 树、future 的创建与归属、mailbox，以及 scope 内各个 process 的结构性归属关系。
 - `RuntimeScope` 的构造契约要求 `parent` 永不为 `null`；根 scope 通过一个仅供内部使用的私有 sentinel 哨兵承接 create 路径，而不是把空值传播进正常实例关系。
 - `RuntimeScope` 直接依赖并持有其局部 `RuntimeProcess` 是正当的，因为 process 的运行态本来就是 scope 内部的局部状态，而不是与 scope 平行的另一套一级对象。
 - `RuntimeProcess` 仍应只通过 `scopeRef` 与 scope 语义关联，而不直接反向依赖 `RuntimeScope`；这样 process 局部状态对象仍保持边界句柄视角，不把 scope 内部结构倒灌回 process。
 - `Interpreter` 的职责应收口在“解释当前 sigil 并发出状态变更意图”；它不应长期承担大部分 `scopeRef` / `processRef` 到 runtime 实体的寻址与跨对象编排，否则像“从中间关闭某个 scope”这类场景会把关闭协议的复杂度错误地推回解释器。
 - `RuntimeScope.create(...)` / `branch(...)` / `spawn(...)` 现在都按这一方向收口：scope 直接接收 entry / spawn 所需的 `Ritual`，并在内部建立和持有对应的 `RuntimeProcess`；`Interpreter` 不再承担这些结构关系的构造职责。
-- `RuntimeIndex` 当前只保留 register/resolve 两类索引职责，并进一步统一成 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess` 这组命名；它不再试图表现成更高层的 future/mailbox 语义宿主。当前这些索引容器也已收口为 `WeakMap`，表达其索引身份而不是持有期宿主身份。
-- future 的运行时承载当前仍处在不稳定区：把 future 操作放进 `RuntimeScope` 往往会显得过宽，放进 `RuntimeProcess` 又不总是贴合其局部状态边界。后续需要单独评估 `RuntimeFuture` 一类建模来承接这组语义，但这不是当前迭代要立即落地的对象。
-- 这两类 runtime 实体现分别落位到 `runtime-process.ts` 与 `runtime-scope.ts`；第三个配套对象当前命名为 `RuntimeIndex`，落位于 `runtime-index.ts`。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段，也不应绕过 `RuntimeScope` 重新解释 scope 内 process 归属、entry process、mailbox waiting 与 closing 路径。
-- 当前 `RuntimeProcess` / `RuntimeScope` 上已经补出一批 interpreter 需要依赖的 future/mailbox 方法签名，但其中多项仍明确保持 `notImplemented(...)` 占位；本轮目标是先把解释器依赖的对象形状摆正，而不是在错误边界上补全运行逻辑。
+- `RuntimeIndex` 当前只保留 register/resolve 两类索引职责，并进一步统一成 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle` 这组命名；它不试图表现成更高层的 future/mailbox 语义宿主。当前这些索引容器也已收口为 `WeakMap`，表达其索引身份而不是持有期宿主身份。
+- future 的运行时承载已单独落位为 `RuntimeFuture`：`RuntimeScope.createFuture(...)` 负责创建 future 壳体，`Interpreter` 只在 sigil 解释时按 key 解析并转发给对应的 runtime future；`poll / wait / settle` 的具体运行时语义当前仍保持 `notImplemented(...)` 占位。
+- 这三类 runtime 实体现分别落位到 `runtime-process.ts`、`runtime-scope.ts` 与 `runtime-future.ts`；配套索引对象命名为 `RuntimeIndex`，落位于 `runtime-index.ts`。
+- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段；但当前实现仍会承担一部分 runtime index 的登记动作，因此“结构装配完全退回 `RuntimeScope`”仍未完成。
+- 当前 future、mailbox 与 closing 相关多项能力仍明确保持 `notImplemented(...)` 占位；本轮目标是先把对象边界、公开面与步进 case 风格摆正，而不是一次补全全部运行逻辑。
 
 ## 3. 驱动模型
 

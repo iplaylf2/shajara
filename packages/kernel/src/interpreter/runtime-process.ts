@@ -2,7 +2,6 @@
 import type {
   FutureKey,
   FutureResult,
-  FutureSettleKey,
   MessageKey,
   ProcessRef,
   Ritual,
@@ -10,24 +9,26 @@ import type {
   Wisp,
 } from "#src/contracts";
 import type { Option } from "#src/utils";
+import type { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
 import { right } from "#src/utils";
 
+const HANDLE_FUTURE_KEY_INDEX = 0;
+
 export class RuntimeProcess<Relic = unknown> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
-    exitFuture: FutureKey<Relic>,
+    exitFuture: RuntimeFuture<Relic>,
     config: RuntimeProcessConfig<Relic>,
   ) {
-    this.participation = config.participation;
-    this.ref = { exitFuture } as ProcessRef<Relic>;
+    this.ref = { exitFuture: exitFuture.handle[HANDLE_FUTURE_KEY_INDEX] } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
     this.wisp = config.ritual() as Wisp<unknown>;
   }
 
   public get hasQueuedContinuation(): boolean {
-    return this.continuation !== null;
+    return this.#continuation !== null;
   }
 
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
@@ -38,7 +39,7 @@ export class RuntimeProcess<Relic = unknown> {
   }
 
   public setContinuation(resonate: (echo: unknown) => Wisp<unknown>, echo: unknown): void {
-    this.continuation = {
+    this.#continuation = {
       echo,
       kind: "resonate",
       resonate,
@@ -46,9 +47,9 @@ export class RuntimeProcess<Relic = unknown> {
   }
 
   public resonate(): void {
-    const continuation = this.continuation!;
+    const continuation = this.#continuation!;
 
-    this.continuation = null;
+    this.#continuation = null;
     this.wisp = continuation.resonate(continuation.echo);
 
     if (this.wisp.bearing === "resting") {
@@ -56,10 +57,10 @@ export class RuntimeProcess<Relic = unknown> {
     }
   }
 
-  public wait(future: FutureKey<unknown>): void {
-    this.blocker = {
+  public wait(future: RuntimeFuture<unknown>): void {
+    this.#blocker = {
       continuation: null,
-      future,
+      future: future.handle[HANDLE_FUTURE_KEY_INDEX],
       kind: "future",
     };
     this.status = "waiting";
@@ -67,7 +68,7 @@ export class RuntimeProcess<Relic = unknown> {
   }
 
   public receive(_messageKey: MessageKey<unknown>): void {
-    this.blocker = {
+    this.#blocker = {
       continuation: null,
       future: null,
       kind: "receive",
@@ -80,29 +81,8 @@ export class RuntimeProcess<Relic = unknown> {
     return notImplemented("RuntimeProcess.tryReceive");
   }
 
-  public poll<Result>(_future: FutureKey<Result>): Option<FutureResult<Result>> {
-    return notImplemented("RuntimeProcess.poll");
-  }
-
-  public settle<Result>(
-    _futureSettle: FutureSettleKey<Result>,
-    _result: FutureResult<Result>,
-  ): void {
-    notImplemented("RuntimeProcess.settle");
-  }
-
   public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
-    this.blocker!.continuation = continuation;
-  }
-
-  public unblock(echo: unknown): void {
-    if (this.blocker === null || this.blocker.continuation === null) {
-      return;
-    }
-
-    this.setContinuation(this.blocker.continuation, echo);
-    this.blocker = null;
-    this.status = "runnable";
+    this.#blocker!.continuation = continuation;
   }
 
   #complete(value: unknown): void {
@@ -110,20 +90,20 @@ export class RuntimeProcess<Relic = unknown> {
       return;
     }
 
-    this.blocker = null;
-    this.continuation = null;
+    this.#blocker = null;
+    this.#continuation = null;
     this.result = right(value) as FutureResult<Relic>;
     this.status = "completed";
   }
 
-  public readonly participation: "tracked" | "auxiliary";
   public readonly ref: ProcessRef<Relic>;
   public readonly scopeRef: ScopeRef<unknown>;
-  public blocker: RuntimeBlocker | null = null;
-  public continuation: RuntimeContinuation | null = null;
   public result: FutureResult<Relic> | null = null;
   public status: "runnable" | "waiting" | "completed" = "runnable";
   public wisp: Wisp<unknown>;
+
+  #blocker: RuntimeBlocker | null = null;
+  #continuation: RuntimeContinuation | null = null;
 }
 
 export interface RuntimeBlocker {

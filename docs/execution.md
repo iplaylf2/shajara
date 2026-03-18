@@ -45,9 +45,9 @@
   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
 - interpreter runtime 文件已按职责拆分为 `runtime-scope.ts` 与 `runtime-process.ts`；原先聚合命名的 `runtime.ts` 已退出该结构。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
-- `RuntimeProcess` 已收口为 process 局部状态对象：构造时直接接收 `scopeRef`、`exitFuture`、`ritual` 与 `participation`，自身负责 continuation、blocking 与终态收敛。  
+- `RuntimeProcess` 已收口为 process 局部状态对象：构造时直接接收 `scopeRef`、`exitFuture` 与 `ritual`/`participation` 配置，自身负责 continuation、blocking 与终态收敛。  
   证据：`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- 当前实现仍把 `RuntimeScope` / `RuntimeProcess` 按 ref 边界拆得过开：`RuntimeScope` 尚未真正成为 process 的结构宿主，`Interpreter` 仍承担大量 `scopeRef` / `processRef` 到 runtime 实体的寻址与编排。这个形态已被视为过度解耦，不应继续作为长期基线。  
+- 当前实现仍把 `RuntimeScope` / `RuntimeProcess` 按 ref 边界拆得过开：`RuntimeScope` 虽已成为 entry/spawn 的结构宿主，但 `Interpreter` 仍承担 runtime index 的登记、`scopeRef` / `processRef` 的寻址与部分 future 编排。这个形态仍不应作为长期基线。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
 - `RuntimeProcess.resonate()` 现在会在 resonance 产出 `RestingWisp` 时直接把 process 收敛为 completed；`step` 在得知 process 已终态时只返回 `exited`，不再额外触发退出后处理。  
   证据：`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
@@ -55,22 +55,20 @@
   证据：`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/self.ts`、`packages/kernel/src/primitives/self.ts`
 - `RuntimeScope` 的 `parent` 构造契约已收紧为非空；根 scope 通过私有静态 sentinel 哨兵承接 `create(...)` 的特例，空值不再出现在正常实例构造面。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`docs/interpreter.md`
-- `RuntimeScope.create(...)` / `branch(...)` 已改为直接接收 entry `Ritual`，并在 scope 内部构造和持有 entry process；entry process 的结构建立不再经由 `Interpreter` hook 装配。  
+- `RuntimeScope.create(...)` / `branch(...)` 已改为直接接收 entry `Ritual`，并在 scope 内部构造和持有 entry process；但相关 runtime index 登记仍未完全从 `Interpreter` 侧退出。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- `RuntimeScope.spawn(...)` 也已改为直接接收 spawned `Ritual` 与 `participation`，由 scope 内部构造 process，再交由 `Interpreter` 做 registry 登记。  
+- `RuntimeScope.spawn(...)` 也已改为直接接收 spawned `Ritual` 与 `participation`，由 scope 内部构造 process；当前 `Interpreter` 仍会补做 process registry 登记。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- `RuntimeIndex` 当前公开面已进一步收紧为 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess`；它只承担 index/locator 角色，不再暴露额外的运行语义入口，内部索引容器也已改为 `WeakMap`。  
+- `RuntimeIndex` 当前公开面已进一步收紧为 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle`；它只承担 index/locator 角色，不再暴露额外的运行语义入口，内部索引容器也已改为 `WeakMap`。  
   证据：`packages/kernel/src/interpreter/runtime-index.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- future 当前实现仍以 `RuntimeScope` 内部记录为准：`FutureKey` / `FutureSettleKey` 只是 token，`RuntimeIndex` 只保留 future record 的登记索引，不再承担 future 创建语义。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-index.ts`
-- future 的运行时建模当前仍未稳定：放在 `RuntimeScope` 与放在 `RuntimeProcess` 都会出现不顺手的边界压力，因此已登记后续评估 `RuntimeFuture` 一类独立对象的需要；但这一方向当前只做设计留意，不进入本轮实现。  
-  证据：`docs/interpreter.md`、`docs/execution.md`
+- future 当前实现已收口为“`RuntimeScope` 创建并拥有，`RuntimeFuture` 承接 key pair 与未来的运行时语义入口，`RuntimeIndex` 只做 token 到 runtime future 的解析索引”。`FutureKey` / `FutureSettleKey` 仍只是 token，future 创建语义仍由 `RuntimeScope.createFuture(...)` 提供；`poll / wait / settle` 目前仍是占位实现。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-future.ts`、`packages/kernel/src/interpreter/runtime-index.ts`
 - `observeRunnable(...)` 目前仍明确占位为 `notImplemented(...)`；runnable 事件应由 `Interpreter` 还是其他 runtime 协调层触发，尚未定案。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
-- `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。  
+- `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。其中 `wait` 所依赖的 runtime future 行为当前仍是占位实现。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
-- `RuntimeProcess` 与 `RuntimeScope` 当前都已按 interpreter 的直接依赖补出最小签名面，但 future / mailbox 相关多项能力仍刻意保持 `notImplemented(...)`；这轮提交强调的是对象边界与公开面收口，而不是这些运行时能力已经完成。  
-  证据：`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
+- `RuntimeProcess` 已从 future 状态读写里收口回 process 局部状态对象；future、mailbox 与 closing 相关多项能力仍刻意保持 `notImplemented(...)`。这轮提交强调的是对象边界、公开面与解释器编排面的收口，而不是全部运行时能力已经完成。  
+  证据：`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-future.ts`
 - `halt` 的主调用链已先行收口：`Interpreter` 现在负责把 `halt` 转写为对 `RuntimeScope.halt(...)` 的调用，并把 `onClosing(scope, processes, failure)` 包装成 closing worker factory 交给 `RuntimeScope`；`RuntimeScope` 侧的 closing 协议签名已经固定，但具体关闭流程仍是占位实现。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
 - `Interpreter.step(...)` 已先按 `RuntimeProcess.status` 分派，再在 `runnable` 分支内细分 interpret / resonate；其公开返回值也已从 `ProcessStage` 收口为 `ProcessStep`，并以 `disposition` 表达本次步进结果而不是复写 runtime `status`。  
@@ -98,15 +96,14 @@
   证据：`docs/interpreter.md`
 - `interpreter.md` 现进一步记录 closing 路径上的 failure 来源：直接触发 closing 的 scope 继承 origin failure，被迫取消的子树承接默认 termination failure；后者的具体 failure 形状仍待设计。  
   证据：`docs/interpreter.md`
-- `execution.md` 现额外记录了本轮 `Interpreter` review 只完成部分收口；future 处理、scope close 处理与 runtime graph 命名仍处在待决状态。  
+- `execution.md` 现额外记录了本轮 `Interpreter` review 只完成部分收口；future 处理、scope close 处理与 runtime index / runtime object 的协作边界仍处在待决状态。  
   证据：`docs/execution.md`
 
 ## 5. 下一步
 
-1. 继续完成 `Interpreter` review；重点不再是维持 `RuntimeScope` / `RuntimeProcess` 的绝对解耦，而是把 runtime 寻址和结构装配从 `Interpreter` 回收到 `RuntimeScope` 主导的模型。
+1. 继续完成 `Interpreter` review；重点仍是进一步减少 `Interpreter` 对 runtime index 与结构装配细节的介入。
 2. 重做 process / scope 关系：应由 `RuntimeScope` 直接持有并组织本地 `RuntimeProcess` 状态，而 `RuntimeProcess` 继续只通过 `scopeRef` 与 scope 语义关联，不反向依赖 `RuntimeScope`。
-3. 重做 future 处理：当前实现仍把 future record 暴露给 `RuntimeIndex` 做索引与等待队列管理，但后续更可能改成“由 locator 快速定位 owner scope，再由 `RuntimeScope` 完成 future 处理”。
-   同时需要保留一个未决观察：若 future 操作继续卡在 `RuntimeScope` / `RuntimeProcess` 二者之间来回摆动，应转向评估 `RuntimeFuture` 一类独立建模。
+3. 补完 future 路径：当前 `RuntimeFuture` 只提供 key pair 与占位方法，owner scope 的 closing 收敛、wait 恢复与 settle 行为都仍未补完。
 4. 继续补完 `halt` / closing 协议；当前 `RuntimeScope.halt(...)`、closing subtree 扩散与 closing worker 形成仍是占位实现，而这部分正是检验依赖方向是否合理的关键场景。
 5. 继续观察 `RuntimeIndex` 这一命名是否稳定；当前它已经比 `RuntimeGraph` 更贴近其 index/locator 职责，但长期是否仍需进一步细化边界，仍待后续迭代验证。
 6. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。

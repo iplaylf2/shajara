@@ -55,7 +55,7 @@ export class Interpreter {
   }
 
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
-    const process = this.#readProcess(processRef);
+    const process = this.#resolveProcess(processRef);
 
     switch (process.status) {
       case "waiting":
@@ -84,7 +84,7 @@ export class Interpreter {
   }
 
   public get isClosed(): boolean {
-    return this.#rootScope.closed;
+    return this.#rootScope.isClosed;
   }
 
   protected onClosing(
@@ -104,14 +104,14 @@ export class Interpreter {
   }
 
   public poll<Result>(future: FutureKey<Result>): Option<FutureResult<Result>> {
-    return this.#rootScope.poll(future);
+    return this.#resolveFuture(future).poll();
   }
 
   public wait<Result>(
     future: FutureKey<Result>,
     onSettled: (result: FutureResult<Result>) => void,
   ): void {
-    this.#rootScope.wait(future, onSettled);
+    this.#resolveFuture(future).wait(onSettled);
   }
 
   // oxlint-disable-next-line max-statements
@@ -142,13 +142,13 @@ export class Interpreter {
         this.#setContinuation(process, current.resonate, this.#lookup(process, sigil));
         return processInterpretedStep(process.ref);
       case "poll":
-        this.#setContinuation(process, current.resonate, this.#poll(process, sigil));
+        this.#setContinuation(process, current.resonate, this.#poll(sigil));
         return processInterpretedStep(process.ref);
       case "self":
         this.#setContinuation(process, current.resonate, this.#self(process));
         return processInterpretedStep(process.ref);
       case "settle":
-        this.#settle(process, sigil);
+        this.#settle(sigil);
         this.#setContinuation(process, current.resonate, null);
         return processInterpretedStep(process.ref);
       case "spawn":
@@ -159,7 +159,7 @@ export class Interpreter {
         this.#setContinuation(process, current.resonate, null);
         return processInterpretedStep(process.ref);
       case "wait": {
-        const settled = process.poll(sigil.future);
+        const settled = this.#tryWait(sigil);
 
         if (isSome(settled)) {
           this.#setContinuation(process, current.resonate, settled.value);
@@ -216,11 +216,11 @@ export class Interpreter {
 
   #future(process: RuntimeProcess): readonly [FutureKey<unknown>, FutureSettleKey<unknown>] {
     const scope = this.#resolveScope(process.scopeRef);
-    const [future, settle] = scope.createFuture();
+    const future = scope.createFuture();
 
-    this.#runtimeIndex.registerFuture(scope, future);
+    this.#runtimeIndex.registerFuture(future);
 
-    return [future, settle];
+    return future.handle;
   }
 
   #halt(process: RuntimeProcess, sigil: HaltSigil): void {
@@ -231,8 +231,8 @@ export class Interpreter {
     );
   }
 
-  #settle(process: RuntimeProcess, sigil: SettleSigil<unknown>): void {
-    process.settle(sigil.futureSettle, sigil.result);
+  #settle(sigil: SettleSigil<unknown>): void {
+    this.#resolveFutureBySettle(sigil.futureSettle).settle(sigil.result);
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
@@ -243,16 +243,20 @@ export class Interpreter {
     return this.lookup(process.scopeRef, sigil.key);
   }
 
-  #poll(process: RuntimeProcess, sigil: PollSigil<unknown>): Option<unknown> {
-    return process.poll(sigil.future);
+  #poll(sigil: PollSigil<unknown>): Option<unknown> {
+    return this.#resolveFuture(sigil.future).poll();
   }
 
   #self(process: RuntimeProcess): SelfHandle<ScopeRef<unknown>> {
     return process.selfHandle();
   }
 
+  #tryWait(sigil: WaitSigil<unknown>): Option<FutureResult<unknown>> {
+    return this.#resolveFuture(sigil.future).poll();
+  }
+
   #wait(process: RuntimeProcess, sigil: WaitSigil<unknown>): void {
-    process.wait(sigil.future);
+    process.wait(this.#resolveFuture(sigil.future));
   }
 
   #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
@@ -302,7 +306,15 @@ export class Interpreter {
     return this.#runtimeIndex.resolveScope(scopeRef);
   }
 
-  #readProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
+  #resolveProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
     return this.#runtimeIndex.resolveProcess(processRef);
+  }
+
+  #resolveFuture<Result>(future: FutureKey<Result>) {
+    return this.#runtimeIndex.resolveFuture(future);
+  }
+
+  #resolveFutureBySettle<Result>(future: FutureSettleKey<Result>) {
+    return this.#runtimeIndex.resolveFutureBySettle(future);
   }
 }
