@@ -139,13 +139,21 @@ export class RuntimeScope {
     return scope === RuntimeScope.#sentinel;
   }
 
-  private constructor(_spec: ScopeSpec, parent: RuntimeScope, entry: Ritual<unknown>) {
-    const exitFuture = RuntimeFuture.create<unknown>();
-    const entryExitFuture = this.#issueProcessExitFuture<unknown>();
-    const [scopeExitFutureKey, scopeExitSettleKey] = exitFuture.handle;
+  public get exitFuture(): RuntimeFuture<unknown> {
+    return this.#exitFuture;
+  }
 
-    this.#futureByKey.set(scopeExitFutureKey, exitFuture);
-    this.#futureBySettle.set(scopeExitSettleKey, exitFuture);
+  public get entryProcess(): RuntimeProcess {
+    return this.#process;
+  }
+
+  private constructor(_spec: ScopeSpec, parent: RuntimeScope, entry: Ritual<unknown>) {
+    this.#exitFuture = RuntimeFuture.create<unknown>();
+    const entryExitFuture = this.#issueProcessExitFuture<unknown>();
+    const [scopeExitFutureKey, scopeExitSettleKey] = this.#exitFuture.handle;
+
+    this.#futureByKey.set(scopeExitFutureKey, this.#exitFuture);
+    this.#futureBySettle.set(scopeExitSettleKey, this.#exitFuture);
     this.#parent = parent;
     this.ref = { exitFuture: scopeExitFutureKey } as ScopeRef<unknown>;
     this.#process = this.#branchEntryProcess(
@@ -168,6 +176,7 @@ export class RuntimeScope {
   #closed = false;
   readonly #futureByKey = new Map<FutureKey<unknown>, RuntimeFuture<unknown>>();
   readonly #futureBySettle = new Map<FutureSettleKey<unknown>, RuntimeFuture<unknown>>();
+  readonly #exitFuture: RuntimeFuture<unknown>;
   readonly #parent: RuntimeScope;
   readonly #process: RuntimeProcess;
   readonly #processes = new Set<RuntimeProcess>();

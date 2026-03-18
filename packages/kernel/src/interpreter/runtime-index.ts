@@ -5,13 +5,15 @@ import type { RuntimeScope } from "./runtime-scope";
 
 export class RuntimeIndex {
   public registerScope(scope: RuntimeScope): void {
-    this.#scopeByRef.set(scope.ref as ScopeRef<unknown>, scope);
+    this.#scopeByRef.set(scope.ref, scope);
+    this.registerFuture(scope.exitFuture);
+    this.registerProcess(scope.entryProcess);
   }
 
-  public resolveScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
-    const runtimeScope = this.#scopeByRef.get(scopeRef as ScopeRef<unknown>);
+  public resolveScope(scopeRef: ScopeRef<unknown>): RuntimeScope {
+    const runtimeScope = this.#scopeByRef.get(scopeRef);
 
-    if (typeof runtimeScope !== "undefined") {
+    if (runtimeScope) {
       return runtimeScope;
     }
 
@@ -19,13 +21,14 @@ export class RuntimeIndex {
   }
 
   public registerProcess(process: RuntimeProcess): void {
-    this.#processByRef.set(process.ref as ProcessRef<unknown>, process);
+    this.#processByRef.set(process.ref, process);
+    this.registerFuture(process.exitFuture);
   }
 
   public resolveProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
-    const runtimeProcess = this.#tryReadProcess(processRef);
+    const runtimeProcess = this.#processByRef.get(processRef);
 
-    if (typeof runtimeProcess !== "undefined") {
+    if (runtimeProcess) {
       return runtimeProcess as RuntimeProcess<Relic>;
     }
 
@@ -33,13 +36,16 @@ export class RuntimeIndex {
   }
 
   public registerFuture(future: RuntimeFuture<unknown>): void {
-    this.#registerFuture(future);
+    const [key, settleKey] = future.handle;
+
+    this.#futureByKey.set(key, future);
+    this.#futureBySettle.set(settleKey, future);
   }
 
   public resolveFuture<Result>(future: FutureKey<Result>): RuntimeFuture<Result> {
-    const runtimeFuture = this.#futureByKey.get(future as FutureKey<unknown>);
+    const runtimeFuture = this.#futureByKey.get(future);
 
-    if (typeof runtimeFuture !== "undefined") {
+    if (runtimeFuture) {
       return runtimeFuture as RuntimeFuture<Result>;
     }
 
@@ -47,30 +53,17 @@ export class RuntimeIndex {
   }
 
   public resolveFutureBySettle<Result>(future: FutureSettleKey<Result>): RuntimeFuture<Result> {
-    const runtimeFuture = this.#futureBySettle.get(future as FutureSettleKey<unknown>);
+    const runtimeFuture = this.#futureBySettle.get(future);
 
-    if (typeof runtimeFuture !== "undefined") {
+    if (runtimeFuture) {
       return runtimeFuture as RuntimeFuture<Result>;
     }
 
     throw new Error("Unknown future settle reference.");
   }
 
-  #tryReadProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> | undefined {
-    return this.#processByRef.get(processRef as ProcessRef<unknown>) as
-      | RuntimeProcess<Relic>
-      | undefined;
-  }
-
   readonly #futureByKey = new WeakMap<FutureKey<unknown>, RuntimeFuture<unknown>>();
   readonly #futureBySettle = new WeakMap<FutureSettleKey<unknown>, RuntimeFuture<unknown>>();
   readonly #processByRef = new WeakMap<ProcessRef<unknown>, RuntimeProcess>();
   readonly #scopeByRef = new WeakMap<ScopeRef<unknown>, RuntimeScope>();
-
-  #registerFuture(future: RuntimeFuture<unknown>): void {
-    const [key, settleKey] = future.handle;
-
-    this.#futureByKey.set(key, future);
-    this.#futureBySettle.set(settleKey, future);
-  }
 }

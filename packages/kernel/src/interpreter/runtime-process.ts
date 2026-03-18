@@ -21,9 +21,14 @@ export class RuntimeProcess<Relic = unknown> {
     exitFuture: RuntimeFuture<Relic>,
     config: RuntimeProcessConfig<Relic>,
   ) {
+    this.#exitFuture = exitFuture;
     this.ref = { exitFuture: exitFuture.handle[HANDLE_FUTURE_KEY_INDEX] } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
     this.wisp = config.ritual() as Wisp<unknown>;
+  }
+
+  public get exitFuture(): RuntimeFuture<Relic> {
+    return this.#exitFuture;
   }
 
   public get hasQueuedContinuation(): boolean {
@@ -99,6 +104,7 @@ export class RuntimeProcess<Relic = unknown> {
 
   #blocker: RuntimeBlocker | null = null;
   #continuation: RuntimeContinuation | null = null;
+  readonly #exitFuture: RuntimeFuture<Relic>;
 }
 
 export interface RuntimeBlocker {
