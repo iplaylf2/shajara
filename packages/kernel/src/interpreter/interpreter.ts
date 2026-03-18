@@ -272,7 +272,10 @@ export class Interpreter {
   }
 
   #send(process: RuntimeProcess, sigil: SendSigil<unknown>): void {
-    this.#resolveScope(process.scopeRef).send(sigil.scope, sigil.messageKey, sigil.value);
+    const sourceScope = this.#resolveScope(process.scopeRef);
+    const targetScope = this.#resolveScope(sigil.scope);
+
+    sourceScope.send(targetScope, sigil.messageKey, sigil.value);
   }
 
   #setContinuation(

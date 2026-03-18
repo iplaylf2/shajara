@@ -16,12 +16,18 @@ import { RuntimeProcess } from "./runtime-process";
 import type { SpawnParticipation } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
 
+const EMPTY_MESSAGE_BUFFER_SIZE = 0;
+
 export class RuntimeScope {
   public static create(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
     return new RuntimeScope(entry, spec, RuntimeScope.#sentinel);
   }
 
   public branch(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
+    if (this.#status !== "open") {
+      throw new Error("Cannot branch in closing scope.");
+    }
+
     const child = new RuntimeScope(entry, spec, this);
 
     this.#children.add(child);
@@ -50,15 +56,28 @@ export class RuntimeScope {
   }
 
   public send<Value>(
-    _scope: ScopeRef<unknown>,
-    _messageKey: MessageKey<Value>,
-    _value: Value,
+    targetScope: RuntimeScope,
+    messageKey: MessageKey<Value>,
+    message: Value,
   ): void {
-    notImplemented("RuntimeScope.send");
+    if (targetScope.#status === "closed") {
+      throw new Error("Cannot send to closed scope.");
+    }
+
+    targetScope.#enqueueMessage(messageKey, message);
+    notImplemented("RuntimeScope.send wakeup protocol");
   }
 
-  public tryReceive<Value>(_messageKey: MessageKey<Value>): Option<Value> {
-    return notImplemented("RuntimeScope.tryReceive");
+  public tryReceive<Value>(messageKey: MessageKey<Value>): Option<Value> {
+    const messageBuffer = this.#mailboxes.get(messageKey);
+
+    if (!messageBuffer || messageBuffer.length === EMPTY_MESSAGE_BUFFER_SIZE) {
+      return none;
+    }
+
+    const message = messageBuffer.shift() as Value;
+
+    return some(message);
   }
 
   public observeRunnable(_listener: RunnableListener): Unsubscribe {
@@ -69,6 +88,10 @@ export class RuntimeScope {
     ritual: Ritual<Relic>,
     participation: SpawnParticipation,
   ): RuntimeProcess<Relic> {
+    if (this.#status !== "open") {
+      throw new Error("Cannot spawn in closing scope.");
+    }
+
     const process = new RuntimeProcess<Relic>(this.#ref, ritual, participation);
 
     this.#spawnedProcesses.add(process);
@@ -81,7 +104,13 @@ export class RuntimeScope {
     _failure: FailureShape,
     _createClosingWorker: HaltHandler,
   ): void {
-    notImplemented("RuntimeScope.halt process exit");
+    if (this.#status === "closed") {
+      return;
+    }
+
+    this.#status = "closing";
+
+    notImplemented("RuntimeScope.halt closing protocol");
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -96,8 +125,12 @@ export class RuntimeScope {
     return this.#ref;
   }
 
+  public get status(): RuntimeScopeStatus {
+    return this.#status;
+  }
+
   public get isClosed(): boolean {
-    return notImplemented("依赖runtime scope的status");
+    return this.#status === "closed";
   }
 
   public get exitFuture(): RuntimeFuture<unknown> {
@@ -119,6 +152,13 @@ export class RuntimeScope {
     this.#parent = parent;
   }
 
+  #enqueueMessage<Value>(messageKey: MessageKey<Value>, message: Value): void {
+    const messageBuffer = this.#mailboxes.get(messageKey) ?? [];
+
+    messageBuffer.push(message);
+    this.#mailboxes.set(messageKey, messageBuffer);
+  }
+
   static readonly #sentinel = null as unknown as RuntimeScope;
 
   readonly #exitFuture: RuntimeFuture<unknown>;
@@ -126,12 +166,17 @@ export class RuntimeScope {
   readonly #process: RuntimeProcess;
   readonly #parent: RuntimeScope;
 
+  #status: RuntimeScopeStatus = "open";
   readonly #children = new Set<RuntimeScope>();
 
+  // MessageKey is a capability token; mailbox indexing should not retain key lifetime.
+  readonly #mailboxes = new WeakMap<MessageKey<unknown>, unknown[]>();
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
   readonly #spawnedProcesses = new Set<RuntimeProcess>();
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
+
+export type RuntimeScopeStatus = "open" | "closing" | "closed";
 
 export type HaltHandler = (
   scope: ScopeRef<unknown>,

@@ -26,26 +26,25 @@
 - `scopeRoot`：入口 `ritual` 所创建的根 Scope 引用。
 - `processRoot`：入口 `ritual` 所创建的根 Process 引用。
 
-`isClosed` 反映的是该入口 `ritual` 所创建的整个解释环境是否已经收敛，而不是某个局部 Process 是否暂停。
+`isClosed` 反映的是该入口 `ritual` 所创建的整个解释环境是否收敛，而不是某个局部 Process 是否暂停。
 
 `Interpreter` 只负责解释环境内部的并发演算，不直接承担更高层的入口治理、全局环境管理或生命周期编排。
 
-在实现分层上，当前边界进一步收口为：
+在实现分层上，职责边界应清晰界分为：
 
 - `RuntimeProcess` 自身持有 process 局部状态迁移能力，例如 continuation 排队、进入 future/mailbox 阻塞态、恢复后的 `resonate` 推进，以及 `self` / `branch` 所需 handle 的产出。
-- `RuntimeScope` 负责 scope 树、scope 派生 future（`createFuture(...)`）的创建与归属、mailbox，以及 scope 内 spawned process 的结构性归属关系。
-- `RuntimeScope` 的构造契约要求 `parent` 永不为 `null`；根 scope 通过一个仅供内部使用的私有 sentinel 哨兵承接 create 路径，而不是把空值传播进正常实例关系。
+- `RuntimeScope` 负责 scope 树、scope 派生 future 的创建与归属、mailbox，以及 scope 内 spawned process 的结构性归属关系。
+- `RuntimeScope` 的构造契约要求 `parent` 永不为 `null`；根 scope 通过私有 sentinel 哨兵承接 create 路径，而不是把空值传播进正常实例关系。
 - `RuntimeScope` 直接依赖并持有其局部 `RuntimeProcess` 是正当的，因为 process 的运行态本来就是 scope 内部的局部状态，而不是与 scope 平行的另一套一级对象。
-- `RuntimeProcess` 仍应只通过 `scopeRef` 与 scope 语义关联，而不直接反向依赖 `RuntimeScope`；这样 process 局部状态对象仍保持边界句柄视角，不把 scope 内部结构倒灌回 process。
-- `Interpreter` 的职责应收口在“解释当前 sigil 并发出状态变更意图”；它不应长期承担大部分 `scopeRef` / `processRef` 到 runtime 实体的寻址与跨对象编排，否则像“从中间关闭某个 scope”这类场景会把关闭协议的复杂度错误地推回解释器。
-- `RuntimeScope.create(...)` / `branch(...)` / `spawn(...)` 现在都按这一方向收口：scope 直接接收 entry / spawn 所需的 `Ritual`，并在内部建立和持有对应的 `RuntimeProcess`；`Interpreter` 不再承担这些结构关系的构造职责。
-- `RuntimeIndex` 当前只保留 register/resolve 两类索引职责，并进一步统一成 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle` 这组命名；它不试图表现成更高层的 future/mailbox 语义宿主。当前这些索引容器也已收口为 `WeakMap`，表达其索引身份而不是持有期宿主身份。
-- future 的运行时承载已单独落位为 `RuntimeFuture`：`RuntimeScope.createFuture(...)` 负责 scope 派生 future 的创建；`RuntimeProcess` 则自治创建并持有自己的 `exitFuture`。`Interpreter` 只在 sigil 解释时按 key 解析并转发给对应的 runtime future；`poll / wait / settle` 的具体运行时语义当前仍保持 `notImplemented(...)` 占位。
-- 与 future key pair 对应的 tuple 形状已在 `contracts` 中收口为 `FutureHandle`；这是稳定的 kernel 基础语义形状，而不是 interpreter 私有 convenience tuple。
-- 这三类 runtime 实体现分别落位到 `runtime-process.ts`、`runtime-scope.ts` 与 `runtime-future.ts`；配套索引对象命名为 `RuntimeIndex`，落位于 `runtime-index.ts`。
-- `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段；但当前实现仍会承担一部分 runtime index 的登记动作，因此“结构装配完全退回 `RuntimeScope`”仍未完成。
-- `processRoot` 与 `branch` 返回值中的 `processRef` 当前统一通过 `RuntimeScope.entryProcess.ref` 读取，不再依赖 `RuntimeScope.processRef` 别名面。
-- 当前 future、mailbox 与 closing 相关多项能力仍明确保持 `notImplemented(...)` 占位；本轮目标是先把对象边界、公开面与步进 case 风格摆正，而不是一次补全全部运行逻辑。
+- `RuntimeProcess` 应只通过 `scopeRef` 与 scope 语义关联，而不反向依赖 `RuntimeScope`；这样 process 局部状态对象保持边界句柄视角，不把 scope 内部结构倒灌。
+- `Interpreter` 的职责应聚焦于"解释当前 sigil 并发出状态变更意图"；不应长期承担大部分 `scopeRef` / `processRef` 到 runtime 实体的寻址与跨对象编排。如此做会使"从中间关闭某个 scope"这类场景把关闭协议复杂度推回解释器。
+- `RuntimeScope.create(...)` / `branch(...)` / `spawn(...)` 应直接接收 entry / spawn 所需的 `Ritual`，并在内部建立和持有对应的 `RuntimeProcess`；结构关系的构造不应由 `Interpreter` 承担。
+- `RuntimeIndex` 应只保留 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle` 两类索引职责，不表现为更高层的 future/mailbox 语义宿主。索引容器应采用 `WeakMap`，表达其索引身份而不是持有期宿主身份。
+- future 的运行时承载应由 `RuntimeFuture` 单独承担：`RuntimeScope.createFuture(...)` 负责 scope 派生 future 的创建；`RuntimeProcess` 自治创建并持有自己的 `exitFuture`。`Interpreter` 只在 sigil 解释时按 key 解析并转发给对应的 runtime future。
+- future key pair 对应的 tuple 形状应在 `contracts` 中定型为 `FutureHandle`，这是稳定的 kernel 基础语义形状。
+- 三类 runtime 实体应分别落位到 `runtime-process.ts`、`runtime-scope.ts` 与 `runtime-future.ts`；配套索引对象命名为 `RuntimeIndex`，落位于 `runtime-index.ts`。
+- `Interpreter` 应只发出解释意图，不直接改写 process 的内部细节字段。对 ref 到 runtime 实体的寻址应尽量从解释器转移到对应的 runtime 实体。
+- `processRoot` 与 `branch` 返回值中的 `processRef` 应通过 `RuntimeScope.entryProcess.ref` 读取。
 
 ## 3. 驱动模型
 
@@ -82,13 +81,13 @@
 
 因此，`ceded`、`interpreted` 与 `resonated` 的划分是解释器步进契约本身的一部分。`Cede` 不再与普通 sigil 共用同一个阶段；驱动者可以直接把 `ceded` 当作一次显式让权信号，而之后是否继续执行对应的 `resonate`，仍由驱动者决定何时再调用下一次 `step`。
 
-更具体地说，当前 `step` 的步进单位是：
+更具体地说，该步进的工作单位是：
 
 - 若当前是 `RestingWisp`，该步直接把 Process 收敛到完成态。
 - 若当前 Process 处于 `runnable` 且持有一段待执行 continuation，该步只执行一次 `resonate(echo)`，并把 Process 的当前 `wisp` 更新为得到的下一段 Wisp；若这次 resonance 已把 Wisp 推到终态，则该步直接返回 `exited`。
 - 若当前是携带 sigil 的 `StirringWisp`，该步只解释该 sigil；若是 `Cede`，返回 `ceded` 并把 `resonate + void echo` 排入待执行 continuation；若是其他可立刻得到 echo 的 sigil，则返回 `interpreted` 并把 `resonate + echo` 排入 Process 的待执行 continuation；若该 sigil 会阻塞，则把 continuation 保存在 blocker 中，等待恢复信号到来后再转成待执行 continuation。
 
-因此，当前模型就是“sigil 一步、`resonate` 一步”。驱动者若想得到旧的“归约一个 `StirringWisp` 头节点”的体验，可以在看到 `ceded` 或 `interpreted` 后继续对同一 Process 调用一次 `step`，把紧随其后的 `resonated` 一并吃掉。
+因此，这个模型就是"sigil 一步、`resonate` 一步"。驱动者若想得到旧的"归约一个 `StirringWisp` 头节点"的体验，可以在看到 `ceded` 或 `interpreted` 后继续对同一 Process 调用一次 `step`，把紧随其后的 `resonated` 一并吃掉。
 
 `step` 是封闭环境在外部驱动下向前推进的基础入口。
 
@@ -102,15 +101,15 @@
 
 `observeRunnable(scopeRef, listener)` 预留给解释环境对外暴露 runnable 通知。
 
-它的长期方向仍然是为最小驱动闭环提供事件面，让外部能够组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
+它的长期方向是为最小驱动闭环提供事件面，让外部能够组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
-当前方向已进一步收口为：`Interpreter.observeRunnable(scopeRef, ...)` 只负责按 `scopeRef` 寻址并把观察注册转发给对应的 `RuntimeScope`；真正承诺“观察该 scope 及其全部后代 scope 的 runnable 事件”的对象应当是 `RuntimeScope`。
+在接口设计上，`Interpreter.observeRunnable(scopeRef, ...)` 应只负责按 `scopeRef` 寻址并把观察注册转发给对应的 `RuntimeScope`；真正承诺"观察该 scope 及其全部后代 scope 的 runnable 事件"的对象应当是 `RuntimeScope`。
 
 这也意味着“观察哪棵 scope 子树”是接口输入的一部分，而不是隐藏在 interpreter root 特例里；否则 runnable 观察面的语义宿主会再次退化成解释器全局。
 
-与这条边界一致，`RunnableListener` / `Unsubscribe` 这类 alias 也应贴近 `RuntimeScope.observeRunnable(...)` 的实现宿主，而不是回流到 kernel 基础 `contracts/`。
+与这条边界一致，`RunnableListener` / `Unsubscribe` 这类 alias 应贴近 `RuntimeScope.observeRunnable(...)` 的实现宿主，而不是回流到 kernel 基础 `contracts/`。
 
-但 runnable 通知的具体传播与取消注册协议目前仍未定案，因此 `RuntimeScope.observeRunnable(...)` 当前仍保持 `notImplemented(...)` 占位，`Interpreter` 侧只保留“按 ref 寻址后委托”的关系。
+`RuntimeScope.observeRunnable(...)` 应将具体传播与取消注册协议留作实现决策，保持不变的是职责边界：runnable 观察注册由 `RuntimeScope` 承担，`Interpreter` 只负责 ref 寻址转发。
 
 ### 4.4 只读观察接口
 
@@ -130,11 +129,11 @@
 
 ## 6. 扩展缝隙
 
-`Interpreter` 当前只保留一个受保护扩展点：`onClosing`。
+`Interpreter` 预留一个受保护扩展点：`onClosing`。
 
 它用于在 Scope 关闭路径上追加有限干预，而不是接管解释器的常规驱动模型。
 
-当前约定下，`onClosing(scope, processes, failure)` 的三个参数分别表示：
+`onClosing(scope, processes, failure)` 的三个参数应表示：
 
 - 正在进入 closing 的当前 `Scope`
 - 当前 `Scope` 内因本次 closing 被终止的 `Process` 集合
@@ -142,7 +141,7 @@
 
 这里的 `processes` 不表示整棵子树的所有 Process，也不单独强调最初触发 closing 的 origin process；origin 信息若有需要，应优先进入 failure 细节或未来独立的 closing context，而不是占据 `onClosing` 的固定参数位。
 
-当前还能先明确一条 failure 来源约束：直接触发 closing 的 scope 承接触发方带来的 failure；被迫随祖先 closing 而取消的子树，则承接一类默认的“被终止 failure”。这类 termination failure 的具体定义与细分形态尚未设计完成，但其来源方向已经固定，不应与直接触发 closing 的 origin failure 混用。
+failure 来源的约束应为：直接触发 closing 的 scope 承接触发方带来的 failure；被迫随祖先 closing 而取消的子树，则承接一类默认的"被终止 failure"。这类 termination failure 的具体定义与细分形态为实现决策，但其来源方向应保持稳定，不宜与直接触发 closing 的 origin failure 混用。
 
 这里的边界是：
 

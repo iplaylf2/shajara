@@ -1,5 +1,6 @@
 // oxlint-disable class-methods-use-this
 import type {
+  FailureShape,
   FutureKey,
   FutureResult,
   MessageKey,
@@ -8,10 +9,10 @@ import type {
   ScopeRef,
   Wisp,
 } from "#src/contracts";
+import { left, right } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
-import { right } from "#src/utils";
 
 const HANDLE_FUTURE_KEY_INDEX = 0;
 
@@ -92,14 +93,22 @@ export class RuntimeProcess<Relic = unknown> {
     this.#blocker!.continuation = continuation;
   }
 
+  public fail(failure: FailureShape): void {
+    this.#finish(left(failure) as FutureResult<Relic>);
+  }
+
   #complete(value: unknown): void {
+    this.#finish(right(value) as FutureResult<Relic>);
+  }
+
+  #finish(result: FutureResult<Relic>): void {
     if (this.status === "completed") {
       return;
     }
 
     this.#blocker = null;
     this.#continuation = null;
-    this.result = right(value) as FutureResult<Relic>;
+    this.result = result;
     this.status = "completed";
   }
 

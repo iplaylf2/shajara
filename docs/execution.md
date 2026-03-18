@@ -79,6 +79,20 @@
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`
 - `Interpreter.step(...)` 已先按 `RuntimeProcess.status` 分派，再在 `runnable` 分支内细分 interpret / resonate；其公开返回值也已从 `ProcessStage` 收口为 `ProcessStep`，并以 `disposition` 表达本次步进结果而不是复写 runtime `status`。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/process-step.ts`、`docs/interpreter.md`
+- `RuntimeProcess` 的 exit 失败注入路径已实现：新增公开方法 `fail(failure: FailureShape)`；现存的 `#complete(value)` 与新增 `#fail(failure)` 都最终调用 `#finish(result)` 启动 process 终态收敛。这允许 `Scope.halt(...)` 协议从外部将源失败或级联终止失败注入到 process 的 exit future。  
+  证据：`packages/kernel/src/interpreter/runtime-process.ts` lines 96–111
+- `RuntimeScope` 状态机已实现：新增私有字段 `#status: RuntimeScopeStatus = "open"`，状态值为 `"open" | "closing" | "closed"`；新增公开 getter `status`；`branch(...)` 与 `spawn(...)` 其间若 `#status !== "open"` 则抛出异常。这为 halt 的关闭级联提供了结构基础。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 138, 140, 163–171, 180–189
+- `RuntimeScope` 的 mailbox 功能已定型：使用 `WeakMap<MessageKey<unknown>, unknown[]>` 承载消息缓冲区，命名澄清了 `messageKey`（路由令牌）与 `message`（消息值）的语义分离；新增私有辅助 `#enqueueMessage(messageKey, message)`；按 top-down 文件组织原则，该辅助放置于 constructor 之后。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 79–85, 176
+- `RuntimeScope.send(...)` 的方法签名已定型：公开方法接收 `targetScope: RuntimeScope`（直接的运行时对象，非 ref token）、`messageKey` 与 `message`；方法体在 scope 开放性检查后调用 `#enqueueMessage`，并为 wake-up 协议添加显式 `notImplemented` 占位符。这确保合约清晰：消息入队已完成，但 wake-up 协调仍待决。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 58–68
+- `RuntimeScope.tryReceive(...)` 已简化：直接从 `#mailboxes` WeakMap 读取、弹出缓冲区的第一条消息，无需主动清理（WeakMap 生命期管理自动化）。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 70–77
+- `Interpreter` 的 `#send` 处理已完成委托简化：先通过 `RuntimeIndex` 解析双方 scope ref，再转调 sender 的 `RuntimeScope.send(targetScope, ...)`；自身不再承载消息路由逻辑。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts` lines 276–279
+- `Interpreter.processRoot` 与 `branch` 返回值中 `processRef` 的来源已完全统一：均从 `RuntimeScope.entryProcess.ref` 读取，移除了对 `RuntimeScope.processRef` 别名的依赖。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts` lines 82, 212
 
 ## 4. 本轮新增文档锚点
 
@@ -105,17 +119,32 @@
 - `execution.md` 现额外记录了本轮 `Interpreter` review 只完成部分收口；future 处理、scope close 处理与 runtime index / runtime object 的协作边界仍处在待决状态。  
   证据：`docs/execution.md`
 
-## 5. 下一步
+## 5. 本轮工作总结
 
-1. 继续完成 `Interpreter` review；重点仍是进一步减少 `Interpreter` 对 runtime index 与结构装配细节的介入。
-2. 重做 process / scope 关系：应由 `RuntimeScope` 直接持有并组织本地 `RuntimeProcess` 状态，而 `RuntimeProcess` 继续只通过 `scopeRef` 与 scope 语义关联，不反向依赖 `RuntimeScope`。
-3. 补完 future 路径：当前 `RuntimeFuture` 只提供 key pair 与占位方法，owner scope 的 closing 收敛、wait 恢复与 settle 行为都仍未补完。
-4. 继续补完 `halt` / closing 协议；当前 `RuntimeScope.halt(...)`、closing subtree 扩散与 closing worker 形成仍是占位实现，而这部分正是检验依赖方向是否合理的关键场景。
-5. 继续观察 `RuntimeIndex` 这一命名是否稳定；当前它已经比 `RuntimeGraph` 更贴近其 index/locator 职责，但长期是否仍需进一步细化边界，仍待后续迭代验证。
-6. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
-7. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
+**完成的设计锚点：**
 
-## 6. 验证基线
+- RuntimeProcess 的 exit failure injection 通道开放：外部可以通过 `fail(failure)` 方法即时注入失败，为 halt closing 协议提供故障传播支撑。
+- RuntimeScope 状态机的公开面定型：`open → closing → closed` 状态流转已通过 status 字段和检查门控确立。
+- Mailbox 精确化定名与生命期管理：MessageKey / message 语义分离已通过字段命名明确，WeakMap 采用自动化了 key 生命期。
+- Send 方法合约清晰化：enqueue 步骤完成，wake-up 缺失通过显式 `notImplemented` 占位标记，避免虚假"已完成"错觉。
+- Interpreter 的 send 委托已完全收口：ref 解析与消息路由现完全分离，Interpreter 只负责前者。
+
+**当前占位符轮廓：**
+
+- `RuntimeScope.halt(...)` 方法签名已定，closing flow 仍是占位。
+- `RuntimeScope.send` 的 wake-up protocol 已显式 `notImplemented`。
+- `RuntimeScope.isClosed` 仍是占位实现。
+- Future 路径（`poll / wait / settle` 与 receiver wake-up）仍是占位。
+
+## 6. 下一步
+
+1. **最优先**：补完 `RuntimeScope.halt(...)` 的 closing 协议——决定如何驱动 scope 状态转移、failure 级联、child 子树的强制终止，以及 closing worker 与 exit future 的交互方式。
+2. **次优先**：补完 `RuntimeScope.send` 的 wake-up 协议——决定消息到达如何唤醒阻塞的 receiver 进程。
+3. 继续完成 future 路径：当前 `RuntimeFuture` 只提供 key pair 与占位方法，`poll / wait / settle` 与 receiver 恢复都仍未补完。
+4. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
+5. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
+
+## 7. 验证基线
 
 ```sh
 yarn workspace @shajara/kernel typecheck
@@ -126,4 +155,4 @@ yarn workspace @shajara/host lint
 
 当前与本轮文档调整直接相关的验证状态：
 
-- 已执行并通过：`@shajara/kernel typecheck`、`@shajara/kernel lint`。
+- 已执行并通过：`yarn lint`（所有包，@shajara/example / @shajara/host / @shajara/kernel）、`@shajara/kernel typecheck`。
