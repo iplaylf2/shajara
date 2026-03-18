@@ -58,6 +58,10 @@ export class RuntimeScope {
     notImplemented("RuntimeScope.send");
   }
 
+  public observeRunnable(_listener: (process: ProcessRef<unknown>) => void): () => void {
+    return notImplemented("RuntimeScope.observeRunnable");
+  }
+
   public spawn<Relic>(
     ritual: Ritual<Relic>,
     participation: RuntimeParticipation,

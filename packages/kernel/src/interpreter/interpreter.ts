@@ -45,7 +45,6 @@ import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import { evoke } from "#src/contracts";
 import { isSome } from "#src/utils";
-import { notImplemented } from "#src/internal/not-implemented";
 import { standardScopeSpec } from "#src/scopes";
 
 export class Interpreter {
@@ -71,8 +70,8 @@ export class Interpreter {
     }
   }
 
-  public observeRunnable(_listener: (process: ProcessRef<unknown>) => void): () => void {
-    return notImplemented("Interpreter.observeRunnable");
+  public observeRunnable(listener: (process: ProcessRef<unknown>) => void): () => void {
+    return this.#rootScope.observeRunnable(listener);
   }
 
   public get scopeRoot(): ScopeRef<unknown> {

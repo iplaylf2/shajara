@@ -63,7 +63,7 @@
   证据：`packages/kernel/src/interpreter/runtime-index.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - future 当前实现已收口为“`RuntimeScope` 创建并拥有，`RuntimeFuture` 承接 key pair 与未来的运行时语义入口，`RuntimeIndex` 只做 token 到 runtime future 的解析索引”。`FutureKey` / `FutureSettleKey` 仍只是 token，future 创建语义仍由 `RuntimeScope.createFuture(...)` 提供；`poll / wait / settle` 目前仍是占位实现。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-future.ts`、`packages/kernel/src/interpreter/runtime-index.ts`
-- `observeRunnable(...)` 目前仍明确占位为 `notImplemented(...)`；runnable 事件应由 `Interpreter` 还是其他 runtime 协调层触发，尚未定案。  
+- `observeRunnable(...)` 的边界已进一步收口：`Interpreter.observeRunnable(...)` 只转发给根 `RuntimeScope.observeRunnable(...)`，并由后者承诺覆盖当前 scope 及其全部后代 scope 的 runnable 事件；但具体传播与取消注册协议仍是 `notImplemented(...)`。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
 - `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。其中 `wait` 所依赖的 runtime future 行为当前仍是占位实现。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-process.ts`

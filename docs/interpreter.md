@@ -102,7 +102,9 @@
 
 它的长期方向仍然是为最小驱动闭环提供事件面，让外部能够组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
-但当前这条能力还没有定案：runnable 通知究竟应由 `Interpreter` 触发，还是由其他 runtime 协调层承接，目前仍在设计中，因此实现暂时保持 `notImplemented(...)`。
+当前方向已进一步收口为：`Interpreter.observeRunnable(...)` 只把观察注册转发给根 `RuntimeScope`；真正承诺“观察当前 scope 及其全部后代 scope 的 runnable 事件”的对象应当是 `RuntimeScope`。
+
+但 runnable 通知的具体传播与取消注册协议目前仍未定案，因此 `RuntimeScope.observeRunnable(...)` 当前仍保持 `notImplemented(...)` 占位，`Interpreter` 侧只保留委托关系。
 
 ### 4.4 只读观察接口
 
