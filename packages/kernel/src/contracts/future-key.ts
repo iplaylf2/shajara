@@ -13,5 +13,6 @@ export interface FutureSettleKey<Result> {
 }
 
 export type FutureResult<Result> = Either<FailureShape, Result>;
+export type FutureHandle<Result> = readonly [FutureKey<Result>, FutureSettleKey<Result>];
 
 declare const RESULT_TOKEN: unique symbol;

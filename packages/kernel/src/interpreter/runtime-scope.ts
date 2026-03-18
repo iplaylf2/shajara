@@ -58,7 +58,7 @@ export class RuntimeScope {
     notImplemented("RuntimeScope.send");
   }
 
-  public observeRunnable(_listener: (process: ProcessRef<unknown>) => void): () => void {
+  public observeRunnable(_listener: RunnableListener): Unsubscribe {
     return notImplemented("RuntimeScope.observeRunnable");
   }
 
@@ -176,3 +176,5 @@ export type ClosingWorkerFactory = (
 ) => Ritual<Failure>;
 
 export type RuntimeParticipation = "tracked" | "auxiliary";
+export type RunnableListener = (process: ProcessRef<unknown>) => void;
+export type Unsubscribe = () => void;

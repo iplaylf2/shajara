@@ -61,9 +61,9 @@
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeIndex` 当前公开面已进一步收紧为 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle`；它只承担 index/locator 角色，不再暴露额外的运行语义入口，内部索引容器也已改为 `WeakMap`。  
   证据：`packages/kernel/src/interpreter/runtime-index.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- future 当前实现已收口为“`RuntimeScope` 创建并拥有，`RuntimeFuture` 承接 key pair 与未来的运行时语义入口，`RuntimeIndex` 只做 token 到 runtime future 的解析索引”。`FutureKey` / `FutureSettleKey` 仍只是 token，future 创建语义仍由 `RuntimeScope.createFuture(...)` 提供；`poll / wait / settle` 目前仍是占位实现。  
+- future 当前实现已收口为“`RuntimeScope` 创建并拥有，`RuntimeFuture` 承接 key pair 与未来的运行时语义入口，`RuntimeIndex` 只做 token 到 runtime future 的解析索引”。`FutureKey` / `FutureSettleKey` 仍只是 token，future 创建语义仍由 `RuntimeScope.createFuture(...)` 提供；对应 key pair tuple 形状已在 `contracts` 收口为 `FutureHandle`；`poll / wait / settle` 目前仍是占位实现。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-future.ts`、`packages/kernel/src/interpreter/runtime-index.ts`
-- `observeRunnable(...)` 的边界已进一步收口：`Interpreter.observeRunnable(...)` 只转发给根 `RuntimeScope.observeRunnable(...)`，并由后者承诺覆盖当前 scope 及其全部后代 scope 的 runnable 事件；但具体传播与取消注册协议仍是 `notImplemented(...)`。  
+- `observeRunnable(...)` 的边界已进一步收口：`Interpreter.observeRunnable(scopeRef, ...)` 只按 ref 寻址并转发给目标 `RuntimeScope.observeRunnable(...)`，并由后者承诺覆盖该 scope 及其全部后代 scope 的 runnable 事件；与此对应，`RunnableListener` / `Unsubscribe` 这类 alias 也已贴近 `RuntimeScope` 落位，而没有回流到 kernel 基础 `contracts/`；但具体传播与取消注册协议仍是 `notImplemented(...)`。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
 - `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。其中 `wait` 所依赖的 runtime future 行为当前仍是占位实现。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-process.ts`

@@ -41,6 +41,7 @@
 - `RuntimeScope.create(...)` / `branch(...)` / `spawn(...)` 现在都按这一方向收口：scope 直接接收 entry / spawn 所需的 `Ritual`，并在内部建立和持有对应的 `RuntimeProcess`；`Interpreter` 不再承担这些结构关系的构造职责。
 - `RuntimeIndex` 当前只保留 register/resolve 两类索引职责，并进一步统一成 `registerScope / registerProcess / registerFuture` 与 `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle` 这组命名；它不试图表现成更高层的 future/mailbox 语义宿主。当前这些索引容器也已收口为 `WeakMap`，表达其索引身份而不是持有期宿主身份。
 - future 的运行时承载已单独落位为 `RuntimeFuture`：`RuntimeScope.createFuture(...)` 负责创建 future 壳体，`Interpreter` 只在 sigil 解释时按 key 解析并转发给对应的 runtime future；`poll / wait / settle` 的具体运行时语义当前仍保持 `notImplemented(...)` 占位。
+- 与 future key pair 对应的 tuple 形状已在 `contracts` 中收口为 `FutureHandle`；这是稳定的 kernel 基础语义形状，而不是 interpreter 私有 convenience tuple。
 - 这三类 runtime 实体现分别落位到 `runtime-process.ts`、`runtime-scope.ts` 与 `runtime-future.ts`；配套索引对象命名为 `RuntimeIndex`，落位于 `runtime-index.ts`。
 - `Interpreter` 只发出解释意图，不直接改写 process 的内部细节字段；但当前实现仍会承担一部分 runtime index 的登记动作，因此“结构装配完全退回 `RuntimeScope`”仍未完成。
 - 当前 future、mailbox 与 closing 相关多项能力仍明确保持 `notImplemented(...)` 占位；本轮目标是先把对象边界、公开面与步进 case 风格摆正，而不是一次补全全部运行逻辑。
@@ -98,13 +99,17 @@
 
 ### 4.3 `observeRunnable`
 
-`observeRunnable(listener)` 预留给解释环境对外暴露 runnable 通知。
+`observeRunnable(scopeRef, listener)` 预留给解释环境对外暴露 runnable 通知。
 
 它的长期方向仍然是为最小驱动闭环提供事件面，让外部能够组织 runnable queue、`perform` 或更高层调度，而不需要改写解释器内部状态。
 
-当前方向已进一步收口为：`Interpreter.observeRunnable(...)` 只把观察注册转发给根 `RuntimeScope`；真正承诺“观察当前 scope 及其全部后代 scope 的 runnable 事件”的对象应当是 `RuntimeScope`。
+当前方向已进一步收口为：`Interpreter.observeRunnable(scopeRef, ...)` 只负责按 `scopeRef` 寻址并把观察注册转发给对应的 `RuntimeScope`；真正承诺“观察该 scope 及其全部后代 scope 的 runnable 事件”的对象应当是 `RuntimeScope`。
 
-但 runnable 通知的具体传播与取消注册协议目前仍未定案，因此 `RuntimeScope.observeRunnable(...)` 当前仍保持 `notImplemented(...)` 占位，`Interpreter` 侧只保留委托关系。
+这也意味着“观察哪棵 scope 子树”是接口输入的一部分，而不是隐藏在 interpreter root 特例里；否则 runnable 观察面的语义宿主会再次退化成解释器全局。
+
+与这条边界一致，`RunnableListener` / `Unsubscribe` 这类 alias 也应贴近 `RuntimeScope.observeRunnable(...)` 的实现宿主，而不是回流到 kernel 基础 `contracts/`。
+
+但 runnable 通知的具体传播与取消注册协议目前仍未定案，因此 `RuntimeScope.observeRunnable(...)` 当前仍保持 `notImplemented(...)` 占位，`Interpreter` 侧只保留“按 ref 寻址后委托”的关系。
 
 ### 4.4 只读观察接口
 

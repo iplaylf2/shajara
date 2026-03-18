@@ -18,6 +18,7 @@ import type {
 } from "#src/sigils";
 import type {
   ContextKey,
+  FutureHandle,
   FutureKey,
   FutureResult,
   FutureSettleKey,
@@ -29,6 +30,7 @@ import type {
   StirringWisp,
   Wisp,
 } from "#src/contracts";
+import type { RunnableListener, RuntimeParticipation, Unsubscribe } from "./runtime-scope";
 import {
   processCededStep,
   processExitedStep,
@@ -40,7 +42,6 @@ import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import type { ProcessStep } from "./process-step";
 import { RuntimeIndex } from "./runtime-index";
-import type { RuntimeParticipation } from "./runtime-scope";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import { evoke } from "#src/contracts";
@@ -70,8 +71,8 @@ export class Interpreter {
     }
   }
 
-  public observeRunnable(listener: (process: ProcessRef<unknown>) => void): () => void {
-    return this.#rootScope.observeRunnable(listener);
+  public observeRunnable(scope: ScopeRef<unknown>, listener: RunnableListener): Unsubscribe {
+    return this.#resolveScope(scope).observeRunnable(listener);
   }
 
   public get scopeRoot(): ScopeRef<unknown> {
@@ -213,7 +214,7 @@ export class Interpreter {
     };
   }
 
-  #future(process: RuntimeProcess): readonly [FutureKey<unknown>, FutureSettleKey<unknown>] {
+  #future(process: RuntimeProcess): FutureHandle<unknown> {
     const scope = this.#resolveScope(process.scopeRef);
     const future = scope.createFuture();
 

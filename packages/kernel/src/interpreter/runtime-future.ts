@@ -1,5 +1,5 @@
 // oxlint-disable class-methods-use-this
-import type { FutureKey, FutureResult, FutureSettleKey } from "#src/contracts";
+import type { FutureHandle, FutureKey, FutureResult, FutureSettleKey } from "#src/contracts";
 import type { Option } from "#src/utils";
 import { notImplemented } from "#src/internal/not-implemented";
 
@@ -28,7 +28,7 @@ export class RuntimeFuture<Result = unknown> {
     notImplemented("RuntimeFuture.settle");
   }
 
-  public get handle(): readonly [FutureKey<Result>, FutureSettleKey<Result>] {
+  public get handle(): FutureHandle<Result> {
     return [this.#key, this.#settleKey];
   }
 
