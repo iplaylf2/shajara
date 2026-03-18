@@ -1,5 +1,4 @@
-// oxlint-disable max-lines-per-function
-// oxlint-disable class-methods-use-this
+// oxlint-disable class-methods-use-this, max-lines
 import type {
   BindSigil,
   BranchHandle,
@@ -114,7 +113,7 @@ export class Interpreter {
     this.#resolveFuture(future).wait(onSettled);
   }
 
-  // oxlint-disable-next-line max-statements
+  // oxlint-disable-next-line max-lines-per-function, max-statements
   #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     // `Step` only reaches `#interpretWisp` when there is no queued continuation.
     // Process is not completed here, so the current wisp must still be stirring.
@@ -256,7 +255,7 @@ export class Interpreter {
   }
 
   #wait(process: RuntimeProcess, sigil: WaitSigil<unknown>): void {
-    process.wait(this.#resolveFuture(sigil.future));
+    process.wait(sigil.future);
   }
 
   #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
@@ -264,7 +263,7 @@ export class Interpreter {
   }
 
   #tryReceive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): Option<unknown> {
-    return process.tryReceive(sigil.messageKey);
+    return this.#resolveScope(process.scopeRef).tryReceive(sigil.messageKey);
   }
 
   #receive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): void {

@@ -58,6 +58,10 @@ export class RuntimeScope {
     notImplemented("RuntimeScope.send");
   }
 
+  public tryReceive<Value>(_messageKey: MessageKey<Value>): Option<Value> {
+    return notImplemented("RuntimeScope.tryReceive");
+  }
+
   public observeRunnable(_listener: RunnableListener): Unsubscribe {
     return notImplemented("RuntimeScope.observeRunnable");
   }

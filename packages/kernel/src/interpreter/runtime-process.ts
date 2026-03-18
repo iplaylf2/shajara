@@ -8,7 +8,6 @@ import type {
   ScopeRef,
   Wisp,
 } from "#src/contracts";
-import type { Option } from "#src/utils";
 import type { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
@@ -57,10 +56,10 @@ export class RuntimeProcess<Relic = unknown> {
     }
   }
 
-  public wait(future: RuntimeFuture<unknown>): void {
+  public wait(future: FutureKey<unknown>): void {
     this.#blocker = {
       continuation: null,
-      future: future.handle[HANDLE_FUTURE_KEY_INDEX],
+      future,
       kind: "future",
     };
     this.status = "waiting";
@@ -75,10 +74,6 @@ export class RuntimeProcess<Relic = unknown> {
     };
     this.status = "waiting";
     notImplemented("RuntimeProcess.receive");
-  }
-
-  public tryReceive<Value>(_messageKey: MessageKey<Value>): Option<Value> {
-    return notImplemented("RuntimeProcess.tryReceive");
   }
 
   public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
