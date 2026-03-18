@@ -8,7 +8,7 @@ import type {
   ScopeRef,
   Wisp,
 } from "#src/contracts";
-import type { RuntimeFuture } from "./runtime-future";
+import { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
 import { right } from "#src/utils";
@@ -18,17 +18,24 @@ const HANDLE_FUTURE_KEY_INDEX = 0;
 export class RuntimeProcess<Relic = unknown> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
-    exitFuture: RuntimeFuture<Relic>,
-    config: RuntimeProcessConfig<Relic>,
+    ritual: Ritual<Relic>,
+    participation: "tracked" | "auxiliary",
   ) {
-    this.#exitFuture = exitFuture;
-    this.ref = { exitFuture: exitFuture.handle[HANDLE_FUTURE_KEY_INDEX] } as ProcessRef<Relic>;
+    this.#exitFuture = RuntimeFuture.create<Relic>();
+    this.#participation = participation;
+    this.ref = {
+      exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],
+    } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
-    this.wisp = config.ritual() as Wisp<unknown>;
+    this.wisp = ritual() as Wisp<unknown>;
   }
 
   public get exitFuture(): RuntimeFuture<Relic> {
     return this.#exitFuture;
+  }
+
+  public get participation(): "tracked" | "auxiliary" {
+    return this.#participation;
   }
 
   public get hasQueuedContinuation(): boolean {
@@ -105,6 +112,7 @@ export class RuntimeProcess<Relic = unknown> {
   #blocker: RuntimeBlocker | null = null;
   #continuation: RuntimeContinuation | null = null;
   readonly #exitFuture: RuntimeFuture<Relic>;
+  readonly #participation: "tracked" | "auxiliary";
 }
 
 export interface RuntimeBlocker {
@@ -117,9 +125,4 @@ export interface RuntimeContinuation {
   readonly echo: unknown;
   readonly kind: "resonate";
   readonly resonate: (echo: unknown) => Wisp<unknown>;
-}
-
-export interface RuntimeProcessConfig<Relic> {
-  readonly participation: "tracked" | "auxiliary";
-  readonly ritual: Ritual<Relic>;
 }

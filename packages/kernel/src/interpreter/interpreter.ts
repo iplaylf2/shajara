@@ -80,7 +80,7 @@ export class Interpreter {
   }
 
   public get processRoot(): ProcessRef<void> {
-    return this.#rootScope.processRef as ProcessRef<void>;
+    return this.#rootScope.entryProcess.ref as ProcessRef<void>;
   }
 
   public get isClosed(): boolean {
@@ -209,7 +209,7 @@ export class Interpreter {
     this.#runtimeIndex.registerScope(branchScope);
 
     return {
-      processRef: branchScope.processRef,
+      processRef: branchScope.entryProcess.ref,
       scopeRef: branchScope.ref,
     };
   }

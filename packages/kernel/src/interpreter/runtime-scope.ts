@@ -2,8 +2,6 @@
 import type {
   ContextKey,
   FailureShape,
-  FutureKey,
-  FutureSettleKey,
   MessageKey,
   ProcessRef,
   Ritual,
@@ -27,6 +25,7 @@ export class RuntimeScope {
     const child = new RuntimeScope(entry, spec, this);
 
     this.#children.add(child);
+
     return child;
   }
 
@@ -35,7 +34,7 @@ export class RuntimeScope {
       return some(this.#bindings.get(contextKey) as Value);
     }
 
-    if (RuntimeScope.#isSentinel(this.#parent)) {
+    if (this.#parent === RuntimeScope.#sentinel) {
       return none;
     }
 
@@ -70,73 +69,35 @@ export class RuntimeScope {
     ritual: Ritual<Relic>,
     participation: SpawnParticipation,
   ): RuntimeProcess<Relic> {
-    const exitFuture = this.#issueProcessExitFuture<Relic>();
-    const process = new RuntimeProcess<Relic>(this.ref, exitFuture, {
-      participation,
-      ritual,
-    });
+    const process = new RuntimeProcess<Relic>(this.#ref, ritual, participation);
 
-    this.#processes.add(process as RuntimeProcess<unknown>);
+    this.#spawnedProcesses.add(process);
+
     return process;
   }
 
-  #issueProcessExitFuture<Relic>(): RuntimeFuture<Relic> {
-    return this.createFuture<Relic>();
-  }
-
   public halt(
-    process: ProcessRef<unknown>,
-    failure: FailureShape,
-    createClosingWorker: HaltHandler,
+    _process: ProcessRef<unknown>,
+    _failure: FailureShape,
+    _createClosingWorker: HaltHandler,
   ): void {
-    RuntimeScope.#haltProcess(this, process, failure);
-    RuntimeScope.#enterClosing(this, failure);
-    RuntimeScope.#spawnClosingWorker(this, process, failure, createClosingWorker);
+    notImplemented("RuntimeScope.halt process exit");
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
     const future = RuntimeFuture.create<Result>();
 
-    const [key, settleKey] = future.handle;
+    this.#derivedFutures.add(future);
 
-    this.#futureByKey.set(key, future as RuntimeFuture<unknown>);
-    this.#futureBySettle.set(settleKey, future as RuntimeFuture<unknown>);
     return future;
   }
 
-  public readonly ref: ScopeRef<unknown>;
+  public get ref(): ScopeRef<unknown> {
+    return this.#ref;
+  }
 
   public get isClosed(): boolean {
-    return this.#closed;
-  }
-
-  public get processRef(): ProcessRef<unknown> {
-    return this.#process.ref;
-  }
-
-  static #haltProcess(
-    _scope: RuntimeScope,
-    _process: ProcessRef<unknown>,
-    _failure: FailureShape,
-  ): void {
-    notImplemented("RuntimeScope.halt process exit");
-  }
-
-  static #enterClosing(_scope: RuntimeScope, _failure: FailureShape): void {
-    notImplemented("RuntimeScope.enter closing subtree");
-  }
-
-  static #spawnClosingWorker(
-    _scope: RuntimeScope,
-    _process: ProcessRef<unknown>,
-    _failure: FailureShape,
-    _createClosingWorker: HaltHandler,
-  ): void {
-    notImplemented("RuntimeScope.spawn closing worker");
-  }
-
-  static #isSentinel(scope: RuntimeScope): boolean {
-    return scope === RuntimeScope.#sentinel;
+    return notImplemented("依赖runtime scope的status");
   }
 
   public get exitFuture(): RuntimeFuture<unknown> {
@@ -149,37 +110,27 @@ export class RuntimeScope {
 
   private constructor(entry: Ritual<unknown>, _spec: ScopeSpec, parent: RuntimeScope) {
     this.#exitFuture = RuntimeFuture.create<unknown>();
-    const entryExitFuture = this.#issueProcessExitFuture<unknown>();
-    const [scopeExitFutureKey, _scopeExitSettleKey] = this.#exitFuture.handle;
+    const [scopeExitFuture] = this.#exitFuture.handle;
+    this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
 
-    this.#futureByKey.set(scopeExitFutureKey, this.#exitFuture);
-    this.#futureBySettle.set(_scopeExitSettleKey, this.#exitFuture);
+    const entryProcess = new RuntimeProcess(this.#ref, entry, "tracked");
+    this.#process = entryProcess;
+
     this.#parent = parent;
-    this.ref = { exitFuture: scopeExitFutureKey } as ScopeRef<unknown>;
-    this.#process = this.#branchEntryProcess(
-      new RuntimeProcess(this.ref, entryExitFuture, {
-        participation: "tracked",
-        ritual: entry,
-      }),
-    );
-  }
-
-  #branchEntryProcess(process: RuntimeProcess): RuntimeProcess {
-    this.#processes.add(process);
-    return process;
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
 
-  readonly #bindings = new Map<ContextKey<unknown>, unknown>();
-  readonly #children = new Set<RuntimeScope>();
-  #closed = false;
-  readonly #futureByKey = new Map<FutureKey<unknown>, RuntimeFuture<unknown>>();
-  readonly #futureBySettle = new Map<FutureSettleKey<unknown>, RuntimeFuture<unknown>>();
   readonly #exitFuture: RuntimeFuture<unknown>;
-  readonly #parent: RuntimeScope;
+  readonly #ref: ScopeRef<unknown>;
   readonly #process: RuntimeProcess;
-  readonly #processes = new Set<RuntimeProcess>();
+  readonly #parent: RuntimeScope;
+
+  readonly #children = new Set<RuntimeScope>();
+
+  readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
+  readonly #spawnedProcesses = new Set<RuntimeProcess>();
+  readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
 export type HaltHandler = (
