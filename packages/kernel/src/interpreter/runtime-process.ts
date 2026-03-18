@@ -86,7 +86,25 @@ export class RuntimeProcess<Relic = unknown> {
       kind: "receive",
     };
     this.status = "waiting";
-    notImplemented("RuntimeProcess.receive");
+  }
+
+  public accept(value: unknown): void {
+    const blocker = this.#blocker;
+
+    if (
+      this.status !== "waiting" ||
+      blocker === null ||
+      blocker.kind !== "receive" ||
+      blocker.continuation === null
+    ) {
+      throw new Error("RuntimeProcess cannot accept value while not waiting on receive.");
+    }
+
+    const { continuation } = blocker;
+
+    this.#blocker = null;
+    this.status = "runnable";
+    this.setContinuation(continuation, value);
   }
 
   public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {

@@ -16,7 +16,7 @@ import { RuntimeProcess } from "./runtime-process";
 import type { SpawnParticipation } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
 
-const EMPTY_MESSAGE_BUFFER_SIZE = 0;
+const EMPTY_QUEUE_SIZE = 0;
 
 export class RuntimeScope {
   public static create(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
@@ -55,29 +55,30 @@ export class RuntimeScope {
     this.#bindings.delete(contextKey);
   }
 
-  public send<Value>(
-    targetScope: RuntimeScope,
-    messageKey: MessageKey<Value>,
-    message: Value,
-  ): void {
+  public send<Value>(targetScope: RuntimeScope, messageKey: MessageKey<Value>, value: Value): void {
     if (targetScope.#status === "closed") {
       throw new Error("Cannot send to closed scope.");
     }
 
-    targetScope.#enqueueMessage(messageKey, message);
-    notImplemented("RuntimeScope.send wakeup protocol");
+    targetScope.#acceptMessage(messageKey, value);
   }
 
   public tryReceive<Value>(messageKey: MessageKey<Value>): Option<Value> {
-    const messageBuffer = this.#mailboxes.get(messageKey);
+    const mailboxQueue = this.#mailboxes.get(messageKey);
 
-    if (!messageBuffer || messageBuffer.length === EMPTY_MESSAGE_BUFFER_SIZE) {
+    if (!mailboxQueue || mailboxQueue.length === EMPTY_QUEUE_SIZE) {
       return none;
     }
 
-    const message = messageBuffer.shift() as Value;
+    const value = mailboxQueue.shift() as Value;
 
-    return some(message);
+    return some(value);
+  }
+
+  public receive(process: RuntimeProcess, messageKey: MessageKey<unknown>): void {
+    process.receive(messageKey);
+
+    this.#registerReceiver(messageKey, process);
   }
 
   public observeRunnable(_listener: RunnableListener): Unsubscribe {
@@ -152,11 +153,44 @@ export class RuntimeScope {
     this.#parent = parent;
   }
 
-  #enqueueMessage<Value>(messageKey: MessageKey<Value>, message: Value): void {
-    const messageBuffer = this.#mailboxes.get(messageKey) ?? [];
+  #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
+    if (this.#deliverToReceiver(messageKey, value)) {
+      return;
+    }
 
-    messageBuffer.push(message);
-    this.#mailboxes.set(messageKey, messageBuffer);
+    this.#bufferMessage(messageKey, value);
+  }
+
+  #deliverToReceiver<Value>(messageKey: MessageKey<Value>, value: Value): boolean {
+    const process = this.#receiverQueues.get(messageKey)?.shift();
+
+    if (!process) {
+      return false;
+    }
+
+    process.accept(value);
+
+    return true;
+  }
+
+  #bufferMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
+    const mailboxQueue = this.#mailboxes.get(messageKey);
+
+    if (mailboxQueue) {
+      mailboxQueue.push(value);
+    } else {
+      this.#mailboxes.set(messageKey, [value]);
+    }
+  }
+
+  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess): void {
+    const receiveQueue = this.#receiverQueues.get(messageKey);
+
+    if (receiveQueue) {
+      receiveQueue.push(process);
+    } else {
+      this.#receiverQueues.set(messageKey, [process]);
+    }
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
@@ -170,7 +204,10 @@ export class RuntimeScope {
   readonly #children = new Set<RuntimeScope>();
 
   // MessageKey is a capability token; mailbox indexing should not retain key lifetime.
+  // Values are queued and consumed by FIFO semantics (`push` then `shift`).
   readonly #mailboxes = new WeakMap<MessageKey<unknown>, unknown[]>();
+  readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess[]>();
+
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
   readonly #spawnedProcesses = new Set<RuntimeProcess>();
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();

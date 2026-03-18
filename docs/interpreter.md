@@ -176,8 +176,8 @@ failure 来源的约束应为：直接触发 closing 的 scope 承接触发方�
 - `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 分别表达两种不同状态：
   前者表示恢复所需的 `echo` 已齐备，可以直接形成待执行 continuation；后者表示 continuation 已就位，但仍需等待外部事件产出 `echo` 后才能转入待执行态。
 - 每个 sigil case 优先调用一个同名或近同名的私有解释动作，例如 `bind -> #bind`、`branch -> #branch`、`lookup -> #lookup`、`poll -> #poll`、`self -> #self`。
-- 对同时存在“尝试立即完成”和“进入阻塞等待”两条路径的 sigil，应显式区分这两层动作；例如 `receive` 当前按 `#tryReceive` 与 `#receive` 两步命名，以区分“尝试读取 mailbox”与“在 mailbox 上等待消息”。
-- `send` 的解释风格也遵循同一原则：`Interpreter` 在当前 process 的 scope 上下文里解释 `send`，并把 mailbox 投递动作交给 `RuntimeScope.send(...)` 表达，而不是让 `RuntimeProcess` 自身承担 scope-to-scope 投递语义。
+- 对同时存在"尝试立即完成"和"进入阻塞等待"两条路径的 sigil，应显式区分这两层动作；`receive` 按 `#tryReceive` 与 `#receive` 两步命名，以区分"尝试读取 mailbox"与"在 scope 上登记等待"。`#receive` 调用的是 `RuntimeScope.receive(process, messageKey)`，而不是 `process.receive(messageKey)`；这表达 receive 的语义主语是 scope，而不是 process 本身。
+- `send` 的解释风格也遵循同一原则：`Interpreter` 在当前 process 的 scope 上下文里解释 `send`，并把投递动作交给 `RuntimeScope.send(...)` 表达，而不是让 `RuntimeProcess` 自身承担 scope-to-scope 投递语义。
 - 命名应表达“解释这个 sigil”，而不是转写成额外的观察性或描述性措辞；例如优先使用 `#poll`，而不是 `#inspectFuture`。
 - 这类私有方法存在的主要目的，不是抽象复用，而是维持 `#interpretWisp` 的 top-down case 结构，让每个 sigil 分支都保持统一的阅读节奏。
 

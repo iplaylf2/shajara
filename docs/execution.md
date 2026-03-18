@@ -69,8 +69,8 @@
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
 - `observeRunnable(...)` 的边界已进一步收口：`Interpreter.observeRunnable(scopeRef, ...)` 只按 ref 寻址并转发给目标 `RuntimeScope.observeRunnable(...)`，并由后者承诺覆盖该 scope 及其全部后代 scope 的 runnable 事件；与此对应，`RunnableListener` / `Unsubscribe` 这类 alias 也已贴近 `RuntimeScope` 落位，而没有回流到 kernel 基础 `contracts/`；但具体传播与取消注册协议仍是 `notImplemented(...)`。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
-- `wait` / `receive` 的阻塞路径已按“进入等待态 + `primeContinuation(...)`”两步拆开；`receive` 同时显式区分了 `tryReceive` 与阻塞式 `receive`。其中 `wait` 所依赖的 runtime future 行为当前仍是占位实现。  
-  证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
+- `wait` / `receive` 的阻塞路径已按"进入等待态 + `primeContinuation(...)`"两步拆开；`receive` 同时显式区分了 `tryReceive`（尝试立即从 mailbox 取值）与 `receive`（scope-level 等待登记）两层动作。其中 `wait` 所依赖的 runtime future 行为当前仍是占位实现。  
+  证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
 - `RuntimeProcess` 已从 future 状态读写里收口回 process 局部状态对象；future、mailbox 与 closing 相关多项能力仍刻意保持 `notImplemented(...)`。这轮提交强调的是对象边界、公开面与解释器编排面的收口，而不是全部运行时能力已经完成。  
   证据：`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-future.ts`
 - `halt` 的主调用链已先行收口：`Interpreter` 现在负责把 `halt` 转写为对 `RuntimeScope.halt(...)` 的调用，并把 `onClosing(scope, processes, failure)` 包装成 closing worker factory 交给 `RuntimeScope`；`RuntimeScope` 侧的 closing 协议签名已经固定，但具体关闭流程仍是占位实现。  
@@ -83,14 +83,16 @@
   证据：`packages/kernel/src/interpreter/runtime-process.ts` lines 96–111
 - `RuntimeScope` 状态机已实现：新增私有字段 `#status: RuntimeScopeStatus = "open"`，状态值为 `"open" | "closing" | "closed"`；新增公开 getter `status`；`branch(...)` 与 `spawn(...)` 其间若 `#status !== "open"` 则抛出异常。这为 halt 的关闭级联提供了结构基础。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 138, 140, 163–171, 180–189
-- `RuntimeScope` 的 mailbox 功能已定型：使用 `WeakMap<MessageKey<unknown>, unknown[]>` 承载消息缓冲区，命名澄清了 `messageKey`（路由令牌）与 `message`（消息值）的语义分离；新增私有辅助 `#enqueueMessage(messageKey, message)`；按 top-down 文件组织原则，该辅助放置于 constructor 之后。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 79–85, 176
-- `RuntimeScope.send(...)` 的方法签名已定型：公开方法接收 `targetScope: RuntimeScope`（直接的运行时对象，非 ref token）、`messageKey` 与 `message`；方法体在 scope 开放性检查后调用 `#enqueueMessage`，并为 wake-up 协议添加显式 `notImplemented` 占位符。这确保合约清晰：消息入队已完成，但 wake-up 协调仍待决。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 58–68
-- `RuntimeScope.tryReceive(...)` 已简化：直接从 `#mailboxes` WeakMap 读取、弹出缓冲区的第一条消息，无需主动清理（WeakMap 生命期管理自动化）。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 70–77
+- `send` / `receive` 协议已以 scope-centric 语义完整落地。`receive` 的语义主语确立为 scope：`RuntimeScope.receive(process, messageKey)` 是公开协议登记入口，表达"在当前 scope 上登记某 process 对某 messageKey 的接收等待"；`RuntimeProcess.receive(messageKey)` 只负责 process 局部等待态迁移，不再单独承担协议主语语义。`Interpreter.#receive(...)` 改为调用 `scope.receive(process, messageKey)` 而不是直接操作 process。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- `RuntimeScope.send(...)` 第三个参数统一命名为 `value`（与 sigil 层、Interpreter 层对齐，不再用 `message`）；send 路径已完整落地：`#acceptMessage` 优先尝试经由 `#deliverToReceiver` 直接投递给 receiverQueue 队首的等待 process；若无等待者则回退到 `#bufferMessage` 入 mailbox FIFO 队列。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts`
+- `RuntimeProcess.accept(value)` 新增：承接 scope 投递的 value，将 process 从 waiting 恢复为 runnable，并以 value 为 echo 安置已就绪的 continuation；如果在非 receive-waiting 状态或 continuation 尚未 prime 时被调用，则抛出协议违约错误。  
+  证据：`packages/kernel/src/interpreter/runtime-process.ts`
+- `RuntimeScope` 内部新增 `#receiverQueues: WeakMap<MessageKey, RuntimeProcess[]>` 记录各 messageKey 的 FIFO 等待者队列，与 `#mailboxes`（消息缓冲）并列。两个容器均以 WeakMap 承载，生命期随 key 自然回收，不做额外空队列清理。  
+  证据：`packages/kernel/src/interpreter/runtime-scope.ts`
 - `Interpreter` 的 `#send` 处理已完成委托简化：先通过 `RuntimeIndex` 解析双方 scope ref，再转调 sender 的 `RuntimeScope.send(targetScope, ...)`；自身不再承载消息路由逻辑。  
-  证据：`packages/kernel/src/interpreter/interpreter.ts` lines 276–279
+  证据：`packages/kernel/src/interpreter/interpreter.ts`
 - `Interpreter.processRoot` 与 `branch` 返回值中 `processRef` 的来源已完全统一：均从 `RuntimeScope.entryProcess.ref` 读取，移除了对 `RuntimeScope.processRef` 别名的依赖。  
   证据：`packages/kernel/src/interpreter/interpreter.ts` lines 82, 212
 

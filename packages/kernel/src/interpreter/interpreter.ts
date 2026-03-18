@@ -268,7 +268,7 @@ export class Interpreter {
   }
 
   #receive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): void {
-    process.receive(sigil.messageKey);
+    this.#resolveScope(process.scopeRef).receive(process, sigil.messageKey);
   }
 
   #send(process: RuntimeProcess, sigil: SendSigil<unknown>): void {
