@@ -1,4 +1,3 @@
-// oxlint-disable max-lines
 // oxlint-disable class-methods-use-this
 import type {
   ContextKey,
@@ -16,15 +15,16 @@ import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
+import type { SpawnParticipation } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
 
 export class RuntimeScope {
-  public static create(spec: ScopeSpec, entry: Ritual<unknown>): RuntimeScope {
-    return new RuntimeScope(spec, RuntimeScope.#sentinel, entry);
+  public static create(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
+    return new RuntimeScope(entry, spec, RuntimeScope.#sentinel);
   }
 
-  public branch(spec: ScopeSpec, entry: Ritual<unknown>): RuntimeScope {
-    const child = new RuntimeScope(spec, this, entry);
+  public branch(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
+    const child = new RuntimeScope(entry, spec, this);
 
     this.#children.add(child);
     return child;
@@ -68,7 +68,7 @@ export class RuntimeScope {
 
   public spawn<Relic>(
     ritual: Ritual<Relic>,
-    participation: RuntimeParticipation,
+    participation: SpawnParticipation,
   ): RuntimeProcess<Relic> {
     const exitFuture = this.#issueProcessExitFuture<Relic>();
     const process = new RuntimeProcess<Relic>(this.ref, exitFuture, {
@@ -87,7 +87,7 @@ export class RuntimeScope {
   public halt(
     process: ProcessRef<unknown>,
     failure: FailureShape,
-    createClosingWorker: ClosingWorkerFactory,
+    createClosingWorker: HaltHandler,
   ): void {
     RuntimeScope.#haltProcess(this, process, failure);
     RuntimeScope.#enterClosing(this, failure);
@@ -130,7 +130,7 @@ export class RuntimeScope {
     _scope: RuntimeScope,
     _process: ProcessRef<unknown>,
     _failure: FailureShape,
-    _createClosingWorker: ClosingWorkerFactory,
+    _createClosingWorker: HaltHandler,
   ): void {
     notImplemented("RuntimeScope.spawn closing worker");
   }
@@ -147,13 +147,13 @@ export class RuntimeScope {
     return this.#process;
   }
 
-  private constructor(_spec: ScopeSpec, parent: RuntimeScope, entry: Ritual<unknown>) {
+  private constructor(entry: Ritual<unknown>, _spec: ScopeSpec, parent: RuntimeScope) {
     this.#exitFuture = RuntimeFuture.create<unknown>();
     const entryExitFuture = this.#issueProcessExitFuture<unknown>();
-    const [scopeExitFutureKey, scopeExitSettleKey] = this.#exitFuture.handle;
+    const [scopeExitFutureKey, _scopeExitSettleKey] = this.#exitFuture.handle;
 
     this.#futureByKey.set(scopeExitFutureKey, this.#exitFuture);
-    this.#futureBySettle.set(scopeExitSettleKey, this.#exitFuture);
+    this.#futureBySettle.set(_scopeExitSettleKey, this.#exitFuture);
     this.#parent = parent;
     this.ref = { exitFuture: scopeExitFutureKey } as ScopeRef<unknown>;
     this.#process = this.#branchEntryProcess(
@@ -182,12 +182,11 @@ export class RuntimeScope {
   readonly #processes = new Set<RuntimeProcess>();
 }
 
-export type ClosingWorkerFactory = (
+export type HaltHandler = (
   scope: ScopeRef<unknown>,
   processes: readonly ProcessRef<unknown>[],
   failure: Failure,
 ) => Ritual<Failure>;
 
-export type RuntimeParticipation = "tracked" | "auxiliary";
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
 export type Unsubscribe = () => void;

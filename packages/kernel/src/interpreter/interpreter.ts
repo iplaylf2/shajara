@@ -11,6 +11,7 @@ import type {
   SendSigil,
   SettleSigil,
   Sigil,
+  SpawnParticipation,
   SpawnSigil,
   UnbindSigil,
   WaitSigil,
@@ -29,7 +30,7 @@ import type {
   StirringWisp,
   Wisp,
 } from "#src/contracts";
-import type { RunnableListener, RuntimeParticipation, Unsubscribe } from "./runtime-scope";
+import type { RunnableListener, Unsubscribe } from "./runtime-scope";
 import {
   processCededStep,
   processExitedStep,
@@ -49,7 +50,7 @@ import { standardScopeSpec } from "#src/scopes";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
-    this.#rootScope = RuntimeScope.create(standardScopeSpec(), entry);
+    this.#rootScope = RuntimeScope.create(entry, standardScopeSpec());
     this.#runtimeIndex.registerScope(this.#rootScope);
   }
 
@@ -203,7 +204,7 @@ export class Interpreter {
   }
 
   #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
-    const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.spec, sigil.entry);
+    const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.entry, sigil.spec);
 
     this.#runtimeIndex.registerScope(branchScope);
 
@@ -289,7 +290,7 @@ export class Interpreter {
   #spawnIn<Relic>(
     scope: RuntimeScope,
     ritual: Ritual<Relic>,
-    participation: RuntimeParticipation,
+    participation: SpawnParticipation,
   ): ProcessRef<Relic> {
     const process = scope.spawn(ritual, participation);
 
