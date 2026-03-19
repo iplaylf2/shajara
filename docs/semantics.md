@@ -37,9 +37,9 @@ cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口注册一次 cl
 
 sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
 
-`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 的 failure 上传模式决定（见 §4.5）。
+`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 的 `failureMode` 决定（见 §4.5）。
 
-`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父 Scope 的 failure 上传模式决定（见 §4.5）。
+`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父 Scope 的 `failureMode` 决定（见 §4.5）。
 
 ### 2.3 Scope
 
@@ -51,14 +51,14 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 Scope 的稳定语义只有一条：**failure 是否向父 Scope 上传**。
 
-Scope 可以分为两类：
+这一语义由 `FailureMode` 表达：
 
-| 语义类别     | 含义                                                       |
-| ------------ | ---------------------------------------------------------- |
-| 传播型 Scope | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。 |
-| 收敛型 Scope | 后代 `failed/terminated` 在本地收敛。                      |
+| `FailureMode` | 含义                                                       |
+| ------------- | ---------------------------------------------------------- |
+| `propagate`   | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。 |
+| `contain`     | 后代 `failed/terminated` 在本地收敛。                      |
 
-`ScopeSpec` 承载的就是这条语义边界。
+`FailureMode` 承载的就是这条语义边界。
 
 ### 2.4 Process
 
@@ -66,10 +66,10 @@ Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，�
 
 `ProcessRef` 也显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Process 结果的收敛。
 
-Process 在生命周期收敛中存在参与属性（`participation`）：
+Process 在生命周期收敛中带有 `CompletionMode`：
 
-- `tracked`：计入 Scope “变空”判定。
-- `auxiliary`：不计入 Scope “变空”判定，仅作为附属并发单元存在。
+- `structural`：参与 Scope 的完成判定。
+- `detached`：不参与 Scope 的完成判定。
 
 ### 2.5 Processor 与 EventQueue
 
@@ -186,9 +186,9 @@ Process 与 Scope 均有三种互斥终态：
 
 - Scope 内任一 Process 执行 `Halt()` 并以 `Failed(failure)` 退出
 - Scope 内任一 Process 以 `Failed(failure)` 退出
-- 从后代链路接收到 `Failed(failure)` 传播（仅适用于传播型 Scope）
+- 从后代链路接收到 `Failed(failure)` 传播（仅适用于 `failureMode = "propagate"` 的 Scope）
 - 从祖先 Scope 收到终止级联
-- Scope 变空（不再包含任何 `tracked` Process）
+- Scope 变空（不再包含任何 `structural` Process）
 
 终态判定：
 
@@ -204,14 +204,14 @@ Process 与 Scope 均有三种互斥终态：
 
 ### 4.5 终态上传策略
 
-子 Scope 终态向父 Scope 上传按父 Scope 的 failure 上传模式处理：
+子 Scope 终态向父 Scope 上传按父 Scope 的 `failureMode` 处理：
 
-- **传播型 Scope**：后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
-- **收敛型 Scope**：后代 `failed/terminated` 在本地收敛。
+- **`propagate`**：后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
+- **`contain`**：后代 `failed/terminated` 在本地收敛。
 
 `terminated` 与 `failed` 分别表示终止级联与失败传播。
 
-kernel 的结构化并发以传播型 Scope 为默认形态；收敛型 Scope 承担显式收敛边界的职责。
+kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`contain` 承担显式收敛边界的职责。
 
 `Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 只提供结果观察。
 
@@ -254,7 +254,7 @@ kernel 的结构化并发以传播型 Scope 为默认形态；收敛型 Scope �
 
 #### Branch(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
 
-在调用方 Scope 下创建子 Scope 与根 Process。默认创建传播型 Scope；可通过 `spec` 显式指定该子 Scope 的 failure 上传模式。
+在调用方 Scope 下创建子 Scope 与根 Process。默认创建 `failureMode = "propagate"` 的子 Scope；可显式指定目标 `failureMode`。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
@@ -265,7 +265,7 @@ kernel 的结构化并发以传播型 Scope 为默认形态；收敛型 Scope �
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
-- `options.participation`：`tracked | auxiliary`，默认 `tracked`。两者语义见 §2.4；Scope “变空”触发见 §4.3。
+- `options.completionMode`：`structural | detached`，默认 `structural`。两者语义见 §2.4；Scope “变空”触发见 §4.3。
 
 ### 6.2 调度推进（内核内部）
 

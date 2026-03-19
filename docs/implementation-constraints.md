@@ -37,7 +37,7 @@
 | ------------------------------------- | ------------------------------------------------------------ |
 | `kernel/src/contracts/`               | 核心类型契约                                                 |
 | `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                           |
-| `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeSpec` 单源                                    |
+| `kernel/src/contracts/scope.ts`       | `ScopeRef/FailureMode` 单源                                  |
 | `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                            |
 | `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey/FutureHandle` 单源                |
 | `kernel/src/sigils/`                  | sigil 声明 + index                                           |
@@ -54,7 +54,7 @@
 | `host/src/boundary/`                  | host↔kernel 边界共享支撑                                     |
 | `host/src/errors/`                    | 错误类型                                                     |
 
-- kernel 对外导出采用根入口分组导出，`@shajara/kernel/scopes` 为 scope spec 公开子路径。
+- kernel 对外导出采用根入口分组导出，`@shajara/kernel/scopes` 为 scope failure mode 与内置条目公开子路径。
 
 ## 5. 示例约束
 
