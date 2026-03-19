@@ -11,6 +11,8 @@
 - `spawn` 是公开并发原语，返回分支结果的 `Future`
 - `enclose`、`guard`、`resumable` 负责引入新的 `Scope`
 - future 与上下文值都归属当前 `Scope`
+- `Scope` 的稳定 kernel 语义核收口为“failure 是否向父 Scope 上传”
+- `observeRunnable` 收口为 scope 子树级的 runnable 驱动接面，采用遮蔽而不是广播语义
 
 证据：`docs/api.md`、`docs/semantics.md`
 
@@ -22,6 +24,8 @@
   证据：`packages/kernel/src/primitives-kit/resumable.ts`
 - `halt` 的解释仍未落实为完整的 scope 关闭、失败传播与后代级联终止流程。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
+- scope taxonomy 仍停留在 `standard / supervisor / governor` 旧形态，尚未收口到新的 failure 上传语义核与衍生元数据分层。  
+  证据：`packages/kernel/src/contracts/scope.ts`、`packages/kernel/src/scopes/*.ts`
 
 ## 3. 当前已落地状态
 
@@ -67,7 +71,7 @@
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-future.ts`、`packages/kernel/src/interpreter/runtime-index.ts`
 - `Interpreter.processRoot` 与 `branch` 返回值里的 `processRef` 现统一从 `RuntimeScope.entryProcess.ref` 读取，不再依赖 `RuntimeScope.processRef` 别名。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
-- `observeRunnable(...)` 的边界已进一步收口：`Interpreter.observeRunnable(scopeRef, ...)` 只按 ref 寻址并转发给目标 `RuntimeScope.observeRunnable(...)`，并由后者承诺覆盖该 scope 及其全部后代 scope 的 runnable 事件；与此对应，`RunnableListener` / `Unsubscribe` 这类 alias 也已贴近 `RuntimeScope` 落位，而没有回流到 kernel 基础 `contracts/`；但具体传播与取消注册协议仍是 `notImplemented(...)`。  
+- `observeRunnable(...)` 的边界已进一步收口：`Interpreter.observeRunnable(scopeRef, ...)` 只按 ref 寻址并转发给目标 `RuntimeScope.observeRunnable(...)`；与此对应，`RunnableListener` / `Unsubscribe` 这类 alias 也已贴近 `RuntimeScope` 落位，而没有回流到 kernel 基础 `contracts/`；但其具体语义仍停留在旧的“广播观察”理解之外，遮蔽式驱动接线协议尚未落地。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
 - `wait` / `receive` 的阻塞路径已按"进入等待态 + `primeContinuation(...)`"两步拆开；`receive` 同时显式区分了 `tryReceive`（尝试立即从 mailbox 取值）与 `receive`（scope-level 等待登记）两层动作。其中 `wait` 所依赖的 runtime future 行为当前仍是占位实现。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
@@ -102,22 +106,16 @@
   证据：`docs/api.md`
 - `semantics.md` 把“边界”收口为 `Scope` 的辅助说明词，并以 `Scope` 作为精确定义用语。  
   证据：`docs/semantics.md`
+- `semantics.md` 现已把 `Scope` 的稳定 kernel 语义核收口为“failure 是否向父 Scope 上传”，并把其余内容压回更纯的 kernel 语义描述。  
+  证据：`docs/semantics.md`
 - `host.md` 只描述 host 如何承接 `Scope`、并发与结果收敛，不再代替 API 文档解释使用心智。  
   证据：`docs/host.md`
-- `interpreter.md` 已补充 `#interpretWisp` 的三段式 case 风格锚点，用于约束实现阅读结构而不是补充 kernel 语义。  
+- `interpreter.md` 已重写为更纯的对象设计文档：保留 `Interpreter` 的职责、运行时边界、步进模型、`observeRunnable` 的遮蔽语义，以及 `onClosing` 扩展点；实现阅读锚点已移出。  
   证据：`docs/interpreter.md`
-- `README.md` 与 `interpreter.md` 已同步更新 interpreter runtime 的边界表述，不再把 `RuntimeScope` / `RuntimeProcess` 的绝对解耦当成目标设计。  
+- 原先落在 `interpreter.md` 的实现阅读锚点现回收至 `execution.md`：`#interpretWisp` 的 case 组织、`tryReceive/receive` 双层动作、`setContinuation/primeContinuation` 区分，以及 `step` 先按 runtime status 分派的实现风格，都视为当前实现约束，而不再停留在设计文档。  
+  证据：`docs/execution.md`
+- `README.md` 与 `interpreter.md` 已同步更新 interpreter runtime 的边界表述，并与新的文档依赖顺序保持一致。  
   证据：`docs/README.md`、`docs/interpreter.md`
-- `interpreter.md` 现进一步记录阻塞路径上的 `setContinuation / primeContinuation` 区分，以及 `tryReceive / receive` 的双层命名约束。  
-  证据：`docs/interpreter.md`
-- `interpreter.md` 现进一步记录 `RuntimeScope` 对 entry ritual / mailbox 的职责，以及 `send` 应从 sender scope 上下文发起的交互约束。  
-  证据：`docs/interpreter.md`
-- `interpreter.md` 现进一步记录 `resonate` 路径上的退出收敛边界：`RuntimeProcess` 负责 process 局部终态收敛，`RuntimeScope` 只负责 completed 之后的结构性后处理。  
-  证据：`docs/interpreter.md`
-- `interpreter.md` 现进一步记录 `onClosing(scope, processes, failure)` 的参数语义，以及 `halt` 目前按“Interpreter 组织调用，RuntimeScope 承载 closing 协议签名”的方向收口。  
-  证据：`docs/interpreter.md`
-- `interpreter.md` 现进一步记录 closing 路径上的 failure 来源：直接触发 closing 的 scope 继承 origin failure，被迫取消的子树承接默认 termination failure；后者的具体 failure 形状仍待设计。  
-  证据：`docs/interpreter.md`
 - `execution.md` 现额外记录了本轮 `Interpreter` review 只完成部分收口；future 处理、scope close 处理与 runtime index / runtime object 的协作边界仍处在待决状态。  
   证据：`docs/execution.md`
 
@@ -130,6 +128,15 @@
 - Mailbox 精确化定名与生命期管理：MessageKey / message 语义分离已通过字段命名明确，WeakMap 采用自动化了 key 生命期。
 - Send 方法合约清晰化：enqueue 步骤完成，wake-up 缺失通过显式 `notImplemented` 占位标记，避免虚假"已完成"错觉。
 - Interpreter 的 send 委托已完全收口：ref 解析与消息路由现完全分离，Interpreter 只负责前者。
+- 设计基线已重写：`Scope` 的稳定语义核不再围绕旧的 role taxonomy 展开，而是收口为 failure 上传语义；`observeRunnable` 的定位也已从开放观察面改写为带遮蔽语义的驱动接面。
+
+**当前实现阅读锚点：**
+
+- `step(...)` 先按 `RuntimeProcess.status` 分派，再在 `runnable` 分支内细分 interpret / resonate。
+- `#interpretWisp` 继续采用 top-down case 风格；单个 sigil case 通常按“解释 sigil、安置 `resonate`、包装 `ProcessStep`”组织。
+- 阻塞路径继续区分“进入等待态”与“预置 continuation”两步，分别对应 `wait/receive` 与 `primeContinuation(...)`。
+- `receive` 继续区分 `tryReceive` 与 `receive` 两层动作：前者尝试立即消费 mailbox，后者登记 scope-level 等待。
+- `setContinuation(resonate, echo)` 与 `primeContinuation(resonate)` 继续表达两种不同状态：前者进入待执行 continuation，后者表示 continuation 已就位但仍待外部恢复值。
 
 **当前占位符轮廓：**
 
@@ -137,14 +144,15 @@
 - `RuntimeScope.send` 的 wake-up protocol 已显式 `notImplemented`。
 - `RuntimeScope.isClosed` 仍是占位实现。
 - Future 路径（`poll / wait / settle` 与 receiver wake-up）仍是占位。
+- `ScopeSpec` / `scopes/*` / `Interpreter.observeRunnable(...)` 的代码形态仍未跟上新的文档基线。
 
 ## 6. 下一步
 
-1. **最优先**：补完 `RuntimeScope.halt(...)` 的 closing 协议——决定如何驱动 scope 状态转移、failure 级联、child 子树的强制终止，以及 closing worker 与 exit future 的交互方式。
-2. **次优先**：补完 `RuntimeScope.send` 的 wake-up 协议——决定消息到达如何唤醒阻塞的 receiver 进程。
-3. 继续完成 future 路径：当前 `RuntimeFuture` 只提供 key pair 与占位方法，`poll / wait / settle` 与 receiver 恢复都仍未补完。
-4. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
-5. 评估 `all` / `race` 是否直接以 `spawn` + future 组合表达。
+1. **最优先**：重构 `ScopeSpec` 与 `scopes/*`，把稳定语义核收口为 failure 上传模式，并为其余 executor/解释器策略预留元数据落点。
+2. 同步重写 `RuntimeScope.observeRunnable(...)` 与调用协议，把 runnable 接口落成遮蔽式驱动接面，而不是普通广播监听。
+3. 补完 `RuntimeScope.halt(...)` 的 closing 协议——决定如何驱动 scope 状态转移、failure 级联、child 子树的强制终止，以及 closing worker 与 exit future 的交互方式。
+4. 继续完成 future 路径：当前 `RuntimeFuture` 只提供 key pair 与占位方法，`poll / wait / settle` 与 receiver 恢复都仍未补完。
+5. 在恢复委派路径上继续收口 mailbox、future 与 `Scope` 的职责分工。
 
 ## 7. 验证基线
 

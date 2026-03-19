@@ -2,7 +2,7 @@
 
 本文档记录实现设计过程中需要持续提醒、且会直接影响落地方式的约束条例。
 
-它不定义 kernel 语义，也不承载 host API 设计；相关基线分别以 `semantics.md`、`host.md` 与 `api.md` 为单源。本文档只保留那些在实现阶段容易漂移、但又不应回流为新设计分支的约束。
+本文档只保留实现阶段容易漂移、并直接影响落地方式的约束。
 
 当实现约束因设计调整而变化时，须在同一变更中同步更新对应设计文档与本文档。
 
@@ -10,17 +10,17 @@
 
 ## 1. 边界与依赖
 
-- host 负责 generator 编排与宿主桥接，不将 generator 细节下沉到 kernel。
-- 边界引用类型（`ScopeRef`、`ExecutionScopeRef`、`SelfHandle`）由 kernel 单源定义并导出，host 直接消费，不重复定义同语义包装。
-- 依赖方向固定为 `executor → contracts/sigils`；kernel 基础契约不反向依赖 executor。
-- executor 侧派生句柄不反向定义 kernel 基础概念；`Processor`、`ExecutionScopeRef` 这类 executor 衍生句柄落在 `executor.ts`，不回流到 `contracts/`。
+- host 负责 generator 编排与宿主桥接。
+- 边界引用类型中，`ScopeRef` 与 `SelfHandle` 由 kernel 单源定义并导出；`ExecutionScopeRef` 作为 executor 衍生句柄对 host 暴露，host 不重复定义同语义包装。
+- 依赖方向固定为 `executor → contracts/sigils`。
+- `Processor`、`ExecutionScopeRef` 这类 executor 衍生句柄落在 `executor.ts`。
 - cleanup 注册以 `Ritual` 为锚点：同一条启动入口注册一次 cleanup。
 
 ## 2. 异常策略
 
-- kernel 包实现不承担异常恢复职责。
+- kernel 包实现以失败退出为主。
 - 实现中通常不围绕运行路径添加异常捕获；异常默认视为运行时已经进入失败状态。
-- 一旦出现未预期异常，语义预期是整个运行时失败退出，而不是在 kernel 内部继续尝试局部恢复或降级。
+- 一旦出现未预期异常，语义预期是整个运行时失败退出。
 
 ## 3. 类型与命名治理
 
@@ -29,7 +29,7 @@
 - kernel 中优先使用 `*Relic` 表达语义留存；`*Exit` 仅用于生命周期终态，不可混用。
 - 角色命名使用 `*Scope`，控制面句柄使用 `*Ref`，消息/查找/future capability 令牌使用 `*Key`。
 - 字段全必填时使用 `*Config`，不使用 `*Options`。
-- 显式类型 shape 若已是稳定语义概念，应由对应语义宿主提供命名 alias；若只服务于某个实现边界，则 alias 应贴近该边界承载体，而不是为了复用方便额外挂到 `contracts/` 或拆出无语义文件。
+- 显式类型 shape 若已是稳定语义概念，应由对应语义宿主提供命名 alias；若只服务于某个实现边界，则 alias 应贴近该边界承载体。
 
 ## 4. 实现落位
 
@@ -43,7 +43,7 @@
 | `kernel/src/sigils/`                  | sigil 声明 + index                                           |
 | `kernel/src/sigils.ts`                | sigil 公共入口                                               |
 | `kernel/src/primitives/`              | 原语 + index                                                 |
-| `kernel/src/scopes/`                  | 角色条目                                                     |
+| `kernel/src/scopes/`                  | scope 语义核与内置元数据条目                                 |
 | `kernel/src/interpreter/`             | `Interpreter` 单源；解释器局部 alias 贴近对应 runtime 承载体 |
 | `kernel/src/interpreter.ts`           | `Interpreter` 公共入口                                       |
 | `kernel/src/executor/`                | 执行入口契约与 executor 衍生句柄（如 `ExecutionScopeRef`）   |

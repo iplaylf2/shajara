@@ -37,9 +37,9 @@ cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口注册一次 cl
 
 sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
 
-`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 角色决定（见 §4.5）。
+`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 的 failure 上传模式决定（见 §4.5）。
 
-`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父角色策略决定（见 §4.5）。
+`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父 Scope 的 failure 上传模式决定（见 §4.5）。
 
 ### 2.3 Scope
 
@@ -47,41 +47,20 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 文档中提到“边界”时，指的是某段计算对应的 Scope。需要精确指称时，以 `Scope` 为准：生命周期、上下文继承、future 归属与失败传播范围，都由该 Scope 承载。
 
-`ScopeRef` 除了表达身份与控制面可见性，也显式携带 `exitFuture`。该 future-like 观察面用于等待该 Scope 的生命周期终态，其值域固定为 `Right<ScopeExit<T>>`。
+`ScopeRef` 显式携带 `exitFuture`，用于观察该 Scope 的生命周期终态，其值域固定为 `Right<ScopeExit<T>>`。
 
-角色按语义来源分两层：
+Scope 的稳定语义核只有一条：**failure 是否向父 Scope 上传**。
 
-**kernel 原生角色**（语义由 kernel 直接定义）：
+因此，Scope 可以收口为两类：
 
-| 角色              | 职责                                            |
-| ----------------- | ----------------------------------------------- |
-| `StandardScope`   | 普通编排角色，承载业务流程与默认并发分支。      |
-| `SupervisorScope` | 终态收敛角色，把后代失败/终止收敛为可观察结果。 |
+| 语义类别     | 含义                                                                  |
+| ------------ | --------------------------------------------------------------------- |
+| 传播型 Scope | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。            |
+| 收敛型 Scope | 后代 `failed/terminated` 在本地收敛为可观察结果。                     |
 
-**executor 衍生角色**（因 executor 架构需要而存在）：
+`ScopeSpec` 承载的就是这条语义边界。
 
-| 角色             | 职责                                                |
-| ---------------- | --------------------------------------------------- |
-| `GovernorScope`  | 治理角色：承载 Scheduler/Reaper 两类 handler 策略。 |
-| `ExecutionScope` | 执行入口能力角色（launch + terminate 语义）。       |
-| `LimboScope`     | 结构性修剪承接角色（全局单例，见 §2.9）。           |
-
-创建约束：`StandardScope`、`SupervisorScope`、`GovernorScope` 可由 sigil 创建；`ExecutionScope` 与 `LimboScope` 为系统保留，不作为 sigil 创建目标。
-
-### 2.4 执行入口能力视图
-
-执行入口能力视图由 executor 基于 Scope 派生：
-
-| 视图                 | 能力                 | 句柄类型            |
-| -------------------- | -------------------- | ------------------- |
-| `ExecutionScopeRoot` | `launch + terminate` | `ExecutionScopeRef` |
-| `ExecutionScope`     | `launch + terminate` | `ExecutionScopeRef` |
-
-`ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异仅在于身份位置（全局根锚点），不在于能力集合或句柄类型。
-
-依赖方向：executor 建立在 `Scope/Wisp/Sigil` 之上；`sigils/contracts` 不反向依赖 executor。
-
-### 2.5 Process
+### 2.4 Process
 
 Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
@@ -92,13 +71,15 @@ Process 在生命周期收敛中存在参与属性（`participation`）：
 - `tracked`：计入 Scope “变空”判定。
 - `auxiliary`：不计入 Scope “变空”判定，仅作为附属并发单元存在。
 
-### 2.6 Processor 与 EventQueue
+### 2.5 Processor 与 EventQueue
 
 `Processor` 是系统唯一的逻辑原子执行权令牌。`EventQueue` 存放可运行的 Process。
 
-### 2.7 MessageKey 与消息传递
+kernel 的最小驱动模型是 FIFO queue：可运行 Process 按入队顺序推进。系统若需要更复杂的调度策略，可在这个最小模型之上追加组织。
 
-`MessageKey<T>` 是 phantom-typed 不透明令牌，由 `messageKey<T>()` 创建。它标识的是 Scope 内 mailbox 的匹配 key，而不是一个脱离 Scope 独立存在的通道。持有令牌即具备发送或接收能力（capability 模型）。
+### 2.6 MessageKey 与消息传递
+
+`MessageKey<T>` 是 phantom-typed 不透明令牌，由 `messageKey<T>()` 创建。它标识 Scope 内 mailbox 的匹配 key。持有令牌即具备发送或接收能力（capability 模型）。
 
 mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果收敛和结构化并发的主路径。
 
@@ -109,13 +90,13 @@ mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果�
 
 每条消息恰好投递给一个接收者（单消费者语义）。多个 Process 阻塞在同一 `(Scope, MessageKey)` 时，最早阻塞的 Process 优先获得下一条消息。
 
-消息队列在 kernel 语义层为逻辑无界；executor 实现可施加容量约束（超限触发 failure），此为实现策略而非语义定义。
+消息队列在 kernel 语义层为逻辑无界；具体实现可施加容量约束（超限触发 failure），此为实现策略而非语义定义。
 
 消息传递协议的正确性不依赖调度顺序——Send 在 Receive 到达前执行时，值入 buffer 而非丢弃；Receive 在 Send 到达前执行时，阻塞等待。任意 Processor 数量与调度策略下行为一致。
 
-### 2.8 FutureKey / FutureSettleKey 与单次收敛
+### 2.7 FutureKey / FutureSettleKey 与单次收敛
 
-`FutureKey<Value>` 与 `FutureSettleKey<Value>` 是成对出现的 phantom-typed 不透明令牌，其中 `Value` 表示成功值类型。它们共同标识 owner Scope 内一个 **单次收敛槽位**，而不是消息队列或独立运行实体。
+`FutureKey<Value>` 与 `FutureSettleKey<Value>` 是成对出现的 phantom-typed 不透明令牌，其中 `Value` 表示成功值类型。它们共同标识 owner Scope 内一个 **单次收敛槽位**。
 
 普通 future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到一对 key：`[FutureKey, FutureSettleKey]`。future 本体的生命周期仍附着于 owner Scope。
 
@@ -124,7 +105,7 @@ mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果�
 - `pending`：尚未收敛
 - `settled(value)`：已以某个 `Either<Failure, T>` 结果收敛
 
-future 的语义中心是“同一结果可被重复观察”，而不是消息消费：
+future 的语义中心是“同一结果可被重复观察”：
 
 - `Wait(futureKey)`：等待该 future 收敛，并返回同一个 settled 结果
 - `Poll(futureKey)`：非阻塞观察；未收敛返回 `None`，已收敛返回 `Some(result)`
@@ -136,21 +117,21 @@ future 的语义中心是“同一结果可被重复观察”，而不是消息�
 
 owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 `FutureKey<T>` / `FutureSettleKey<T>` 的内部结果域固定为 `Either<Failure, T>`；`Failure` 不是调用点可进一步参数化的第二层泛型。
 
-`ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一观察协议，但它们不是由 `Future()` sigil 直接创建的普通结果槽。两者的 payload 分别固定为 `Right<ScopeExit<T>>` 与 `Right<ProcessExit<T>>`，用于表达生命周期终态的可观察面。
+`ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一观察协议。两者的 payload 分别固定为 `Right<ScopeExit<T>>` 与 `Right<ProcessExit<T>>`，用于表达生命周期终态的可观察面。
 
-### 2.9 Limbo
+### 2.8 结构性修剪承接位
 
-系统包含全局唯一的 `LimboScope` 单例。
+若系统支持结构性修剪，则需要维护一个全局承接位来接住被剪下的 Scope 子树。
 
 - 常态下不发生 Scope 父子迁移。
-- 仅当最近祖先 GovernorScope 的 reaper handler 给出 `Prune` 仲裁时，目标 Scope 从原树断开并挂接到 Limbo 下。
+- 仅当系统决定执行 `Prune` 时，目标 Scope 从原树断开并挂接到该承接位下。
 - 迁移保持被迁移子树的原子结构（仅变更根节点父指针），被迁移 Scope 状态变为 `InLimbo`。
 
 ---
 
 ## 3. 执行循环
 
-微内核以迭代方式推进执行，每轮包含反应相与策略相。
+微内核以迭代方式推进执行；其最小驱动形态是 FIFO queue。
 
 ### 3.1 调度原则：广度优先
 
@@ -172,18 +153,9 @@ EventQueue 非空时重复：
    - 发生 Failure，P 退出为 `Failed(failure)`。
 3. Processor 回到微内核。
 
-### 3.3 策略相（Schedule）
+### 3.3 就绪推进
 
-EventQueue 为空且 Processor 在微内核手中时：
-
-1. 微内核以 Process 形式运行该 Scope 的 Scheduler。
-2. Scheduler 选择可运行 Process 并送入 EventQueue。
-3. Scheduler 让出 Processor 后进入下一轮反应相。
-
-GovernorScope 的 scheduler handler 触发语义：
-
-- scheduler handler 由治下 Scope 的就绪 Process 活动驱动触发。
-- 每次触发仅针对一个就绪 Process 输入执行一次 handler。
+FIFO queue 是 kernel 语义的最小闭环。
 
 ---
 
@@ -214,7 +186,7 @@ Process 与 Scope 均有三种互斥终态：
 
 - Scope 内任一 Process 执行 `Halt()` 并以 `Failed(failure)` 退出
 - Scope 内任一 Process 以 `Failed(failure)` 退出
-- 从后代链路接收到 `Failed(failure)` 传播（仅适用于传播策略的角色）
+- 从后代链路接收到 `Failed(failure)` 传播（仅适用于传播型 Scope）
 - 从祖先 Scope 收到终止级联
 - Scope 变空（不再包含任何 `tracked` Process）
 
@@ -232,29 +204,23 @@ Process 与 Scope 均有三种互斥终态：
 
 ### 4.5 终态上传策略
 
-子 Scope 终态向父 Scope 上传按父角色语义处理：
+子 Scope 终态向父 Scope 上传按父 Scope 的 failure 上传模式处理：
 
-- **非 SupervisorScope**：传播策略——后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
-- **SupervisorScope**：收敛策略——后代 `failed/terminated` 不升级为祖先失败，本地收敛为可观察结果。
+- **传播型 Scope**：后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
+- **收敛型 Scope**：后代 `failed/terminated` 不升级为祖先失败，本地收敛为可观察结果。
 
 `terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
 
-kernel 的结构化并发以传播策略为默认形态：旁支失败沿 Scope 树向祖先链传播；`SupervisorScope` 承担显式收敛边界的职责。
+kernel 的结构化并发以传播型 Scope 为默认形态：旁支失败沿 Scope 树向祖先链传播；收敛型 Scope 承担显式收敛边界的职责。
 
 通过 `Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 观察终态，仅提供结果可见性，不构成对上传策略的拦截。
 
-### 4.6 结构性收敛：Reaper
+### 4.6 结构性收敛：Prune
 
-当 Scope 处于 Closing 且终止无法推进到 Exited 时，微内核运行其最近祖先 GovernorScope 的 reaper handler。仲裁决定：
+当 Scope 处于 Closing 且终止无法推进到 Exited 时，系统可以追加结构性修剪。仲裁决定：
 
 - `none`：继续等待 cleanup 自行收敛（Wait）。
-- `some(failure)`：执行结构性修剪（Prune）：将待清理后代 Scope 子树断开并挂接到 Limbo，并以该 `failure` 使治理边界进入 Failed。
-
-GovernorScope 的 reaper handler 触发语义：
-
-- reaper handler 不因常规就绪活动触发。
-- 仅在目标 Scope 已进入 Closing 且完成一次面向治下 Process 的终止推进（terminate pass）后触发。
-- 每次触发仅针对一个临时挂起 Process 输入执行一次 handler。
+- `some(failure)`：执行结构性修剪（Prune）：将待清理后代 Scope 子树断开并挂接到结构性修剪承接位，并以该 `failure` 使治理边界进入 Failed。
 
 ---
 
@@ -262,11 +228,11 @@ GovernorScope 的 reaper handler 触发语义：
 
 ### 5.1 声明与解释边界
 
-`sigils/` 提供 sigil **声明对象**（指令形状），表达"要做什么"与"echo 形状"。对象本身不具备解释能力；解释、调度与状态变更由 executor 完成。
+`sigils/` 提供 sigil **声明对象**（指令形状），表达"要做什么"与"echo 形状"。运行时读取这些对象并推进状态。
 
 ### 5.2 原子性
 
-executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
+运行时解释到 sigil 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
 
 这里的“一个原子步骤”仅覆盖 sigil 解释本身，不自动包含后继的 `resonate(echo)`：
 
@@ -288,7 +254,7 @@ executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果�
 
 #### Branch(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
 
-在调用方 Scope 下创建子 Scope 与根 Process。默认创建 `StandardScope`，可通过 `spec` 指定角色。
+在调用方 Scope 下创建子 Scope 与根 Process。默认创建传播型 Scope；可通过 `spec` 显式指定该子 Scope 的 failure 上传模式。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
@@ -299,24 +265,13 @@ executor 解释到 sigil 时，以微内核一个原子步骤处理之，效果�
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
-- `options.participation`：`tracked | auxiliary`，默认 `tracked`。两者语义见 §1.5；Scope “变空”触发见 §3.3。
+- `options.participation`：`tracked | auxiliary`，默认 `tracked`。两者语义见 §2.4；Scope “变空”触发见 §4.3。
 
-#### 治理 Scope 创建 `[Non-Blocking]`
-
-kernel 支持通过 sigil 创建 `GovernorScope` 与 `SupervisorScope`。`SupervisorScope` 通过 `Branch(ritual, spec)` 创建（`spec.role = "supervisor"`）。基础治理层级需满足 `GovernorScope → 执行子树根 Scope`。
-
-治理角色的 `spec` 契约：
-
-- `GovernorScopeSpec`：`spec.role = "governor"`，并携带 `capabilities`（sum type）：
-- `coverage = "scheduler"`：只提供 `scheduler(readyProcess) => Wisp<Processor>`。
-- `coverage = "reaper"`：只提供 `reaper(suspendedProcess) => Wisp<Option<Failure>>`。
-- `coverage = "full"`：同时提供 `scheduler + reaper` 两类 handler。
-
-### 5.2 调度推进（内核内部）
+### 6.2 调度推进（内核内部）
 
 EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢复等语义事件产生并推进到执行循环。
 
-### 5.3 控制与等待
+### 6.3 控制与等待
 
 #### Halt(failure?) → Failure `[Blocking]`
 
@@ -337,7 +292,7 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 返回 result：`Either<Failure, T>`
 - 多个观察者可同时等待；future 收敛后都恢复到同一个结果。
 
-通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察生命周期终态时，`Wait` 的返回值分别为 `Right<ScopeExit<T>>` / `Right<ProcessExit<T>>`。`InLimbo` 为结构状态，不作为独立返回分支暴露；进入 InLimbo 的目标按 `failed/terminated` 终态收敛。
+通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察生命周期终态时，`Wait` 的返回值分别为 `Right<ScopeExit<T>>` / `Right<ProcessExit<T>>`。进入 `InLimbo` 的目标按 `failed/terminated` 终态收敛。
 
 #### Poll(futureKey) → Option\<result\> `[Non-Blocking]`
 
@@ -368,14 +323,6 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 调用方 Process 主动释放 Processor（协作式让权）。
 
-#### 待定 sigil（概念保留）
-
-以下 sigil 当前保留为语义占位，具体对象形态（签名、返回值、阻塞分类与可见性约束）待 executor、scheduler 与 reaper 策略定稿后回填：
-
-- `Terminate(processRef)`
-- `PollProcess(processRef)`
-- `PollScope(scopeRef)`
-
 ### 5.4 上下文与自省
 
 #### Bind(key, value) → void `[Non-Blocking]`
@@ -392,29 +339,29 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 ---
 
-## 6. Primitives
+## 7. Primitives
 
-### 6.1 定位
+### 7.1 定位
 
 Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个 primitive 产出 `Wisp<T>`，由一条或多条 sigil 步骤组合而成。
 
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
-- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待、待定的 `Terminate(processRef)`）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
 
 primitive 不等于 sigil：
 
-- sigil 是微内核的原子指令，由 executor 解释。
-- primitive 是 Wisp 片段的组合器，在 Wisp 代数内完成，不引入新的 executor 解释分支。
+- sigil 是微内核的原子指令，由运行时解释。
+- primitive 是 Wisp 片段的组合器，在 Wisp 代数内完成，不引入新的微内核解释分支。
 
-### 6.2 失败通道
+### 7.2 失败通道
 
 涉及生命周期等待（Scope 或 Process）的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit/ProcessExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(failure)`，`terminated → Left(scopeTerminated)`。
 
-这一分层使 kernel 层的失败保持可组合、可推理，而不依赖宿主异常机制。host 在适配边界统一解包 Either，将 Left 收敛为异常抛出。
+这一分层使 kernel 层的失败保持可组合、可推理，而不依赖异常机制。
 
-### 6.3 并发构造 primitives
+### 7.3 并发构造 primitives
 
 #### all(branches) → Wisp\<FutureKey\<T\>\>
 
@@ -430,7 +377,7 @@ primitive 不等于 sigil：
 
 #### enclose(ritual) → Wisp\<Either\<Failure, T\>\>
 
-创建一个显式 `SupervisorScope` 子 Scope，并等待该子 Scope 收敛。`enclose` 表达独立的 supervisor boundary，用于承载一个子树的收敛结果。
+创建一个显式收敛型子 Scope，并等待该子 Scope 收敛。`enclose` 表达独立的收敛边界，用于承载一个子树的收敛结果。
 
 #### resumable(ritual) → Wisp\<FutureKey\<T\>\>
 
@@ -442,7 +389,7 @@ primitive 不等于 sigil：
   - 命中：把 `failure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待 recovery future 收敛；其结果作为 entry result future 的最终结果。
 - entry process 成功后的 traced scope 后续失败：不回写 entry result future，而是按默认失败传播语义使调用方 Scope 失败。
 
-### 6.4 future、等待与控制 primitives
+### 7.4 future、等待与控制 primitives
 
 #### future() → Wisp\<[FutureKey\<T\>, FutureSettleKey\<T\>]>
 
@@ -462,7 +409,7 @@ primitive 不等于 sigil：
 
 #### guard(entry, recover) → Wisp\<FutureKey\<void\>\>
 
-创建 `StandardScope` 子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 scope 的 `exitFuture<void>`。
+创建传播型子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 scope 的 `exitFuture<void>`。
 
 #### halt(failure?) → Wisp\<never\>
 
@@ -476,7 +423,7 @@ primitive 不等于 sigil：
 
 封装 Cede sigil，协作式让权。
 
-### 6.5 上下文与自省 primitives
+### 7.5 上下文与自省 primitives
 
 #### bind(key, value) → Wisp\<void\>
 
