@@ -96,6 +96,13 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自�
 
 这些治理策略需要落实为可执行的 handler 或流程，并接入运行循环。
 
+这里保留一个明确的设计方向：执行环境应允许自定义 **scheduler** 与 **reaper** 这两类治理能力。
+
+- **scheduler**：决定 runnable process 的选择与推进策略。
+- **reaper**：决定 closing 无法自然收敛时，是否继续等待、失败收敛或进入结构性修剪。
+
+这类能力属于 `executor` 的环境治理问题，而不是 `ScopeDescriptor` 的稳定语义字段；其承载形态当前待定。若未来引入 governor / governance 设计，也应把它理解为治理角色或治理对象，而不是 `Scope` 的分类机制。
+
 ### 4.3 结构性修剪承接位
 
 结构性修剪承接位是全局唯一的位置，用来接住无法在原树上自然收敛、且仍需保留的 Scope 子树。
@@ -140,3 +147,5 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自�
 - 把 future settlement、termination 与 cleanup registration 这些外部能力接入环境内部。
 - 在需要时接入相应的调度、回收或治理策略。
 - 维护全局唯一的结构性修剪承接位，用于结构性修剪。
+
+---

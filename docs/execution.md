@@ -24,8 +24,8 @@
   证据：`packages/kernel/src/primitives-kit/resumable.ts`
 - `halt` 的解释仍未落实为完整的 scope 关闭、失败传播与后代级联终止流程。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
-- `governor` 相关 descriptor 扩展仍停留在 `kernel/src/scopes/`，但尚未重新挂接到新的 interpreter / executor 主调用链。  
-  证据：`packages/kernel/src/scopes/governor.ts`、`packages/kernel/src/executor/*.ts`
+- `governor` 相关设计已从当前代码主路径移除，后续若需要恢复，必须以新的 executor / governance 设计重新引入，而不是沿用旧的 scope taxonomy 壳层。  
+  证据：`packages/kernel/package.json`、`packages/kernel/vite.config.ts`
 
 ## 3. 当前已落地状态
 
@@ -95,6 +95,8 @@
   证据：`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/spawn.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - host 侧 `self` 的公开 echo 命名也已与 kernel 保持一致：`SelfDescriptor` 残留已收口为 `SelfHandle`。  
   证据：`packages/host/src/contracts/kernel.ts`、`packages/host/src/primitives/self.ts`
+- `kernel/src/scopes/` 及 `@shajara/kernel/scopes` 子路径已退出当前实现基线；scope descriptor 默认值现在只在具体 sigil / runtime 调用点以内联字面量表达。  
+  证据：`packages/kernel/package.json`、`packages/kernel/vite.config.ts`、`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/spawn.ts`
 - `send` / `receive` 协议已以 scope-centric 语义完整落地。`receive` 的语义主语确立为 scope：`RuntimeScope.receive(process, messageKey)` 是公开协议登记入口，表达"在当前 scope 上登记某 process 对某 messageKey 的接收等待"；`RuntimeProcess.receive(messageKey)` 只负责 process 局部等待态迁移，不再单独承担协议主语语义。`Interpreter.#receive(...)` 改为调用 `scope.receive(process, messageKey)` 而不是直接操作 process。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeScope.send(...)` 第三个参数统一命名为 `value`（与 sigil 层、Interpreter 层对齐，不再用 `message`）；send 路径已完整落地：`#acceptMessage` 优先尝试经由 `#deliverToReceiver` 直接投递给 receiverQueue 队首的等待 process；若无等待者则回退到 `#bufferMessage` 入 mailbox FIFO 队列。  
@@ -133,8 +135,6 @@
 - `RuntimeScope.send` 的 wake-up protocol 已显式 `notImplemented`。
 - `RuntimeScope.isClosed` 仍是占位实现。
 - Future 路径（`poll / wait / settle` 与 receiver wake-up）仍是占位。
-- `standard / supervisor / governor` 子路径仍保留在 `kernel/src/scopes/`，但其中只有 descriptor 常量与 `governor` 扩展仍有留存；它们不再代表另一套稳定 taxonomy。
-- `governor` 相关 descriptor 扩展仍保留 executor-oriented capability 字段，但这层能力尚未重新挂接到新的 interpreter / executor 主调用链；它目前只是 descriptor 形状上的兼容承载位，而不是稳定语义闭环。
 - `Interpreter.observeRunnable(...)` 的代码形态仍未跟上新的文档基线；其目标语义已收口为 scope 子树级、带遮蔽关系的 runnable 驱动接面。
 
 ## 5. 下一步

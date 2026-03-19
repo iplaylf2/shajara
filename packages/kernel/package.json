@@ -17,11 +17,6 @@
       "import": "./dist/sigils.js",
       "require": "./dist/sigils.cjs"
     },
-    "./scopes": {
-      "types": "./dist/scopes.d.ts",
-      "import": "./dist/scopes.js",
-      "require": "./dist/scopes.cjs"
-    },
     "./utils": {
       "types": "./dist/utils.d.ts",
       "import": "./dist/utils.js",

@@ -62,6 +62,8 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 `FailureMode` 承载的就是 `ScopeDescriptor` 中这条稳定语义边界。
 
+除上述字段外，本节不再为 `ScopeDescriptor` 定义其他稳定语义。
+
 ### 2.4 Process
 
 Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。

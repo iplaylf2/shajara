@@ -31,6 +31,7 @@
 - 字段全必填时使用 `*Config`，不使用 `*Options`。
 - 创建时固定、供运行时读取的对象声明信息使用 `*Descriptor`；不要以 `metadata` 或泛化的 `policy` 命名这类核心语义载体。
 - 显式类型 shape 若已是稳定语义概念，应由对应语义宿主提供命名 alias；若只服务于某个实现边界，则 alias 应贴近该边界承载体。
+- 不要恢复 `ScopeSpec` 或 `standard / supervisor / governor` 这类 scope taxonomy 作为 kernel 设计基线；若未来需要调度/回收治理扩展，应直接围绕 executor / governance 边界重新设计。
 
 ## 4. 实现落位
 
@@ -45,7 +46,6 @@
 | `kernel/src/sigils/`                  | sigil 声明 + index                                           |
 | `kernel/src/sigils.ts`                | sigil 公共入口                                               |
 | `kernel/src/primitives/`              | 原语 + index                                                 |
-| `kernel/src/scopes/`                  | scope 内置 descriptor 条目或构造辅助                         |
 | `kernel/src/interpreter/`             | `Interpreter` 单源；解释器局部 alias 贴近对应 runtime 承载体 |
 | `kernel/src/interpreter.ts`           | `Interpreter` 公共入口                                       |
 | `kernel/src/executor/`                | 执行入口契约与 executor 衍生句柄（如 `ExecutionScopeRef`）   |
@@ -56,7 +56,7 @@
 | `host/src/boundary/`                  | host↔kernel 边界共享支撑                                     |
 | `host/src/errors/`                    | 错误类型                                                     |
 
-- kernel 对外导出采用根入口分组导出；若保留 `@shajara/kernel/scopes` 子路径，其职责只应是 scope descriptor 相关构造辅助，而不是承载另一套独立 taxonomy。
+- kernel 对外导出采用根入口分组导出；不要再保留 `@shajara/kernel/scopes` 这类为历史 taxonomy 服务的子路径。
 
 ## 5. 示例约束
 

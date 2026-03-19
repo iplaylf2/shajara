@@ -6,7 +6,6 @@ export default defineConfig({
     lib: {
       entry: {
         index: "src/index.ts",
-        scopes: "src/scopes.ts",
         sigils: "src/sigils.ts",
         utils: "src/utils.ts",
       },
