@@ -2,8 +2,6 @@
 
 本文档定义 `executor` 的职责、边界与设计方向。
 
-`executor` 建立在 `Interpreter` 之上，承诺执行环境的组织能力。
-
 ---
 
 ## 1. 主题
@@ -17,7 +15,7 @@
 - 维护对运行中 Scope 的外部终止注入能力。
 - 维护结构性清理与附加治理所需的环境状态。
 
-因此，`executor` 的复杂性来自环境治理与入口组织。
+复杂性来自环境治理与入口组织。
 
 ## 2. 稳定接口
 
@@ -29,7 +27,7 @@
 - `terminate(scope): void`
 - `registerCleanup(ritual, cleanup): void`
 
-这些签名表达了 `executor` 的职责边界。
+这些签名定义了 `executor` 的稳定外部能力。
 
 ### 2.1 `rootScope`
 
@@ -41,7 +39,7 @@
 
 `launch(scope, ritual)` 表示在某个 `ExecutionScopeRef` 下启动新的入口 ritual，并返回 `LaunchHandle<T>`。
 
-`LaunchHandle<T>` 的形状进一步约束了 `executor` 的承诺：
+`LaunchHandle<T>` 由三部分组成：
 
 - `ref: ExecutionScopeRef`：每次 launch 都要产出一个新的执行 scope 引用。
 - `onSettled(listener)`：调用方可以订阅该入口的单次收敛结果。
@@ -53,36 +51,24 @@
 - `failure`
 - `terminated`
 
-这说明 `executor` 需要把入口 scope 的终态整理成可观察的启动结果。
-
 ### 2.3 `settle`
 
 `settle(futureSettle, result)` 负责向运行中的环境注入 future 的收敛结果。
-
-这意味着 `executor` 必须维护可从外部寻址的 future settlement capability，并保证它能落入正确的运行环境中。
 
 ### 2.4 `terminate`
 
 `terminate(scope)` 负责终止指定 `ExecutionScopeRef`。
 
-这意味着 `executor` 必须能把外部终止请求路由到对应 execution scope，并驱动其进入关闭与收敛流程。
-
 ### 2.5 `registerCleanup`
 
 `registerCleanup(ritual, cleanup)` 负责把 cleanup 绑定到 ritual 入口。
-
-这意味着 `executor` 需要维护“入口 ritual -> cleanup”这一类运行时登记，并在关闭或中断时正确执行。
 
 ## 3. 依赖关系
 
 依赖方向固定为：`executor` 依赖 `Interpreter`。
 
-`executor` 建立在 `Interpreter` 之上：
-
 - `Interpreter` 持有并推进封闭解释环境。
 - `executor` 组织入口视图、环境治理与外部注入能力。
-
-这意味着 `executor` 的设计前提是：解释过程由 `Interpreter` 承担，执行环境治理由 `executor` 承担。
 
 ## 4. 执行环境对象
 
@@ -94,7 +80,7 @@
 
 `ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异只在于身份位置，不在于能力集合；两者都以 `ExecutionScopeRef` 作为句柄，并承载 `launch + terminate` 语义。
 
-因此，`executor` 的一项核心职责，就是把普通 `Scope` 组织成可供外部启动与终止的 execution scope 视图。
+`executor` 需要把普通 `Scope` 组织成可供外部启动与终止的 execution scope 视图。
 
 ### 4.2 环境治理视图
 
@@ -116,8 +102,6 @@
 
 ## 5. 运行循环中的治理职责
 
-`executor` 承诺的环境组织能力，会直接体现在运行循环里。
-
 ### 5.1 调度扩展
 
 若执行环境需要更复杂的 ready 选择，`executor` 应把自己的调度策略接到解释器暴露的 runnable 接面上。
@@ -131,24 +115,14 @@
 - `none`：继续等待 cleanup 自行收敛。
 - `some(failure)`：执行结构性修剪，把子树挂到承接位，并以该 failure 使治理边界进入失败。
 
-因此，`executor` 既要支持普通终止流程，也要支持“无法自然收敛时的结构性处置”。
-
 ## 6. 与 `Interpreter` 的协作
 
 `executor` 使用 `Interpreter` 的两类能力：
 
-- 公开能力：
+- 公开能力：`step`、`spawn`、`lookup`、`poll`、`wait`
+- 受保护扩展点：`onClosing`
 
-- `step`
-- `spawn`
-- `lookup`
-- `poll`
-- `wait`
-
-- 受保护扩展点：
-- `onClosing`
-
-此外，`executor` 也可以使用 `Interpreter.observeRunnable(scopeRef, listener)` 为某个 scope 子树安装 runnable receiver，把自己的调度循环接到解释器暴露的 runnable 驱动接面上。
+此外，`executor` 也可以使用 `Interpreter.observeRunnable(scopeRef, listener)` 为某个 scope 子树安装 runnable receiver，把自己的调度循环接入解释器。
 
 若 `executor` 需要更紧密地组织关闭或收敛过程，可以通过派生 `Interpreter` 并覆写 `onClosing`，把治理能力接入解释过程。
 
@@ -156,11 +130,9 @@
 
 `executor` 的实现应优先围绕以下主线展开：
 
-- 维护一个长期存在的执行环境，而不是一次性运行器。
+- 维护一个长期存在的执行环境。
 - 提供统一的 `rootScope` 作为 execution root。
 - 为每次 `launch` 组织新的 execution scope，并返回稳定的收敛句柄。
 - 把 future settlement、termination 与 cleanup registration 这些外部能力接入环境内部。
 - 在需要时接入相应的调度、回收或治理策略。
 - 维护全局唯一的结构性修剪承接位，用于结构性修剪。
-
-这一方向下，`executor` 保持对 `Interpreter` 的单向依赖，并把稳定的执行环境语义集中收口在自身这一层。

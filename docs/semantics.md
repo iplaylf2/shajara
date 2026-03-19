@@ -47,16 +47,16 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 文档中提到“边界”时，指的是某段计算对应的 Scope。需要精确指称时，以 `Scope` 为准：生命周期、上下文继承、future 归属与失败传播范围，都由该 Scope 承载。
 
-`ScopeRef` 显式携带 `exitFuture`，用于观察该 Scope 的生命周期终态，其值域固定为 `Right<ScopeExit<T>>`。
+`ScopeRef` 显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Scope 入口结果的收敛。
 
-Scope 的稳定语义核只有一条：**failure 是否向父 Scope 上传**。
+Scope 的稳定语义只有一条：**failure 是否向父 Scope 上传**。
 
-因此，Scope 可以收口为两类：
+Scope 可以分为两类：
 
-| 语义类别     | 含义                                                                  |
-| ------------ | --------------------------------------------------------------------- |
-| 传播型 Scope | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。            |
-| 收敛型 Scope | 后代 `failed/terminated` 在本地收敛为可观察结果。                     |
+| 语义类别     | 含义                                                       |
+| ------------ | ---------------------------------------------------------- |
+| 传播型 Scope | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。 |
+| 收敛型 Scope | 后代 `failed/terminated` 在本地收敛。                      |
 
 `ScopeSpec` 承载的就是这条语义边界。
 
@@ -64,7 +64,7 @@ Scope 的稳定语义核只有一条：**failure 是否向父 Scope 上传**。
 
 Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
-`ProcessRef` 也显式携带 `exitFuture`，用于等待该 Process 的生命周期终态，其值域固定为 `Right<ProcessExit<T>>`。
+`ProcessRef` 也显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Process 结果的收敛。
 
 Process 在生命周期收敛中存在参与属性（`participation`）：
 
@@ -115,9 +115,9 @@ future 的语义中心是“同一结果可被重复观察”：
 
 能力边界由 key 形状直接表达：`FutureKey` 只用于观察，`FutureSettleKey` 只用于收敛。settle 权限仍受 Scope 谱系约束：只有 owner Scope 或其后代 Scope 才能对该 future 执行 `Settle`。
 
-owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 `FutureKey<T>` / `FutureSettleKey<T>` 的内部结果域固定为 `Either<Failure, T>`；`Failure` 不是调用点可进一步参数化的第二层泛型。
+owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 `FutureKey<T>` / `FutureSettleKey<T>` 的内部结果域固定为 `Either<Failure, T>`。
 
-`ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一观察协议。两者的 payload 分别固定为 `Right<ScopeExit<T>>` 与 `Right<ProcessExit<T>>`，用于表达生命周期终态的可观察面。
+`ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一 future 观察协议；成功值分别对应 Scope / Process 自身的结果值。
 
 ### 2.8 结构性修剪承接位
 
@@ -140,7 +140,7 @@ owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会
 直接推论：
 
 - 同一 Process 内的连续 Non-Blocking sigil 序列在一次 Processor 持有期间原子完成。
-- Branch/Spawn 语义是"注册将来执行的 Process"，不是立即转移控制权。
+- Branch/Spawn 语义是“注册将来执行的 Process”。
 
 ### 3.2 反应相（Drain）
 
@@ -207,13 +207,13 @@ Process 与 Scope 均有三种互斥终态：
 子 Scope 终态向父 Scope 上传按父 Scope 的 failure 上传模式处理：
 
 - **传播型 Scope**：后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
-- **收敛型 Scope**：后代 `failed/terminated` 不升级为祖先失败，本地收敛为可观察结果。
+- **收敛型 Scope**：后代 `failed/terminated` 在本地收敛。
 
-`terminated` 与 `failed` 语义始终分离：后代 `terminated` 不被重写为祖先 `failed`。
+`terminated` 与 `failed` 分别表示终止级联与失败传播。
 
-kernel 的结构化并发以传播型 Scope 为默认形态：旁支失败沿 Scope 树向祖先链传播；收敛型 Scope 承担显式收敛边界的职责。
+kernel 的结构化并发以传播型 Scope 为默认形态；收敛型 Scope 承担显式收敛边界的职责。
 
-通过 `Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 观察终态，仅提供结果可见性，不构成对上传策略的拦截。
+`Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 只提供结果观察。
 
 ### 4.6 结构性收敛：Prune
 
@@ -234,7 +234,7 @@ kernel 的结构化并发以传播型 Scope 为默认形态：旁支失败沿 Sc
 
 运行时解释到 sigil 时，以微内核一个原子步骤处理之，效果在步骤结束后可见。
 
-这里的“一个原子步骤”仅覆盖 sigil 解释本身，不自动包含后继的 `resonate(echo)`：
+这里的“一个原子步骤”只覆盖 sigil 解释本身：
 
 - 对能立刻得到 echo 的 sigil，该步产出 echo，并把对应 `resonate` 排入待执行 continuation。
 - 对 `[Blocking]` sigil，该步只完成阻塞登记；对应的 `resonate` 在恢复信号到来后转成待执行 continuation，并由后续独立步进执行。
@@ -292,7 +292,7 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 返回 result：`Either<Failure, T>`
 - 多个观察者可同时等待；future 收敛后都恢复到同一个结果。
 
-通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察生命周期终态时，`Wait` 的返回值分别为 `Right<ScopeExit<T>>` / `Right<ProcessExit<T>>`。进入 `InLimbo` 的目标按 `failed/terminated` 终态收敛。
+通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察时，`Wait` 的返回值仍是 `Either<Failure, T>`。进入 `InLimbo` 的目标最终也通过同一协议收敛。
 
 #### Poll(futureKey) → Option\<result\> `[Non-Blocking]`
 
@@ -348,7 +348,7 @@ Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
-- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如基于 `processRef.exitFuture` 的终态等待）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如等待 `processRef.exitFuture`）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
 
 primitive 不等于 sigil：
 
@@ -357,7 +357,7 @@ primitive 不等于 sigil：
 
 ### 7.2 失败通道
 
-涉及生命周期等待（Scope 或 Process）的 primitive 统一以 `Either<Failure, T>` 表达失败：`Right` 为成功值，`Left` 为失败/终止载荷。该 Either 由 primitive 对等待结果（`ScopeExit/ProcessExit`）的显式收敛逻辑构造——`completed → Right`，`failed → Left(failure)`，`terminated → Left(scopeTerminated)`。
+涉及生命周期等待（Scope 或 Process）的 primitive 直接复用 future 结果通道：`Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 返回 `Either<Failure, T>`。
 
 这一分层使 kernel 层的失败保持可组合、可推理，而不依赖异常机制。
 
@@ -409,7 +409,7 @@ primitive 不等于 sigil：
 
 #### guard(entry, recover) → Wisp\<FutureKey\<void\>\>
 
-创建传播型子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 scope 的 `exitFuture<void>`。
+创建传播型子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 Scope 的 `FutureKey<void>`。
 
 #### halt(failure?) → Wisp\<never\>
 

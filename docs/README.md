@@ -34,10 +34,9 @@ shajara 由两层构成：
 
 每个概念只在一处文档定义，其余文档仅引用：
 
-- `wisp / sigil / echo / resonance / relic / ritual` 这一组核心语义、Scope 的 failure 上传语义、sigil 语义、执行循环 → `semantics.md`
-- `Interpreter` 的对象设计、步进模型、runnable 驱动接面与保护扩展点 → `interpreter.md`
+- `wisp / sigil / echo / resonance / relic / ritual`、Scope 语义、sigil 语义、执行循环 → `semantics.md`
+- `Interpreter` 的对象设计、步进模型与接口语义 → `interpreter.md`
 - `executor` 的环境治理职责与对 `Interpreter` 的依赖关系 → `executor.md`
 - host 层架构与适配方向 → `host.md`
 - 用户可见 API 形状 → `api.md`
 - 实现期约束 → `implementation-constraints.md`
-- `MessageKey` 的 mailbox 协议语义，以及 `FutureKey / FutureSettleKey` 的单次收敛语义 → `semantics.md`

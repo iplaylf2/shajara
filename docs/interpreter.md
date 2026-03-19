@@ -8,13 +8,13 @@
 
 ## 1. 主题
 
-`Interpreter` 提供的是一个可步进、可观察、可驱动的解释环境。
+`Interpreter` 提供的是一个可步进的封闭解释环境。
 
 它承接三类事情：
 
 - 维护解释环境中的 Scope、Process、future、上下文与消息状态。
 - 解释单个 Process 的当前 Wisp，并推进运行时状态。
-- 向外暴露最小的观察与驱动接面。
+- 向外暴露最小的接口面。
 
 它暴露的根引用具有固定含义：
 
@@ -69,23 +69,23 @@
 
 `spawn(scopeRef, ritual)` 用于把新的 Process 插入到当前解释环境中。
 
-它表达的是解释环境内部新增并发参与者的统一入口。
+它表达的是解释环境内部新增并发参与者的入口。
 
-## 4. 观察与驱动接面
+## 4. 接口
 
 ### 4.1 `observeRunnable`
 
-`observeRunnable(scopeRef, listener)` 是解释环境对外暴露的 runnable 驱动接面。
+`observeRunnable(scopeRef, listener)` 用于为某棵 Scope 子树安装 runnable receiver。
 
-它的输入不仅是一个 listener，还包含“接管哪棵 scope 子树”的信息。该接口的语义核心是**遮蔽**：
+receiver 按 Scope 树形成就近接收关系：
 
-- 当前 scope 若安装了本地 runnable receiver，则它优先接收该 scope 子树中的 runnable process。
-- 子 scope 若再安装自己的 receiver，则它会遮蔽祖先 receiver 对该子树的接收。
-- `unsubscribe` 撤销的是当前 scope 的本地接线；撤销后，该子树回退到最近祖先 receiver，若祖先链上都没有，则回退到默认驱动路径。
+- 当前 scope 上安装的 receiver 负责该子树中的 runnable process。
+- 子 scope 安装 receiver 后，负责它自己的子树。
+- `unsubscribe` 撤销当前 scope 的本地接线；该子树随后回到最近祖先 receiver，或回到默认驱动路径。
 
 `Interpreter.observeRunnable(...)` 只负责按 `scopeRef` 寻址并转发给目标 `RuntimeScope`。
 
-### 4.2 只读观察接口
+### 4.2 只读接口
 
 `Interpreter` 提供一组只读观察接口：
 

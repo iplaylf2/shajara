@@ -28,7 +28,7 @@ host 通过执行入口把降解后的 Ritual 提交给 executor。
 | `encodeRitual` | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需编码为 `RiteCoroutine<T>`。     |
 | `decodeRitual` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界解码为可执行 `Ritual<T>`。 |
 
-`RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一为 ritual，而不是已实例化的 coroutine。
+`RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一采用 ritual。
 
 术语方向固定：`encode` = kernel → host（编码为宿主承载形态），`decode` = host → kernel（解码回 kernel ritual）。
 
@@ -59,7 +59,7 @@ host 以 `launch` 为统一收敛锚点：
 - kernel 侧通过 `wait(futureKey)` 等待收敛。
 - 宿主回调通过 `executor.settle(futureSettleKey, result)` 注入最终结果。
 
-宿主桥接通过 future settlement capability 完成单次收敛。`Scope`、并发与结果收敛在 host 公开 API 中分别落在 `createScope`、`spawn` 与 future 相关原语上。
+`Scope`、并发与结果收敛在 host 公开 API 中分别落在 `createScope`、`spawn` 与 future 相关原语上。
 
 ## 6. Scope 引用类型
 
