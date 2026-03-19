@@ -82,6 +82,8 @@
 
 `executor` 需要把普通 `Scope` 组织成可供外部启动与终止的 execution scope 视图。
 
+execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自带的 descriptor 仍由创建时固定；`executor` 可以读取这些只读声明信息来决定如何接入治理，但不负责在运行中改写它们。
+
 ### 4.2 环境治理视图
 
 调度、回收与附加治理由 `executor` 组织。
@@ -125,6 +127,8 @@
 此外，`executor` 也可以使用 `Interpreter.observeRunnable(scopeRef, listener)` 为某个 scope 子树安装 runnable receiver，把自己的调度循环接入解释器。
 
 若 `executor` 需要更紧密地组织关闭或收敛过程，可以通过派生 `Interpreter` 并覆写 `onClosing`，把治理能力接入解释过程。
+
+这里的治理扩展建立在既有对象语义之上：`executor` 读取 `Scope` / `Process` 的 descriptor，决定如何组织调度、关闭和附加治理；descriptor 本身不是 executor 侧注入的运行期配置。
 
 ## 7. 实现导向
 

@@ -29,6 +29,7 @@
 - kernel 中优先使用 `*Relic` 表达语义留存；`*Exit` 仅用于生命周期终态，不可混用。
 - 角色命名使用 `*Scope`，控制面句柄使用 `*Ref`，消息/查找/future capability 令牌使用 `*Key`。
 - 字段全必填时使用 `*Config`，不使用 `*Options`。
+- 创建时固定、供运行时读取的对象声明信息使用 `*Descriptor`；不要以 `metadata` 或泛化的 `policy` 命名这类核心语义载体。
 - 显式类型 shape 若已是稳定语义概念，应由对应语义宿主提供命名 alias；若只服务于某个实现边界，则 alias 应贴近该边界承载体。
 
 ## 4. 实现落位
@@ -37,13 +38,14 @@
 | ------------------------------------- | ------------------------------------------------------------ |
 | `kernel/src/contracts/`               | 核心类型契约                                                 |
 | `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                           |
-| `kernel/src/contracts/scope.ts`       | `ScopeRef/FailureMode` 单源                                  |
+| `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeDescriptor/FailureMode` 单源                  |
+| `kernel/src/contracts/process.ts`     | `ProcessRef/ProcessDescriptor/CompletionMode` 单源           |
 | `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                            |
 | `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey/FutureHandle` 单源                |
 | `kernel/src/sigils/`                  | sigil 声明 + index                                           |
 | `kernel/src/sigils.ts`                | sigil 公共入口                                               |
 | `kernel/src/primitives/`              | 原语 + index                                                 |
-| `kernel/src/scopes/`                  | scope 语义核与内置元数据条目                                 |
+| `kernel/src/scopes/`                  | scope 内置 descriptor 条目或构造辅助                         |
 | `kernel/src/interpreter/`             | `Interpreter` 单源；解释器局部 alias 贴近对应 runtime 承载体 |
 | `kernel/src/interpreter.ts`           | `Interpreter` 公共入口                                       |
 | `kernel/src/executor/`                | 执行入口契约与 executor 衍生句柄（如 `ExecutionScopeRef`）   |
@@ -54,7 +56,7 @@
 | `host/src/boundary/`                  | host↔kernel 边界共享支撑                                     |
 | `host/src/errors/`                    | 错误类型                                                     |
 
-- kernel 对外导出采用根入口分组导出，`@shajara/kernel/scopes` 为 scope failure mode 与内置条目公开子路径。
+- kernel 对外导出采用根入口分组导出；若保留 `@shajara/kernel/scopes` 子路径，其职责只应是 scope descriptor 相关构造辅助，而不是承载另一套独立 taxonomy。
 
 ## 5. 示例约束
 

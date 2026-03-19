@@ -49,16 +49,18 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 `ScopeRef` 显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Scope 入口结果的收敛。
 
-Scope 的稳定语义只有一条：**failure 是否向父 Scope 上传**。
+每个 Scope 在创建时都带有一份只读的 `ScopeDescriptor`。它不是运行中可变更的配置，而是该 Scope 身份的一部分；对象创建后不再改写。
 
-这一语义由 `FailureMode` 表达：
+当前 `ScopeDescriptor` 中稳定进入 kernel 语义的字段只有一条：**failure 是否向父 Scope 上传**。
+
+这一字段由 `FailureMode` 表达：
 
 | `FailureMode` | 含义                                                       |
 | ------------- | ---------------------------------------------------------- |
 | `propagate`   | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。 |
 | `contain`     | 后代 `failed/terminated` 在本地收敛。                      |
 
-`FailureMode` 承载的就是这条语义边界。
+`FailureMode` 承载的就是 `ScopeDescriptor` 中这条稳定语义边界。
 
 ### 2.4 Process
 
@@ -66,7 +68,9 @@ Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，�
 
 `ProcessRef` 也显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Process 结果的收敛。
 
-Process 在生命周期收敛中带有 `CompletionMode`：
+每个 Process 在创建时都带有一份只读的 `ProcessDescriptor`。它同样是创建期固定的声明信息，而不是运行中可重配的参数集合。
+
+当前 `ProcessDescriptor` 中稳定进入 kernel 语义的字段是 `CompletionMode`：
 
 - `structural`：参与 Scope 的完成判定。
 - `detached`：不参与 Scope 的完成判定。
@@ -252,20 +256,20 @@ kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`cont
 
 ### 6.1 创建
 
-#### Branch(ritual, spec?) → { scopeRef, processRef } `[Non-Blocking]`
+#### Branch(ritual, descriptor?) → { scopeRef, processRef } `[Non-Blocking]`
 
-在调用方 Scope 下创建子 Scope 与根 Process。默认创建 `failureMode = "propagate"` 的子 Scope；可显式指定目标 `failureMode`。
+在调用方 Scope 下创建子 Scope 与根 Process。若未显式给出 descriptor，则使用默认 `ScopeDescriptor`；其中稳定进入 kernel 语义的默认字段是 `failureMode = "propagate"`。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
 
-#### Spawn(ritual, options?) → { processRef } `[Non-Blocking]`
+#### Spawn(ritual, descriptor?) → { processRef } `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
-- `options.completionMode`：`structural | detached`，默认 `structural`。两者语义见 §2.4；Scope “变空”触发见 §4.3。
+- 若未显式给出 descriptor，则使用默认 `ProcessDescriptor`；其中稳定进入 kernel 语义的默认字段是 `completionMode = "structural"`。两者语义见 §2.4；Scope “变空”触发见 §4.3。
 
 ### 6.2 调度推进（内核内部）
 

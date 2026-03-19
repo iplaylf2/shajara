@@ -27,8 +27,8 @@
 
 解释环境中的运行时对象按职责分为三类：
 
-- `RuntimeScope`：承接 scope 树、mailbox、scope 派生 future，以及 scope 内部的结构归属。
-- `RuntimeProcess`：承接 process 的局部运行态，例如 continuation、等待态与终态收敛。
+- `RuntimeScope`：承接 scope 树、mailbox、scope 派生 future、scope descriptor，以及 scope 内部的结构归属。
+- `RuntimeProcess`：承接 process descriptor，以及 process 的局部运行态，例如 continuation、等待态与终态收敛。
 - `RuntimeFuture`：承接 future 的单次收敛状态与观察面。
 
 索引对象 `RuntimeIndex` 只负责：
@@ -36,7 +36,7 @@
 - `registerScope / registerProcess / registerFuture`
 - `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle`
 
-`Interpreter` 通过这些运行时对象推进解释环境；它自身不承载 mailbox、future 或 process 局部状态。
+`Interpreter` 通过这些运行时对象推进解释环境；它自身不承载 mailbox、future 或 process 局部状态。与 `Scope` / `Process` 一起创建的 descriptor 由对应 runtime object 持有，解释器只读取这些只读声明信息来解释创建、关闭与收敛行为。
 
 ## 3. 驱动模型
 
