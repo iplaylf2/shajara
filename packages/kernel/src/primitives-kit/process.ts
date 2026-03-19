@@ -4,7 +4,6 @@ import { flow, pipe } from "fp-ts/function";
 import { wisp, wispEither } from "#src/internal/fp";
 import type { either } from "fp-ts";
 import { narrowAs } from "#src/utils";
-import { supervisorScopeSpec } from "#src/scopes";
 
 /**
  * Awaits a process through the in-band completion path only.
@@ -21,7 +20,7 @@ export function awaitProcessInBand<Relic>(processRef: ProcessRef<Relic>): Wisp<R
 
 export function resolvePrimary<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
-    branch(entry, supervisorScopeSpec()),
+    branch(entry, { failureMode: "contain" }),
     wisp.liftF,
     wisp.chainFirstF(({ scopeRef }) => spawn(propagateFailure(scopeRef.exitFuture))),
     wisp.map(({ processRef }) => processRef.exitFuture),

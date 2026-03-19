@@ -1,16 +1,12 @@
-import type { ECHO_TOKEN, ProcessRef, Ritual, SigilShape } from "#src/contracts";
-import type { PartialDeep } from "type-fest";
-import defaults from "defaults";
+import type { ECHO_TOKEN, ProcessDescriptor, ProcessRef, Ritual, SigilShape } from "#src/contracts";
 
 export function spawn<Relic>(
   ritual: Ritual<Relic>,
-  options?: PartialDeep<SpawnConfig>,
+  descriptor: ProcessDescriptor = { completionMode: "structural" },
 ): SpawnSigil<Relic> {
-  const config = defaults(options ?? {}, { participation: "tracked" } as const);
-
   return {
+    descriptor,
     kind: "spawn",
-    participation: config.participation,
     ritual,
   };
 }
@@ -18,12 +14,6 @@ export function spawn<Relic>(
 export interface SpawnSigil<Relic> extends SigilShape {
   readonly kind: "spawn";
   readonly ritual: Ritual<Relic>;
-  readonly participation: SpawnParticipation;
+  readonly descriptor: ProcessDescriptor;
   readonly [ECHO_TOKEN]?: readonly [ProcessRef<Relic>];
 }
-
-export interface SpawnConfig {
-  readonly participation: SpawnParticipation;
-}
-
-export type SpawnParticipation = "tracked" | "auxiliary";

@@ -3,32 +3,32 @@ import type {
   ContextKey,
   FailureShape,
   MessageKey,
+  ProcessDescriptor,
   ProcessRef,
   Ritual,
+  ScopeDescriptor,
   ScopeRef,
-  ScopeSpec,
 } from "#src/contracts";
 import { none, some } from "#src/utils";
 import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
-import type { SpawnParticipation } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
 
 const EMPTY_QUEUE_SIZE = 0;
 
 export class RuntimeScope {
-  public static create(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
-    return new RuntimeScope(entry, spec, RuntimeScope.#sentinel);
+  public static create(entry: Ritual<unknown>, descriptor: ScopeDescriptor): RuntimeScope {
+    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel);
   }
 
-  public branch(entry: Ritual<unknown>, spec: ScopeSpec): RuntimeScope {
+  public branch(entry: Ritual<unknown>, descriptor: ScopeDescriptor): RuntimeScope {
     if (this.#status !== "open") {
       throw new Error("Cannot branch in closing scope.");
     }
 
-    const child = new RuntimeScope(entry, spec, this);
+    const child = new RuntimeScope(entry, descriptor, this);
 
     this.#children.add(child);
 
@@ -85,15 +85,12 @@ export class RuntimeScope {
     return notImplemented("RuntimeScope.observeRunnable");
   }
 
-  public spawn<Relic>(
-    ritual: Ritual<Relic>,
-    participation: SpawnParticipation,
-  ): RuntimeProcess<Relic> {
+  public spawn<Relic>(ritual: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
     if (this.#status !== "open") {
       throw new Error("Cannot spawn in closing scope.");
     }
 
-    const process = new RuntimeProcess<Relic>(this.#ref, ritual, participation);
+    const process = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor);
 
     this.#spawnedProcesses.add(process);
 
@@ -126,6 +123,10 @@ export class RuntimeScope {
     return this.#ref;
   }
 
+  public get descriptor(): ScopeDescriptor {
+    return this.#descriptor;
+  }
+
   public get status(): RuntimeScopeStatus {
     return this.#status;
   }
@@ -142,13 +143,14 @@ export class RuntimeScope {
     return this.#process;
   }
 
-  private constructor(entry: Ritual<unknown>, _spec: ScopeSpec, parent: RuntimeScope) {
+  private constructor(entry: Ritual<unknown>, descriptor: ScopeDescriptor, parent: RuntimeScope) {
     this.#exitFuture = RuntimeFuture.create<unknown>();
     const [scopeExitFuture] = this.#exitFuture.handle;
     this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
 
-    const entryProcess = new RuntimeProcess(this.#ref, entry, "tracked");
+    const entryProcess = new RuntimeProcess(this.#ref, entry, { completionMode: "structural" });
     this.#process = entryProcess;
+    this.#descriptor = descriptor;
 
     this.#parent = parent;
   }
@@ -199,6 +201,7 @@ export class RuntimeScope {
   readonly #ref: ScopeRef<unknown>;
   readonly #process: RuntimeProcess;
   readonly #parent: RuntimeScope;
+  readonly #descriptor: ScopeDescriptor;
 
   #status: RuntimeScopeStatus = "open";
   readonly #children = new Set<RuntimeScope>();

@@ -5,6 +5,6 @@ export {
   type FutureKey,
   type LaunchState,
   type ScopeRef,
-  type SelfDescriptor,
+  type SelfHandle,
   contextKey,
 } from "@shajara/kernel";

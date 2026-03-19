@@ -1,19 +1,20 @@
-import type { FailureShape, ProcessRef, ScopeSpec, Wisp } from "#src/contracts";
+import type { FailureShape, ProcessRef, ScopeDescriptor, Wisp } from "#src/contracts";
 import type { Option } from "#src/utils";
 
-export function governorScopeSpec(config: GovernorScopeSpecConfig): GovernorScopeSpec {
+export function governorScopeDescriptor(
+  config: GovernorScopeDescriptorConfig,
+): GovernorScopeDescriptor {
   return {
     capabilities: config.capabilities,
-    role: "governor",
+    failureMode: "contain",
   };
 }
 
-export interface GovernorScopeSpecConfig {
+export interface GovernorScopeDescriptorConfig {
   readonly capabilities: GovernorCapabilities;
 }
 
-export interface GovernorScopeSpec extends ScopeSpec {
-  readonly role: "governor";
+export interface GovernorScopeDescriptor extends ScopeDescriptor {
   readonly capabilities: GovernorCapabilities;
 }
 

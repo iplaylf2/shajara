@@ -11,7 +11,6 @@ import type {
   SendSigil,
   SettleSigil,
   Sigil,
-  SpawnParticipation,
   SpawnSigil,
   UnbindSigil,
   WaitSigil,
@@ -22,6 +21,7 @@ import type {
   FutureKey,
   FutureResult,
   FutureSettleKey,
+  ProcessDescriptor,
   ProcessRef,
   Resonance,
   Ritual,
@@ -46,11 +46,10 @@ import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import { evoke } from "#src/contracts";
 import { isSome } from "#src/utils";
-import { standardScopeSpec } from "#src/scopes";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
-    this.#rootScope = RuntimeScope.create(entry, standardScopeSpec());
+    this.#rootScope = RuntimeScope.create(entry, { failureMode: "propagate" });
     this.#runtimeIndex.registerScope(this.#rootScope);
   }
 
@@ -96,7 +95,7 @@ export class Interpreter {
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    return this.#spawnIn(this.#resolveScope(scope), worker, "tracked");
+    return this.#spawnIn(this.#resolveScope(scope), worker, { completionMode: "structural" });
   }
 
   public lookup<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>): Option<Value> {
@@ -204,7 +203,7 @@ export class Interpreter {
   }
 
   #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
-    const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.entry, sigil.spec);
+    const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
 
     this.#runtimeIndex.registerScope(branchScope);
 
@@ -236,7 +235,7 @@ export class Interpreter {
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    return this.#spawnIn(this.#resolveScope(process.scopeRef), sigil.ritual, sigil.participation);
+    return this.#spawnIn(this.#resolveScope(process.scopeRef), sigil.ritual, sigil.descriptor);
   }
 
   #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
@@ -293,9 +292,9 @@ export class Interpreter {
   #spawnIn<Relic>(
     scope: RuntimeScope,
     ritual: Ritual<Relic>,
-    participation: SpawnParticipation,
+    descriptor: ProcessDescriptor,
   ): ProcessRef<Relic> {
-    const process = scope.spawn(ritual, participation);
+    const process = scope.spawn(ritual, descriptor);
 
     this.#runtimeIndex.registerProcess(process);
 

@@ -2,27 +2,26 @@ import type {
   ECHO_TOKEN,
   ProcessRef,
   Ritual,
+  ScopeDescriptor,
   ScopeRef,
-  ScopeSpec,
   SigilShape,
 } from "#src/contracts";
-import { standardScopeSpec } from "#src/scopes";
 
 export function branch<Relic>(
   entry: Ritual<Relic>,
-  spec: ScopeSpec = standardScopeSpec(),
+  descriptor: ScopeDescriptor = { failureMode: "propagate" },
 ): BranchSigil<Relic> {
   return {
+    descriptor,
     entry,
     kind: "branch",
-    spec,
   };
 }
 
 export interface BranchSigil<Relic> extends SigilShape {
   readonly kind: "branch";
   readonly entry: Ritual<Relic>;
-  readonly spec: ScopeSpec;
+  readonly descriptor: ScopeDescriptor;
   readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic>];
 }
 

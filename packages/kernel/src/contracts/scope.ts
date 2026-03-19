@@ -6,6 +6,8 @@ export interface ScopeRef<Value> {
   readonly exitFuture: FutureKey<Value>;
 }
 
-export interface ScopeSpec {
-  readonly role: string;
+export type FailureMode = "propagate" | "contain";
+
+export interface ScopeDescriptor {
+  readonly failureMode: FailureMode;
 }

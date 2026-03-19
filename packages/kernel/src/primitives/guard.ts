@@ -22,7 +22,7 @@ function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
       self(),
       wisp.liftF,
       wisp.chainF(({ scopeRef }) => bind(resumableDelegateKey, scopeRef)),
-      wisp.chainF(() => spawn(recoveryWorker(recover), { participation: "auxiliary" })),
+      wisp.chainF(() => spawn(recoveryWorker(recover), { completionMode: "detached" })),
       wisp.chain(entry),
     );
 }

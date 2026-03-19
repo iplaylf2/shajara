@@ -24,10 +24,8 @@
   证据：`packages/kernel/src/primitives-kit/resumable.ts`
 - `halt` 的解释仍未落实为完整的 scope 关闭、失败传播与后代级联终止流程。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`
-- scope taxonomy 仍停留在 `standard / supervisor / governor` 旧形态，尚未收口到以 `ScopeDescriptor` 为承载面的稳定字段分层。  
-  证据：`packages/kernel/src/contracts/scope.ts`、`packages/kernel/src/scopes/*.ts`
-- process completion 仍停留在 `participation = tracked | auxiliary` 旧命名，尚未收口到以 `ProcessDescriptor` 承载的 `CompletionMode = structural | detached`。  
-  证据：`packages/kernel/src/sigils/spawn.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
+- `governor` 相关 descriptor 扩展仍停留在 `kernel/src/scopes/`，但尚未重新挂接到新的 interpreter / executor 主调用链。  
+  证据：`packages/kernel/src/scopes/governor.ts`、`packages/kernel/src/executor/*.ts`
 
 ## 3. 当前已落地状态
 
@@ -51,7 +49,7 @@
   证据：`packages/kernel/src/primitives/index.ts`、`packages/host/src/primitives/index.ts`、`apps/example/src/scenarios.ts`
 - interpreter runtime 文件已按职责拆分为 `runtime-scope.ts` 与 `runtime-process.ts`；原先聚合命名的 `runtime.ts` 已退出该结构。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
-- `RuntimeProcess` 已收口为 process 局部状态对象：构造时直接接收 `scopeRef`、`ritual` 与当前实现中的 process participation 配置，并自治创建和持有自己的 `exitFuture`；自身继续负责 continuation、blocking 与终态收敛。  
+- `RuntimeProcess` 已收口为 process 局部状态对象：构造时直接接收 `scopeRef`、`ritual` 与 `ProcessDescriptor`，并自治创建和持有自己的 `exitFuture`；自身继续负责 continuation、blocking 与终态收敛。  
   证据：`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - 当前实现仍把 `RuntimeScope` / `RuntimeProcess` 按 ref 边界拆得过开：`RuntimeScope` 虽已成为 entry/spawn 的结构宿主，但 `Interpreter` 仍承担 runtime index 的登记、`scopeRef` / `processRef` 的寻址与部分 future 编排。这个形态仍不应作为长期基线。  
   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`
@@ -63,7 +61,7 @@
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`docs/interpreter.md`
 - `RuntimeScope.create(...)` / `branch(...)` 已改为直接接收 entry `Ritual`，并在 scope 内部构造和持有 entry process；但相关 runtime index 登记仍未完全从 `Interpreter` 侧退出。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- `RuntimeScope.spawn(...)` 也已改为直接接收 spawned `Ritual` 与当前实现中的 process participation 配置，由 scope 内部构造 process；当前 `Interpreter` 仍会补做 process registry 登记。  
+- `RuntimeScope.spawn(...)` 也已改为直接接收 spawned `Ritual` 与 `ProcessDescriptor`，由 scope 内部构造 process；当前 `Interpreter` 仍会补做 process registry 登记。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeScope` 对动态对象的内部追踪已改为“派生对象集合”：`#derivedFutures` 只记录 `createFuture(...)` 产物，`#spawnedProcesses` 只记录 `spawn(...)` 产物；构造期恒有对象（scope 自身 `exitFuture` 与 `entryProcess`）不再重复放入这两类集合。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`
@@ -89,6 +87,14 @@
   证据：`packages/kernel/src/interpreter/runtime-process.ts` lines 96–111
 - `RuntimeScope` 状态机已实现：新增私有字段 `#status: RuntimeScopeStatus = "open"`，状态值为 `"open" | "closing" | "closed"`；新增公开 getter `status`；`branch(...)` 与 `spawn(...)` 其间若 `#status !== "open"` 则抛出异常。这为 halt 的关闭级联提供了结构基础。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts` lines 138, 140, 163–171, 180–189
+- `ScopeDescriptor` / `ProcessDescriptor` 的基础契约已进入实现主路径：`FailureMode = "propagate" | "contain"` 与 `CompletionMode = "structural" | "detached"` 已在 `contracts/` 落位；`branch` / `spawn` sigil、`RuntimeScope` / `RuntimeProcess`、以及 `Interpreter` 根入口默认值都改为直接读取 descriptor，而不再依赖 `ScopeSpec` 或 `participation`。  
+  证据：`packages/kernel/src/contracts/scope.ts`、`packages/kernel/src/contracts/process.ts`、`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/spawn.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- 旧 scope taxonomy 已开始退出实际调用面：`enclose` / `race` / `resolvePrimary` 现直接以内联 descriptor 建立本地失败收敛边界；`guard` 的恢复 worker 也已直接以内联 process descriptor 表达 detached 语义，不再经由 `auxiliary` 旧命名表达。  
+  证据：`packages/kernel/src/primitives/enclose.ts`、`packages/kernel/src/primitives/race.ts`、`packages/kernel/src/primitives-kit/process.ts`、`packages/kernel/src/primitives/guard.ts`
+- `branch` / `spawn` 的默认 descriptor 也已收口为 sigil 层的默认参数，而不是额外的 helper factory；`RuntimeScope` entry process 与 `Interpreter.spawn(...)` 也直接以内联 descriptor 表达默认 structural 语义。  
+  证据：`packages/kernel/src/sigils/branch.ts`、`packages/kernel/src/sigils/spawn.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+- host 侧 `self` 的公开 echo 命名也已与 kernel 保持一致：`SelfDescriptor` 残留已收口为 `SelfHandle`。  
+  证据：`packages/host/src/contracts/kernel.ts`、`packages/host/src/primitives/self.ts`
 - `send` / `receive` 协议已以 scope-centric 语义完整落地。`receive` 的语义主语确立为 scope：`RuntimeScope.receive(process, messageKey)` 是公开协议登记入口，表达"在当前 scope 上登记某 process 对某 messageKey 的接收等待"；`RuntimeProcess.receive(messageKey)` 只负责 process 局部等待态迁移，不再单独承担协议主语语义。`Interpreter.#receive(...)` 改为调用 `scope.receive(process, messageKey)` 而不是直接操作 process。  
   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-process.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `RuntimeScope.send(...)` 第三个参数统一命名为 `value`（与 sigil 层、Interpreter 层对齐，不再用 `message`）；send 路径已完整落地：`#acceptMessage` 优先尝试经由 `#deliverToReceiver` 直接投递给 receiverQueue 队首的等待 process；若无等待者则回退到 `#bufferMessage` 入 mailbox FIFO 队列。  
@@ -127,7 +133,8 @@
 - `RuntimeScope.send` 的 wake-up protocol 已显式 `notImplemented`。
 - `RuntimeScope.isClosed` 仍是占位实现。
 - Future 路径（`poll / wait / settle` 与 receiver wake-up）仍是占位。
-- 旧的 `ScopeSpec`、scope role taxonomy 与 `participation` 仍停留在代码中；它们现在只应被视为实现残留，而不是文档层要继续扩展的目标抽象。
+- `standard / supervisor / governor` 子路径仍保留在 `kernel/src/scopes/`，但其中只有 descriptor 常量与 `governor` 扩展仍有留存；它们不再代表另一套稳定 taxonomy。
+- `governor` 相关 descriptor 扩展仍保留 executor-oriented capability 字段，但这层能力尚未重新挂接到新的 interpreter / executor 主调用链；它目前只是 descriptor 形状上的兼容承载位，而不是稳定语义闭环。
 - `Interpreter.observeRunnable(...)` 的代码形态仍未跟上新的文档基线；其目标语义已收口为 scope 子树级、带遮蔽关系的 runnable 驱动接面。
 
 ## 5. 下一步

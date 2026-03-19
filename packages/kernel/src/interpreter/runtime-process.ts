@@ -4,6 +4,7 @@ import type {
   FutureKey,
   FutureResult,
   MessageKey,
+  ProcessDescriptor,
   ProcessRef,
   Ritual,
   ScopeRef,
@@ -20,10 +21,10 @@ export class RuntimeProcess<Relic = unknown> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
     ritual: Ritual<Relic>,
-    participation: "tracked" | "auxiliary",
+    descriptor: ProcessDescriptor,
   ) {
     this.#exitFuture = RuntimeFuture.create<Relic>();
-    this.#participation = participation;
+    this.#descriptor = descriptor;
     this.ref = {
       exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],
     } as ProcessRef<Relic>;
@@ -35,8 +36,8 @@ export class RuntimeProcess<Relic = unknown> {
     return this.#exitFuture;
   }
 
-  public get participation(): "tracked" | "auxiliary" {
-    return this.#participation;
+  public get descriptor(): ProcessDescriptor {
+    return this.#descriptor;
   }
 
   public get hasQueuedContinuation(): boolean {
@@ -138,8 +139,8 @@ export class RuntimeProcess<Relic = unknown> {
 
   #blocker: RuntimeBlocker | null = null;
   #continuation: RuntimeContinuation | null = null;
+  readonly #descriptor: ProcessDescriptor;
   readonly #exitFuture: RuntimeFuture<Relic>;
-  readonly #participation: "tracked" | "auxiliary";
 }
 
 export interface RuntimeBlocker {

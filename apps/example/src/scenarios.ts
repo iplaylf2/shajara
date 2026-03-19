@@ -119,8 +119,8 @@ function* bindLookupRitual(): RiteCoroutine<void> {
 }
 
 function* selfRitual(): RiteCoroutine<void> {
-  const descriptor = yield* self();
-  consume(descriptor);
+  const handle = yield* self();
+  consume(handle);
 }
 
 function* untilRitual(): RiteCoroutine<void> {

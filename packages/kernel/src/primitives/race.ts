@@ -5,7 +5,6 @@ import { either, option, readonlyArray } from "fp-ts";
 import { wisp, wispOption } from "#src/internal/fp";
 import { narrowAs } from "#src/utils";
 import { pipe } from "fp-ts/function";
-import { supervisorScopeSpec } from "#src/scopes";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,
@@ -14,7 +13,7 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
     wisp.Do,
     wisp.bindF("winner", () => future<ArrayValues<BranchReturns>>()),
     wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
-      branch(raceArena(branches, winnerSettle), supervisorScopeSpec()),
+      branch(raceArena(branches, winnerSettle), { failureMode: "contain" }),
     ),
     wisp.chainFirstF(({ arenaSelf: { scopeRef: arenaRef }, winner: [winnerFuture] }) =>
       spawn(raceBackstop(arenaRef.exitFuture, winnerFuture)),
