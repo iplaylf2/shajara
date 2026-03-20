@@ -19,16 +19,20 @@ import { notImplemented } from "#src/internal/not-implemented";
 const EMPTY_QUEUE_SIZE = 0;
 
 export class RuntimeScope {
-  public static create(entry: Ritual<unknown>, descriptor: ScopeDescriptor): RuntimeScope {
-    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel);
+  public static create(
+    entry: Ritual<unknown>,
+    descriptor: ScopeDescriptor,
+    zone: RuntimeZone,
+  ): RuntimeScope {
+    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
   }
 
-  public branch(entry: Ritual<unknown>, descriptor: ScopeDescriptor): RuntimeScope {
-    if (this.#status !== "open") {
-      throw new Error("Cannot branch in closing scope.");
-    }
-
-    const child = new RuntimeScope(entry, descriptor, this);
+  public branch(
+    entry: Ritual<unknown>,
+    descriptor: ScopeDescriptor,
+    zone: RuntimeZone = this.#zone,
+  ): RuntimeScope {
+    const child = new RuntimeScope(entry, descriptor, this, zone);
 
     this.#children.add(child);
 
@@ -56,10 +60,6 @@ export class RuntimeScope {
   }
 
   public send<Value>(targetScope: RuntimeScope, messageKey: MessageKey<Value>, value: Value): void {
-    if (targetScope.#status === "closed") {
-      throw new Error("Cannot send to closed scope.");
-    }
-
     targetScope.#acceptMessage(messageKey, value);
   }
 
@@ -81,15 +81,7 @@ export class RuntimeScope {
     this.#registerReceiver(messageKey, process);
   }
 
-  public observeRunnable(_listener: RunnableListener): Unsubscribe {
-    return notImplemented("RuntimeScope.observeRunnable");
-  }
-
   public spawn<Relic>(ritual: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
-    if (this.#status !== "open") {
-      throw new Error("Cannot spawn in closing scope.");
-    }
-
     const process = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor);
 
     this.#spawnedProcesses.add(process);
@@ -102,12 +94,6 @@ export class RuntimeScope {
     _failure: FailureShape,
     _createClosingWorker: HaltHandler,
   ): void {
-    if (this.#status === "closed") {
-      return;
-    }
-
-    this.#status = "closing";
-
     notImplemented("RuntimeScope.halt closing protocol");
   }
 
@@ -143,7 +129,12 @@ export class RuntimeScope {
     return this.#process;
   }
 
-  private constructor(entry: Ritual<unknown>, descriptor: ScopeDescriptor, parent: RuntimeScope) {
+  private constructor(
+    entry: Ritual<unknown>,
+    descriptor: ScopeDescriptor,
+    parent: RuntimeScope,
+    zone: RuntimeZone,
+  ) {
     this.#exitFuture = RuntimeFuture.create<unknown>();
     const [scopeExitFuture] = this.#exitFuture.handle;
     this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
@@ -153,6 +144,7 @@ export class RuntimeScope {
     this.#descriptor = descriptor;
 
     this.#parent = parent;
+    this.#zone = zone;
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -202,6 +194,7 @@ export class RuntimeScope {
   readonly #process: RuntimeProcess;
   readonly #parent: RuntimeScope;
   readonly #descriptor: ScopeDescriptor;
+  readonly #zone: RuntimeZone;
 
   #status: RuntimeScopeStatus = "open";
   readonly #children = new Set<RuntimeScope>();
@@ -224,5 +217,6 @@ export type HaltHandler = (
   failure: Failure,
 ) => Ritual<Failure>;
 
-export type RunnableListener = (process: ProcessRef<unknown>) => void;
-export type Unsubscribe = () => void;
+export interface RuntimeZone {
+  publishRunnable(process: ProcessRef<unknown>): void;
+}

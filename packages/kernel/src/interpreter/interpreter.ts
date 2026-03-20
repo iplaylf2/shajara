@@ -30,7 +30,6 @@ import type {
   StirringWisp,
   Wisp,
 } from "#src/contracts";
-import type { RunnableListener, Unsubscribe } from "./runtime-scope";
 import {
   processCededStep,
   processExitedStep,
@@ -49,7 +48,17 @@ import { isSome } from "#src/utils";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
-    this.#rootScope = RuntimeScope.create(entry, { failureMode: "propagate" });
+    this.#rootScope = RuntimeScope.create(
+      entry,
+      { failureMode: "propagate" },
+      {
+        publishRunnable: (process) => {
+          for (const listener of this.#runnableListeners) {
+            listener(process);
+          }
+        },
+      },
+    );
     this.#runtimeIndex.registerScope(this.#rootScope);
   }
 
@@ -70,8 +79,12 @@ export class Interpreter {
     }
   }
 
-  public observeRunnable(scope: ScopeRef<unknown>, listener: RunnableListener): Unsubscribe {
-    return this.#resolveScope(scope).observeRunnable(listener);
+  public observeRunnable(listener: RunnableListener): Unsubscribe {
+    this.#runnableListeners.add(listener);
+
+    return () => {
+      this.#runnableListeners.delete(listener);
+    };
   }
 
   public get scopeRoot(): ScopeRef<void> {
@@ -303,6 +316,7 @@ export class Interpreter {
 
   readonly #rootScope: RuntimeScope;
   readonly #runtimeIndex = new RuntimeIndex();
+  readonly #runnableListeners = new Set<RunnableListener>();
 
   #resolveScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
     return this.#runtimeIndex.resolveScope(scopeRef);
@@ -320,3 +334,6 @@ export class Interpreter {
     return this.#runtimeIndex.resolveFutureBySettle(future);
   }
 }
+
+export type RunnableListener = (process: ProcessRef<unknown>) => void;
+export type Unsubscribe = () => void;

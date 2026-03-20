@@ -75,15 +75,13 @@
 
 ### 4.1 `observeRunnable`
 
-`observeRunnable(scopeRef, listener)` 用于为某棵 Scope 子树安装 runnable receiver。
+`Interpreter` 仍保留 `observeRunnable(listener)`，但它不再按 `scopeRef` 暴露局部接线能力，而是固定工作在 root scope 语境。
 
-receiver 按 Scope 树形成就近接收关系：
+它为 root scope 所承接的 runnable 接线安装订阅者：
 
-- 当前 scope 上安装的 receiver 负责该子树中的 runnable process。
-- 子 scope 安装 receiver 后，负责它自己的子树。
-- `unsubscribe` 撤销当前 scope 的本地接线；该子树随后回到最近祖先 receiver，或回到默认驱动路径。
-
-`Interpreter.observeRunnable(...)` 只负责按 `scopeRef` 寻址并转发给目标 `RuntimeScope`。
+- 根 scope 在创建时显式承接 zone。
+- child scope 在 `branch(...)` 时默认继承父 zone，也允许显式换入新 zone。
+- `observeRunnable(listener)` 只作用于 root zone，但允许多个订阅同时生效；返回的 `unsubscribe` 只撤销当前订阅。
 
 ### 4.2 只读接口
 

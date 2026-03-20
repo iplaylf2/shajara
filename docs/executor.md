@@ -113,7 +113,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自�
 
 ### 5.1 调度扩展
 
-若执行环境需要更复杂的 ready 选择，`executor` 应把自己的调度策略接到解释器暴露的 runnable 接面上。
+若执行环境需要更复杂的 ready 选择，`executor` 应接入 `Interpreter` 暴露的 runnable 接线承接位。
 
 ### 5.2 结构性回收
 
@@ -131,7 +131,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自�
 - 公开能力：`step`、`spawn`、`lookup`、`poll`、`wait`
 - 受保护扩展点：`onClosing`
 
-此外，`executor` 也可以使用 `Interpreter.observeRunnable(scopeRef, listener)` 为某个 scope 子树安装 runnable receiver，把自己的调度循环接入解释器。
+此外，`executor` 可以使用 `Interpreter.observeRunnable(listener)` 把自己的调度循环接到 root 级 runnable 订阅接口上；该接口不支持按任意 scope 定位接线，并允许多个订阅同时生效。
 
 若 `executor` 需要更紧密地组织关闭或收敛过程，可以通过派生 `Interpreter` 并覆写 `onClosing`，把治理能力接入解释过程。
 
