@@ -237,9 +237,14 @@ export class Interpreter {
 
   #halt(process: RuntimeProcess, sigil: HaltSigil): void {
     this.#resolveScope(process.scopeRef).halt(
-      process.ref,
-      sigil.failure,
-      (scope, processes, failure) => () => this.onClosing(scope, processes, failure),
+      process,
+      sigil.failure as Failure,
+      (scope, processes, failure) => () =>
+        this.onClosing(
+          scope.ref,
+          processes.map((runtimeProcess) => runtimeProcess.ref),
+          failure,
+        ),
     );
   }
 

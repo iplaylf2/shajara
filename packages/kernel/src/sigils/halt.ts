@@ -1,7 +1,7 @@
 import type { ECHO_TOKEN, FailureShape, SigilShape } from "#src/contracts";
-import { scopeHalted } from "#src/failures";
+import { aborted } from "#src/failures";
 
-export function halt(failure: FailureShape = scopeHalted()): HaltSigil {
+export function halt(failure: FailureShape = aborted()): HaltSigil {
   return { failure, kind: "halt" };
 }
 

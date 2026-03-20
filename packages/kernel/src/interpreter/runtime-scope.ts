@@ -1,10 +1,8 @@
-// oxlint-disable class-methods-use-this
+// oxlint-disable class-methods-use-this, max-lines
 import type {
   ContextKey,
-  FailureShape,
   MessageKey,
   ProcessDescriptor,
-  ProcessRef,
   Ritual,
   ScopeDescriptor,
   ScopeRef,
@@ -15,7 +13,11 @@ import type { Option } from "#src/utils";
 import type { RuntimeCell } from "./runtime-process";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
+import type { ScopeClosing } from "./scope-closing";
+import { ScopeFailureBuilder } from "./scope-failure-builder";
 import { notImplemented } from "#src/internal/not-implemented";
+import { scopeTerminated } from "#src/failures";
+import { unwindScopeClosing } from "./scope-closing";
 
 const EMPTY_QUEUE_SIZE = 0;
 
@@ -31,7 +33,7 @@ export class RuntimeScope {
   public branch(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
-    zoneBuilder: RuntimeZoneBuilder = (scope) => scope.#parent.#zone,
+    zoneBuilder: RuntimeZoneBuilder = () => this.#zone,
   ): RuntimeScope {
     const child = new RuntimeScope(entry, descriptor, this, zoneBuilder);
 
@@ -92,12 +94,12 @@ export class RuntimeScope {
     return spawnedProcess;
   }
 
-  public halt(
-    _process: ProcessRef<unknown>,
-    _failure: FailureShape,
-    _createClosingWorker: HaltHandler,
-  ): void {
-    notImplemented("RuntimeScope.halt closing protocol");
+  public halt(process: RuntimeProcess, failure: Failure, haltHandler: HaltHandler): void {
+    process.fail(failure);
+
+    const enteredClosing = this.#enterClosing();
+
+    this.#spawnClosing(enteredClosing, ScopeFailureBuilder.halted(process, failure), haltHandler);
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -204,6 +206,65 @@ export class RuntimeScope {
     };
   }
 
+  #enterClosing(): EnteredScopeClosing {
+    this.#setStatus("closing");
+
+    const processes = this.#terminateLocalProcesses();
+    const children = [...this.#children].map((childScope) => childScope.#enterClosing());
+
+    return {
+      children,
+      processes,
+      scope: this,
+    };
+  }
+
+  #spawnClosing(
+    enteredClosing: EnteredScopeClosing,
+    scopeFailure: ScopeFailureBuilder,
+    haltHandler: HaltHandler,
+  ): void {
+    const closing = this.#buildClosing(enteredClosing);
+
+    this.spawn(unwindScopeClosing(closing, scopeFailure, haltHandler), {
+      completionMode: "structural",
+    });
+    notImplemented("RuntimeScope closing worker exitFuture settles scope exitFuture");
+  }
+
+  #buildClosing(enteredClosing: EnteredScopeClosing): ScopeClosing {
+    return {
+      children: enteredClosing.children.map((childClosing) => this.#buildClosing(childClosing)),
+      processes: enteredClosing.processes,
+      scope: enteredClosing.scope,
+    };
+  }
+
+  #terminateLocalProcesses(): readonly RuntimeProcess[] {
+    const terminatedProcesses: RuntimeProcess[] = [];
+    const terminationFailure = scopeTerminated();
+    this.#appendTerminatedProcess(terminatedProcesses, this.#process, terminationFailure);
+
+    for (const process of this.#spawnedProcesses) {
+      this.#appendTerminatedProcess(terminatedProcesses, process, terminationFailure);
+    }
+
+    return terminatedProcesses;
+  }
+
+  #appendTerminatedProcess(
+    terminatedProcesses: RuntimeProcess[],
+    process: RuntimeProcess,
+    failure: Failure,
+  ): void {
+    process.fail(failure);
+    terminatedProcesses.push(process);
+  }
+
+  #setStatus(status: RuntimeScopeStatus): void {
+    this.#status = status;
+  }
+
   static readonly #sentinel = null as unknown as RuntimeScope;
 
   readonly #exitFuture: RuntimeFuture<unknown>;
@@ -227,8 +288,8 @@ export class RuntimeScope {
 export type RuntimeScopeStatus = "open" | "closing" | "closed";
 
 export type HaltHandler = (
-  scope: ScopeRef<unknown>,
-  processes: readonly ProcessRef<unknown>[],
+  scope: RuntimeScope,
+  processes: readonly RuntimeProcess[],
   failure: Failure,
 ) => Ritual<Failure>;
 
@@ -237,3 +298,9 @@ export interface RuntimeZone {
 }
 
 export type RuntimeZoneBuilder = (scope: RuntimeScope) => RuntimeZone;
+
+interface EnteredScopeClosing {
+  readonly children: readonly EnteredScopeClosing[];
+  readonly processes: readonly RuntimeProcess[];
+  readonly scope: RuntimeScope;
+}

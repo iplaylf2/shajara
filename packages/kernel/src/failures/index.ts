@@ -1,9 +1,11 @@
+import type { AbortedFailure } from "./aborted";
 import type { ExternalFailure } from "./external";
-import type { ScopeHaltedFailure } from "./scope-halted";
+import type { ScopeFailure } from "./scope-failed";
 import type { ScopeTerminatedFailure } from "./scope-terminated";
 
+export * from "./aborted";
 export * from "./external";
-export * from "./scope-halted";
+export * from "./scope-failed";
 export * from "./scope-terminated";
 
-export type Failure = ExternalFailure | ScopeHaltedFailure | ScopeTerminatedFailure;
+export type Failure = AbortedFailure | ExternalFailure | ScopeFailure | ScopeTerminatedFailure;
