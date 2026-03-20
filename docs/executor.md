@@ -41,7 +41,7 @@
 
 `LaunchHandle<T>` 由三部分组成：
 
-- `ref: ExecutionScopeRef`：每次 launch 都要产出一个新的执行 scope 引用。
+- `scope: ExecutionScopeRef`：每次 launch 都要产出一个新的执行 scope 引用。
 - `onSettled(listener)`：调用方可以订阅该入口的单次收敛结果。
 - `state(): "open" | "closing" | "closed"`：调用方可以观察该入口 scope 的生命周期状态。
 

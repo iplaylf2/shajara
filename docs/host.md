@@ -47,7 +47,7 @@ host 以 `launch` 为统一收敛锚点：
 1. 调用 `executor.launch(scope, ritual)` 获取 `LaunchHandle<T>`。
 2. 通过 `handle.onSettled(...)` 观察单次 `LaunchResult<T>`（`success | failure | terminated`）并收敛为 Promise 语义。
 3. 返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state()`）。
-4. 可选 `AbortSignal` 映射为 `executor.terminate(ref)`。
+4. 可选 `AbortSignal` 映射为 `executor.terminate(handle.scope)`。
 
 `run` 和 `createScope` 均通过 `launch` 实现。
 

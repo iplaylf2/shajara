@@ -17,7 +17,7 @@ export type LaunchResult<Return> =
 export type LaunchState = "open" | "closing" | "closed";
 
 export interface LaunchHandle<Return> {
-  readonly ref: ExecutionScopeRef;
+  readonly scope: ExecutionScopeRef;
   onSettled(listener: (result: LaunchResult<Return>) => void): void;
   state(): LaunchState;
 }

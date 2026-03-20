@@ -10,7 +10,7 @@ export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<Futur
   return pipe(
     branch(withRecoveryPoint(entry, recover)),
     wisp.liftF,
-    wisp.map(({ scopeRef }) => scopeRef.exitFuture),
+    wisp.map(({ scope }) => scope.exitFuture),
   );
 }
 
@@ -21,7 +21,7 @@ function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
     pipe(
       self(),
       wisp.liftF,
-      wisp.chainF(({ scopeRef }) => bind(resumableDelegateKey, scopeRef)),
+      wisp.chainF(({ scope }) => bind(resumableDelegateKey, scope)),
       wisp.chainF(() => spawn(recoveryWorker(recover), { completionMode: "detached" })),
       wisp.chain(entry),
     );

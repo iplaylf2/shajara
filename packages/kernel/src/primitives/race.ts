@@ -15,8 +15,8 @@ export function race<BranchReturns extends NonEmptyTuple<unknown>>(
     wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
       branch(raceArena(branches, winnerSettle), { failureMode: "contain" }),
     ),
-    wisp.chainFirstF(({ arenaSelf: { scopeRef: arenaRef }, winner: [winnerFuture] }) =>
-      spawn(raceBackstop(arenaRef.exitFuture, winnerFuture)),
+    wisp.chainFirstF(({ arenaSelf: { scope: arena }, winner: [winnerFuture] }) =>
+      spawn(raceBackstop(arena.exitFuture, winnerFuture)),
     ),
     wisp.map(({ winner: [winnerFuture] }) => winnerFuture),
   );

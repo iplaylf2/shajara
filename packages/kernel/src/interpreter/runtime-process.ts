@@ -51,8 +51,8 @@ export class RuntimeProcess<Relic = unknown> {
 
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
     return {
-      processRef: this.ref,
-      scopeRef: this.scopeRef,
+      process: this.ref,
+      scope: this.scopeRef,
     };
   }
 

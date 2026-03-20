@@ -219,7 +219,7 @@ Process 与 Scope 均有三种互斥终态：
 
 kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`contain` 承担显式收敛边界的职责。
 
-`Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 只提供结果观察。
+`Wait(scope.exitFuture)` / `Wait(process.exitFuture)` 只提供结果观察。
 
 ### 4.6 结构性收敛：Prune
 
@@ -258,14 +258,14 @@ kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`cont
 
 ### 6.1 创建
 
-#### Branch(ritual, descriptor?) → { scopeRef, processRef } `[Non-Blocking]`
+#### Branch(ritual, descriptor?) → { scope, process } `[Non-Blocking]`
 
 在调用方 Scope 下创建子 Scope 与根 Process。若未显式给出 descriptor，则使用默认 `ScopeDescriptor`；其中稳定进入 kernel 语义的默认字段是 `failureMode = "propagate"`。
 
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
 
-#### Spawn(ritual, descriptor?) → { processRef } `[Non-Blocking]`
+#### Spawn(ritual, descriptor?) → process `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
@@ -339,7 +339,7 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 沿调用方 Scope 到祖先链查找上下文绑定。未命中时返回 `undefined`。
 
-#### Self() → { scopeRef, processRef } `[Non-Blocking]`
+#### Self() → { scope, process } `[Non-Blocking]`
 
 返回调用方自省信息。
 
@@ -354,7 +354,7 @@ Primitive 是 kernel 在 sigil 之上提供的 **Wisp 层代数组合**，每个
 primitive 的价值：
 
 - **组合稳定性**：把正确的并发模式固化为 Wisp 片段，消费方无需自行拼装 sigil 序列。
-- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如等待 `processRef.exitFuture`）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
+- **封装 Process 脆弱性**：sigil 层暴露的 `Spawn` 与 Process 级操作（如等待 `process.exitFuture`）被封装在 primitive 内部；用户通过 `spawn`、boundary primitive 与 future 观察面表达并发与收敛。
 
 primitive 不等于 sigil：
 
@@ -363,7 +363,7 @@ primitive 不等于 sigil：
 
 ### 7.2 失败通道
 
-涉及生命周期等待（Scope 或 Process）的 primitive 直接复用 future 结果通道：`Wait(scopeRef.exitFuture)` / `Wait(processRef.exitFuture)` 返回 `Either<Failure, T>`。
+涉及生命周期等待（Scope 或 Process）的 primitive 直接复用 future 结果通道：`Wait(scope.exitFuture)` / `Wait(process.exitFuture)` 返回 `Either<Failure, T>`。
 
 这一分层使 kernel 层的失败保持可组合、可推理，而不依赖异常机制。
 

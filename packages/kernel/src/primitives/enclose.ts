@@ -8,6 +8,6 @@ export function enclose<Relic>(entry: Ritual<Relic>): Wisp<Either<FailureShape, 
   return pipe(
     branch(entry, { failureMode: "contain" }),
     wisp.liftF,
-    wisp.chainF(({ scopeRef }) => wait(scopeRef.exitFuture)),
+    wisp.chainF(({ scope }) => wait(scope.exitFuture)),
   );
 }

@@ -12,6 +12,6 @@ export interface SelfSigil<Scope extends ScopeRef<unknown>> extends SigilShape {
 }
 
 export interface SelfHandle<Scope extends ScopeRef<unknown>> {
-  readonly scopeRef: Scope;
-  readonly processRef: ProcessRef<unknown>;
+  readonly scope: Scope;
+  readonly process: ProcessRef<unknown>;
 }

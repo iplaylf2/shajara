@@ -12,7 +12,7 @@ export function all<BranchReturns extends readonly unknown[]>(
   return pipe(
     spawn(allAggregator(branches)),
     wisp.liftF,
-    wisp.map((processRef) => processRef.exitFuture),
+    wisp.map((process) => process.exitFuture),
   );
 }
 

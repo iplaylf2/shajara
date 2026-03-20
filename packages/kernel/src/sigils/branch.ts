@@ -26,6 +26,6 @@ export interface BranchSigil<Relic> extends SigilShape {
 }
 
 export interface BranchHandle<Relic> {
-  readonly scopeRef: ScopeRef<Relic>;
-  readonly processRef: ProcessRef<Relic>;
+  readonly scope: ScopeRef<Relic>;
+  readonly process: ProcessRef<Relic>;
 }

@@ -7,6 +7,6 @@ export function spawn<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
     spawnSigil(entry),
     wisp.liftF,
-    wisp.map((processRef) => processRef.exitFuture),
+    wisp.map((process) => process.exitFuture),
   );
 }

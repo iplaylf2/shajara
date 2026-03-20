@@ -24,7 +24,7 @@ export function launch<Return>(
 
     function onAbort(): void {
       if (execution.state() === "open") {
-        executor.terminate(execution.ref);
+        executor.terminate(execution.scope);
       }
     }
 
@@ -44,7 +44,7 @@ export function launch<Return>(
   const settled = asSettledPromise(execution);
 
   return {
-    scope: execution.ref,
+    scope: execution.scope,
     settled: toStatefulPromise(execution, settled),
   };
 }

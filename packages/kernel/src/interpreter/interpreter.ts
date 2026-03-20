@@ -221,8 +221,8 @@ export class Interpreter {
     this.#runtimeIndex.registerScope(branchScope);
 
     return {
-      processRef: branchScope.entryProcess.ref,
-      scopeRef: branchScope.ref,
+      process: branchScope.entryProcess.ref,
+      scope: branchScope.ref,
     };
   }
 

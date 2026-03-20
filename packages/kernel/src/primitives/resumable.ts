@@ -23,10 +23,10 @@ function resumeAttempt<Relic>(entryFuture: FutureKey<Relic>) {
           lookup(resumableDelegateKey),
           wisp.liftF,
           wisp.map(either.fromOption(() => failure)),
-          wispEither.map((delegateScopeRef) => ({ delegateScopeRef })),
+          wispEither.map((delegateScope) => ({ delegateScope })),
           wispEither.bindF("resolver", () => future<Relic>()),
-          wispEither.chainFirstF(({ resolver: [, recoverySettle], delegateScopeRef }) =>
-            send(delegateScopeRef, resumableFailureKey, {
+          wispEither.chainFirstF(({ resolver: [, recoverySettle], delegateScope }) =>
+            send(delegateScope, resumableFailureKey, {
               failure,
               recoverySettle,
             }),
