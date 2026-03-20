@@ -1,16 +1,13 @@
 import type { Failure, ScopeFailure } from "#src/failures";
-import type { Either } from "#src/utils";
-import type { FailureShape } from "#src/contracts";
-import type { RuntimeProcess } from "./runtime-process";
-import { isLeft } from "#src/utils";
+import type { ProcessRef } from "#src/contracts";
 import { scopeFailed } from "#src/failures";
 
 export class ScopeFailureBuilder {
-  public static halted(causeProcess: RuntimeProcess, cause: Failure): ScopeFailureBuilder {
+  public static create(causeProcess: ProcessRef<unknown>, cause: Failure): ScopeFailureBuilder {
     return new ScopeFailureBuilder(causeProcess, cause);
   }
 
-  private constructor(causeProcess: RuntimeProcess, cause: Failure) {
+  private constructor(causeProcess: ProcessRef<unknown>, cause: Failure) {
     this.#cause = cause;
     this.#causeProcess = causeProcess;
   }
@@ -19,19 +16,19 @@ export class ScopeFailureBuilder {
     return this.#cause;
   }
 
-  public get causeProcess(): RuntimeProcess {
+  public get causeProcess(): ProcessRef<unknown> {
     return this.#causeProcess;
   }
 
-  public recordHaltHandlerResult(result: Either<FailureShape, Failure>): void {
-    this.#closingFailures.push(isLeft(result) ? result.left : result.right);
+  public addClosingFailure(failure: Failure): void {
+    this.#closingFailures.push(failure);
   }
 
-  public complete(cause: Failure): ScopeFailure {
-    return scopeFailed(this.#causeProcess.ref, cause, this.#closingFailures);
+  public build(): ScopeFailure {
+    return scopeFailed(this.#causeProcess, this.#cause, this.#closingFailures);
   }
 
   readonly #cause: Failure;
-  readonly #causeProcess: RuntimeProcess;
-  readonly #closingFailures: FailureShape[] = [];
+  readonly #causeProcess: ProcessRef<unknown>;
+  readonly #closingFailures: Failure[] = [];
 }

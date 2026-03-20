@@ -97,9 +97,9 @@ export class RuntimeScope {
   public halt(process: RuntimeProcess, failure: Failure, haltHandler: HaltHandler): void {
     process.fail(failure);
 
-    const enteredClosing = this.#enterClosing();
+    const closing = this.#enterClosing();
 
-    this.#spawnClosing(enteredClosing, ScopeFailureBuilder.halted(process, failure), haltHandler);
+    this.#spawnClosing(closing, ScopeFailureBuilder.create(process.ref, failure), haltHandler);
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -206,7 +206,7 @@ export class RuntimeScope {
     };
   }
 
-  #enterClosing(): EnteredScopeClosing {
+  #enterClosing(): ScopeClosing {
     this.#setStatus("closing");
 
     const processes = this.#terminateLocalProcesses();
@@ -220,24 +220,14 @@ export class RuntimeScope {
   }
 
   #spawnClosing(
-    enteredClosing: EnteredScopeClosing,
+    closing: ScopeClosing,
     scopeFailure: ScopeFailureBuilder,
     haltHandler: HaltHandler,
   ): void {
-    const closing = this.#buildClosing(enteredClosing);
-
     this.spawn(unwindScopeClosing(closing, scopeFailure, haltHandler), {
       completionMode: "structural",
     });
     notImplemented("RuntimeScope closing worker exitFuture settles scope exitFuture");
-  }
-
-  #buildClosing(enteredClosing: EnteredScopeClosing): ScopeClosing {
-    return {
-      children: enteredClosing.children.map((childClosing) => this.#buildClosing(childClosing)),
-      processes: enteredClosing.processes,
-      scope: enteredClosing.scope,
-    };
   }
 
   #terminateLocalProcesses(): readonly RuntimeProcess[] {
@@ -298,9 +288,3 @@ export interface RuntimeZone {
 }
 
 export type RuntimeZoneBuilder = (scope: RuntimeScope) => RuntimeZone;
-
-interface EnteredScopeClosing {
-  readonly children: readonly EnteredScopeClosing[];
-  readonly processes: readonly RuntimeProcess[];
-  readonly scope: RuntimeScope;
-}
