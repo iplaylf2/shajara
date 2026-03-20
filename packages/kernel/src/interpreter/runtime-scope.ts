@@ -12,6 +12,7 @@ import type {
 import { none, some } from "#src/utils";
 import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
+import type { RuntimeCell } from "./runtime-process";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import { notImplemented } from "#src/internal/not-implemented";
@@ -22,17 +23,17 @@ export class RuntimeScope {
   public static create(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
-    zone: RuntimeZone,
+    zoneBuilder: RuntimeZoneBuilder,
   ): RuntimeScope {
-    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
+    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zoneBuilder);
   }
 
   public branch(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
-    zone: RuntimeZone = this.#zone,
+    zoneBuilder: RuntimeZoneBuilder = (scope) => scope.#parent.#zone,
   ): RuntimeScope {
-    const child = new RuntimeScope(entry, descriptor, this, zone);
+    const child = new RuntimeScope(entry, descriptor, this, zoneBuilder);
 
     this.#children.add(child);
 
@@ -82,11 +83,13 @@ export class RuntimeScope {
   }
 
   public spawn<Relic>(ritual: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
-    const process = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor);
+    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor, (process) =>
+      this.#buildCell(process),
+    );
 
-    this.#spawnedProcesses.add(process);
+    this.#spawnedProcesses.add(spawnedProcess);
 
-    return process;
+    return spawnedProcess;
   }
 
   public halt(
@@ -133,18 +136,24 @@ export class RuntimeScope {
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
     parent: RuntimeScope,
-    zone: RuntimeZone,
+    zoneBuilder: RuntimeZoneBuilder,
   ) {
     this.#exitFuture = RuntimeFuture.create<unknown>();
     const [scopeExitFuture] = this.#exitFuture.handle;
     this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
 
-    const entryProcess = new RuntimeProcess(this.#ref, entry, { completionMode: "structural" });
+    const entryProcess = new RuntimeProcess(
+      this.#ref,
+      entry,
+      { completionMode: "structural" },
+      (process) => this.#buildCell(process),
+    );
+
     this.#process = entryProcess;
     this.#descriptor = descriptor;
 
     this.#parent = parent;
-    this.#zone = zone;
+    this.#zone = zoneBuilder(this);
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -187,6 +196,14 @@ export class RuntimeScope {
     }
   }
 
+  #buildCell(process: RuntimeProcess): RuntimeCell {
+    return {
+      track: () => {
+        this.#zone.trackProcess(process);
+      },
+    };
+  }
+
   static readonly #sentinel = null as unknown as RuntimeScope;
 
   readonly #exitFuture: RuntimeFuture<unknown>;
@@ -199,8 +216,6 @@ export class RuntimeScope {
   #status: RuntimeScopeStatus = "open";
   readonly #children = new Set<RuntimeScope>();
 
-  // MessageKey is a capability token; mailbox indexing should not retain key lifetime.
-  // Values are queued and consumed by FIFO semantics (`push` then `shift`).
   readonly #mailboxes = new WeakMap<MessageKey<unknown>, unknown[]>();
   readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess[]>();
 
@@ -218,5 +233,7 @@ export type HaltHandler = (
 ) => Ritual<Failure>;
 
 export interface RuntimeZone {
-  publishRunnable(process: ProcessRef<unknown>): void;
+  trackProcess(process: RuntimeProcess): void;
 }
+
+export type RuntimeZoneBuilder = (scope: RuntimeScope) => RuntimeZone;

@@ -48,17 +48,17 @@ import { isSome } from "#src/utils";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
-    this.#rootScope = RuntimeScope.create(
-      entry,
-      { failureMode: "propagate" },
-      {
-        publishRunnable: (process) => {
-          for (const listener of this.#runnableListeners) {
-            listener(process);
-          }
-        },
+    this.#rootScope = RuntimeScope.create(entry, { failureMode: "propagate" }, () => ({
+      trackProcess: (process) => {
+        if (process.status !== "runnable") {
+          return;
+        }
+
+        for (const listener of this.#runnableListeners) {
+          listener(process.ref);
+        }
       },
-    );
+    }));
     this.#runtimeIndex.registerScope(this.#rootScope);
   }
 

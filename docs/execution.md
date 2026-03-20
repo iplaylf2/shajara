@@ -12,7 +12,8 @@
 
 - 根 scope 在 `create(...)` 时显式承接 zone
 - child scope 在 `branch(...)` 时默认继承父 zone，也允许显式换入新 zone
-- 当前阶段先只登记和传递 zone，暂不在 `RuntimeScope` 里正式消费它
+- `RuntimeScope` 现在通过 `ZoneBuilder` 在自身构造过程中产出并持有 zone
+- `RuntimeProcess` 现在通过 `RuntimeCellBuilder` 在自身构造过程中产出并持有 cell
 
 ---
 
@@ -20,18 +21,18 @@
 
 当前实现与这一焦点之间的偏差主要还有一条：
 
-1. `runtime zone` 目前只进入了 `RuntimeScope` 的构造契约与分支继承路径，尚未正式接入 runnable 发布、wait 恢复或 closing 治理。  
-   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
+1. `runtime zone` 与 `runtime cell` 的构造关系已经收口，但 `RuntimeProcess` 的大部分运行协议仍明确停留在 `notImplemented(...)`。  
+   证据：`packages/kernel/src/interpreter/runtime-process.ts`
 
-2. `Interpreter.observeRunnable(listener)` 目前仍是 root 级订阅接口；它保留了接入点，但还没有与 `RuntimeScope` 内部的 zone 行为真正贯通。  
+2. `Interpreter.observeRunnable(listener)` 目前仍只消费 root zone 里 `trackProcess(process)` 所暴露的 runnable 视图；更完整的 zone/cell 协作语义尚未展开。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`
 
 ---
 
 ## 下一步
 
-1. 明确 `RuntimeZone` 的职责命名与边界，决定它到底承接 runnable 发布、调度通知还是别的治理语义。
-2. 在语义明确后，再把 `RuntimeScope` 中对应运行路径逐步接回 zone。
+1. 继续补齐 `RuntimeProcess` 的运行协议，决定哪些状态推进应恢复为真实实现，哪些仍保持 `notImplemented(...)`。
+2. 明确 `trackProcess(process)` 在 zone/cell 间的长期语义边界。
 3. 继续实现 executor，并在那时确定它与 zone / `observeRunnable` 的最终协作方式。
 
 ---

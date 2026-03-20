@@ -6,11 +6,12 @@ import type {
   MessageKey,
   ProcessDescriptor,
   ProcessRef,
+  Resonance,
   Ritual,
   ScopeRef,
+  SigilShape,
   Wisp,
 } from "#src/contracts";
-import { left, right } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
 import { notImplemented } from "#src/internal/not-implemented";
@@ -22,6 +23,7 @@ export class RuntimeProcess<Relic = unknown> {
     scopeRef: ScopeRef<unknown>,
     ritual: Ritual<Relic>,
     descriptor: ProcessDescriptor,
+    cellBuilder: RuntimeCellBuilder,
   ) {
     this.#exitFuture = RuntimeFuture.create<Relic>();
     this.#descriptor = descriptor;
@@ -29,7 +31,10 @@ export class RuntimeProcess<Relic = unknown> {
       exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],
     } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
+    this.status = "runnable";
+    this.#cell = cellBuilder(this);
     this.wisp = ritual() as Wisp<unknown>;
+    this.#cell.track();
   }
 
   public get exitFuture(): RuntimeFuture<Relic> {
@@ -54,7 +59,6 @@ export class RuntimeProcess<Relic = unknown> {
   public setContinuation(resonate: (echo: unknown) => Wisp<unknown>, echo: unknown): void {
     this.#continuation = {
       echo,
-      kind: "resonate",
       resonate,
     };
   }
@@ -66,91 +70,51 @@ export class RuntimeProcess<Relic = unknown> {
     this.wisp = continuation.resonate(continuation.echo);
 
     if (this.wisp.bearing === "resting") {
-      this.#complete(this.wisp.relic);
+      notImplemented("RuntimeProcess.resonate resting completion");
     }
   }
 
-  public wait(future: FutureKey<unknown>): void {
-    this.#blocker = {
-      continuation: null,
-      future,
-      kind: "future",
-    };
-    this.status = "waiting";
+  public wait(_future: FutureKey<unknown>): void {
     notImplemented("RuntimeProcess.wait");
   }
 
   public receive(_messageKey: MessageKey<unknown>): void {
-    this.#blocker = {
-      continuation: null,
-      future: null,
-      kind: "receive",
-    };
-    this.status = "waiting";
+    notImplemented("RuntimeProcess.receive");
   }
 
-  public accept(value: unknown): void {
-    const blocker = this.#blocker;
-
-    if (
-      this.status !== "waiting" ||
-      blocker === null ||
-      blocker.kind !== "receive" ||
-      blocker.continuation === null
-    ) {
-      throw new Error("RuntimeProcess cannot accept value while not waiting on receive.");
-    }
-
-    const { continuation } = blocker;
-
-    this.#blocker = null;
-    this.status = "runnable";
-    this.setContinuation(continuation, value);
+  public accept(_value: unknown): void {
+    notImplemented("RuntimeProcess.accept");
   }
 
-  public primeContinuation(continuation: (echo: unknown) => Wisp<unknown>): void {
-    this.#blocker!.continuation = continuation;
+  public primeContinuation(_continuation: (echo: unknown) => Wisp<unknown>): void {
+    notImplemented("RuntimeProcess.primeContinuation");
   }
 
-  public fail(failure: FailureShape): void {
-    this.#finish(left(failure) as FutureResult<Relic>);
-  }
-
-  #complete(value: unknown): void {
-    this.#finish(right(value) as FutureResult<Relic>);
-  }
-
-  #finish(result: FutureResult<Relic>): void {
-    if (this.status === "completed") {
-      return;
-    }
-
-    this.#blocker = null;
-    this.#continuation = null;
-    this.result = result;
-    this.status = "completed";
+  public fail(_failure: FailureShape): void {
+    notImplemented("RuntimeProcess.fail");
   }
 
   public readonly ref: ProcessRef<Relic>;
   public readonly scopeRef: ScopeRef<unknown>;
   public result: FutureResult<Relic> | null = null;
-  public status: "runnable" | "waiting" | "completed" = "runnable";
+  public status: RuntimeProcessStatus;
   public wisp: Wisp<unknown>;
 
-  #blocker: RuntimeBlocker | null = null;
   #continuation: RuntimeContinuation | null = null;
+  readonly #cell: RuntimeCell;
   readonly #descriptor: ProcessDescriptor;
   readonly #exitFuture: RuntimeFuture<Relic>;
 }
 
-export interface RuntimeBlocker {
-  continuation: ((echo: unknown) => Wisp<unknown>) | null;
-  future: FutureKey<unknown> | null;
-  readonly kind: "future" | "receive";
+export interface RuntimeCell {
+  track(): void;
 }
+
+export type RuntimeCellBuilder = (process: RuntimeProcess) => RuntimeCell;
+
+export type RuntimeProcessStatus = "runnable" | "waiting" | "completed";
 
 export interface RuntimeContinuation {
   readonly echo: unknown;
-  readonly kind: "resonate";
-  readonly resonate: (echo: unknown) => Wisp<unknown>;
+  readonly resonate: Resonance<SigilShape, unknown>;
 }
