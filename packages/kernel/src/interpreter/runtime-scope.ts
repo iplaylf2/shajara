@@ -14,10 +14,8 @@ import type { RuntimeCell } from "./runtime-process";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { ScopeClosing } from "./scope-closing";
-import { ScopeFailureBuilder } from "./scope-failure-builder";
 import { notImplemented } from "#src/internal/not-implemented";
 import { scopeTerminated } from "#src/failures";
-import { unwindScopeClosing } from "./scope-closing";
 
 const EMPTY_QUEUE_SIZE = 0;
 
@@ -94,12 +92,12 @@ export class RuntimeScope {
     return spawnedProcess;
   }
 
-  public halt(process: RuntimeProcess, failure: Failure, haltHandler: HaltHandler): void {
+  public halt(process: RuntimeProcess, failure: Failure): void {
     process.fail(failure);
 
     const closing = this.#enterClosing();
 
-    this.#spawnClosing(closing, ScopeFailureBuilder.create(process.ref, failure), haltHandler);
+    this.#spawnClosing(closing);
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -219,15 +217,8 @@ export class RuntimeScope {
     };
   }
 
-  #spawnClosing(
-    closing: ScopeClosing,
-    scopeFailure: ScopeFailureBuilder,
-    haltHandler: HaltHandler,
-  ): void {
-    this.spawn(unwindScopeClosing(closing, scopeFailure, haltHandler), {
-      completionMode: "structural",
-    });
-    notImplemented("RuntimeScope closing worker exitFuture settles scope exitFuture");
+  #spawnClosing(_closing: ScopeClosing): void {
+    notImplemented("RuntimeScope closing worker orchestration after removing onClosing");
   }
 
   #terminateLocalProcesses(): readonly RuntimeProcess[] {
@@ -276,12 +267,6 @@ export class RuntimeScope {
 }
 
 export type RuntimeScopeStatus = "open" | "closing" | "closed";
-
-export type HaltHandler = (
-  scope: RuntimeScope,
-  processes: readonly RuntimeProcess[],
-  failure: Failure,
-) => Ritual<Failure>;
 
 export interface RuntimeZone {
   trackProcess(process: RuntimeProcess): void;

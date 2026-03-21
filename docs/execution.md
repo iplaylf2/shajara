@@ -22,8 +22,7 @@
 
 - `halt` 先让触发者 Process 以原始 failure 失败
 - `RuntimeScope` 连续级联整棵子树进入 `closing`
-- `ScopeFailureBuilder` 仍应被视为 halt 发起路径上的单实例聚合器；只有发起者对应的 `unwindScopeClosing(...)` 才应该构造 `scope-failed`
-- `packages/kernel/src/interpreter/scope-closing.ts` 的当前编排实现仍然是错误的，不应视为 closing 设计已经稳定
+- closing 回卷与 `ScopeFailure` 收束的正确实现尚未恢复；当前应显式保留为 `notImplemented(...)`
 
 ---
 
@@ -37,14 +36,14 @@
 2. `Interpreter.observeRunnable(listener)` 目前仍只消费 root zone 里 `trackProcess(process)` 所暴露的 runnable 视图；更完整的 zone/cell 协作语义尚未展开。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`
 
-3. scope closing worker 目前已经能被 `spawn` 出来并完成回卷 failure 归并，但它的退出结果还没有自然接到 `ScopeRef.exitFuture` 的 settle 链路上。当前这里仍是显式保留的 `notImplemented(...)` 缺口。  
+3. scope closing 当前只保留“进入 closing tree”的固定部分；closing worker 的回卷编排、failure 归并，以及 `ScopeRef.exitFuture` 的 settle 链路都还没有重新建立，目前这里应显式停留在 `notImplemented(...)`。  
    证据：`packages/kernel/src/interpreter/runtime-scope.ts`
 
-4. `packages/kernel/src/interpreter/scope-closing.ts` 当前虽然已经形成递归回卷的代码形状，但其 `HaltHandler` failure 语义和 `scope-failed` 的构造位置仍然错误；现阶段应把它视为待重构实现，而不是可继续增量修补的基础。  
+4. `packages/kernel/src/interpreter/scope-closing.ts` 已不再承载旧的递归回卷实现；原先那条依赖 `HaltHandler` / `onClosing` 的错误设计已经从解释器主链路中移除。  
    证据：`packages/kernel/src/interpreter/scope-closing.ts`
 
-5. `HaltHandler` 的 failed 结果目前还没有被重新收束清楚。按当前 review 结论，它在 closing 路径上只应面向两类 failure：触发 halt 的 `cause`，以及级联关闭中的 `terminated`；这条语义边界仍需要在后续重构中重新编排。  
-   证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/scope-closing.ts`
+5. closing failure 的收集与 `scope-failed` 的构造位置仍需要在后续重构中重新定义；在那之前，不应再通过解释器扩展点或 handler 注入去干预关闭路径上的 failure。  
+   证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
 
 ---
 
@@ -52,9 +51,9 @@
 
 1. 继续补齐 `RuntimeProcess` 的运行协议，决定哪些状态推进应恢复为真实实现，哪些仍保持 `notImplemented(...)`。
 2. 明确 `trackProcess(process)` 在 zone/cell 间的长期语义边界。
-3. 把 closing worker 的退出结果接到 scope `exitFuture` 的 settle 路径，并消除当前临时保留的 `notImplemented(...)`。
-4. 重构 `packages/kernel/src/interpreter/scope-closing.ts`，重新建立 closing ritual 的编排纪律，并停止在当前错误实现上继续追加局部修补。
-5. 重新定义 `HaltHandler` 在 closing 回卷中的 failure 语义，只保留 `cause` 与 `terminated` 两条路径，并据此决定 `ScopeFailureBuilder` 的最终接线位置。
+3. 重新设计 closing 回卷编排，并把 closing worker 的退出结果接到 scope `exitFuture` 的 settle 路径，然后消除当前临时保留的 `notImplemented(...)`。
+4. 重新建立 `packages/kernel/src/interpreter/scope-closing.ts` 的职责边界，只在语义重新收束后再恢复其实现。
+5. 重新定义 closing failure 的收集语义与 `ScopeFailureBuilder` 的最终接线位置，但不要重新引入 `onClosing` / `HaltHandler` 这类干预点。
 6. 继续实现 executor，并在那时确定它与 zone / `observeRunnable` 的最终协作方式。
 
 ---

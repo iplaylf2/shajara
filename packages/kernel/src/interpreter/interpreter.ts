@@ -28,7 +28,6 @@ import type {
   ScopeRef,
   SigilShape,
   StirringWisp,
-  Wisp,
 } from "#src/contracts";
 import {
   processCededStep,
@@ -43,7 +42,6 @@ import type { ProcessStep } from "./process-step";
 import { RuntimeIndex } from "./runtime-index";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
-import { evoke } from "#src/contracts";
 import { isSome } from "#src/utils";
 
 export class Interpreter {
@@ -97,14 +95,6 @@ export class Interpreter {
 
   public get isClosed(): boolean {
     return this.#rootScope.isClosed;
-  }
-
-  protected onClosing(
-    _scope: ScopeRef<unknown>,
-    _processes: readonly ProcessRef<unknown>[],
-    failure: Failure,
-  ): Wisp<Failure> {
-    return evoke(failure);
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
@@ -236,16 +226,7 @@ export class Interpreter {
   }
 
   #halt(process: RuntimeProcess, sigil: HaltSigil): void {
-    this.#resolveScope(process.scopeRef).halt(
-      process,
-      sigil.failure as Failure,
-      (scope, processes, failure) => () =>
-        this.onClosing(
-          scope.ref,
-          processes.map((runtimeProcess) => runtimeProcess.ref),
-          failure,
-        ),
-    );
+    this.#resolveScope(process.scopeRef).halt(process, sigil.failure as Failure);
   }
 
   #settle(sigil: SettleSigil<unknown>): void {

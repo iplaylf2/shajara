@@ -38,7 +38,7 @@
 - `registerScope / registerProcess / registerFuture`
 - `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle`
 
-`Interpreter` 通过这些运行时对象推进解释环境；它自身不承载 mailbox、future 或 process 局部状态。与 `Scope` / `Process` 一起创建的 descriptor 由对应 runtime object 持有，解释器只读取这些只读声明信息来解释创建、关闭与收敛行为。
+`Interpreter` 通过这些运行时对象推进解释环境。mailbox、future 与 process 局部运行态分别由对应 runtime object 承接；与 `Scope` / `Process` 一起创建的 descriptor 也由对应 runtime object 持有，解释器读取这些只读声明信息来解释创建、关闭与收敛行为。
 
 ### 2.1 `RuntimeScope` 的 closing 职责
 
@@ -47,18 +47,18 @@
 当某个 Process 以 failure 触发 `halt` 时，`RuntimeScope` 的职责分为两段：
 
 - 先让触发者 Process 以原始 failure 失败退出。
-- 再把当前 scope 子树连续推进到 `closing`，并为后续回卷启动一个专用的 closing worker。
+- 再把当前 scope 子树连续推进到 `closing`。
 
 这条边界里，`RuntimeScope` 只负责：
 
 - 改写 scope 状态。
 - 终止当前 scope 内其余仍存活的 Process。
 - 级联让子 scope 进入 `closing`。
-- 构造 closing tree，并启动后续回卷 ritual。
+- 构造 closing tree。
 
-closing 过程中，子 scope 因级联而退出的 Process 统一承接 `scopeTerminated()`；`halt` 的原始 failure 只属于最初触发关闭的那个 Process。
+closing 过程中，子 scope 因级联而退出的 Process 统一承接 `scopeTerminated()`；`halt` 的原始 failure 归属于最初触发关闭的那个 Process。
 
-`RuntimeScope` 不把 `RuntimeProcess` / `RuntimeScope` 直接暴露给外部用户接口。对外仍由 `Interpreter` 维持 `ScopeRef` / `ProcessRef` 边界。
+外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 
 ## 3. 驱动模型
 
@@ -115,20 +115,8 @@ closing 过程中，子 scope 因级联而退出的 Process 统一承接 `scopeT
 
 它们读取解释环境中的既有状态，或登记收敛通知。
 
-## 5. 扩展点
+## 5. Closing 语义
 
-`Interpreter` 预留一个受保护扩展点：`onClosing`。
+scope 的级联取消、终止 failure 的设置，以及 closing failure 的收集，统一由 kernel 的 closing 协议定义。
 
-`onClosing(scope, processes, failure)` 在某个 Scope 进入 closing 路径时被调用，其中：
-
-- `scope`：当前进入 closing 的 Scope
-- `processes`：当前 Scope 内因本次 closing 被终止的 Process 集合
-- `failure`：当前 closing 路径上承载的 Failure
-
-这个扩展点用于在 closing 路径上追加有限干预。
-
-它承接的是 scope closing 回卷阶段的 handler 语义：
-
-- 只有当某个 scope 的子树都已经完成 closing 回卷后，当前 scope 才会执行自己的 `onClosing(...)`。
-- 不同分支的回卷允许并发推进。
-- `onClosing(...)` 产生的附加 failure 进入该次 scope failure 的 closing failure 收集，而不改写级联终止本身的 cause。
+`Interpreter` 负责触发并推进这套协议，使 closing 继续保持为解释环境内部的固定语义。

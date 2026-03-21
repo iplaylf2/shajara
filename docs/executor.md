@@ -82,7 +82,7 @@
 
 `executor` 需要把普通 `Scope` 组织成可供外部启动与终止的 execution scope 视图。
 
-execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自带的 descriptor 仍由创建时固定；`executor` 可以读取这些只读声明信息来决定如何接入治理，但不负责在运行中改写它们。
+execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 descriptor 在创建时固定；`executor` 读取这些只读声明信息来决定如何接入治理。
 
 ### 4.2 环境治理视图
 
@@ -101,7 +101,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自�
 - **scheduler**：决定 runnable process 的选择与推进策略。
 - **reaper**：决定 closing 无法自然收敛时，是否继续等待、失败收敛或进入结构性修剪。
 
-这类能力属于 `executor` 的环境治理问题，而不是 `ScopeDescriptor` 的稳定语义字段；其承载形态当前待定。若未来引入 governor / governance 设计，也应把它理解为治理角色或治理对象，而不是 `Scope` 的分类机制。
+这类能力属于 `executor` 的环境治理问题，与 `ScopeDescriptor` 的稳定语义字段分层承接；其承载形态当前待定。若未来引入 governor / governance 设计，也应把它理解为治理角色或治理对象，服务于环境治理的组织。
 
 ### 4.3 结构性修剪承接位
 
@@ -129,13 +129,10 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 自�
 `executor` 使用 `Interpreter` 的两类能力：
 
 - 公开能力：`step`、`spawn`、`lookup`、`poll`、`wait`
-- 受保护扩展点：`onClosing`
 
-此外，`executor` 可以使用 `Interpreter.observeRunnable(listener)` 把自己的调度循环接到 root 级 runnable 订阅接口上；该接口不支持按任意 scope 定位接线，并允许多个订阅同时生效。
+此外，`executor` 可以使用 `Interpreter.observeRunnable(listener)` 把自己的调度循环接到 root 级 runnable 订阅接口上；该接口工作在 root scope 语境，并允许多个订阅同时生效。
 
-若 `executor` 需要更紧密地组织关闭或收敛过程，可以通过派生 `Interpreter` 并覆写 `onClosing`，把治理能力接入解释过程。
-
-这里的治理扩展建立在既有对象语义之上：`executor` 读取 `Scope` / `Process` 的 descriptor，决定如何组织调度、关闭和附加治理；descriptor 本身不是 executor 侧注入的运行期配置。
+这里的治理扩展建立在既有对象语义之上：`executor` 读取 `Scope` / `Process` 的 descriptor，决定如何组织调度、关闭和附加治理；descriptor 作为对象自带的只读声明信息参与这一协作。
 
 ## 7. 实现导向
 
