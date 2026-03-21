@@ -27,18 +27,25 @@
 
 解释环境中的运行时对象按职责分为三类：
 
-- `RuntimeScope`：承接 scope 树、mailbox、scope 派生 future、scope descriptor，以及 scope 内部的结构归属，并持有该 scope 的 `RuntimeZone`。
-- `RuntimeProcess`：承接 process descriptor，以及 process 的局部运行态，例如 continuation、等待态与终态收敛，并持有该 process 的 `RuntimeCell`。
+- `RuntimeScope`：承接 scope 树、mailbox、scope 派生 future、scope descriptor，以及 scope 内部的结构归属与 scope 自身状态。
+- `RuntimeProcess`：承接 process descriptor，以及 process 的局部运行态，例如 continuation、等待态、终态收敛与 process 自身状态。
 - `RuntimeFuture`：承接 future 的单次收敛状态与观察面。
 
-其中，`RuntimeZone` 由 `RuntimeScope` 在自身构造过程中通过 `RuntimeZoneBuilder` 产出；`RuntimeCell` 由 `RuntimeProcess` 在自身构造过程中通过 `RuntimeCellBuilder` 产出。
+当前设计里，runtime object 的事件面由对象自身暴露：
+
+- `RuntimeProcess.observe(...)`：订阅 process 自身的状态变化。
+- `RuntimeScope.observe(...)`：订阅 scope 自身的状态变化。
+
+解释环境外的调度或观察逻辑，应建立在这些对象自己的观察面之上，而不是要求 `RuntimeProcess` 再额外持有一个 `cell` 承载位。
+
+`zone` 仍然是 `RuntimeScope` 所持有的结构承接位。它适合描述 scope 级或子树级的组织边界；它不是 process 运行态本身的必要组成，也不应反过来把 `RuntimeProcess` 塑造成依赖 `cell builder` 的对象。
 
 索引对象 `RuntimeIndex` 只负责：
 
 - `registerScope / registerProcess / registerFuture`
 - `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle`
 
-`Interpreter` 通过这些运行时对象推进解释环境。mailbox、future 与 process 局部运行态分别由对应 runtime object 承接；与 `Scope` / `Process` 一起创建的 descriptor 也由对应 runtime object 持有，解释器读取这些只读声明信息来解释创建、关闭与收敛行为。
+`Interpreter` 通过这些运行时对象推进解释环境。mailbox、future、process 局部运行态，以及 scope / process 自身的观察面分别由对应 runtime object 承接；与 `Scope` / `Process` 一起创建的 descriptor 也由对应 runtime object 持有，解释器读取这些只读声明信息来解释创建、关闭与收敛行为。
 
 ### 2.1 `RuntimeScope` 的 closing 职责
 
@@ -97,13 +104,14 @@ closing 过程中，子 scope 因级联而退出的 Process 统一承接 `scopeT
 
 ### 4.1 `observeRunnable`
 
-`Interpreter` 仍保留 `observeRunnable(listener)`，但它不再按 `scopeRef` 暴露局部接线能力，而是固定工作在 root scope 语境。
+`Interpreter` 仍保留 `observeRunnable(listener)`，它当前仍建立在 root scope 所持有的 zone 之上。
 
-它为 root scope 所承接的 runnable 接线安装订阅者：
+当前它只覆盖 runnable process 的观察：
 
-- 根 scope 在创建时显式承接 zone。
-- child scope 在 `branch(...)` 时默认继承父 zone，也允许显式换入新 zone。
-- `observeRunnable(listener)` 只作用于 root zone，但允许多个订阅同时生效；返回的 `unsubscribe` 只撤销当前订阅。
+- 当 root zone 追踪到某个 `runnable` process，解释环境会通知订阅者。
+- 允许多个订阅同时生效；返回的 `unsubscribe` 只撤销当前订阅。
+
+这条接口现在只是 `Interpreter` 暴露给外部调度方的最小 runnable 观察面；它不等同于 `RuntimeScope` 或 `RuntimeProcess` 自身的观察接口。
 
 ### 4.2 只读接口
 

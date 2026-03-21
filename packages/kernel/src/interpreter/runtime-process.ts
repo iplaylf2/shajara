@@ -14,6 +14,7 @@ import type {
 } from "#src/contracts";
 import { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
+import type { Unsubscribe } from "#src/interpreter-kit";
 import { notImplemented } from "#src/internal/not-implemented";
 
 const HANDLE_FUTURE_KEY_INDEX = 0;
@@ -23,7 +24,6 @@ export class RuntimeProcess<Relic = unknown> {
     scopeRef: ScopeRef<unknown>,
     ritual: Ritual<Relic>,
     descriptor: ProcessDescriptor,
-    cellBuilder: RuntimeCellBuilder,
   ) {
     this.#exitFuture = RuntimeFuture.create<Relic>();
     this.#descriptor = descriptor;
@@ -31,10 +31,8 @@ export class RuntimeProcess<Relic = unknown> {
       exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],
     } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
-    this.status = "runnable";
-    this.#cell = cellBuilder(this);
+    this.#status = "runnable";
     this.wisp = ritual() as Wisp<unknown>;
-    this.#cell.track();
   }
 
   public get exitFuture(): RuntimeFuture<Relic> {
@@ -49,10 +47,22 @@ export class RuntimeProcess<Relic = unknown> {
     return this.#continuation !== null;
   }
 
+  public get status(): RuntimeProcessStatus {
+    return this.#status;
+  }
+
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
     return {
       process: this.ref,
       scope: this.scopeRef,
+    };
+  }
+
+  public observe(observer: RuntimeProcessObserver): Unsubscribe {
+    this.#observers.add(observer);
+
+    return () => {
+      this.#observers.delete(observer);
     };
   }
 
@@ -97,22 +107,18 @@ export class RuntimeProcess<Relic = unknown> {
   public readonly ref: ProcessRef<Relic>;
   public readonly scopeRef: ScopeRef<unknown>;
   public result: FutureResult<Relic> | null = null;
-  public status: RuntimeProcessStatus;
   public wisp: Wisp<unknown>;
 
   #continuation: RuntimeContinuation | null = null;
-  readonly #cell: RuntimeCell;
+  #status: RuntimeProcessStatus;
   readonly #descriptor: ProcessDescriptor;
   readonly #exitFuture: RuntimeFuture<Relic>;
+  readonly #observers = new Set<RuntimeProcessObserver>();
 }
-
-export interface RuntimeCell {
-  track(): void;
-}
-
-export type RuntimeCellBuilder = (process: RuntimeProcess) => RuntimeCell;
 
 export type RuntimeProcessStatus = "runnable" | "waiting" | "completed";
+
+export type RuntimeProcessObserver = (process: RuntimeProcess) => void;
 
 export interface RuntimeContinuation {
   readonly echo: unknown;

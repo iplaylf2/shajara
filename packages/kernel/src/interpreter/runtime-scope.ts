@@ -10,10 +10,10 @@ import type {
 import { none, some } from "#src/utils";
 import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
-import type { RuntimeCell } from "./runtime-process";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { ScopeClosing } from "./scope-closing";
+import type { Unsubscribe } from "#src/interpreter-kit";
 import { notImplemented } from "#src/internal/not-implemented";
 import { scopeTerminated } from "#src/failures";
 
@@ -23,17 +23,17 @@ export class RuntimeScope {
   public static create(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
-    zoneBuilder: RuntimeZoneBuilder,
+    zone: RuntimeZone,
   ): RuntimeScope {
-    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zoneBuilder);
+    return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
   }
 
   public branch(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
-    zoneBuilder: RuntimeZoneBuilder = () => this.#zone,
+    zone: RuntimeZone = this.#zone,
   ): RuntimeScope {
-    const child = new RuntimeScope(entry, descriptor, this, zoneBuilder);
+    const child = new RuntimeScope(entry, descriptor, this, zone);
 
     this.#children.add(child);
 
@@ -83,11 +83,10 @@ export class RuntimeScope {
   }
 
   public spawn<Relic>(ritual: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
-    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor, (process) =>
-      this.#buildCell(process),
-    );
+    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor);
 
     this.#spawnedProcesses.add(spawnedProcess);
+    this.#observeProcess(spawnedProcess);
 
     return spawnedProcess;
   }
@@ -132,28 +131,32 @@ export class RuntimeScope {
     return this.#process;
   }
 
+  public observe(observer: RuntimeScopeObserver): Unsubscribe {
+    this.#observers.add(observer);
+
+    return () => {
+      this.#observers.delete(observer);
+    };
+  }
+
   private constructor(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
     parent: RuntimeScope,
-    zoneBuilder: RuntimeZoneBuilder,
+    zone: RuntimeZone,
   ) {
     this.#exitFuture = RuntimeFuture.create<unknown>();
+    this.#zone = zone;
     const [scopeExitFuture] = this.#exitFuture.handle;
     this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
 
-    const entryProcess = new RuntimeProcess(
-      this.#ref,
-      entry,
-      { completionMode: "structural" },
-      (process) => this.#buildCell(process),
-    );
+    const entryProcess = new RuntimeProcess(this.#ref, entry, { completionMode: "structural" });
 
     this.#process = entryProcess;
     this.#descriptor = descriptor;
 
     this.#parent = parent;
-    this.#zone = zoneBuilder(this);
+    this.#observeProcess(entryProcess);
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -196,12 +199,10 @@ export class RuntimeScope {
     }
   }
 
-  #buildCell(process: RuntimeProcess): RuntimeCell {
-    return {
-      track: () => {
-        this.#zone.trackProcess(process);
-      },
-    };
+  #observeProcess(process: RuntimeProcess): void {
+    process.observe((observedProcess) => {
+      this.#zone.trackProcess(observedProcess);
+    });
   }
 
   #enterClosing(): ScopeClosing {
@@ -244,6 +245,10 @@ export class RuntimeScope {
 
   #setStatus(status: RuntimeScopeStatus): void {
     this.#status = status;
+
+    for (const observer of this.#observers) {
+      observer(this);
+    }
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
@@ -257,6 +262,7 @@ export class RuntimeScope {
 
   #status: RuntimeScopeStatus = "open";
   readonly #children = new Set<RuntimeScope>();
+  readonly #observers = new Set<RuntimeScopeObserver>();
 
   readonly #mailboxes = new WeakMap<MessageKey<unknown>, unknown[]>();
   readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess[]>();
@@ -272,4 +278,4 @@ export interface RuntimeZone {
   trackProcess(process: RuntimeProcess): void;
 }
 
-export type RuntimeZoneBuilder = (scope: RuntimeScope) => RuntimeZone;
+export type RuntimeScopeObserver = (scope: RuntimeScope) => void;

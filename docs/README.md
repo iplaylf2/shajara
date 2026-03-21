@@ -7,15 +7,15 @@ shajara 由两层构成：
 
 ## 文档索引
 
-| 文档                                                           | 职责                                                                                                       |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [semantics.md](semantics.md)                                   | kernel 语义单源：核心语义、对象模型、执行循环、收敛与 sigil 协议。                                         |
-| [api.md](api.md)                                               | 用户侧公开 API 与使用约束。                                                                                |
-| [interpreter.md](interpreter.md)                               | `Interpreter` 的职责、驱动模型、runnable 驱动接面，以及 `RuntimeScope` / `RuntimeProcess` 的合理依赖边界。 |
-| [executor.md](executor.md)                                     | `executor` 的环境治理职责，以及它如何建立在 `Interpreter` 之上。                                           |
-| [host.md](host.md)                                             | host 分层架构与 kernel 适配协议。                                                                          |
-| [implementation-constraints.md](implementation-constraints.md) | 实现期约束、命名治理与结构落位。                                                                           |
-| [execution.md](execution.md)                                   | 当前实现状态快照，以及实现与文档基线之间仍存在的偏差。                                                     |
+| 文档                                                           | 职责                                                                                          |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [semantics.md](semantics.md)                                   | kernel 语义单源：核心语义、对象模型、执行循环、收敛与 sigil 协议。                            |
+| [api.md](api.md)                                               | 用户侧公开 API 与使用约束。                                                                   |
+| [interpreter.md](interpreter.md)                               | `Interpreter` 的职责、驱动模型，以及 `RuntimeScope` / `RuntimeProcess` 的状态承接与事件边界。 |
+| [executor.md](executor.md)                                     | `executor` 的环境治理职责，以及它如何建立在 `Interpreter` 之上。                              |
+| [host.md](host.md)                                             | host 分层架构与 kernel 适配协议。                                                             |
+| [implementation-constraints.md](implementation-constraints.md) | 实现期约束、命名治理与结构落位。                                                              |
+| [execution.md](execution.md)                                   | 当前实现状态快照，以及实现与文档基线之间仍存在的偏差。                                        |
 
 ## 建议阅读顺序
 
