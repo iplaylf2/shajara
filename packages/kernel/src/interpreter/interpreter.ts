@@ -49,10 +49,10 @@ export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
       entry,
-      { failureMode: "propagate" },
-      {
-        trackProcess: (process) => {
-          if (process.status !== "runnable") {
+        { failureMode: "propagate" },
+        {
+          trackProcess: (process) => {
+          if (process.status !== "running") {
             return;
           }
 
@@ -72,8 +72,9 @@ export class Interpreter {
       case "waiting":
         return processWaitingStep(processRef);
       case "completed":
+      case "failed":
         return processExitedStep(processRef, process.result as FutureResult<Relic>);
-      case "runnable":
+      case "running":
         if (process.hasQueuedContinuation) {
           return this.#resonateWisp(process);
         }
@@ -199,7 +200,7 @@ export class Interpreter {
   #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     process.resonate();
 
-    if (process.status === "completed") {
+    if (process.status === "completed" || process.status === "failed") {
       return processExitedStep(process.ref, process.result as FutureResult<Relic>);
     }
 

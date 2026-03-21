@@ -12,10 +12,8 @@ import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
-import type { ScopeClosing } from "./scope-closing";
 import type { Unsubscribe } from "#src/interpreter-kit";
 import { notImplemented } from "#src/internal/not-implemented";
-import { scopeTerminated } from "#src/failures";
 
 const EMPTY_QUEUE_SIZE = 0;
 
@@ -36,6 +34,7 @@ export class RuntimeScope {
     const child = new RuntimeScope(entry, descriptor, this, zone);
 
     this.#children.add(child);
+    this.#observeChildScope(child);
 
     return child;
   }
@@ -85,18 +84,15 @@ export class RuntimeScope {
   public spawn<Relic>(ritual: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
     const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor);
 
-    this.#spawnedProcesses.add(spawnedProcess);
-    this.#observeProcess(spawnedProcess);
+    this.#registerOwnedProcess(spawnedProcess);
 
     return spawnedProcess;
   }
 
   public halt(process: RuntimeProcess, failure: Failure): void {
-    process.fail(failure);
-
-    const closing = this.#enterClosing();
-
-    this.#spawnClosing(closing);
+    notImplemented(
+      `RuntimeScope.halt (${process.descriptor.completionMode}, ${failure.message()})`,
+    );
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -120,7 +116,7 @@ export class RuntimeScope {
   }
 
   public get isClosed(): boolean {
-    return this.#status === "closed";
+    return this.#status === "completed" || this.#status === "failed";
   }
 
   public get exitFuture(): RuntimeFuture<unknown> {
@@ -152,11 +148,25 @@ export class RuntimeScope {
 
     const entryProcess = new RuntimeProcess(this.#ref, entry, { completionMode: "structural" });
 
+    this.#registerOwnedProcess(entryProcess);
+
     this.#process = entryProcess;
     this.#descriptor = descriptor;
 
     this.#parent = parent;
-    this.#observeProcess(entryProcess);
+  }
+
+  #registerOwnedProcess(process: RuntimeProcess): void {
+    this.#processContainerFor(process).add(process);
+    this.#observeOwnedProcess(process);
+  }
+
+  #processContainerFor(process: RuntimeProcess): Set<RuntimeProcess> {
+    if (process.descriptor.completionMode === "structural") {
+      return this.#structuralProcesses;
+    }
+
+    return this.#detachedProcesses;
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -199,56 +209,17 @@ export class RuntimeScope {
     }
   }
 
-  #observeProcess(process: RuntimeProcess): void {
-    process.observe((observedProcess) => {
-      this.#zone.trackProcess(observedProcess);
+  #observeChildScope(childScope: RuntimeScope): void {
+    childScope.observe((observedScope) => {
+      notImplemented(`RuntimeScope observed child scope lifecycle (${observedScope.status})`);
     });
   }
 
-  #enterClosing(): ScopeClosing {
-    this.#setStatus("closing");
-
-    const processes = this.#terminateLocalProcesses();
-    const children = [...this.#children].map((childScope) => childScope.#enterClosing());
-
-    return {
-      children,
-      processes,
-      scope: this,
-    };
-  }
-
-  #spawnClosing(_closing: ScopeClosing): void {
-    notImplemented("RuntimeScope closing worker orchestration after removing onClosing");
-  }
-
-  #terminateLocalProcesses(): readonly RuntimeProcess[] {
-    const terminatedProcesses: RuntimeProcess[] = [];
-    const terminationFailure = scopeTerminated();
-    this.#appendTerminatedProcess(terminatedProcesses, this.#process, terminationFailure);
-
-    for (const process of this.#spawnedProcesses) {
-      this.#appendTerminatedProcess(terminatedProcesses, process, terminationFailure);
-    }
-
-    return terminatedProcesses;
-  }
-
-  #appendTerminatedProcess(
-    terminatedProcesses: RuntimeProcess[],
-    process: RuntimeProcess,
-    failure: Failure,
-  ): void {
-    process.fail(failure);
-    terminatedProcesses.push(process);
-  }
-
-  #setStatus(status: RuntimeScopeStatus): void {
-    this.#status = status;
-
-    for (const observer of this.#observers) {
-      observer(this);
-    }
+  #observeOwnedProcess(process: RuntimeProcess): void {
+    process.observe((observedProcess) => {
+      this.#zone.trackProcess(observedProcess);
+      notImplemented(`RuntimeScope observed process lifecycle (${observedProcess.status})`);
+    });
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
@@ -260,7 +231,7 @@ export class RuntimeScope {
   readonly #descriptor: ScopeDescriptor;
   readonly #zone: RuntimeZone;
 
-  #status: RuntimeScopeStatus = "open";
+  #status: RuntimeScopeStatus = "running";
   readonly #children = new Set<RuntimeScope>();
   readonly #observers = new Set<RuntimeScopeObserver>();
 
@@ -268,11 +239,14 @@ export class RuntimeScope {
   readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess[]>();
 
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
-  readonly #spawnedProcesses = new Set<RuntimeProcess>();
+
+  readonly #structuralProcesses = new Set<RuntimeProcess>();
+  readonly #detachedProcesses = new Set<RuntimeProcess>();
+
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
-export type RuntimeScopeStatus = "open" | "closing" | "closed";
+export type RuntimeScopeStatus = "running" | "completing" | "failing" | "completed" | "failed";
 
 export interface RuntimeZone {
   trackProcess(process: RuntimeProcess): void;

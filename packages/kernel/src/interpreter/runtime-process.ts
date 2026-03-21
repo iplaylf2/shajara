@@ -31,7 +31,7 @@ export class RuntimeProcess<Relic = unknown> {
       exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],
     } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
-    this.#status = "runnable";
+    this.#status = "running";
     this.wisp = ritual() as Wisp<unknown>;
   }
 
@@ -116,7 +116,7 @@ export class RuntimeProcess<Relic = unknown> {
   readonly #observers = new Set<RuntimeProcessObserver>();
 }
 
-export type RuntimeProcessStatus = "runnable" | "waiting" | "completed";
+export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "failed";
 
 export type RuntimeProcessObserver = (process: RuntimeProcess) => void;
 

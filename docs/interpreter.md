@@ -31,7 +31,7 @@
 - `RuntimeProcess`：承接 process descriptor，以及 process 的局部运行态，例如 continuation、等待态、终态收敛与 process 自身状态。
 - `RuntimeFuture`：承接 future 的单次收敛状态与观察面。
 
-当前设计里，runtime object 的事件面由对象自身暴露：
+设计上，runtime object 的事件面由对象自身暴露：
 
 - `RuntimeProcess.observe(...)`：订阅 process 自身的状态变化。
 - `RuntimeScope.observe(...)`：订阅 scope 自身的状态变化。
@@ -47,23 +47,23 @@
 
 `Interpreter` 通过这些运行时对象推进解释环境。mailbox、future、process 局部运行态，以及 scope / process 自身的观察面分别由对应 runtime object 承接；与 `Scope` / `Process` 一起创建的 descriptor 也由对应 runtime object 持有，解释器读取这些只读声明信息来解释创建、关闭与收敛行为。
 
-### 2.1 `RuntimeScope` 的 closing 职责
+### 2.1 `RuntimeScope` 的生命周期职责
 
-`RuntimeScope` 自身承接 scope closing 的编排入口。
+`RuntimeScope` 承接 scope 生命周期的编排边界。它的状态设计区分成功路径与失败路径，scope 终态至少区分成功退出与失败退出。
 
-当某个 Process 以 failure 触发 `halt` 时，`RuntimeScope` 的职责分为两段：
+`RuntimeScope` 的对象设计包含三层职责：
 
-- 先让触发者 Process 以原始 failure 失败退出。
-- 再把当前 scope 子树连续推进到 `closing`。
+- 持有 scope 自身的状态、descriptor、mailbox、派生 future，以及对父子 scope 的结构归属。
+- 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
+- 作为 `halt`、closing 与终态收敛协议的承接点。
 
-这条边界里，`RuntimeScope` 只负责：
+`RuntimeScope` 内部用于追踪归属关系的容器具有明确语义：
 
-- 改写 scope 状态。
-- 终止当前 scope 内其余仍存活的 Process。
-- 级联让子 scope 进入 `closing`。
-- 构造 closing tree。
+- process 按 `completionMode` 分别进入 structural / detached 两组容器；`entryProcess` 也走同一套注册路径。
+- `children` 与 process 容器表达 runtime scope 需要追踪的归属成员。
+- 成员进入终态后，应从对应容器中移除，不再继续作为活跃成员被追踪。
 
-closing 过程中，子 scope 因级联而退出的 Process 统一承接 `scopeTerminated()`；`halt` 的原始 failure 归属于最初触发关闭的那个 Process。
+关于 `halt`、closing 级联、终态 future settlement，以及成员移除时机，本文档只约束职责落点：这些语义应由 `RuntimeScope` 承接；具体协议仍待进一步设计收束。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 
@@ -104,14 +104,14 @@ closing 过程中，子 scope 因级联而退出的 Process 统一承接 `scopeT
 
 ### 4.1 `observeRunnable`
 
-`Interpreter` 仍保留 `observeRunnable(listener)`，它当前仍建立在 root scope 所持有的 zone 之上。
+`Interpreter` 保留 `observeRunnable(listener)`，它建立在 root scope 所持有的 zone 之上。
 
-当前它只覆盖 runnable process 的观察：
+它覆盖 runnable process 的观察：
 
 - 当 root zone 追踪到某个 `runnable` process，解释环境会通知订阅者。
 - 允许多个订阅同时生效；返回的 `unsubscribe` 只撤销当前订阅。
 
-这条接口现在只是 `Interpreter` 暴露给外部调度方的最小 runnable 观察面；它不等同于 `RuntimeScope` 或 `RuntimeProcess` 自身的观察接口。
+这条接口是 `Interpreter` 暴露给外部调度方的最小 runnable 观察面；它不等同于 `RuntimeScope` 或 `RuntimeProcess` 自身的观察接口。
 
 ### 4.2 只读接口
 
