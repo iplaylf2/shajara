@@ -1,8 +1,9 @@
 import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
 import type { Ritual, Wisp } from "@shajara/kernel";
-import { ensureExecutor, halt, restingWisp, stirringWisp } from "@shajara/kernel";
+import { halt, restingWisp, stirringWisp } from "@shajara/kernel";
 import { isLeft, tryCatch } from "@shajara/kernel/utils";
 import type { Sigil } from "@shajara/kernel/sigils";
+import { defer } from "@shajara/kernel/sigils";
 import { toFailureUnknown } from "./failure-mapping";
 
 export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> {
@@ -14,10 +15,10 @@ export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> 
 
     const coroutine = startedRoutine.right;
 
-    const executor = ensureExecutor();
-    executor.registerCleanup(decoded, () => lowerCoroutineReturn(coroutine) as Wisp<void>);
-
-    return lowerCoroutineNext(coroutine, null);
+    return stirringWisp(
+      defer(() => lowerCoroutineReturn(coroutine) as Wisp<void>),
+      () => lowerCoroutineNext(coroutine, null),
+    );
   }
 
   return decoded;

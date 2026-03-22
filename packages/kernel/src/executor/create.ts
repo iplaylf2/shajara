@@ -27,7 +27,6 @@ export interface Executor {
   launch<Return>(scope: ExecutionScopeRef, ritual: Ritual<Return>): LaunchHandle<Return>;
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): void;
   terminate(scope: ExecutionScopeRef): void;
-  registerCleanup(ritual: Ritual<unknown>, cleanup: Ritual<void>): void;
 }
 
 export function createExecutor(interpreter: Interpreter): Executor {

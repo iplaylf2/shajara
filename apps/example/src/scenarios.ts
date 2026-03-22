@@ -1,5 +1,5 @@
-import type { ResourceProvide, RiteCoroutine, RiteRoutine } from "@shajara/host";
-import { action, contextKey, resource, sleep, until } from "@shajara/host";
+import type { RiteCoroutine, RiteRoutine } from "@shajara/host";
+import { action, contextKey, sleep, until } from "@shajara/host";
 import {
   all,
   bind,
@@ -10,12 +10,14 @@ import {
   lookup,
   park,
   race,
+  resource,
   resumable,
   self,
   spawn,
   unbind,
   wait,
 } from "@shajara/host/primitives";
+import type { ResourceProvide } from "@shajara/host/primitives";
 
 function getExampleScenario(name: ExampleScenarioName): RiteRoutine<unknown> {
   return EXAMPLE_SCENARIOS[name];

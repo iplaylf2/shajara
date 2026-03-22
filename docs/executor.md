@@ -25,7 +25,6 @@
 - `launch(scope, ritual): LaunchHandle<T>`
 - `settle(futureSettle, result): void`
 - `terminate(scope): void`
-- `registerCleanup(ritual, cleanup): void`
 
 这些签名定义了 `executor` 的稳定外部能力。
 
@@ -58,10 +57,6 @@
 ### 2.4 `terminate`
 
 `terminate(scope)` 负责终止指定 `ExecutionScopeRef`。
-
-### 2.5 `registerCleanup`
-
-`registerCleanup(ritual, cleanup)` 负责把 cleanup 绑定到 ritual 入口。
 
 ## 3. 依赖关系
 
@@ -141,7 +136,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 - 维护一个长期存在的执行环境。
 - 提供统一的 `rootScope` 作为 execution root。
 - 为每次 `launch` 组织新的 execution scope，并返回稳定的收敛句柄。
-- 把 future settlement、termination 与 cleanup registration 这些外部能力接入环境内部。
+- 把 future settlement 与 termination 这些外部能力接入环境内部。
 - 在需要时接入相应的调度、回收或治理策略。
 - 维护全局唯一的结构性修剪承接位，用于结构性修剪。
 
