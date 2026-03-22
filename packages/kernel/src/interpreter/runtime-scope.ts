@@ -13,6 +13,7 @@ import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { Unsubscribe } from "#src/interpreter-kit";
+import { notImplemented } from "#src/internal/not-implemented.js";
 
 const EMPTY_QUEUE_SIZE = 0;
 
@@ -85,6 +86,10 @@ export class RuntimeScope {
     this.#registerOwnedProcess(spawnedProcess);
 
     return spawnedProcess;
+  }
+
+  public defer(_cleanup: Ritual<void>): void {
+    return notImplemented("");
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -212,8 +217,8 @@ export class RuntimeScope {
         .with(["running", "completed"], () => {
           // 尝试进入成功的收敛
         })
-        .with(["failing", P.union("canceled", "completed")], () => {
-          // 尝试进入失败的收敛。
+        .with(["closing", P.union("canceled", "completed")], () => {
+          // 尝试进入本地收敛。
         })
         .with(["canceling", P.union("canceled", "completed")], () => {
           // 尝试进入取消的收敛。
@@ -221,8 +226,8 @@ export class RuntimeScope {
         .with(["running", "failed"], () => {
           // 根据 child 的失败模式，决定要不要向上传播失败。
         })
-        .with(["failing", "failed"], () => {
-          // 直接搜集失败。尝试进入scope失败的收敛。
+        .with(["closing", "failed"], () => {
+          // 直接搜集失败。尝试进入scope本地收敛。
         })
         .with(["canceling", "failed"], () => {
           // 将失败收集起来，用于收敛的结果； 尝试进入scope取消的收敛。
@@ -241,8 +246,8 @@ export class RuntimeScope {
         .with(["running", "completed"], () => {
           // 尝试进入scope完成的收敛。
         })
-        .with(["failing", "completed"], () => {
-          // 尝试进入scope失败的收敛。
+        .with(["closing", "completed"], () => {
+          // 尝试进入scope本地收敛。
         })
         .with(["canceling", "completed"], () => {
           // 尝试进入scope取消的收敛。
@@ -251,10 +256,10 @@ export class RuntimeScope {
           // 将失败收集起来，用于收敛的结果； 尝试进入scope取消的收敛。
         })
         .with(["running", "failed"], () => {
-          // 进入 failing，并开始级联取消
+          // 进入 closing，并开始级联取消
         })
-        .with(["failing", "failed"], () => {
-          // 直接搜集失败。尝试进入scope失败的收敛。
+        .with(["closing", "failed"], () => {
+          // 直接搜集失败。尝试进入scope本地收敛。
         })
         .otherwise(() => {
           // Do nothing
@@ -292,7 +297,7 @@ export interface RuntimeZone {
 
 export type RuntimeScopeStatus =
   | "running"
-  | "failing"
+  | "closing"
   | "canceling"
   | "completed"
   | "failed"

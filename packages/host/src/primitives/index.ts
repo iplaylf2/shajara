@@ -5,6 +5,7 @@ export * from "./settle-error";
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";
+export * from "./defer";
 export * from "./spawn";
 export * from "./future";
 export * from "./halt";

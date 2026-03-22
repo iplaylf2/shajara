@@ -22,12 +22,13 @@
 
 - `RuntimeScope` 通过监听直系 Process 与子 Scope 的状态变化表达正常收敛
 - 正常收敛当前只关心入口 process、当前 scope 内的 structural process，以及子 scope 的关闭状态
-- `RuntimeScope` 当前设计基线改为 `running / failing / canceling / completed / failed / canceled`；`isClosed` 只表达“已终态”
+- `RuntimeScope` 当前设计基线改为 `running / closing / canceling / completed / failed / canceled`；`isClosed` 只表达“已终态”
 - `RuntimeProcess` 当前设计基线改为 `running / waiting / completed / failed / canceled`
 - `halt` 不再由 `RuntimeScope.halt(process, failure)` 承接；解释器应直接调用 `RuntimeProcess.halt(failure)`，其余收敛通过观察事件推进
-- `RuntimeScope` 的事件表已经明确分成 child scope 与 owned process 两条观察链；`failing` 的目标终态是 `failed`，`canceling` 的目标终态是 `canceled`
+- `RuntimeScope` 的事件表已经明确分成 child scope 与 owned process 两条观察链；`closing` 是本地收敛过渡态，`canceling` 的目标终态是 `canceled`
 - `canceling` 期间观察到的 `failed` 不会把 scope 升级成失败源头；它只会被收集进取消路径的收敛结果
 - `RuntimeScope` 已按 structural process、detached process 与 `children` 分开承接容器语义；成员终态后的移除逻辑仍停留在观察回调后的 `notImplemented(...)`
+- `defer` 的语义基线已经明确：它在 scope 进入 `closing / canceling` 时自动触发已注册 cleanup，并将其 spawn 为 cleanup process；对应运行时接线仍待实现
 - `halt`、closing 级联、`ScopeRef.exitFuture`、派生 future 的 settle，以及 closing failure 收束仍未恢复；当前继续留待后续实现
 
 ---
@@ -42,7 +43,7 @@
 2. `Interpreter.observeRunnable(listener)` 目前仍通过 root zone 的 `trackProcess(process)` 获得 runnable 视图；它还没有与 `RuntimeProcess.observe(...)` / `RuntimeScope.observe(...)` 建立新的统一关系。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`
 
-3. `RuntimeScope` 的事件分派口径已经明确，但“尝试进入完成/失败/取消收敛”的具体判定条件、成员移除时机、`ScopeRef.exitFuture` 的 settle、派生 future 的强制收敛，以及 closing failure 的归并都还没有重新建立。  
+3. `RuntimeScope` 的事件分派口径已经明确，但“尝试进入完成/失败/取消收敛”的具体判定条件、`defer` 注册的 cleanup 在 `closing / canceling` 入口的自动触发、成员移除时机、`ScopeRef.exitFuture` 的 settle、派生 future 的强制收敛，以及 closing failure 的归并都还没有重新建立。  
    证据：`packages/kernel/src/interpreter/runtime-scope.ts`
 
 4. `packages/kernel/src/interpreter/scope-closing.ts` 当前不应承载主链路职责；在事件驱动的取消协议重新收束前，不应急着恢复新的 closing 编排对象。  

@@ -31,7 +31,7 @@ Shajara 中显现为一缕 **wisp**。
 
 `Sigil` 是非泛型基础对象契约，最小形状为 `{ kind: string; return?: readonly [unknown] }`。具体 sigil 通过 `return` tuple 声明 echo 类型，`Echo<S>` 从该见证推导。
 
-cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口注册一次 cleanup，由该入口对应的运行中 Wisp 在中断/收敛时执行清理续延。
+cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口可在其 scope 内通过 `Defer` 注册清理 ritual。注册的 cleanup 不在 `running` 路径上运行；它会在所属 scope 进入收敛过渡态时由运行时自动 spawn，并参与该 scope 的 closing 收敛。对本地收敛路径，这个过渡态是 `closing`；对级联取消路径，这个过渡态是 `canceling`。
 
 ### 2.2 Failure 与失败通道
 
@@ -329,6 +329,17 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 调用方 Process 主动释放 Processor（协作式让权）。
 
+#### Defer(cleanup) → void `[Non-Blocking]`
+
+在调用方 Scope 上注册一个 deferred cleanup。
+
+- 前置：调用方 Scope 为 Running。
+- Closing 或终态时：调用失败。
+- `Defer` 只负责注册，不立即启动 cleanup。
+- 当所属 Scope 首次进入 `closing` 或 `canceling` 时，运行时对已注册的 deferred cleanups 执行一次性触发：为每条 cleanup 自动 spawn 一个 cleanup process。
+- 自动 spawn 的 cleanup process 归属于该 Scope，并按 structural process 参与该 Scope 的 closing 收敛。
+- 同一条注册只触发一次。
+
 ### 5.4 上下文与自省
 
 #### Bind(key, value) → void `[Non-Blocking]`
@@ -428,6 +439,10 @@ primitive 不等于 sigil：
 #### cede() → Wisp\<void\>
 
 封装 Cede sigil，协作式让权。
+
+#### defer(cleanup) → Wisp\<void\>
+
+直接封装 `Defer` sigil，在当前 Scope 上注册一条 deferred cleanup，不追加额外编排。该 primitive 只表达注册动作；真正的启动由 scope 进入 `closing` 或 `canceling` 时的 closing 协议负责。
 
 ### 7.5 上下文与自省 primitives
 
