@@ -254,7 +254,7 @@ export class Interpreter {
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    return this.#spawnIn(this.#resolveScope(process.scopeRef), sigil.ritual, sigil.descriptor);
+    return this.#spawnIn(this.#resolveScope(process.scopeRef), sigil.worker, sigil.descriptor);
   }
 
   #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
@@ -310,10 +310,10 @@ export class Interpreter {
 
   #spawnIn<Relic>(
     scope: RuntimeScope,
-    ritual: Ritual<Relic>,
+    worker: Ritual<Relic>,
     descriptor: ProcessDescriptor,
   ): ProcessRef<Relic> {
-    const process = scope.spawn(ritual, descriptor);
+    const process = scope.spawn(worker, descriptor);
 
     this.#runtimeIndex.registerProcess(process);
 

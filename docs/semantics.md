@@ -265,7 +265,7 @@ kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`cont
 - 前置：调用方 Scope 为 Running。
 - Closing 时：调用失败。
 
-#### Spawn(ritual, descriptor?) → process `[Non-Blocking]`
+#### Spawn(worker, descriptor?) → process `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
@@ -388,7 +388,7 @@ primitive 不等于 sigil：
 
 选择最先完成者，触发其余分支收敛。`branches` 为非空。`race` 采用默认的结构化并发传播语义；参赛分支共享同一个 race `Scope`，返回的 future 用于观察 race 结果。
 
-#### spawn(ritual) → Wisp\<FutureKey\<T\>\>
+#### spawn(worker) → Wisp\<FutureKey\<T\>\>
 
 封装 `Spawn` sigil，在当前 Scope 内创建并行 Process，并返回该分支结果对应的 future。`spawn` 表达的是当前 `Scope` 内的并发分支，以及该分支结果的 future 观察面。
 

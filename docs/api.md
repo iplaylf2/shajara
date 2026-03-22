@@ -102,7 +102,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 | 原语        | 签名概要                                     | 说明                                                                                                                 |
 | ----------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(ritual) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                       |
+| `spawn`     | `spawn(worker) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                       |
 | `enclose`   | `enclose(ritual) → T`                        | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                 |
 | `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                           |
 | `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败交给 `recover(error)` 处理。                                      |

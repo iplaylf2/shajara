@@ -159,7 +159,7 @@ child scope 的状态变化按当前 scope 状态解释：
 
 ### 3.2 `spawn`
 
-`spawn(scopeRef, ritual)` 用于把新的 Process 插入到当前解释环境中。
+`spawn(scopeRef, worker)` 用于把新的 Process 插入到当前解释环境中。
 
 它表达的是解释环境内部新增并发参与者的入口。
 

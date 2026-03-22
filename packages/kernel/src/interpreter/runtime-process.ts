@@ -22,7 +22,7 @@ const HANDLE_FUTURE_KEY_INDEX = 0;
 export class RuntimeProcess<Relic = unknown> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
-    ritual: Ritual<Relic>,
+    worker: Ritual<Relic>,
     descriptor: ProcessDescriptor,
   ) {
     this.#exitFuture = RuntimeFuture.create<Relic>();
@@ -32,7 +32,7 @@ export class RuntimeProcess<Relic = unknown> {
     } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
     this.#status = "running";
-    this.wisp = ritual() as Wisp<unknown>;
+    this.wisp = worker() as Wisp<unknown>;
   }
 
   public get exitFuture(): RuntimeFuture<Relic> {

@@ -80,8 +80,8 @@ export class RuntimeScope {
     this.#registerReceiver(messageKey, process);
   }
 
-  public spawn<Relic>(ritual: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
-    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, ritual, descriptor);
+  public spawn<Relic>(worker: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
+    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, worker, descriptor);
 
     this.#registerOwnedProcess(spawnedProcess);
 
