@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "defaults": "^3.0.0",
-    "fp-ts": "^2.16.11"
+    "fp-ts": "^2.16.11",
+    "ts-pattern": "^5.9.0"
   },
   "devDependencies": {
     "@shajara/presets": "workspace:^",

@@ -1,6 +1,5 @@
 // oxlint-disable class-methods-use-this
 import type {
-  FailureShape,
   FutureKey,
   FutureResult,
   MessageKey,
@@ -12,6 +11,7 @@ import type {
   SigilShape,
   Wisp,
 } from "#src/contracts";
+import type { Failure } from "#src/failures";
 import { RuntimeFuture } from "./runtime-future";
 import type { SelfHandle } from "#src/sigils";
 import type { Unsubscribe } from "#src/interpreter-kit";
@@ -100,8 +100,8 @@ export class RuntimeProcess<Relic = unknown> {
     notImplemented("RuntimeProcess.primeContinuation");
   }
 
-  public fail(_failure: FailureShape): void {
-    notImplemented("RuntimeProcess.fail");
+  public halt(_failure: Failure): void {
+    notImplemented("RuntimeProcess.halt");
   }
 
   public readonly ref: ProcessRef<Relic>;
@@ -116,9 +116,9 @@ export class RuntimeProcess<Relic = unknown> {
   readonly #observers = new Set<RuntimeProcessObserver>();
 }
 
-export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "failed";
+export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "failed" | "canceled";
 
-export type RuntimeProcessObserver = (process: RuntimeProcess) => void;
+export type RuntimeProcessObserver = () => void;
 
 export interface RuntimeContinuation {
   readonly echo: unknown;

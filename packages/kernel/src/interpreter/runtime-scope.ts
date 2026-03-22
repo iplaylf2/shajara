@@ -7,13 +7,12 @@ import type {
   ScopeDescriptor,
   ScopeRef,
 } from "#src/contracts";
+import { P, match } from "ts-pattern";
 import { none, some } from "#src/utils";
-import type { Failure } from "#src/failures";
 import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { Unsubscribe } from "#src/interpreter-kit";
-import { notImplemented } from "#src/internal/not-implemented";
 
 const EMPTY_QUEUE_SIZE = 0;
 
@@ -33,8 +32,7 @@ export class RuntimeScope {
   ): RuntimeScope {
     const child = new RuntimeScope(entry, descriptor, this, zone);
 
-    this.#children.add(child);
-    this.#observeChildScope(child);
+    this.#registerChildScope(child);
 
     return child;
   }
@@ -89,12 +87,6 @@ export class RuntimeScope {
     return spawnedProcess;
   }
 
-  public halt(process: RuntimeProcess, failure: Failure): void {
-    notImplemented(
-      `RuntimeScope.halt (${process.descriptor.completionMode}, ${failure.message()})`,
-    );
-  }
-
   public createFuture<Result>(): RuntimeFuture<Result> {
     const future = RuntimeFuture.create<Result>();
 
@@ -116,7 +108,7 @@ export class RuntimeScope {
   }
 
   public get isClosed(): boolean {
-    return this.#status === "completed" || this.#status === "failed";
+    return this.#status === "completed" || this.#status === "failed" || this.#status === "canceled";
   }
 
   public get exitFuture(): RuntimeFuture<unknown> {
@@ -156,17 +148,14 @@ export class RuntimeScope {
     this.#parent = parent;
   }
 
+  #registerChildScope(scope: RuntimeScope) {
+    this.#children.add(scope);
+    this.#observeChildScope(scope);
+  }
+
   #registerOwnedProcess(process: RuntimeProcess): void {
     this.#processContainerFor(process).add(process);
     this.#observeOwnedProcess(process);
-  }
-
-  #processContainerFor(process: RuntimeProcess): Set<RuntimeProcess> {
-    if (process.descriptor.completionMode === "structural") {
-      return this.#structuralProcesses;
-    }
-
-    return this.#detachedProcesses;
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -209,16 +198,67 @@ export class RuntimeScope {
     }
   }
 
-  #observeChildScope(childScope: RuntimeScope): void {
-    childScope.observe((observedScope) => {
-      notImplemented(`RuntimeScope observed child scope lifecycle (${observedScope.status})`);
-    });
+  #processContainerFor(process: RuntimeProcess): Set<RuntimeProcess> {
+    if (process.descriptor.completionMode === "structural") {
+      return this.#structuralProcesses;
+    }
+
+    return this.#detachedProcesses;
+  }
+
+  #observeChildScope(scope: RuntimeScope): void {
+    scope.observe(() =>
+      match([this.status, scope.status])
+        .with(["running", "completed"], () => {
+          // 尝试进入成功的收敛
+        })
+        .with(["failing", P.union("canceled", "completed")], () => {
+          // 尝试进入失败的收敛。
+        })
+        .with(["canceling", P.union("canceled", "completed")], () => {
+          // 尝试进入取消的收敛。
+        })
+        .with(["running", "failed"], () => {
+          // 根据 child 的失败模式，决定要不要向上传播失败。
+        })
+        .with(["failing", "failed"], () => {
+          // 直接搜集失败。尝试进入scope失败的收敛。
+        })
+        .with(["canceling", "failed"], () => {
+          // 将失败收集起来，用于收敛的结果； 尝试进入scope取消的收敛。
+        })
+        .otherwise(() => {
+          // Do nothing
+        }),
+    );
   }
 
   #observeOwnedProcess(process: RuntimeProcess): void {
-    process.observe((observedProcess) => {
-      this.#zone.trackProcess(observedProcess);
-      notImplemented(`RuntimeScope observed process lifecycle (${observedProcess.status})`);
+    process.observe(() => {
+      this.#zone.trackProcess(process);
+
+      return match([this.status, process.status])
+        .with(["running", "completed"], () => {
+          // 尝试进入scope完成的收敛。
+        })
+        .with(["failing", "completed"], () => {
+          // 尝试进入scope失败的收敛。
+        })
+        .with(["canceling", "completed"], () => {
+          // 尝试进入scope取消的收敛。
+        })
+        .with(["canceling", "failed"], () => {
+          // 将失败收集起来，用于收敛的结果； 尝试进入scope取消的收敛。
+        })
+        .with(["running", "failed"], () => {
+          // 进入 failing，并开始级联取消
+        })
+        .with(["failing", "failed"], () => {
+          // 直接搜集失败。尝试进入scope失败的收敛。
+        })
+        .otherwise(() => {
+          // Do nothing
+        });
     });
   }
 
@@ -246,10 +286,16 @@ export class RuntimeScope {
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
-export type RuntimeScopeStatus = "running" | "completing" | "failing" | "completed" | "failed";
-
 export interface RuntimeZone {
   trackProcess(process: RuntimeProcess): void;
 }
 
-export type RuntimeScopeObserver = (scope: RuntimeScope) => void;
+export type RuntimeScopeStatus =
+  | "running"
+  | "failing"
+  | "canceling"
+  | "completed"
+  | "failed"
+  | "canceled";
+
+export type RuntimeScopeObserver = () => void;

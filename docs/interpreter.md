@@ -49,13 +49,29 @@
 
 ### 2.1 `RuntimeScope` 的生命周期职责
 
-`RuntimeScope` 承接 scope 生命周期的编排边界。它的状态设计区分成功路径与失败路径，scope 终态至少区分成功退出与失败退出。
+`RuntimeScope` 承接 scope 生命周期的编排边界。它的状态设计显式区分“正常运行中”“本地失败收敛中”“被级联取消中”“已成功收敛”“已失败收敛”“已取消收敛”这几类阶段。
+
+`RuntimeScopeStatus` 为：
+
+- `running`
+- `failing`
+- `canceling`
+- `completed`
+- `failed`
+- `canceled`
+
+其中：
+
+- `failing` 表示该 scope 自身已经观察到本地 failure，并以失败为既定结论推进后续收敛。
+- `canceling` 表示该 scope 自身不是 failure 起点，而是在祖先或外部编排驱动下进入级联取消。
+- `completed / failed / canceled` 是互斥终态。
+- `RuntimeScope.isClosed` 只表达“已进入终态”，不再混入 `failing / canceling` 这类过程态。
 
 `RuntimeScope` 的对象设计包含三层职责：
 
 - 持有 scope 自身的状态、descriptor、mailbox、派生 future，以及对父子 scope 的结构归属。
 - 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
-- 作为 `halt`、closing 与终态收敛协议的承接点。
+- 作为 scope 收敛与级联取消编排的承接点。
 
 `RuntimeScope` 内部用于追踪归属关系的容器具有明确语义：
 
@@ -63,7 +79,54 @@
 - `children` 与 process 容器表达 runtime scope 需要追踪的归属成员。
 - 成员进入终态后，应从对应容器中移除，不再继续作为活跃成员被追踪。
 
-关于 `halt`、closing 级联、终态 future settlement，以及成员移除时机，本文档只约束职责落点：这些语义应由 `RuntimeScope` 承接；具体协议仍待进一步设计收束。
+`RuntimeScope` 不直接承接 `halt(process, failure)` 这类入口。`halt` 是 process 级事件：`Interpreter` 解释到 `Halt` sigil 后，直接调用对应 `RuntimeProcess.halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系去推进失败源头 scope 进入 `failing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。
+
+关于级联取消、终态 future settlement，以及成员移除时机，本文档只约束职责落点：这些语义由 `RuntimeScope` 通过事件驱动方式承接。
+
+`RuntimeScope` 的事件驱动规则分成两类：
+
+- 监听 owned process 事件。
+- 监听 child scope 事件。
+
+owned process 的状态变化按当前 scope 状态解释：
+
+- `["running", "completed"]`：尝试进入 scope 完成收敛。
+- `["running", "failed"]`：scope 进入 `failing`，并开始级联取消。
+- `["failing", "completed"]`：尝试进入 scope 失败收敛。
+- `["failing", "failed"]`：直接收集 failure，并尝试进入 scope 失败收敛。
+- `["canceling", "completed"]`：尝试进入 scope 取消收敛。
+- `["canceling", "failed"]`：收集 failure 作为取消收敛结果的一部分，并尝试进入 scope 取消收敛。
+
+child scope 的状态变化按当前 scope 状态解释：
+
+- `["running", "completed"]`：尝试进入成功收敛。
+- `["running", "failed"]`：根据 child 的失败传播规则，决定是否向上传播失败。
+- `["failing", "completed" | "canceled"]`：尝试进入 scope 失败收敛。
+- `["failing", "failed"]`：直接收集 failure，并尝试进入 scope 失败收敛。
+- `["canceling", "completed" | "canceled"]`：尝试进入 scope 取消收敛。
+- `["canceling", "failed"]`：收集 failure 作为取消收敛结果的一部分，并尝试进入 scope 取消收敛。
+
+这里的关键区别是：
+
+- `failing` 表示该 scope 的终态目标已经是 `failed`。
+- `canceling` 表示该 scope 的终态目标是 `canceled`。
+- `canceling` 期间观察到的 `failed` 不改变该 scope 的收敛方向，而是进入取消路径上的 failure 收集。
+
+### 2.2 `RuntimeProcess` 的生命周期职责
+
+`RuntimeProcess` 承接 process 自身的局部运行态。`RuntimeProcessStatus` 为：
+
+- `running`
+- `waiting`
+- `completed`
+- `failed`
+- `canceled`
+
+其中：
+
+- `failed` 表示 process 自身因 `halt` 或其他 failure 退出。
+- `canceled` 表示 process 因 scope 级联取消而退出。
+- 公开的 process 级失败入口为 `halt(failure)`；取消如何被驱动属于内部编排语义，不在这里定义额外公开接口。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 
@@ -128,3 +191,11 @@
 scope 的级联取消、终止 failure 的设置，以及 closing failure 的收集，统一由 kernel 的 closing 协议定义。
 
 `Interpreter` 负责触发并推进这套协议，使 closing 继续保持为解释环境内部的固定语义。
+
+关闭编排的最小顺序为：
+
+1. `Interpreter` 解释到 `Halt` sigil。
+2. `Interpreter` 直接调用对应 `RuntimeProcess.halt(failure)`。
+3. 失败源头的 `RuntimeScope` 通过观察到的 process 事件进入 `failing`。
+4. 失败源头 scope 的后续 process / child 事件继续驱动它收敛到 `failed`。
+5. 被级联波及的其他 scope 进入 `canceling`，并在自己的 process / child 事件驱动下收敛到 `canceled`。

@@ -49,9 +49,9 @@ export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
       entry,
-        { failureMode: "propagate" },
-        {
-          trackProcess: (process) => {
+      { failureMode: "propagate" },
+      {
+        trackProcess: (process) => {
           if (process.status !== "running") {
             return;
           }
@@ -72,6 +72,7 @@ export class Interpreter {
       case "waiting":
         return processWaitingStep(processRef);
       case "completed":
+      case "canceled":
       case "failed":
         return processExitedStep(processRef, process.result as FutureResult<Relic>);
       case "running":
@@ -200,7 +201,11 @@ export class Interpreter {
   #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     process.resonate();
 
-    if (process.status === "completed" || process.status === "failed") {
+    if (
+      process.status === "completed" ||
+      process.status === "failed" ||
+      process.status === "canceled"
+    ) {
       return processExitedStep(process.ref, process.result as FutureResult<Relic>);
     }
 
@@ -232,7 +237,7 @@ export class Interpreter {
   }
 
   #halt(process: RuntimeProcess, sigil: HaltSigil): void {
-    this.#resolveScope(process.scopeRef).halt(process, sigil.failure as Failure);
+    process.halt(sigil.failure as Failure);
   }
 
   #settle(sigil: SettleSigil<unknown>): void {
