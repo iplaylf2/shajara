@@ -10,6 +10,7 @@ export * from "./lookup";
 export * from "./poll";
 export * from "./park";
 export * from "./race";
+export * from "./resource";
 export * from "./resumable";
 export * from "./guard";
 export * from "./enclose";

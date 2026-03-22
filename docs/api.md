@@ -94,16 +94,6 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 桥接一个 promise thunk，等待完成后返回结果值；reject 按异常传播。
 
-### resource
-
-```ts
-yield* resource<T>(body: (provide) => ...): RiteFuture<T>
-```
-
-声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并在所属 `Scope` 回收时执行 cleanup。
-
----
-
 ## 5. 编排原语
 
 原语是在 `RiteRoutine` 内通过 `yield*` 调用的编排操作。每个原语都有自己的返回值形状；`yield*` 得到的就是该原语的结果值。
@@ -118,6 +108,7 @@ yield* resource<T>(body: (provide) => ...): RiteFuture<T>
 | `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败交给 `recover(error)` 处理。                                      |
 | `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                                  |
 | `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速 `Scope` 的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。 |
+| `resource`  | `resource(body) → RiteFuture<T>`             | 声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并让该资源的存在期附着于所属 `Scope`。                    |
 
 ### 5.2 基础
 

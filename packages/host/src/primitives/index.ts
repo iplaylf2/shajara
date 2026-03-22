@@ -12,6 +12,7 @@ export * from "./halt";
 export * from "./lookup";
 export * from "./park";
 export * from "./race";
+export * from "./resource";
 export * from "./resumable";
 export * from "./guard";
 export * from "./enclose";
