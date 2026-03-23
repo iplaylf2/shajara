@@ -1,24 +1,18 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { FailureShape, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
-import { branch, cancel, future, halt, poll, settle, spawn, wait } from "#src/sigils";
-import { either, option, readonlyArray } from "fp-ts";
-import { wisp, wispOption } from "#src/internal/fp";
-import { narrowAs } from "#src/utils";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
+import { branch, cancel, future, settle, spawn } from "#src/sigils";
+import { either, readonlyArray } from "fp-ts";
 import { pipe } from "fp-ts/function";
+import { wisp } from "#src/internal/fp";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,
 ): Wisp<FutureKey<ArrayValues<BranchReturns>>> {
   return pipe(
-    wisp.Do,
-    wisp.bindF("winner", () => future<ArrayValues<BranchReturns>>()),
-    wisp.bindF("arenaSelf", ({ winner: [, winnerSettle] }) =>
-      branch(raceArena(branches, winnerSettle), { failureMode: "contain" }),
-    ),
-    wisp.chainFirstF(({ arenaSelf: { scope: arena }, winner: [winnerFuture] }) =>
-      spawn(raceBackstop(arena.exitFuture, winnerFuture)),
-    ),
-    wisp.map(({ winner: [winnerFuture] }) => winnerFuture),
+    future<ArrayValues<BranchReturns>>(),
+    wisp.liftF,
+    wisp.chainFirstF(([, winnerSettle]) => branch(raceArena(branches, winnerSettle))),
+    wisp.map(([winnerFuture]) => winnerFuture),
   );
 }
 
@@ -35,26 +29,6 @@ function raceArena(
       branches,
       readonlyArray.map((ritual) => pipe(spawn(runBranch(ritual, winnerSettle)), wisp.liftF)),
       wisp.sequence,
-    );
-}
-
-function raceBackstop(failureFuture: FutureKey<unknown>, winnerFuture: FutureKey<unknown>) {
-  return () =>
-    pipe(
-      wisp.Do,
-      wisp.bindF("failureResult", () => wait(failureFuture)),
-      wisp.bindF("winnerResult", () => poll(winnerFuture)),
-      wisp.map(({ failureResult, winnerResult }) =>
-        pipe(
-          winnerResult,
-          option.match(
-            () => option.some(failureResult),
-            (_result) => option.none,
-          ),
-        ),
-      ),
-      wispOption.map(narrowAs<either.Left<FailureShape>>()),
-      wispOption.chainF(({ left }) => halt(left)),
     );
 }
 
