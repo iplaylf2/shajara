@@ -38,13 +38,12 @@ import {
   processWaitingStep,
 } from "./process-step";
 import type { Failure } from "#src/failures";
-import type { Option } from "#src/utils";
 import type { ProcessStep } from "./process-step";
 import { RuntimeIndex } from "./runtime-index";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { Unsubscribe } from "#src/interpreter-kit";
-import { isSome } from "#src/utils";
+import { option } from "fp-ts";
 
 export class Interpreter {
   public constructor(protected readonly entry: Ritual<void>) {
@@ -109,11 +108,14 @@ export class Interpreter {
     return this.#spawnIn(this.#resolveScope(scope), worker, { completionMode: "structural" });
   }
 
-  public lookup<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>): Option<Value> {
+  public lookup<Value>(
+    scope: ScopeRef<unknown>,
+    contextKey: ContextKey<Value>,
+  ): option.Option<Value> {
     return this.#resolveScope(scope).lookup(contextKey);
   }
 
-  public poll<Result>(future: FutureKey<Result>): Option<FutureResult<Result>> {
+  public poll<Result>(future: FutureKey<Result>): option.Option<FutureResult<Result>> {
     return this.#resolveFuture(future).poll();
   }
 
@@ -175,7 +177,7 @@ export class Interpreter {
       case "wait": {
         const settled = this.#tryWait(sigil);
 
-        if (isSome(settled)) {
+        if (option.isSome(settled)) {
           this.#setContinuation(process, current.resonate, settled.value);
           return processInterpretedStep(process.ref);
         }
@@ -187,7 +189,7 @@ export class Interpreter {
       case "receive": {
         const received = this.#tryReceive(process, sigil);
 
-        if (isSome(received)) {
+        if (option.isSome(received)) {
           this.#setContinuation(process, current.resonate, received.value);
           return processInterpretedStep(process.ref);
         }
@@ -261,11 +263,11 @@ export class Interpreter {
     );
   }
 
-  #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {
+  #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): option.Option<unknown> {
     return this.lookup(process.scopeRef, sigil.key);
   }
 
-  #poll(sigil: PollSigil<unknown>): Option<unknown> {
+  #poll(sigil: PollSigil<unknown>): option.Option<unknown> {
     return this.#resolveFuture(sigil.future).poll();
   }
 
@@ -273,7 +275,7 @@ export class Interpreter {
     return process.selfHandle();
   }
 
-  #tryWait(sigil: WaitSigil<unknown>): Option<FutureResult<unknown>> {
+  #tryWait(sigil: WaitSigil<unknown>): option.Option<FutureResult<unknown>> {
     return this.#resolveFuture(sigil.future).poll();
   }
 
@@ -285,7 +287,7 @@ export class Interpreter {
     this.#resolveScope(process.scopeRef).unbind(sigil.key);
   }
 
-  #tryReceive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): Option<unknown> {
+  #tryReceive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): option.Option<unknown> {
     return this.#resolveScope(process.scopeRef).tryReceive(sigil.messageKey);
   }
 

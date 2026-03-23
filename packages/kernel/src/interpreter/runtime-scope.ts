@@ -8,13 +8,11 @@ import type {
   ScopeRef,
 } from "#src/contracts";
 import { P, match } from "ts-pattern";
-import { none, some, unreachable } from "#src/utils";
-import type { Option } from "#src/utils";
+import { option, readonlyArray } from "fp-ts";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { Unsubscribe } from "#src/interpreter-kit";
-
-const EMPTY_QUEUE_SIZE = 0;
+import { unreachable } from "#src/utils";
 
 export class RuntimeScope {
   public static create(
@@ -37,13 +35,13 @@ export class RuntimeScope {
     return child;
   }
 
-  public lookup<Value>(contextKey: ContextKey<Value>): Option<Value> {
+  public lookup<Value>(contextKey: ContextKey<Value>): option.Option<Value> {
     if (this.#bindings.has(contextKey)) {
-      return some(this.#bindings.get(contextKey) as Value);
+      return option.some(this.#bindings.get(contextKey) as Value);
     }
 
     if (this.#parent === RuntimeScope.#sentinel) {
-      return none;
+      return option.none;
     }
 
     return this.#parent.lookup(contextKey);
@@ -61,16 +59,16 @@ export class RuntimeScope {
     targetScope.#acceptMessage(messageKey, value);
   }
 
-  public tryReceive<Value>(messageKey: MessageKey<Value>): Option<Value> {
+  public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
     const mailboxQueue = this.#mailboxes.get(messageKey);
 
-    if (!mailboxQueue || mailboxQueue.length === EMPTY_QUEUE_SIZE) {
-      return none;
+    if (!mailboxQueue || readonlyArray.isEmpty(mailboxQueue)) {
+      return option.none;
     }
 
     const value = mailboxQueue.shift() as Value;
 
-    return some(value);
+    return option.some(value);
   }
 
   public receive(process: RuntimeProcess, messageKey: MessageKey<unknown>): void {
@@ -108,7 +106,17 @@ export class RuntimeScope {
   }
 
   public get isClosed(): boolean {
-    return this.#status === "completed" || this.#status === "failed" || this.#status === "canceled";
+    switch (this.#status) {
+      case "running":
+      case "closing":
+      case "canceling":
+      case "failing":
+        return false;
+      case "completed":
+      case "canceled":
+      case "failed":
+        return true;
+    }
   }
 
   public get exitFuture(): RuntimeFuture<unknown> {
