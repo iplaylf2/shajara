@@ -81,7 +81,7 @@
 - `children` 与 process 容器表达 runtime scope 需要追踪的归属成员。
 - 成员进入终态后，应从对应容器中移除，不再继续作为活跃成员被追踪。
 
-`RuntimeScope` 不直接承接 `halt(process, failure)` 这类入口。`halt` 是 process 级事件：`Interpreter` 解释到 `Halt` sigil 后，直接调用对应 `RuntimeProcess.halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系去推进本地收敛路径进入 `closing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。
+`RuntimeScope` 不直接承接 `halt(process, failure)` 这类入口。`halt` 是 process 级事件：`Interpreter` 解释到 `Halt` sigil 后，直接调用对应 `RuntimeProcess.halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系去推进本地收敛路径进入 `closing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。与之相对，`cancel()` 是 scope 级事件：它取消当前 scope，并使该 scope 子树沿取消路径收敛。
 
 关于级联取消、终态 future settlement，以及成员移除时机，本文档只约束职责落点：这些语义由 `RuntimeScope` 通过事件驱动方式承接。
 
@@ -129,7 +129,8 @@ child scope 的状态变化按当前 scope 状态解释：
 - `failed` 表示 process 自身因 `halt` 或其他 failure 退出。
 - `canceled` 表示 process 因 scope 级联取消而退出。
 - `defer` 注册与 cleanup 触发由 `RuntimeProcess` 自身承接；具体时序由 `semantics.md` 定义。
-- `halt(failure)` 与 `cancel()` 是 process 进入 `failed` / `canceled` 的公开入口。
+- `halt(failure)` 是 process 进入 `failed` 的公开入口。
+- `cancel()` 是当前 scope 进入取消路径的公开入口；被波及的 process 因此收敛到 `canceled`。
 - process 终态后的 cleanup 责任通过 `takeCleanups()` 交接给外部编排方。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。

@@ -1,4 +1,4 @@
-import { ExternalError, ScopeHaltedError, ScopeTerminatedError } from "#src/errors";
+import { CanceledError, ExternalError, ScopeFailedError } from "#src/errors";
 import type { Failure } from "#src/contracts";
 import { ShajaraError } from "#src/contracts";
 import { externalFailure } from "@shajara/kernel";
@@ -19,10 +19,10 @@ export function toFailureUnknown(caught: unknown): Failure {
 
 export function fromFailure(failure: Failure): Error {
   switch (failure.kind) {
-    case "scope-halted":
-      return new ScopeHaltedError();
-    case "scope-terminated":
-      return new ScopeTerminatedError();
+    case "scope-failed":
+      return new ScopeFailedError(failure);
+    case "canceled":
+      return new CanceledError();
     case "external": {
       if (failure.raw instanceof Error) {
         return failure.raw;

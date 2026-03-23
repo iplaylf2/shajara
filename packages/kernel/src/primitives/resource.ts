@@ -19,11 +19,5 @@ export type ResourceProvide<Value> = (value: Value) => Wisp<never>;
 
 function resourceWorker<Value>(body: ResourceBody<Value>, resourceSettle: FutureSettleKey<Value>) {
   return () =>
-    body((value) =>
-      pipe(
-        settle(resourceSettle, right(value)),
-        wisp.liftF,
-        wisp.chain(() => park()),
-      ),
-    );
+    body((value) => pipe(settle(resourceSettle, right(value)), wisp.liftF, wisp.chain(park)));
 }

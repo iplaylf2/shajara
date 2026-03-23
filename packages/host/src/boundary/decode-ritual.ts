@@ -8,7 +8,7 @@ import { toFailureUnknown } from "./failure-mapping";
 
 export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> {
   function decoded(): Wisp<Relic> {
-    const startedRoutine = tryCatch(() => routine(), toFailureUnknown);
+    const startedRoutine = tryCatch(routine, toFailureUnknown);
     if (isLeft(startedRoutine)) {
       return halt(startedRoutine.left);
     }

@@ -36,7 +36,7 @@ host 通过执行入口把降解后的 Ritual 提交给 executor。
 
 kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保持可组合与可推理。host 在 primitive 适配边界统一解包：`Right` 直接返回成功值，`Left` 映射为宿主侧 `Error` 抛出。用户侧得到“成功返回值、失败抛异常”的模型。
 
-`Failure`（kernel 共享失败契约）不向用户侧暴露；结构性 failure 在 host 侧映射为 `ShajaraError`（继承 `Error`）子类，`terminated` 映射为 `ScopeTerminatedError`；外部 failure 若携带原始 `Error`，则直接复用该实例。
+`Failure`（kernel 共享失败契约）不向用户侧暴露；结构性 failure 在 host 侧映射为 `ShajaraError`（继承 `Error`）子类，`canceled` 映射为 `CanceledError`；外部 failure 若携带原始 `Error`，则直接复用该实例。
 
 因此 `run` / `wait` 与 `guard(entry, recover)` 的恢复回调在 external failure 上都保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；结构性 failure 映射为 `ShajaraError` 子类。
 
@@ -45,9 +45,9 @@ kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保�
 host 以 `launch` 为统一收敛锚点：
 
 1. 调用 `executor.launch(scope, ritual)` 获取 `LaunchHandle<T>`。
-2. 通过 `handle.onSettled(...)` 观察单次 `LaunchResult<T>`（`success | failure | terminated`）并收敛为 Promise 语义。
+2. 通过 `handle.onSettled(...)` 观察单次 `LaunchResult<T>`（`success | failure | canceled`）并收敛为 Promise 语义。
 3. 返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state()`）。
-4. 可选 `AbortSignal` 映射为 `executor.terminate(handle.scope)`。
+4. 可选 `AbortSignal` 映射为 `executor.cancel(handle.scope)`。
 
 `run` 和 `createScope` 均通过 `launch` 实现。
 

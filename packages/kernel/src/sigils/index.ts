@@ -1,5 +1,6 @@
 import type { BindSigil } from "./bind";
 import type { BranchSigil } from "./branch";
+import type { CancelSigil } from "./cancel";
 import type { CedeSigil } from "./cede";
 import type { DeferSigil } from "./defer";
 import type { FutureSigil } from "./future";
@@ -18,6 +19,7 @@ import type { WaitSigil } from "./wait";
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";
+export * from "./cancel";
 export * from "./defer";
 export * from "./spawn";
 export * from "./future";
@@ -34,6 +36,7 @@ export * from "./unbind";
 export type Sigil =
   | BindSigil<unknown>
   | BranchSigil<unknown>
+  | CancelSigil
   | CedeSigil
   | DeferSigil
   | FutureSigil<unknown>

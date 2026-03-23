@@ -43,10 +43,10 @@ run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulProm
 启动一段 ritual，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。
 
 - 成功时返回结果值。
-- 终止时抛出 `ScopeTerminatedError`。
+- 取消时抛出 `CanceledError`。
 - 失败时抛出 `Error`；结构性失败表现为 `ShajaraError` 子类，用户代码抛出的外部异常会尽量保留原始实例。
 
-当 `signal` 触发 abort 时，对应运行被终止。
+当 `signal` 触发 abort 时，对应运行被取消。
 
 ### createScope
 
@@ -59,10 +59,10 @@ createScope(): Scope
 | 成员                           | 说明                                                |
 | ------------------------------ | --------------------------------------------------- |
 | `scope.run(ritual, options?)`  | 在该 `Scope` 下启动 ritual，行为与顶层 `run` 一致。 |
-| `scope.halt()`                 | 终止该 `Scope` 并等待收敛。                         |
+| `scope.cancel()`               | 取消该 `Scope` 并等待收敛。                         |
 | `scope.state`                  | 同步状态快照：`open \| closing \| closed`。         |
-| `scope.closed`                 | 清理完成后 resolve；终止/失败时按对应类型抛出。     |
-| `scope[Symbol.asyncDispose]()` | 等价于 `scope.halt()`。                             |
+| `scope.closed`                 | 清理完成后 resolve；取消/失败时按对应类型抛出。     |
+| `scope[Symbol.asyncDispose]()` | 等价于 `scope.cancel()`。                           |
 
 ---
 
@@ -123,7 +123,8 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `unbind`      | `unbind(ContextKey<T>) → void`                       | 在当前 `Scope` 解绑一个上下文值。                               |
 | `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 读取当前 `Scope` 可见的上下文值；未命中时返回 `undefined`。     |
 | `self`        | `self() → SelfHandle`                                | 读取当前执行信息。                                              |
-| `halt`        | `halt() → never`                                     | 终止当前流程。                                                  |
+| `halt`        | `halt(error) → never`                                | 以显式 failure 结束当前流程。                                   |
+| `cancel`      | `cancel() → never`                                   | 取消当前 `Scope`。                                              |
 | `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
 | `defer`       | `defer(cleanup) → void`                              | 在当前流程上注册退出 cleanup；当该流程结束时触发。              |
 | `park`        | `park() → never`                                     | 持续挂起，直到外部结束该流程。                                  |

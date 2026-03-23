@@ -6,8 +6,8 @@ import type {
   LaunchState,
 } from "@shajara/kernel";
 import { decodeRitual, fromFailure } from "#src/boundary";
+import { CanceledError } from "#src/errors";
 import type { RiteRoutine } from "#src/contracts";
-import { ScopeTerminatedError } from "#src/errors";
 
 export function launch<Return>(
   executor: Executor,
@@ -24,7 +24,7 @@ export function launch<Return>(
 
     function onAbort(): void {
       if (execution.state() === "open") {
-        executor.terminate(execution.scope);
+        executor.cancel(execution.scope);
       }
     }
 
@@ -72,8 +72,8 @@ function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Retu
         case "failure":
           reject(fromFailure(result.reason));
           break;
-        case "terminated":
-          reject(new ScopeTerminatedError());
+        case "canceled":
+          reject(new CanceledError());
           break;
       }
     });

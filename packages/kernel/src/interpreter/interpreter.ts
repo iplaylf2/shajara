@@ -3,6 +3,7 @@ import type {
   BindSigil,
   BranchHandle,
   BranchSigil,
+  CancelSigil,
   DeferSigil,
   HaltSigil,
   LookupSigil,
@@ -144,6 +145,9 @@ export class Interpreter {
       case "cede":
         this.#setContinuation(process, current.resonate, null);
         return processCededStep(process.ref);
+      case "cancel":
+        this.#cancel(process, sigil);
+        return processExitedStep(process.ref, process.result as FutureResult<Relic>);
       case "defer":
         this.#defer(process, sigil);
         this.#setContinuation(process, current.resonate, null);
@@ -236,6 +240,10 @@ export class Interpreter {
 
   #defer(process: RuntimeProcess, sigil: DeferSigil): void {
     process.defer(sigil.cleanup);
+  }
+
+  #cancel(process: RuntimeProcess, _sigil: CancelSigil): void {
+    this.#resolveScope(process.scopeRef).cancel();
   }
 
   #future(process: RuntimeProcess): FutureHandle<unknown> {

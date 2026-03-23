@@ -10,22 +10,22 @@ export function createScope(): Scope {
   const closed: Promise<void> = Promise.resolve(launchedScope.settled);
 
   return {
-    [Symbol.asyncDispose](): Promise<void> {
-      return haltScope();
-    },
+    cancel: cancelScope,
     closed,
-    halt: haltScope,
     run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
       return launch(executor, launchedScope.scope, ritual, options).settled;
     },
     get state(): ScopeState {
       return launchedScope.settled.state();
     },
+    [Symbol.asyncDispose](): Promise<void> {
+      return cancelScope();
+    },
   };
 
-  async function haltScope(): Promise<void> {
+  async function cancelScope(): Promise<void> {
     if (launchedScope.settled.state() === "open") {
-      executor.terminate(launchedScope.scope);
+      executor.cancel(launchedScope.scope);
     }
     await closed;
   }
@@ -33,7 +33,7 @@ export function createScope(): Scope {
 
 export interface Scope {
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
-  halt(): Promise<void>;
+  cancel(): Promise<void>;
   readonly state: ScopeState;
   readonly closed: Promise<void>;
   [Symbol.asyncDispose](): Promise<void>;

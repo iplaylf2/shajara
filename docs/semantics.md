@@ -58,7 +58,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 | `FailureMode` | 含义                                                       |
 | ------------- | ---------------------------------------------------------- |
 | `propagate`   | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。 |
-| `contain`     | 后代 `failed/terminated` 在本地收敛。                      |
+| `contain`     | 后代 `failed/canceled` 在本地收敛。                        |
 
 `FailureMode` 承载的就是 `ScopeDescriptor` 中这条稳定语义边界。
 
@@ -213,9 +213,9 @@ Process 与 Scope 均有三种互斥终态：
 子 Scope 终态向父 Scope 上传按父 Scope 的 `failureMode` 处理：
 
 - **`propagate`**：后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
-- **`contain`**：后代 `failed/terminated` 在本地收敛。
+- **`contain`**：后代 `failed/canceled` 在本地收敛。
 
-`terminated` 与 `failed` 分别表示终止级联与失败传播。
+`canceled` 与 `failed` 分别表示取消级联与失败传播。
 
 kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`contain` 承担显式收敛边界的职责。
 
@@ -428,9 +428,13 @@ primitive 不等于 sigil：
 
 创建传播型子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 Scope 的 `FutureKey<void>`。
 
-#### halt(failure?) → Wisp\<never\>
+#### halt(failure) → Wisp\<never\>
 
 封装 Halt sigil，触发当前 Process 失败，并由该失败驱动所属 Scope 失败与后续级联。
+
+#### cancel() → Wisp\<never\>
+
+封装 Cancel sigil，触发当前 Scope 的取消，并使该 Scope 子树沿取消路径收敛。
 
 #### park() → Wisp\<never\>
 

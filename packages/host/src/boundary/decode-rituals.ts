@@ -8,7 +8,7 @@ export function decodeRituals<Returns extends UnknownArray>(
 ): {
   readonly [Index in keyof Returns]: Ritual<Returns[Index]>;
 } {
-  return routines.map((routine) => decodeRitual(routine)) as {
+  return routines.map(decodeRitual) as {
     readonly [Index in keyof Returns]: Ritual<Returns[Index]>;
   };
 }

@@ -12,6 +12,7 @@ import { option, readonlyArray } from "fp-ts";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { Unsubscribe } from "#src/interpreter-kit";
+import { notImplemented } from "#src/internal/not-implemented";
 import { unreachable } from "#src/utils";
 
 export class RuntimeScope {
@@ -135,6 +136,10 @@ export class RuntimeScope {
     };
   }
 
+  public cancel(): void {
+    notImplemented("RuntimeScope.cancel");
+  }
+
   private constructor(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
@@ -217,10 +222,9 @@ export class RuntimeScope {
   #observeChildScope(scope: RuntimeScope): void {
     scope.observe(() =>
       match([this.status, scope.status])
-        .with(["running", P.union("completed", "failed")], () => {
+        .with(["running", P.union("completed", "failed", "canceled")], () => {
           // This 尝试进入 closing。
         })
-        .with(["running", "canceled"], unreachable)
         .with(["closing", P.union("completed", "canceled", "failed")], () => {
           // This 尝试进入 completed。
         })

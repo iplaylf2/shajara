@@ -12,7 +12,7 @@ export interface ExecutionScopeRef extends ScopeRef<unknown> {
 export type LaunchResult<Return> =
   | { readonly kind: "success"; readonly value: Return }
   | { readonly kind: "failure"; readonly reason: Failure }
-  | { readonly kind: "terminated" };
+  | { readonly kind: "canceled" };
 
 export type LaunchState = "open" | "closing" | "closed";
 
@@ -26,7 +26,7 @@ export interface Executor {
   readonly rootScope: ExecutionScopeRef;
   launch<Return>(scope: ExecutionScopeRef, ritual: Ritual<Return>): LaunchHandle<Return>;
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): void;
-  terminate(scope: ExecutionScopeRef): void;
+  cancel(scope: ExecutionScopeRef): void;
 }
 
 export function createExecutor(interpreter: Interpreter): Executor {

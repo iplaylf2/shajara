@@ -24,7 +24,7 @@
 - `rootScope: ExecutionScopeRef`
 - `launch(scope, ritual): LaunchHandle<T>`
 - `settle(futureSettle, result): void`
-- `terminate(scope): void`
+- `cancel(scope): void`
 
 这些签名定义了 `executor` 的稳定外部能力。
 
@@ -48,15 +48,15 @@
 
 - `success`
 - `failure`
-- `terminated`
+- `canceled`
 
 ### 2.3 `settle`
 
 `settle(futureSettle, result)` 负责向运行中的环境注入 future 的收敛结果。
 
-### 2.4 `terminate`
+### 2.4 `cancel`
 
-`terminate(scope)` 负责终止指定 `ExecutionScopeRef`。
+`cancel(scope)` 负责取消指定 `ExecutionScopeRef`。
 
 ## 3. 依赖关系
 
@@ -71,9 +71,9 @@
 
 ### 4.1 执行入口视图
 
-执行入口视图负责把某个 Scope 暴露为 `launch + terminate` 的外部能力边界。
+执行入口视图负责把某个 Scope 暴露为 `launch + cancel` 的外部能力边界。
 
-`ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异只在于身份位置，不在于能力集合；两者都以 `ExecutionScopeRef` 作为句柄，并承载 `launch + terminate` 语义。
+`ExecutionScopeRoot` 与普通 `ExecutionScope` 的差异只在于身份位置，不在于能力集合；两者都以 `ExecutionScopeRef` 作为句柄，并承载 `launch + cancel` 语义。
 
 `executor` 需要把普通 `Scope` 组织成可供外部启动与终止的 execution scope 视图。
 

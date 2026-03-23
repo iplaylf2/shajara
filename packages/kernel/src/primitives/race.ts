@@ -1,6 +1,6 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import type { FailureShape, FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
-import { branch, future, halt, poll, settle, spawn, wait } from "#src/sigils";
+import { branch, cancel, future, halt, poll, settle, spawn, wait } from "#src/sigils";
 import { either, option, readonlyArray } from "fp-ts";
 import { wisp, wispOption } from "#src/internal/fp";
 import { narrowAs } from "#src/utils";
@@ -63,6 +63,6 @@ function runBranch(ritual: Ritual<unknown>, winnerSettle: FutureSettleKey<unknow
     pipe(
       ritual(),
       wisp.chainF((value) => settle(winnerSettle, either.right(value))),
-      wisp.chainF(() => halt()),
+      wisp.chainF(cancel),
     );
 }
