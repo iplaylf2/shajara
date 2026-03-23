@@ -29,6 +29,7 @@
 - `canceling` 期间观察到的 `failed` 会进入取消路径的收敛结果收集
 - `RuntimeScope` 已按 structural process、detached process 与 `children` 分开承接容器语义；成员终态后的移除逻辑仍停留在观察回调后的 `notImplemented(...)`
 - `defer` 的设计基线已改为 process 级注册：cleanup 由 `RuntimeProcess` 持有；具体触发时序回到 `semantics.md` 单源定义
+- `RuntimeProcess` 的公开承接面已收口到 `defer(cleanup)`、`halt(failure)`、`cancel()` 与 `takeCleanups()`；`RuntimeScope` 暂不消费 cleanup 交接
 - `halt`、closing 级联、`ScopeRef.exitFuture`、派生 future 的 settle，以及 closing failure 收束仍未恢复；当前继续留待后续实现
 
 ---
@@ -59,7 +60,7 @@
 1. 继续补齐 `RuntimeProcess` 的运行协议，明确 `halt(failure)` 如何使 process 落到 `failed`，以及级联取消如何在不扩张公开接口的前提下落到 `canceled`。
 2. 明确 `RuntimeProcess.observe(...)`、`RuntimeScope.observe(...)` 与 `Interpreter.observeRunnable(...)` 之间的长期边界，避免不同层重复承接同一类事件语义。
 3. 继续补全 `RuntimeScope` 的收敛判定，明确“尝试进入完成/失败/取消收敛”各自依赖哪些成员状态，以及何时补回 scope `exitFuture`、派生 future 与 failure 收束的接线。
-4. 按新的 `defer` 语义补齐 `RuntimeProcess` 的承接面，使 cleanup 注册与触发职责留在 process 侧。
+4. 按新的 `defer` 语义补齐 `RuntimeProcess` 的承接面，明确 `takeCleanups()` 的一次性交接时机以及 `cancel()` 的状态语义。
 5. 如果后续仍需要 scope 关闭时机的 cleanup，单独命名并单独定义，不再复用 `defer`。
 6. 重新建立 `packages/kernel/src/interpreter/scope-closing.ts` 的职责边界，只在语义重新收束后再恢复其实现。
 7. 重新定义 closing failure 的收集语义与 `ScopeFailureBuilder` 的最终接线位置，但不要重新引入 `onClosing` / `HaltHandler` 这类干预点，也不要再把 builder 当成状态驱动主通道。

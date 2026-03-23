@@ -127,7 +127,8 @@ child scope 的状态变化按当前 scope 状态解释：
 - `failed` 表示 process 自身因 `halt` 或其他 failure 退出。
 - `canceled` 表示 process 因 scope 级联取消而退出。
 - `defer` 注册与 cleanup 触发由 `RuntimeProcess` 自身承接；具体时序由 `semantics.md` 定义。
-- 公开的 process 级失败入口为 `halt(failure)`；取消路径由内部编排语义驱动。
+- `halt(failure)` 与 `cancel()` 是 process 进入 `failed` / `canceled` 的公开入口。
+- process 终态后的 cleanup 责任通过 `takeCleanups()` 交接给外部编排方。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 

@@ -96,6 +96,10 @@ export class RuntimeProcess<Relic = unknown> {
     notImplemented("RuntimeProcess.defer");
   }
 
+  public takeCleanups(): Ritual<void>[] {
+    return notImplemented("RuntimeProcess.takeCleanups");
+  }
+
   public accept(_value: unknown): void {
     notImplemented("RuntimeProcess.accept");
   }
@@ -106,6 +110,10 @@ export class RuntimeProcess<Relic = unknown> {
 
   public halt(_failure: Failure): void {
     notImplemented("RuntimeProcess.halt");
+  }
+
+  public cancel(): void {
+    notImplemented("RuntimeProcess.cancel");
   }
 
   public readonly ref: ProcessRef<Relic>;
