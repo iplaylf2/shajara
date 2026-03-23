@@ -12,7 +12,7 @@ import { either, option, readonlyArray, readonlySet } from "fp-ts";
 import type { Failure } from "#src/failures";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
-import { ScopeFailureBuilder } from "./scope-failure-builder";
+import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { Unsubscribe } from "#src/interpreter-kit";
 import { unreachable } from "#src/utils";
 
@@ -167,6 +167,11 @@ export class RuntimeScope {
     this.#observeChildScope(scope);
   }
 
+  #registerOwnedProcess(process: RuntimeProcess): void {
+    this.#processContainerFor(process).add(process);
+    this.#observeOwnedProcess(process);
+  }
+
   #observeChildScope(scope: RuntimeScope): void {
     scope.observe(() =>
       match([this.status, scope.status])
@@ -176,23 +181,30 @@ export class RuntimeScope {
         })
         .with(["closing", P.union("completed", "canceled", "failed")], () => {
           this.#forgetChildScope(scope);
-          this.#tryComplete();
+          this.#tryCompleted();
         })
         .with(["canceling", P.union("completed", "canceled", "failed")], () => {
           this.#forgetChildScope(scope);
-          this.#tryCancel();
+          this.#tryCanceled();
         })
         .with(["failing", P.union("completed", "canceled")], () => {
           this.#forgetChildScope(scope);
-          this.#tryFail();
+          this.#tryFailed();
         })
         .with(["failing", "failed"], () => {
           this.#forgetChildScope(scope);
           this.#suppressScopeFailure(scope);
-          this.#tryFail();
+          this.#tryFailed();
         })
-        .with([P.union("running", "closing", "canceling", "failing"), "failing"], () => {
-          this.#tryFailingByScope(scope);
+        .with([P.union("running", "closing", "canceling"), "failing"], () => {
+          if (scope.descriptor.failureMode === "propagate") {
+            this.#startFailingByScope(scope);
+          }
+        })
+        .with(["failing", "failing"], () => {
+          if (scope.descriptor.failureMode === "propagate") {
+            this.#enterFailing();
+          }
         })
         .with([P.union("completed", "canceled", "failed"), P._], unreachable)
         .with([P._, P.union("running", "closing", "canceling")], () => {
@@ -200,42 +212,6 @@ export class RuntimeScope {
         })
         .exhaustive(),
     );
-  }
-
-  #forgetChildScope(scope: RuntimeScope): void {
-    this.#children.delete(scope);
-  }
-
-  #tryClosing(): void {
-    if (this.#hasNoStructuralWork()) {
-      this.#enterClosing();
-    }
-  }
-
-  #enterClosing(): void {
-    this.#transitionTo("closing");
-    this.#cancelDetachedProcesses();
-  }
-
-  #tryComplete(): void {
-    if (this.#hasNoTrackedMembers()) {
-      this.#transitionTo("completed");
-    }
-  }
-
-  #tryFailingByScope(scope: RuntimeScope): void {
-    if (this.#descriptor.failureMode === "propagate") {
-      this.#enterFailingByScope(scope);
-    }
-  }
-
-  #suppressScopeFailure(scope: RuntimeScope): void {
-    this.#scopeFailureBuilder!.suppress(scope.#failure());
-  }
-
-  #registerOwnedProcess(process: RuntimeProcess): void {
-    this.#processContainerFor(process).add(process);
-    this.#observeOwnedProcess(process);
   }
 
   #observeOwnedProcess(process: RuntimeProcess): void {
@@ -250,19 +226,23 @@ export class RuntimeScope {
         .with(["running", "canceled"], unreachable)
         .with(["closing", P.union("completed", "canceled")], () => {
           this.#forgetOwnedProcess(process);
-          this.#tryComplete();
+          this.#tryCompleted();
         })
         .with(["canceling", P.union("completed", "canceled")], () => {
           this.#forgetOwnedProcess(process);
-          this.#tryCancel();
+          this.#tryCanceled();
         })
         .with(["failing", P.union("completed", "canceled")], () => {
           this.#forgetOwnedProcess(process);
-          this.#tryFail();
+          this.#tryFailed();
         })
-        .with([P.union("running", "closing", "canceling", "failing"), "failed"], () => {
+        .with([P.union("running", "closing", "canceling"), "failed"], () => {
           this.#forgetOwnedProcess(process);
-          this.#enterFailingByProcess(process);
+          this.#startFailingByProcess(process);
+        })
+        .with(["failing", "failed"], () => {
+          this.#forgetOwnedProcess(process);
+          this.#reenterFailingByProcess(process);
         })
         .with([P.union("completed", "canceled", "failed"), P._], unreachable)
         .with([P._, P.union("running", "waiting")], () => {
@@ -272,69 +252,63 @@ export class RuntimeScope {
     });
   }
 
-  #forgetOwnedProcess(process: RuntimeProcess): void {
-    if (process.completionMode === "structural") {
-      this.#structuralProcesses.delete(process);
-      return;
+  #tryClosing(): void {
+    if (this.#hasNoStructuralWork()) {
+      this.#enterClosing();
     }
+  }
 
-    this.#detachedProcesses.delete(process);
+  #enterClosing(): void {
+    this.#transitionTo("closing");
+    this.#cancelDetachedProcesses();
+    this.#tryCompleted();
+  }
+
+  #tryCompleted(): void {
+    if (this.#hasNoTrackedMembers()) {
+      this.#transitionTo("completed");
+    }
   }
 
   #enterCanceling(): void {
     this.#transitionTo("canceling");
     this.#cascadeCancellation();
+    this.#tryCanceled();
   }
 
-  #tryCancel(): void {
+  #tryCanceled(): void {
     if (this.#hasNoTrackedMembers()) {
       this.#transitionTo("canceled");
     }
   }
 
-  #enterFailingByScope(scope: RuntimeScope): void {
-    const failure = scope.#failure();
-
-    if (this.#scopeFailureBuilder) {
-      this.#scopeFailureBuilder.suppress(failure);
-    } else {
-      this.#scopeFailureBuilder = ScopeFailureBuilder.fromScope(scope.ref, failure);
-    }
-
+  #startFailingByScope(scope: RuntimeScope): void {
+    this.#failureDraft = new ScopeFailureDraft({ kind: "scope", scope: scope.ref }, () =>
+      scope.#failure(),
+    );
     this.#enterFailing();
   }
 
-  #enterFailingByProcess(process: RuntimeProcess): void {
-    const failure = RuntimeScope.#failureByProcess(process);
+  #startFailingByProcess(process: RuntimeProcess): void {
+    this.#failureDraft = new ScopeFailureDraft({ kind: "process", process: process.ref }, () =>
+      RuntimeScope.#failureByProcess(process),
+    );
+    this.#enterFailing();
+  }
 
-    if (this.#scopeFailureBuilder) {
-      this.#scopeFailureBuilder.suppress(failure);
-    } else {
-      this.#scopeFailureBuilder = ScopeFailureBuilder.fromProcess(process.ref, failure);
-    }
-
+  #reenterFailingByProcess(process: RuntimeProcess): void {
+    this.#failureDraft!.suppress(RuntimeScope.#failureByProcess(process));
     this.#enterFailing();
   }
 
   #enterFailing(): void {
     this.#transitionTo("failing");
     this.#cascadeCancellation();
+    this.#tryFailed();
   }
 
-  #failure(): Failure {
-    return (this.exitFuture.poll() as option.Some<either.Left<Failure>>).value.left;
-  }
-
-  static #failureByProcess(process: RuntimeProcess): Failure {
-    return (process.result as either.Left<Failure>).left;
-  }
-
-  #tryFail(): void {
+  #tryFailed(): void {
     if (this.#hasNoTrackedMembers()) {
-      if (!this.#scopeFailureBuilder) {
-        unreachable();
-      }
-
       this.#transitionTo("failed");
     }
   }
@@ -345,6 +319,23 @@ export class RuntimeScope {
     }
 
     this.#bufferMessage(messageKey, value);
+  }
+
+  #forgetChildScope(scope: RuntimeScope): void {
+    this.#children.delete(scope);
+  }
+
+  #suppressScopeFailure(scope: RuntimeScope): void {
+    this.#failureDraft!.suppress(scope.#failure());
+  }
+
+  #forgetOwnedProcess(process: RuntimeProcess): void {
+    if (process.completionMode === "structural") {
+      this.#structuralProcesses.delete(process);
+      return;
+    }
+
+    this.#detachedProcesses.delete(process);
   }
 
   #deliverToReceiver<Value>(messageKey: MessageKey<Value>, value: Value): boolean {
@@ -406,6 +397,14 @@ export class RuntimeScope {
     }
   }
 
+  #failure(): Failure {
+    return (this.exitFuture.poll() as option.Some<either.Left<Failure>>).value.left;
+  }
+
+  static #failureByProcess(process: RuntimeProcess): Failure {
+    return (process.result as either.Left<Failure>).left;
+  }
+
   #hasNoStructuralWork(): boolean {
     return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
   }
@@ -451,7 +450,8 @@ export class RuntimeScope {
   readonly #detachedProcesses = new Set<RuntimeProcess>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
-  #scopeFailureBuilder: ScopeFailureBuilder | null = null;
+
+  #failureDraft: ScopeFailureDraft | null = null;
 }
 
 export interface RuntimeZone {

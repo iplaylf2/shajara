@@ -26,12 +26,12 @@
 - `RuntimeProcess` 当前设计基线改为 `running / waiting / completed / failed / canceled`
 - `halt` 不再由 `RuntimeScope.halt(process, failure)` 承接；解释器应直接调用 `RuntimeProcess.halt(failure)`，其余收敛通过观察事件推进
 - `RuntimeScope` 的事件表已经明确分成 child scope 与 owned process 两条观察链；`closing` 的目标终态是 `completed`，`canceling` 的目标终态是 `canceled`，`failing` 的目标终态是 `failed`
-- child scope 的失败传播判定在 child 进入 `failing` 时完成；child 的 `failed` 负责交付失败结果
+- child scope 的失败传播判定在 child 进入 `failing` 时按 child 自身的 `failureMode` 完成；child 的 `failed` 负责交付失败结果
 - `RuntimeScope` 已按 structural process、detached process 与 `children` 分开承接容器语义；成员终态后的移除逻辑仍停留在观察回调后的 `notImplemented(...)`
-- `ScopeFailureBuilder` 当前已恢复为 `interpreter/` 内部建模；`failures/scope-failed.ts` 只保留 `FailureShape` 契约，以避免重新形成环依赖
+- scope failure draft 当前已恢复为 `interpreter/` 内部建模；`failures/scope-failed.ts` 只保留 `FailureShape` 契约，以避免重新形成环依赖
 - `ScopeFailure` 当前已改成 `cause + suppressedFailures` 形状；`cause` 是 `process | scope` 的 sum type，分别记录触发 failing 的 process 或 child scope 及其 failure
-- `RuntimeScope` 当前在 process failed 与 child scope 传播 failing 时初始化 `ScopeFailureBuilder`，并在后续成员失败时把它们作为 `suppressedFailures` 追加收集
-- 当前实现中，child scope 的失败结果通过 child `exitFuture` 读取，而不是通过 child builder `build()` 结果中转
+- `RuntimeScope` 当前在 process failed 与 child scope 传播 failing 时初始化 failure draft，并在后续成员失败时把它们作为 `suppressedFailures` 追加收集
+- 当前实现中，scope 起因的 draft 只先锚定 child scope ref；对应 failure 要等 child `failed` 后再读取
 - `defer` 的设计基线已改为 process 级注册：cleanup 由 `RuntimeProcess` 持有；具体触发时序回到 `semantics.md` 单源定义
 - `RuntimeProcess` 的公开承接面当前仍保留 `defer(cleanup)`、`halt(failure)`、`cancel()` 与 `takeCleanups()`；但语义基线已经转向 `cancel()` 由当前 scope 承接，process 的 `canceled` 作为级联结果出现
 - `halt`、closing 级联、`ScopeRef.exitFuture`、派生 future 的 settle，以及 closing failure 收束仍未恢复；当前继续留待后续实现
@@ -51,7 +51,7 @@
 3. `RuntimeScope` 的事件分派口径已经明确，但“尝试进入完成/失败/取消收敛”的具体判定条件、成员移除时机、`ScopeRef.exitFuture` 的 settle、派生 future 的强制收敛，以及 closing failure 的归并都还没有重新建立。  
    证据：`packages/kernel/src/interpreter/runtime-scope.ts`
 
-4. `ScopeFailureBuilder` 与 `scope-failed` 的基本接线已经恢复，但 closing failure 的最终收束时机、`ScopeRef.exitFuture` 的 settle，以及 suppressed failure 的完整边界仍未补齐。  
+4. failure draft 与 `scope-failed` 的基本接线已经恢复，但 closing failure 的最终收束时机、`ScopeRef.exitFuture` 的 settle，以及 suppressed failure 的完整边界仍未补齐。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
 
 ---
@@ -63,7 +63,7 @@
 3. 继续补全 `RuntimeScope` 的收敛判定，明确“尝试进入完成/失败/取消收敛”各自依赖哪些成员状态，以及何时补回 scope `exitFuture`、派生 future 与 failure 收束的接线。
 4. 按新的 `defer` 语义补齐 `RuntimeProcess` 的承接面，明确 `takeCleanups()` 的一次性交接时机，以及 scope cancel 与 process canceled 之间的状态关系。
 5. 如果后续仍需要 scope 关闭时机的 cleanup，单独命名并单独定义，不再复用 `defer`。
-6. 重新定义 closing failure 的收集语义与 `ScopeFailureBuilder` 的最终接线位置，但不要重新引入 `onClosing` / `HaltHandler` 这类干预点，也不要再把 builder 当成状态驱动主通道。
+6. 重新定义 closing failure 的收集语义与 failure draft 的最终接线位置，但不要重新引入 `onClosing` / `HaltHandler` 这类干预点，也不要再把它当成状态驱动主通道。
 7. 继续实现 executor，并在那时确定它如何消费这些观察面；`zone` 继续只作为结构组织层来协作。
 
 ---

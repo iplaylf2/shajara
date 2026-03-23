@@ -75,11 +75,16 @@
 - 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
 - 作为 scope 收敛与级联取消编排的承接点，决定何时进入 `closing` / `canceling` / `failing`，以及何时在所有归属成员退出后收敛到终态。
 
-当 scope 进入 `failing` 时，通过 `ScopeFailureBuilder` 暂存失败收束所需的信息：
+当 scope 进入 `failing` 时，通过 failure draft 暂存失败收束所需的信息：
 
-- 由 process `failed` 首次触发 `failing` 时，builder 以该 process failure 作为 `cause` 初始化。
-- 由 child scope 传播首次触发 `failing` 时，builder 以该 child scope 的 `exitFuture` 所交付的 failure 作为 `cause` 初始化。
+- 由 process `failed` 首次触发 `failing` 时，draft 以该 process 引用与 failure resolver 作为 `cause` 初始化。
+- 由 child scope 传播首次触发 `failing` 时，draft 先锚定该 child scope 引用；对应的 failure 要等 child scope 真正进入 `failed` 后，才在 `build()` 时读取。
 - scope 在 `failing` 期间继续观察到其他 process / child scope 的失败时，这些 failure 作为 `suppressedFailures` 追加收集。
+
+在编排上，这里要显式区分两个步骤：
+
+- 进入 `failing` 之前，先根据触发源初始化 failure draft。
+- 真正进入 `failing` 时，只负责把 scope 切到失败收敛路径，并触发级联取消。
 
 `ScopeFailure.cause` 显式建模为 sum type：
 
@@ -116,14 +121,15 @@ child scope 的状态变化按当前 scope 状态解释：
 - `["canceling", "completed" | "canceled" | "failed"]`：尝试进入 scope 取消收敛。
 - `["failing", "completed" | "canceled"]`：尝试进入 scope 失败收敛。
 - `["failing", "failed"]`：收集 child 的失败，并尝试进入 scope 失败收敛。
-- `["running" | "closing" | "canceling" | "failing", "failing"]`：按 child 的传播决策推动 this 进入或重进 `failing`。
+- `["running" | "closing" | "canceling", "failing"]`：若该 child scope 的 `failureMode = "propagate"`，推动 this 首次进入 `failing`。
+- `["failing", "failing"]`：若该 child scope 的 `failureMode = "propagate"`，推动 this 重进 `failing`。
 
 这里的关键区别是：
 
 - `closing` 表示该 scope 已在本地收敛路径上，但 cleanup 完成前终态仍未决；它可能收敛为 `completed`，也可能收敛为 `failed`。
 - `canceling` 表示该 scope 的终态目标是 `canceled`。
 - `failing` 表示该 scope 的终态目标是 `failed`，也是失败传播已经定型后的结果汇集阶段。
-- child scope 是否传播失败，在 child 进入 `failing` 时判定；child 的 `failed` 表示该失败结果已经交付完成。
+- child scope 是否传播失败，在 child 进入 `failing` 时按 child 自身的 `failureMode` 判定；child 的 `failed` 表示该失败结果已经交付完成。
 
 ### 2.2 `RuntimeProcess` 的生命周期职责
 
