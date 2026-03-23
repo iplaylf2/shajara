@@ -14,7 +14,7 @@
 - 边界引用类型中，`ScopeRef` 与 `SelfHandle` 由 kernel 单源定义并导出；`ExecutionScopeRef` 作为 executor 衍生句柄对 host 暴露，host 不重复定义同语义包装。
 - 依赖方向固定为 `executor → contracts/sigils`。
 - `Processor`、`ExecutionScopeRef` 这类 executor 衍生句柄落在 `executor.ts`。
-- cleanup 注册以 `Ritual` 为锚点：同一条启动入口注册一次 cleanup。
+- cleanup 注册以 `Ritual` 为锚点，并归属于当前 process：同一条启动入口注册一次 cleanup。
 
 ## 2. 异常策略
 

@@ -71,7 +71,7 @@
 
 - 持有 scope 自身的状态、descriptor、mailbox、派生 future，以及对父子 scope 的结构归属。
 - 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
-- 作为 scope 收敛与级联取消编排的承接点，包括在 scope 首次进入 `closing` 或 `canceling` 时触发已注册的 deferred cleanups，并将其自动 spawn 为 cleanup processes。
+- 作为 scope 收敛与级联取消编排的承接点，决定何时进入 `closing` / `canceling`，以及何时在所有归属成员退出后收敛到终态。
 
 `RuntimeScope` 内部用于追踪归属关系的容器具有明确语义：
 
@@ -126,7 +126,8 @@ child scope 的状态变化按当前 scope 状态解释：
 
 - `failed` 表示 process 自身因 `halt` 或其他 failure 退出。
 - `canceled` 表示 process 因 scope 级联取消而退出。
-- 公开的 process 级失败入口为 `halt(failure)`；取消如何被驱动属于内部编排语义，不在这里定义额外公开接口。
+- `defer` 注册与 cleanup 触发由 `RuntimeProcess` 自身承接；具体时序由 `semantics.md` 定义。
+- 公开的 process 级失败入口为 `halt(failure)`；取消路径由内部编排语义驱动。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 
@@ -197,7 +198,6 @@ scope 的级联取消、终止 failure 的设置，以及 closing failure 的收
 1. `Interpreter` 解释到 `Halt` sigil。
 2. `Interpreter` 直接调用对应 `RuntimeProcess.halt(failure)`。
 3. 本地收敛路径上的 `RuntimeScope` 通过观察到的 process 事件进入 `closing`。
-4. 该 scope 在首次进入 `closing` 时，触发本 scope 上已注册的 deferred cleanups，并将其作为 cleanup processes 自动 spawn。
-5. 该 scope 的后续 process / child 事件继续驱动它在 cleanup 完成后收敛到 `completed` 或 `failed`。
-6. 被级联波及的其他 scope 进入 `canceling`。
-7. 每个进入 `canceling` 的 scope 也会在首次进入该阶段时触发本 scope 上已注册的 deferred cleanups，并在自己的 process / child 事件驱动下收敛到 `canceled`。
+4. 该 scope 的后续 process / child 事件继续驱动它在成员退出后收敛到 `completed` 或 `failed`。
+5. 被级联波及的其他 scope 进入 `canceling`。
+6. 每个进入 `canceling` 的 scope 继续通过自己的 process / child 事件驱动收敛到 `canceled`。

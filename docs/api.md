@@ -125,6 +125,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `self`        | `self() → SelfHandle`                                | 读取当前执行信息。                                              |
 | `halt`        | `halt() → never`                                     | 终止当前流程。                                                  |
 | `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
+| `defer`       | `defer(cleanup) → void`                              | 在当前流程上注册退出 cleanup；当该流程结束时触发。              |
 | `park`        | `park() → never`                                     | 持续挂起，直到外部结束该流程。                                  |
 
 ---

@@ -31,7 +31,7 @@ Shajara 中显现为一缕 **wisp**。
 
 `Sigil` 是非泛型基础对象契约，最小形状为 `{ kind: string; return?: readonly [unknown] }`。具体 sigil 通过 `return` tuple 声明 echo 类型，`Echo<S>` 从该见证推导。
 
-cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口可在其 scope 内通过 `Defer` 注册清理 ritual。注册的 cleanup 不在 `running` 路径上运行；它会在所属 scope 进入收敛过渡态时由运行时自动 spawn，并参与该 scope 的 closing 收敛。对本地收敛路径，这个过渡态是 `closing`；对级联取消路径，这个过渡态是 `canceling`。
+cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口可在其 process 内通过 `Defer` 注册清理 ritual。process 先建立自己的终态与结果收敛，随后运行时自动触发已注册的 cleanup。
 
 ### 2.2 Failure 与失败通道
 
@@ -331,13 +331,13 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 #### Defer(cleanup) → void `[Non-Blocking]`
 
-在调用方 Scope 上注册一个 deferred cleanup。
+在调用方 Process 上注册一个 deferred cleanup。
 
-- 前置：调用方 Scope 为 Running。
-- Closing 或终态时：调用失败。
+- 前置：调用方 Process 为 `running` 或 `waiting`。
+- process 终态时：调用失败。
 - `Defer` 只负责注册，不立即启动 cleanup。
-- 当所属 Scope 首次进入 `closing` 或 `canceling` 时，运行时对已注册的 deferred cleanups 执行一次性触发：为每条 cleanup 自动 spawn 一个 cleanup process。
-- 自动 spawn 的 cleanup process 归属于该 Scope，并按 structural process 参与该 Scope 的 closing 收敛。
+- 所属 Process 进入终态后，运行时对已注册的 deferred cleanups 执行一次性触发。
+- `ProcessRef.exitFuture` 先按 process 自身结果收敛；cleanup 随后启动。
 - 同一条注册只触发一次。
 
 ### 5.4 上下文与自省
@@ -442,7 +442,7 @@ primitive 不等于 sigil：
 
 #### defer(cleanup) → Wisp\<void\>
 
-直接封装 `Defer` sigil，在当前 Scope 上注册一条 deferred cleanup，不追加额外编排。该 primitive 只表达注册动作；真正的启动由 scope 进入 `closing` 或 `canceling` 时的 closing 协议负责。
+直接封装 `Defer` sigil，在当前 Process 上注册一条 deferred cleanup，不追加额外编排。该 primitive 只表达注册动作；cleanup 的触发时序由 `Defer` 的语义定义负责。
 
 ### 7.5 上下文与自省 primitives
 

@@ -13,7 +13,6 @@ import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import type { Unsubscribe } from "#src/interpreter-kit";
-import { notImplemented } from "#src/internal/not-implemented.js";
 
 const EMPTY_QUEUE_SIZE = 0;
 
@@ -86,10 +85,6 @@ export class RuntimeScope {
     this.#registerOwnedProcess(spawnedProcess);
 
     return spawnedProcess;
-  }
-
-  public defer(_cleanup: Ritual<void>): void {
-    return notImplemented("");
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {

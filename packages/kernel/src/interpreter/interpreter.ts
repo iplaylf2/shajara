@@ -233,7 +233,7 @@ export class Interpreter {
   }
 
   #defer(process: RuntimeProcess, sigil: DeferSigil): void {
-    this.#resolveScope(process.scopeRef).defer(sigil.cleanup);
+    process.defer(sigil.cleanup);
   }
 
   #future(process: RuntimeProcess): FutureHandle<unknown> {
@@ -254,7 +254,11 @@ export class Interpreter {
   }
 
   #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    return this.#spawnIn(this.#resolveScope(process.scopeRef), sigil.worker, sigil.descriptor);
+    return this.#spawnIn<unknown>(
+      this.#resolveScope(process.scopeRef),
+      sigil.worker,
+      sigil.descriptor,
+    );
   }
 
   #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): Option<unknown> {

@@ -92,6 +92,10 @@ export class RuntimeProcess<Relic = unknown> {
     notImplemented("RuntimeProcess.receive");
   }
 
+  public defer(_cleanup: Ritual<void>): void {
+    notImplemented("RuntimeProcess.defer");
+  }
+
   public accept(_value: unknown): void {
     notImplemented("RuntimeProcess.accept");
   }
