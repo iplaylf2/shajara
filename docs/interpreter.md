@@ -75,6 +75,17 @@
 - 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
 - 作为 scope 收敛与级联取消编排的承接点，决定何时进入 `closing` / `canceling` / `failing`，以及何时在所有归属成员退出后收敛到终态。
 
+当 scope 进入 `failing` 时，通过 `ScopeFailureBuilder` 暂存失败收束所需的信息：
+
+- 由 process `failed` 首次触发 `failing` 时，builder 以该 process failure 作为 `cause` 初始化。
+- 由 child scope 传播首次触发 `failing` 时，builder 以该 child scope 的 `exitFuture` 所交付的 failure 作为 `cause` 初始化。
+- scope 在 `failing` 期间继续观察到其他 process / child scope 的失败时，这些 failure 作为 `suppressedFailures` 追加收集。
+
+`ScopeFailure.cause` 显式建模为 sum type：
+
+- `process`：记录触发 failing 的 process 引用及其 failure。
+- `scope`：记录触发 failing 的 child scope 引用及其 failure。
+
 `RuntimeScope` 内部用于追踪归属关系的容器具有明确语义：
 
 - process 按 `completionMode` 分别进入 structural / detached 两组容器；`entryProcess` 也走同一套注册路径。

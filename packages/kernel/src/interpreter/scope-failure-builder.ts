@@ -1,34 +1,40 @@
-import type { Failure, ScopeFailure } from "#src/failures";
-import type { ProcessRef } from "#src/contracts";
+import type { Failure, ScopeFailure, ScopeFailureCause } from "#src/failures";
+import type { ProcessRef, ScopeRef } from "#src/contracts";
 import { scopeFailed } from "#src/failures";
 
 export class ScopeFailureBuilder {
-  public static create(causeProcess: ProcessRef<unknown>, cause: Failure): ScopeFailureBuilder {
-    return new ScopeFailureBuilder(causeProcess, cause);
+  public static fromProcess(process: ProcessRef<unknown>, failure: Failure): ScopeFailureBuilder {
+    return new ScopeFailureBuilder({
+      failure,
+      kind: "process",
+      process,
+    });
   }
 
-  private constructor(causeProcess: ProcessRef<unknown>, cause: Failure) {
+  public static fromScope(scope: ScopeRef<unknown>, failure: Failure): ScopeFailureBuilder {
+    return new ScopeFailureBuilder({
+      failure,
+      kind: "scope",
+      scope,
+    });
+  }
+
+  private constructor(cause: ScopeFailureCause) {
     this.#cause = cause;
-    this.#causeProcess = causeProcess;
   }
 
-  public get cause(): Failure {
+  public get cause(): ScopeFailureCause {
     return this.#cause;
   }
 
-  public get causeProcess(): ProcessRef<unknown> {
-    return this.#causeProcess;
-  }
-
-  public addClosingFailure(failure: Failure): void {
-    this.#closingFailures.push(failure);
+  public suppress(failure: Failure): void {
+    this.#suppressedFailures.push(failure);
   }
 
   public build(): ScopeFailure {
-    return scopeFailed(this.#causeProcess, this.#cause, this.#closingFailures);
+    return scopeFailed(this.#cause, this.#suppressedFailures);
   }
 
-  readonly #cause: Failure;
-  readonly #causeProcess: ProcessRef<unknown>;
-  readonly #closingFailures: Failure[] = [];
+  readonly #cause: ScopeFailureCause;
+  readonly #suppressedFailures: Failure[] = [];
 }

@@ -1,25 +1,35 @@
-import type { FailureShape, ProcessRef } from "#src/contracts";
-import type { Failure } from "./index";
+import type { FailureShape, ProcessRef, ScopeRef } from "#src/contracts";
 
 export function scopeFailed(
-  causeProcess: ProcessRef<unknown>,
-  cause: Failure,
-  closingFailures: readonly FailureShape[],
+  cause: ScopeFailureCause,
+  suppressedFailures: readonly FailureShape[],
 ): ScopeFailure {
   return {
     cause,
-    causeProcess,
-    closingFailures,
     kind: "scope-failed",
     message() {
       return "Scope failed during closing";
     },
+    suppressedFailures,
   };
 }
 
 export interface ScopeFailure extends FailureShape {
-  readonly cause: Failure;
-  readonly causeProcess: ProcessRef<unknown>;
-  readonly closingFailures: readonly FailureShape[];
+  readonly cause: ScopeFailureCause;
+  readonly suppressedFailures: readonly FailureShape[];
   readonly kind: "scope-failed";
+}
+
+export type ScopeFailureCause = ProcessCause | ScopeCause;
+
+export interface ProcessCause {
+  readonly failure: FailureShape;
+  readonly kind: "process";
+  readonly process: ProcessRef<unknown>;
+}
+
+export interface ScopeCause {
+  readonly failure: FailureShape;
+  readonly kind: "scope";
+  readonly scope: ScopeRef<unknown>;
 }

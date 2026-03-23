@@ -8,11 +8,12 @@ import type {
   ScopeRef,
 } from "#src/contracts";
 import { P, match } from "ts-pattern";
-import { option, readonlyArray } from "fp-ts";
+import { either, option, readonlyArray, readonlySet } from "fp-ts";
+import type { Failure } from "#src/failures";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
+import { ScopeFailureBuilder } from "./scope-failure-builder";
 import type { Unsubscribe } from "#src/interpreter-kit";
-import { notImplemented } from "#src/internal/not-implemented";
 import { unreachable } from "#src/utils";
 
 export class RuntimeScope {
@@ -137,7 +138,7 @@ export class RuntimeScope {
   }
 
   public cancel(): void {
-    notImplemented("RuntimeScope.cancel");
+    this.#enterCanceling();
   }
 
   private constructor(
@@ -166,9 +167,176 @@ export class RuntimeScope {
     this.#observeChildScope(scope);
   }
 
+  #observeChildScope(scope: RuntimeScope): void {
+    scope.observe(() =>
+      match([this.status, scope.status])
+        .with(["running", P.union("completed", "failed", "canceled")], () => {
+          this.#forgetChildScope(scope);
+          this.#tryClosing();
+        })
+        .with(["closing", P.union("completed", "canceled", "failed")], () => {
+          this.#forgetChildScope(scope);
+          this.#tryComplete();
+        })
+        .with(["canceling", P.union("completed", "canceled", "failed")], () => {
+          this.#forgetChildScope(scope);
+          this.#tryCancel();
+        })
+        .with(["failing", P.union("completed", "canceled")], () => {
+          this.#forgetChildScope(scope);
+          this.#tryFail();
+        })
+        .with(["failing", "failed"], () => {
+          this.#forgetChildScope(scope);
+          this.#suppressScopeFailure(scope);
+          this.#tryFail();
+        })
+        .with([P.union("running", "closing", "canceling", "failing"), "failing"], () => {
+          this.#tryFailingByScope(scope);
+        })
+        .with([P.union("completed", "canceled", "failed"), P._], unreachable)
+        .with([P._, P.union("running", "closing", "canceling")], () => {
+          // Do nothing
+        })
+        .exhaustive(),
+    );
+  }
+
+  #forgetChildScope(scope: RuntimeScope): void {
+    this.#children.delete(scope);
+  }
+
+  #tryClosing(): void {
+    if (this.#hasNoStructuralWork()) {
+      this.#enterClosing();
+    }
+  }
+
+  #enterClosing(): void {
+    this.#transitionTo("closing");
+    this.#cancelDetachedProcesses();
+  }
+
+  #tryComplete(): void {
+    if (this.#hasNoTrackedMembers()) {
+      this.#transitionTo("completed");
+    }
+  }
+
+  #tryFailingByScope(scope: RuntimeScope): void {
+    if (this.#descriptor.failureMode === "propagate") {
+      this.#enterFailingByScope(scope);
+    }
+  }
+
+  #suppressScopeFailure(scope: RuntimeScope): void {
+    this.#scopeFailureBuilder!.suppress(scope.#failure());
+  }
+
   #registerOwnedProcess(process: RuntimeProcess): void {
     this.#processContainerFor(process).add(process);
     this.#observeOwnedProcess(process);
+  }
+
+  #observeOwnedProcess(process: RuntimeProcess): void {
+    process.observe(() => {
+      this.#zone.trackProcess(process);
+
+      match([this.status, process.status])
+        .with(["running", "completed"], () => {
+          this.#forgetOwnedProcess(process);
+          this.#tryClosing();
+        })
+        .with(["running", "canceled"], unreachable)
+        .with(["closing", P.union("completed", "canceled")], () => {
+          this.#forgetOwnedProcess(process);
+          this.#tryComplete();
+        })
+        .with(["canceling", P.union("completed", "canceled")], () => {
+          this.#forgetOwnedProcess(process);
+          this.#tryCancel();
+        })
+        .with(["failing", P.union("completed", "canceled")], () => {
+          this.#forgetOwnedProcess(process);
+          this.#tryFail();
+        })
+        .with([P.union("running", "closing", "canceling", "failing"), "failed"], () => {
+          this.#forgetOwnedProcess(process);
+          this.#enterFailingByProcess(process);
+        })
+        .with([P.union("completed", "canceled", "failed"), P._], unreachable)
+        .with([P._, P.union("running", "waiting")], () => {
+          // Do nothing
+        })
+        .exhaustive();
+    });
+  }
+
+  #forgetOwnedProcess(process: RuntimeProcess): void {
+    if (process.completionMode === "structural") {
+      this.#structuralProcesses.delete(process);
+      return;
+    }
+
+    this.#detachedProcesses.delete(process);
+  }
+
+  #enterCanceling(): void {
+    this.#transitionTo("canceling");
+    this.#cascadeCancellation();
+  }
+
+  #tryCancel(): void {
+    if (this.#hasNoTrackedMembers()) {
+      this.#transitionTo("canceled");
+    }
+  }
+
+  #enterFailingByScope(scope: RuntimeScope): void {
+    const failure = scope.#failure();
+
+    if (this.#scopeFailureBuilder) {
+      this.#scopeFailureBuilder.suppress(failure);
+    } else {
+      this.#scopeFailureBuilder = ScopeFailureBuilder.fromScope(scope.ref, failure);
+    }
+
+    this.#enterFailing();
+  }
+
+  #enterFailingByProcess(process: RuntimeProcess): void {
+    const failure = RuntimeScope.#failureByProcess(process);
+
+    if (this.#scopeFailureBuilder) {
+      this.#scopeFailureBuilder.suppress(failure);
+    } else {
+      this.#scopeFailureBuilder = ScopeFailureBuilder.fromProcess(process.ref, failure);
+    }
+
+    this.#enterFailing();
+  }
+
+  #enterFailing(): void {
+    this.#transitionTo("failing");
+    this.#cascadeCancellation();
+  }
+
+  #failure(): Failure {
+    return (this.exitFuture.poll() as option.Some<either.Left<Failure>>).value.left;
+  }
+
+  static #failureByProcess(process: RuntimeProcess): Failure {
+    return (process.result as either.Left<Failure>).left;
+  }
+
+  #tryFail(): void {
+    if (this.#hasNoTrackedMembers()) {
+      if (!this.#scopeFailureBuilder) {
+        unreachable();
+      }
+
+      this.#transitionTo("failed");
+    }
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -219,62 +387,46 @@ export class RuntimeScope {
     return this.#detachedProcesses;
   }
 
-  #observeChildScope(scope: RuntimeScope): void {
-    scope.observe(() =>
-      match([this.status, scope.status])
-        .with(["running", P.union("completed", "failed", "canceled")], () => {
-          // This 尝试进入 closing。
-        })
-        .with(["closing", P.union("completed", "canceled", "failed")], () => {
-          // This 尝试进入 completed。
-        })
-        .with(["canceling", P.union("completed", "canceled", "failed")], () => {
-          // This 尝试进入 canceled。
-        })
-        .with(["failing", P.union("completed", "canceled")], () => {
-          // This 尝试进入 failed。
-        })
-        .with(["failing", "failed"], () => {
-          // This 搜集 child 的失败；尝试进入 failed。
-        })
-        .with([P.union("running", "closing", "canceling", "failing"), "failing"], () => {
-          // Child scope 传播失败时，this 进入 failing; failing 可以重进
-        })
-        .with([P.union("completed", "canceled", "failed"), P._], unreachable)
-        .with([P._, P.union("running", "closing", "canceling")], () => {
-          // Do nothing
-        })
-        .exhaustive(),
+  // Cancel 完，要提取process的cleanup，进行spawn
+  #cascadeCancellation(): void {
+    this.#cancelDetachedProcesses();
+
+    for (const process of this.#structuralProcesses) {
+      process.cancel();
+    }
+
+    for (const child of this.#children) {
+      child.cancel();
+    }
+  }
+
+  #cancelDetachedProcesses(): void {
+    for (const process of this.#detachedProcesses) {
+      process.cancel();
+    }
+  }
+
+  #hasNoStructuralWork(): boolean {
+    return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
+  }
+
+  #hasNoTrackedMembers(): boolean {
+    return (
+      readonlySet.isEmpty(this.#structuralProcesses) &&
+      readonlySet.isEmpty(this.#detachedProcesses) &&
+      readonlySet.isEmpty(this.#children)
     );
   }
 
-  #observeOwnedProcess(process: RuntimeProcess): void {
-    process.observe(() => {
-      this.#zone.trackProcess(process);
+  #transitionTo(status: RuntimeScopeStatus): void {
+    this.#status = status;
+    this.#notifyObservers();
+  }
 
-      match([this.status, process.status])
-        .with(["running", "completed"], () => {
-          // Scope 尝试进入 closing。
-        })
-        .with(["running", "canceled"], unreachable)
-        .with(["closing", P.union("completed", "canceled")], () => {
-          // Scope 尝试进入 completed。
-        })
-        .with(["canceling", P.union("completed", "canceled")], () => {
-          // Scope 尝试进入 canceled。
-        })
-        .with(["failing", P.union("completed", "canceled")], () => {
-          // Scope 尝试进入 failed。
-        })
-        .with([P.union("running", "closing", "canceling", "failing"), "failed"], () => {
-          // Scope 搜集 process 的失败并进入 failing; failing 可以重进
-        })
-        .with([P.union("completed", "canceled", "failed"), P._], unreachable)
-        .with([P._, P.union("running", "waiting")], () => {
-          // Do nothing
-        })
-        .exhaustive();
-    });
+  #notifyObservers(): void {
+    for (const observer of this.#observers) {
+      observer();
+    }
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
@@ -299,6 +451,7 @@ export class RuntimeScope {
   readonly #detachedProcesses = new Set<RuntimeProcess>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
+  #scopeFailureBuilder: ScopeFailureBuilder | null = null;
 }
 
 export interface RuntimeZone {
