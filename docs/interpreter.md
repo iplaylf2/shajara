@@ -49,13 +49,14 @@
 
 ### 2.1 `RuntimeScope` 的生命周期职责
 
-`RuntimeScope` 承接 scope 生命周期的编排边界。它的状态设计显式区分“正常运行中”“本地 closing 收敛中”“被级联取消中”“已成功收敛”“已失败收敛”“已取消收敛”这几类阶段。
+`RuntimeScope` 承接 scope 生命周期的编排边界。它的状态设计显式区分“正常运行中”“本地 closing 收敛中”“被级联取消中”“失败传播判定中”“已成功收敛”“已失败收敛”“已取消收敛”这几类阶段。
 
 `RuntimeScopeStatus` 为：
 
 - `running`
 - `closing`
 - `canceling`
+- `failing`
 - `completed`
 - `failed`
 - `canceled`
@@ -64,14 +65,15 @@
 
 - `closing` 表示该 scope 已进入本地收敛过渡态，并在 cleanup 完成后再决定终态是 `completed` 还是 `failed`。
 - `canceling` 表示该 scope 自身不是 failure 起点，而是在祖先或外部编排驱动下进入级联取消。
+- `failing` 表示该 scope 已完成失败传播判定，并开始汇集失败收敛所需的信息。
 - `completed / failed / canceled` 是互斥终态。
-- `RuntimeScope.isClosed` 只表达“已进入终态”，不再混入 `closing / canceling` 这类过程态。
+- `RuntimeScope.isClosed` 只表达“已进入终态”，不混入 `closing / canceling / failing` 这类过程态。
 
 `RuntimeScope` 的对象设计包含三层职责：
 
 - 持有 scope 自身的状态、descriptor、mailbox、派生 future，以及对父子 scope 的结构归属。
 - 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
-- 作为 scope 收敛与级联取消编排的承接点，决定何时进入 `closing` / `canceling`，以及何时在所有归属成员退出后收敛到终态。
+- 作为 scope 收敛与级联取消编排的承接点，决定何时进入 `closing` / `canceling` / `failing`，以及何时在所有归属成员退出后收敛到终态。
 
 `RuntimeScope` 内部用于追踪归属关系的容器具有明确语义：
 
@@ -91,26 +93,26 @@
 owned process 的状态变化按当前 scope 状态解释：
 
 - `["running", "completed"]`：尝试进入 scope 完成收敛。
-- `["running", "failed"]`：scope 进入 `closing`，并开始级联取消。
-- `["closing", "completed"]`：尝试进入 scope 本地收敛。
-- `["closing", "failed"]`：直接收集 failure，并尝试进入 scope 本地收敛。
-- `["canceling", "completed"]`：尝试进入 scope 取消收敛。
-- `["canceling", "failed"]`：收集 failure 作为取消收敛结果的一部分，并尝试进入 scope 取消收敛。
+- `["running" | "closing" | "canceling" | "failing", "failed"]`：scope 收集 process 的失败，并进入或重进 `failing`。
+- `["closing", "completed" | "canceled"]`：尝试进入 scope 本地收敛。
+- `["canceling", "completed" | "canceled"]`：尝试进入 scope 取消收敛。
+- `["failing", "completed" | "canceled"]`：尝试进入 scope 失败收敛。
 
 child scope 的状态变化按当前 scope 状态解释：
 
-- `["running", "completed"]`：尝试进入成功收敛。
-- `["running", "failed"]`：根据 child 的失败传播规则，决定是否向上传播失败。
-- `["closing", "completed" | "canceled"]`：尝试进入 scope 本地收敛。
-- `["closing", "failed"]`：直接收集 failure，并尝试进入 scope 本地收敛。
-- `["canceling", "completed" | "canceled"]`：尝试进入 scope 取消收敛。
-- `["canceling", "failed"]`：收集 failure 作为取消收敛结果的一部分，并尝试进入 scope 取消收敛。
+- `["running", "completed" | "failed"]`：尝试进入 scope 的下一阶段收敛。
+- `["closing", "completed" | "canceled" | "failed"]`：尝试进入 scope 本地收敛。
+- `["canceling", "completed" | "canceled" | "failed"]`：尝试进入 scope 取消收敛。
+- `["failing", "completed" | "canceled"]`：尝试进入 scope 失败收敛。
+- `["failing", "failed"]`：收集 child 的失败，并尝试进入 scope 失败收敛。
+- `["running" | "closing" | "canceling" | "failing", "failing"]`：按 child 的传播决策推动 this 进入或重进 `failing`。
 
 这里的关键区别是：
 
 - `closing` 表示该 scope 已在本地收敛路径上，但 cleanup 完成前终态仍未决；它可能收敛为 `completed`，也可能收敛为 `failed`。
 - `canceling` 表示该 scope 的终态目标是 `canceled`。
-- `canceling` 期间观察到的 `failed` 不改变该 scope 的收敛方向，而是进入取消路径上的 failure 收集。
+- `failing` 表示该 scope 的终态目标是 `failed`，也是失败传播已经定型后的结果汇集阶段。
+- child scope 是否传播失败，在 child 进入 `failing` 时判定；child 的 `failed` 表示该失败结果已经交付完成。
 
 ### 2.2 `RuntimeProcess` 的生命周期职责
 

@@ -128,7 +128,7 @@ export class RuntimeProcess<Relic = unknown> {
   readonly #observers = new Set<RuntimeProcessObserver>();
 }
 
-export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "failed" | "canceled";
+export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "canceled" | "failed";
 
 export type RuntimeProcessObserver = () => void;
 

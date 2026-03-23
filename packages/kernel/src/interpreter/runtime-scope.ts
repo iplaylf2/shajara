@@ -8,7 +8,7 @@ import type {
   ScopeRef,
 } from "#src/contracts";
 import { P, match } from "ts-pattern";
-import { none, some } from "#src/utils";
+import { none, some, unreachable } from "#src/utils";
 import type { Option } from "#src/utils";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
@@ -209,27 +209,30 @@ export class RuntimeScope {
   #observeChildScope(scope: RuntimeScope): void {
     scope.observe(() =>
       match([this.status, scope.status])
-        .with(["running", "completed"], () => {
-          // 尝试进入成功的收敛
+        .with(["running", P.union("completed", "failed")], () => {
+          // This 尝试进入 closing。
         })
-        .with(["closing", P.union("canceled", "completed")], () => {
-          // 尝试进入本地收敛。
+        .with(["running", "canceled"], unreachable)
+        .with(["closing", P.union("completed", "canceled", "failed")], () => {
+          // This 尝试进入 completed。
         })
-        .with(["canceling", P.union("canceled", "completed")], () => {
-          // 尝试进入取消的收敛。
+        .with(["canceling", P.union("completed", "canceled", "failed")], () => {
+          // This 尝试进入 canceled。
         })
-        .with(["running", "failed"], () => {
-          // 根据 child 的失败模式，决定要不要向上传播失败。
+        .with(["failing", P.union("completed", "canceled")], () => {
+          // This 尝试进入 failed。
         })
-        .with(["closing", "failed"], () => {
-          // 直接搜集失败。尝试进入scope本地收敛。
+        .with(["failing", "failed"], () => {
+          // This 搜集 child 的失败；尝试进入 failed。
         })
-        .with(["canceling", "failed"], () => {
-          // 将失败收集起来，用于收敛的结果； 尝试进入scope取消的收敛。
+        .with([P.union("running", "closing", "canceling", "failing"), "failing"], () => {
+          // Child scope 传播失败时，this 进入 failing; failing 可以重进
         })
-        .otherwise(() => {
+        .with([P.union("completed", "canceled", "failed"), P._], unreachable)
+        .with([P._, P.union("running", "closing", "canceling")], () => {
           // Do nothing
-        }),
+        })
+        .exhaustive(),
     );
   }
 
@@ -237,28 +240,28 @@ export class RuntimeScope {
     process.observe(() => {
       this.#zone.trackProcess(process);
 
-      return match([this.status, process.status])
+      match([this.status, process.status])
         .with(["running", "completed"], () => {
-          // 尝试进入scope完成的收敛。
+          // Scope 尝试进入 closing。
         })
-        .with(["closing", "completed"], () => {
-          // 尝试进入scope本地收敛。
+        .with(["running", "canceled"], unreachable)
+        .with(["closing", P.union("completed", "canceled")], () => {
+          // Scope 尝试进入 completed。
         })
-        .with(["canceling", "completed"], () => {
-          // 尝试进入scope取消的收敛。
+        .with(["canceling", P.union("completed", "canceled")], () => {
+          // Scope 尝试进入 canceled。
         })
-        .with(["canceling", "failed"], () => {
-          // 将失败收集起来，用于收敛的结果； 尝试进入scope取消的收敛。
+        .with(["failing", P.union("completed", "canceled")], () => {
+          // Scope 尝试进入 failed。
         })
-        .with(["running", "failed"], () => {
-          // 进入 closing，并开始级联取消
+        .with([P.union("running", "closing", "canceling", "failing"), "failed"], () => {
+          // Scope 搜集 process 的失败并进入 failing; failing 可以重进
         })
-        .with(["closing", "failed"], () => {
-          // 直接搜集失败。尝试进入scope本地收敛。
-        })
-        .otherwise(() => {
+        .with([P.union("completed", "canceled", "failed"), P._], unreachable)
+        .with([P._, P.union("running", "waiting")], () => {
           // Do nothing
-        });
+        })
+        .exhaustive();
     });
   }
 
@@ -293,9 +296,10 @@ export interface RuntimeZone {
 export type RuntimeScopeStatus =
   | "running"
   | "closing"
-  | "canceling"
   | "completed"
-  | "failed"
-  | "canceled";
+  | "canceling"
+  | "canceled"
+  | "failing"
+  | "failed";
 
 export type RuntimeScopeObserver = () => void;
