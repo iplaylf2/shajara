@@ -1,6 +1,6 @@
 import type { FailureShape, ProcessRef, ScopeRef } from "#/contracts";
 
-export function scopeFailed(
+export function scopeFailure(
   cause: ScopeFailureCause,
   suppressedFailures: readonly FailureShape[],
 ): ScopeFailure {

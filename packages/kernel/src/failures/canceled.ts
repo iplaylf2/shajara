@@ -1,6 +1,6 @@
 import type { FailureShape } from "#/contracts";
 
-export function canceled(): CanceledFailure {
+export function canceledFailure(): CanceledFailure {
   return {
     kind: "canceled",
     message(): string {

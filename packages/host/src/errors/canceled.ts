@@ -1,9 +1,9 @@
 import { ShajaraError } from "#/contracts";
-import { canceled } from "@shajara/kernel";
+import { canceledFailure } from "@shajara/kernel";
 
 export class CanceledError extends ShajaraError {
   constructor() {
-    super(canceled());
+    super(canceledFailure());
   }
 
   override readonly name = "CanceledError";
