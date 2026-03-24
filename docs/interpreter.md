@@ -67,7 +67,7 @@
 - `canceling` 表示该 scope 自身不是 failure 起点，而是在祖先或外部编排驱动下进入级联取消。
 - `failing` 表示该 scope 已完成失败传播判定，并开始汇集失败收敛所需的信息。
 - `completed / failed / canceled` 是互斥终态。
-- `RuntimeScope.isClosed` 只表达“已进入终态”，不混入 `closing / canceling / failing` 这类过程态。
+- `RuntimeScope.isClosed` 表达“已进入终态”；`closing / canceling / failing` 这些过程态由 `status` 承接。
 
 `RuntimeScope` 的对象设计包含三层职责：
 
@@ -103,16 +103,21 @@
 - `children` 与 process 容器表达 runtime scope 需要追踪的归属成员。
 - 成员进入终态后，应从对应容器中移除，不再继续作为活跃成员被追踪。
 
-`RuntimeScope` 不直接承接 `halt(process, failure)` 这类入口。`halt` 是 process 级事件：`Interpreter` 解释到 `Halt` sigil 后，直接调用对应 `RuntimeProcess.halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系去推进本地收敛路径进入 `closing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。与之相对，`cancel()` 是 scope 级事件：它取消当前 scope，并使该 scope 子树沿取消路径收敛。
+`halt` 作为 process 级事件由 `RuntimeProcess.halt(failure)` 承接：`Interpreter` 解释到 `Halt` sigil 后，调用对应 process 的 `halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系推进本地收敛路径进入 `closing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。`cancel()` 作为 scope 级事件承接当前 scope 的取消，并使该 scope 子树沿取消路径收敛。
 
-关于级联取消、终态 future settlement，以及成员移除时机，这些语义由 `RuntimeScope` 通过事件驱动方式承接。
+关于级联取消、终态 future settlement，以及成员移除时机，这些语义统一由 `RuntimeScope` 通过事件驱动方式承接。
 
 在设计上，`RuntimeScope` 的取消路径承担两件事：
 
-- 取消当前 scope 所管理的 members，并把派生 future settle 为 canceled。
+- 取消当前 scope 所管理的 members，并在 scope 确认真正进入终态时完成派生 future 的最终强制收束。
 - 在进入取消路径时先对将被取消的 processes / child scopes 做 snapshot，再基于 snapshot 执行取消，以避免遍历期间被新成员扰动。
 
-cleanup ritual 的提取由 `RuntimeProcess` 自身承接，cleanup process 的激活与出生口则由解释环境主控层承接。
+派生 future 的收束时机进一步明确为：
+
+- scope 确认可收敛到 `completed / canceled / failed` 这些最终状态时，统一把仍 pending 的派生 future 以 canceled settle。
+- 这条批量动作承接的是“取消未收敛 future”；scope 自身终态结果通过 `ScopeRef.exitFuture` 交付。
+
+cleanup ritual 的提取由 `RuntimeProcess` 自身承接，cleanup process 的激活与出生口由解释环境主控层承接。
 
 `RuntimeScope` 的事件驱动规则分成两类：
 
@@ -198,7 +203,7 @@ child scope 的状态变化按当前 scope 状态解释：
 
 它表达的是解释环境内部新增并发参与者的入口。
 
-cleanup process 的激活也应复用这条解释环境内部的出生口；`RuntimeScope` 不直接承担 cleanup process 的创建。
+cleanup process 的激活也复用这条解释环境内部的出生口；解释环境主控层承接 cleanup process 的创建。
 
 ## 4. 接口
 
@@ -211,7 +216,7 @@ cleanup process 的激活也应复用这条解释环境内部的出生口；`Run
 - 当 root zone 追踪到某个 `runnable` process，解释环境会通知订阅者。
 - 允许多个订阅同时生效；返回的 `unsubscribe` 只撤销当前订阅。
 
-这条接口是 `Interpreter` 暴露给外部调度方的最小 runnable 观察面；它不等同于 `RuntimeScope` 或 `RuntimeProcess` 自身的观察接口。
+这条接口作为 `Interpreter` 暴露给外部调度方的最小 runnable 观察面；`RuntimeScope` 与 `RuntimeProcess` 自身的观察接口分别承接对象局部状态变化。
 
 ### 4.2 只读接口
 

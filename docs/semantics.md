@@ -92,7 +92,7 @@ mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果�
 每个 `(Scope, MessageKey)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
 
 - **Send(scopeRef, messageKey, value)**：向目标 Scope 的 `(scope, messageKey)` buffer 追加消息。若有 Process 阻塞在 `Receive(messageKey)`，最早的等待者出队并恢复，消息由该接收者独占。`[Non-Blocking]`
-- **Receive(messageKey)**：在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞直至下次匹配 Send。返回 `{ value, from: ScopeRef }`，`from` 为发送方进程所属 Scope。`[Blocking]`
+- **Receive(messageKey)**：在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞直至下次匹配 Send。返回 `value`。`[Blocking]`
 
 每条消息恰好投递给一个接收者（单消费者语义）。多个 Process 阻塞在同一 `(Scope, MessageKey)` 时，最早阻塞的 Process 优先获得下一条消息。
 
@@ -121,7 +121,7 @@ future 的语义中心是“同一结果可被重复观察”：
 
 能力边界由 key 形状直接表达：`FutureKey` 只用于观察，`FutureSettleKey` 只用于收敛。settle 权限仍受 Scope 谱系约束：只有 owner Scope 或其后代 Scope 才能对该 future 执行 `Settle`。
 
-owner Scope 在关闭过程中或关闭结束后，仍为 pending 的 future 会被强制收敛为某个 `Left(failure)`。因此 `FutureKey<T>` / `FutureSettleKey<T>` 的内部结果域固定为 `Either<Failure, T>`。
+owner Scope 在确认进入最终收敛时，会把仍为 pending 的 future 统一强制收敛为 canceled。因此 `FutureKey<T>` / `FutureSettleKey<T>` 的内部结果域固定为 `Either<Failure, T>`。
 
 `ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一 future 观察协议；成功值分别对应 Scope / Process 自身的结果值。
 
@@ -206,7 +206,7 @@ Process 与 Scope 均有三种互斥终态：
 
 ### 4.4 Closing 门控
 
-调用方 Scope 为 Closing 时：`Branch/Spawn` 失败；其他 sigil 按定义执行。
+Scope 未进入终态时，`Branch/Spawn` 仍可继续创建成员；进入终态后不再创建新成员。非法状态组合属于运行时错误。
 
 ### 4.5 终态上传策略
 
@@ -262,15 +262,13 @@ kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`cont
 
 在调用方 Scope 下创建子 Scope 与根 Process。若未显式给出 descriptor，则使用默认 `ScopeDescriptor`；其中稳定进入 kernel 语义的默认字段是 `failureMode = "propagate"`。
 
-- 前置：调用方 Scope 为 Running。
-- Closing 时：调用失败。
+- 前置：调用方 Scope 尚未进入终态。
 
 #### Spawn(worker, descriptor?) → process `[Non-Blocking]`
 
 在调用方 Scope 内创建并行 Process。
 
-- 前置：调用方 Scope 为 Running。
-- Closing 时：调用失败。
+- 前置：调用方 Scope 尚未进入终态。
 - 若未显式给出 descriptor，则使用默认 `ProcessDescriptor`；其中稳定进入 kernel 语义的默认字段是 `completionMode = "structural"`。两者语义见 §2.4；Scope “变空”触发见 §4.3。
 
 ### 6.2 调度推进（内核内部）
@@ -321,9 +319,9 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 
 - 前置：scopeRef 对调用方可见。
 
-#### Receive(messageKey) → { value, from } `[Blocking]`
+#### Receive(messageKey) → value `[Blocking]`
 
-在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞。`from` 为发送方所属 Scope 的 ScopeRef。
+在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞。
 
 #### Cede() → void `[Blocking]`
 

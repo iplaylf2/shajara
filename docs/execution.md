@@ -36,8 +36,12 @@
 - `defer` 的设计基线已改为 process 级注册：cleanup 由 `RuntimeProcess` 持有；具体触发时序回到 `semantics.md` 单源定义
 - `RuntimeProcess` 当前阶段性恢复为 `cancel()` 与 `takeCleanups()` 分离：process 自身只承接取消与 cleanup 保管，cleanup 仍通过一次性提取交给外部编排方激活
 - `RuntimeScope` 当前阶段性把取消路径命名收为 `cancelManaged` / `isQuiet` / `isIdle`，并在 `canceling` / `failing` 时先对 managed processes / children 做 snapshot，再基于 snapshot 执行取消，避免遍历过程中被新成员扰动
-- `RuntimeScope` 当前已补回 `ScopeRef.exitFuture` 的 `completed / canceled / failed` settlement，以及派生 future 在 cancel path 上的 canceled settlement
+- `RuntimeScope` 当前已补回 `ScopeRef.exitFuture` 的 `completed / canceled / failed` settlement；派生 future 改为在 scope 确认最终收敛时统一以 canceled settle，并在此时结束本 scope 的追踪
+- `RuntimeScope` 当前把 `unreachable` 分支作为状态机门控本体，而不是额外叠加“调用失败”式 fallback；`Branch/Spawn` 在非终态下仍允许发生
+- `RuntimeScope` 当前把 membership 的 `add/delete` 聚合回 `registerChildScope / registerOwnedProcess / createFuture` 这些注册函数自身；`driveByChildScope / driveByOwnedProcess` 只承接状态机推进，不再负责容器移除
+- `RuntimeScope` 当前在 `notifyObservers()` 完成本轮通知后，若 scope 已进入终态则清空 observer 集合，以避免上层闭包继续滞留在已关闭的下层对象上
 - `Interpreter` 当前阶段性通过 `registerCleanups(scope, process)` 在 process 收敛后提取 cleanup，并经 `#spawnIn(...)` 重新插回解释环境；cleanup 的出生口因此回到解释环境主控层，而不是落在 `RuntimeScope` 内部
+- 设计文档与执行文档的边界重新收回：`semantics.md` / `interpreter.md` 只保留规范性语义；“当前通过 `unreachable` crash 暴露非法状态组合”这类实现口径只记录在本文件
 
 ---
 
@@ -51,7 +55,7 @@
 2. `Interpreter.observeRunnable(listener)` 目前仍通过 root zone 的 `trackProcess(process)` 获得 runnable 视图；它还没有与 `RuntimeProcess.observe(...)` / `RuntimeScope.observe(...)` 建立新的统一关系。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`
 
-3. `RuntimeScope` 的事件分派口径已经明确，并且当前阶段性实现已经补回 `ScopeRef.exitFuture` settlement、派生 future 的 canceled settlement，以及 cancel 时的 snapshot 编排；但 cleanup 提取的所有权、一次性交接边界，以及 `registerCleanups(...)` 的长期位置仍未完全定型。  
+3. `RuntimeScope` 的事件分派口径已经明确，并且当前阶段性实现已经补回 `ScopeRef.exitFuture` settlement、派生 future 在最终收敛时统一以 canceled settle 并结束追踪、cancel 时的 snapshot 编排，以及 membership add/delete 在注册函数中的局部闭合；但 cleanup 提取的所有权、一次性交接边界，以及 `registerCleanups(...)` 的长期位置仍未完全定型。  
    证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 
 4. failure draft 与 `scope-failed` 的基本接线已经恢复，但 closing failure 的最终收束时机、cleanup 提取/激活的最终契约，以及 suppressed failure 的完整边界仍未补齐。  
