@@ -283,7 +283,7 @@ export class RuntimeScope {
 
   #enterClosing(): void {
     this.#transitionTo({ tag: "closing" });
-    this.#cancelDetachedProcesses();
+    this.#cancelDetached();
     this.#tryCompleted();
   }
 
@@ -296,8 +296,7 @@ export class RuntimeScope {
 
   #enterCanceling(): void {
     this.#transitionTo({ tag: "canceling" });
-    const cleanups = this.#cancelManaged();
-    this.#spawnCleanups(cleanups);
+    this.#cancelManaged();
     this.#tryCanceled();
   }
 
@@ -310,8 +309,7 @@ export class RuntimeScope {
 
   #enterFailing(draft: ScopeFailureDraft): void {
     this.#transitionTo({ draft, tag: "failing" });
-    const cleanups = this.#cancelManaged();
-    this.#spawnCleanups(cleanups);
+    this.#cancelManaged();
     this.#tryFailed(draft);
   }
 
@@ -384,40 +382,29 @@ export class RuntimeScope {
     return this.#detachedProcesses;
   }
 
-  #cancelManaged(): Ritual<void>[] {
+  #cancelManaged(): void {
     const failure = either.left(canceledFailure());
-    const cleanups: Ritual<void>[] = [];
+    const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
+    const children = [...this.#children];
 
     for (const future of this.#derivedFutures) {
       future.settle(failure);
     }
 
-    cleanups.push(...this.#cancelDetachedProcesses());
+    this.#cancelProcesses(processes);
 
-    for (const process of this.#structuralProcesses) {
-      cleanups.push(...process.cancel());
-    }
-
-    for (const child of this.#children) {
+    for (const child of children) {
       child.cancel();
     }
-
-    return cleanups;
   }
 
-  #cancelDetachedProcesses(): Ritual<void>[] {
-    const cleanups: Ritual<void>[] = [];
-
-    for (const process of this.#detachedProcesses) {
-      cleanups.push(...process.cancel());
-    }
-
-    return cleanups;
+  #cancelDetached(): void {
+    this.#cancelProcesses([...this.#detachedProcesses]);
   }
 
-  #spawnCleanups(cleanups: readonly Ritual<void>[]): void {
-    for (const cleanup of cleanups) {
-      this.spawn(cleanup, { completionMode: "structural" });
+  #cancelProcesses(processes: readonly RuntimeProcess[]): void {
+    for (const process of processes) {
+      process.cancel();
     }
   }
 

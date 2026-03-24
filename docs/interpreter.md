@@ -110,9 +110,9 @@
 在设计上，`RuntimeScope` 的取消路径承担两件事：
 
 - 取消当前 scope 所管理的 members，并把派生 future settle 为 canceled。
-- 从被取消的 process 收集 cleanup rituals，再在当前 scope 内以 `structural` mode 重新激活这些 cleanup。
+- 在进入取消路径时先对将被取消的 processes / child scopes 做 snapshot，再基于 snapshot 执行取消，以避免遍历期间被新成员扰动。
 
-cleanup process 的出生口必须与解释环境自身的 process 接入规则保持一致。
+cleanup ritual 的提取由 `RuntimeProcess` 自身承接，cleanup process 的激活与出生口则由解释环境主控层承接。
 
 `RuntimeScope` 的事件驱动规则分成两类：
 
@@ -161,7 +161,7 @@ child scope 的状态变化按当前 scope 状态解释：
 - `defer` 注册与 cleanup 触发由 `RuntimeProcess` 自身承接；具体时序由 `semantics.md` 定义。
 - `halt(failure)` 是 process 进入 `failed` 的公开入口。
 - `cancel()` 是当前 scope 进入取消路径的公开入口；被波及的 process 因此收敛到 `canceled`。
-- `cancel()` 额外负责一次性交出该 process 上登记的 cleanup rituals；cleanup 激活由 `RuntimeScope` 的取消路径继续承接。
+- `takeCleanups()` 负责一次性交出该 process 上登记的 cleanup rituals；cleanup 激活由解释环境主控层继续承接。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 
@@ -197,6 +197,8 @@ child scope 的状态变化按当前 scope 状态解释：
 `spawn(scopeRef, worker)` 用于把新的 Process 插入到当前解释环境中。
 
 它表达的是解释环境内部新增并发参与者的入口。
+
+cleanup process 的激活也应复用这条解释环境内部的出生口；`RuntimeScope` 不直接承担 cleanup process 的创建。
 
 ## 4. 接口
 

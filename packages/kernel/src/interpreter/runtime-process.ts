@@ -55,6 +55,18 @@ export class RuntimeProcess<Relic = unknown> {
     return this.#status;
   }
 
+  public get isClosed(): boolean {
+    switch (this.#status) {
+      case "running":
+      case "waiting":
+        return false;
+      case "completed":
+      case "canceled":
+      case "failed":
+        return true;
+    }
+  }
+
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
     return {
       process: this.ref,
@@ -100,6 +112,10 @@ export class RuntimeProcess<Relic = unknown> {
     notImplemented("RuntimeProcess.defer");
   }
 
+  public takeCleanups(): Ritual<void>[] {
+    return notImplemented("RuntimeProcess.takeCleanups");
+  }
+
   public accept(_value: unknown): void {
     notImplemented("RuntimeProcess.accept");
   }
@@ -112,8 +128,8 @@ export class RuntimeProcess<Relic = unknown> {
     notImplemented("RuntimeProcess.halt");
   }
 
-  public cancel(): Ritual<void>[] {
-    return notImplemented("RuntimeProcess.cancel");
+  public cancel(): void {
+    notImplemented("RuntimeProcess.cancel");
   }
 
   public readonly ref: ProcessRef<Relic>;
