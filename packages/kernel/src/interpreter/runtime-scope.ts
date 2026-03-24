@@ -38,6 +38,22 @@ export class RuntimeScope {
     return child;
   }
 
+  public spawn<Relic>(worker: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
+    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, worker, descriptor);
+
+    this.#registerOwnedProcess(spawnedProcess);
+
+    return spawnedProcess;
+  }
+
+  public createFuture<Result>(): RuntimeFuture<Result> {
+    const future = RuntimeFuture.create<Result>();
+
+    this.#derivedFutures.add(future);
+
+    return future;
+  }
+
   public lookup<Value>(contextKey: ContextKey<Value>): option.Option<Value> {
     if (this.#bindings.has(contextKey)) {
       return option.some(this.#bindings.get(contextKey) as Value);
@@ -80,20 +96,16 @@ export class RuntimeScope {
     this.#registerReceiver(messageKey, process);
   }
 
-  public spawn<Relic>(worker: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
-    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, worker, descriptor);
+  public observe(observer: RuntimeScopeObserver): Unsubscribe {
+    this.#observers.add(observer);
 
-    this.#registerOwnedProcess(spawnedProcess);
-
-    return spawnedProcess;
+    return () => {
+      this.#observers.delete(observer);
+    };
   }
 
-  public createFuture<Result>(): RuntimeFuture<Result> {
-    const future = RuntimeFuture.create<Result>();
-
-    this.#derivedFutures.add(future);
-
-    return future;
+  public cancel(): void {
+    this.#enterCanceling();
   }
 
   public get ref(): ScopeRef<unknown> {
@@ -102,10 +114,6 @@ export class RuntimeScope {
 
   public get descriptor(): ScopeDescriptor {
     return this.#descriptor;
-  }
-
-  public get status(): RuntimeScopeStatus {
-    return this.#state.tag;
   }
 
   public get isClosed(): boolean {
@@ -122,24 +130,16 @@ export class RuntimeScope {
     }
   }
 
+  public get status(): RuntimeScopeStatus {
+    return this.#state.status;
+  }
+
   public get exitFuture(): RuntimeFuture<unknown> {
     return this.#exitFuture;
   }
 
   public get entryProcess(): RuntimeProcess {
     return this.#entryProcess;
-  }
-
-  public observe(observer: RuntimeScopeObserver): Unsubscribe {
-    this.#observers.add(observer);
-
-    return () => {
-      this.#observers.delete(observer);
-    };
-  }
-
-  public cancel(): void {
-    this.#enterCanceling();
   }
 
   private constructor(
@@ -282,7 +282,7 @@ export class RuntimeScope {
   }
 
   #enterClosing(): void {
-    this.#transitionTo({ tag: "closing" });
+    this.#transitionTo({ status: "closing" });
     this.#cancelDetached();
     this.#tryCompleted();
   }
@@ -290,12 +290,12 @@ export class RuntimeScope {
   #tryCompleted(): void {
     if (this.#isIdle()) {
       this.exitFuture.settle(either.right(resultOfProcess(this.#entryProcess)));
-      this.#transitionTo({ tag: "completed" });
+      this.#transitionTo({ status: "completed" });
     }
   }
 
   #enterCanceling(): void {
-    this.#transitionTo({ tag: "canceling" });
+    this.#transitionTo({ status: "canceling" });
     this.#cancelManaged();
     this.#tryCanceled();
   }
@@ -303,12 +303,12 @@ export class RuntimeScope {
   #tryCanceled(): void {
     if (this.#isIdle()) {
       this.exitFuture.settle(either.left(canceledFailure()));
-      this.#transitionTo({ tag: "canceled" });
+      this.#transitionTo({ status: "canceled" });
     }
   }
 
   #enterFailing(draft: ScopeFailureDraft): void {
-    this.#transitionTo({ draft, tag: "failing" });
+    this.#transitionTo({ draft, status: "failing" });
     this.#cancelManaged();
     this.#tryFailed(draft);
   }
@@ -319,7 +319,7 @@ export class RuntimeScope {
       this.exitFuture.settle(either.left(failure));
       this.#transitionTo({
         failure,
-        tag: "failed",
+        status: "failed",
       });
     }
   }
@@ -330,56 +330,6 @@ export class RuntimeScope {
     }
 
     this.#bufferMessage(messageKey, value);
-  }
-
-  #unregisterChildScope(scope: RuntimeScope): void {
-    this.#children.delete(scope);
-  }
-
-  #unregisterOwnedProcess(process: RuntimeProcess): void {
-    if (process.completionMode === "structural") {
-      this.#structuralProcesses.delete(process);
-    } else {
-      this.#detachedProcesses.delete(process);
-    }
-  }
-
-  #deliverToReceiver<Value>(messageKey: MessageKey<Value>, value: Value): boolean {
-    const process = this.#receiverQueues.get(messageKey)?.shift();
-
-    if (process) {
-      process.accept(value);
-
-      return true;
-    }
-    return false;
-  }
-
-  #bufferMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    const mailboxQueue = this.#mailboxes.get(messageKey);
-
-    if (mailboxQueue) {
-      mailboxQueue.push(value);
-    } else {
-      this.#mailboxes.set(messageKey, [value]);
-    }
-  }
-
-  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess): void {
-    const receiveQueue = this.#receiverQueues.get(messageKey);
-
-    if (receiveQueue) {
-      receiveQueue.push(process);
-    } else {
-      this.#receiverQueues.set(messageKey, [process]);
-    }
-  }
-
-  #processContainerFor(process: RuntimeProcess): Set<RuntimeProcess> {
-    if (process.descriptor.completionMode === "structural") {
-      return this.#structuralProcesses;
-    }
-    return this.#detachedProcesses;
   }
 
   #cancelManaged(): void {
@@ -408,6 +358,56 @@ export class RuntimeScope {
     }
   }
 
+  #unregisterChildScope(scope: RuntimeScope): void {
+    this.#children.delete(scope);
+  }
+
+  #unregisterOwnedProcess(process: RuntimeProcess): void {
+    if (process.completionMode === "structural") {
+      this.#structuralProcesses.delete(process);
+    } else {
+      this.#detachedProcesses.delete(process);
+    }
+  }
+
+  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess): void {
+    const receiveQueue = this.#receiverQueues.get(messageKey);
+
+    if (receiveQueue) {
+      receiveQueue.push(process);
+    } else {
+      this.#receiverQueues.set(messageKey, [process]);
+    }
+  }
+
+  #deliverToReceiver<Value>(messageKey: MessageKey<Value>, value: Value): boolean {
+    const process = this.#receiverQueues.get(messageKey)?.shift();
+
+    if (process) {
+      process.accept(value);
+
+      return true;
+    }
+    return false;
+  }
+
+  #bufferMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
+    const mailboxQueue = this.#mailboxes.get(messageKey);
+
+    if (mailboxQueue) {
+      mailboxQueue.push(value);
+    } else {
+      this.#mailboxes.set(messageKey, [value]);
+    }
+  }
+
+  #processContainerFor(process: RuntimeProcess): Set<RuntimeProcess> {
+    if (process.descriptor.completionMode === "structural") {
+      return this.#structuralProcesses;
+    }
+    return this.#detachedProcesses;
+  }
+
   #isQuiet(): boolean {
     return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
   }
@@ -421,12 +421,10 @@ export class RuntimeScope {
     this.#notifyObservers();
   }
 
-  #stateAs<Tag extends RuntimeScopeState["tag"]>(
-    tag: Tag,
-  ): Extract<RuntimeScopeState, { readonly tag: Tag }> {
+  #stateAs<Status extends RuntimeScopeStatus>(status: Status): RuntimeScopeStateOf<Status> {
     // oxlint-disable-next-line no-void
-    void tag;
-    return this.#state as Extract<RuntimeScopeState, { readonly tag: Tag }>;
+    void status;
+    return this.#state as RuntimeScopeStateOf<Status>;
   }
 
   #notifyObservers(): void {
@@ -444,7 +442,7 @@ export class RuntimeScope {
   readonly #descriptor: ScopeDescriptor;
   readonly #zone: RuntimeZone;
 
-  #state: RuntimeScopeState = { tag: "running" };
+  #state: RuntimeScopeState = { status: "running" };
   readonly #children = new Set<RuntimeScope>();
   readonly #observers = new Set<RuntimeScopeObserver>();
 
@@ -463,35 +461,29 @@ export interface RuntimeZone {
   trackProcess(process: RuntimeProcess): void;
 }
 
-export type RuntimeScopeStatus =
-  | "running"
-  | "closing"
-  | "completed"
-  | "canceling"
-  | "canceled"
-  | "failing"
-  | "failed";
+export type RuntimeScopeStatus = RuntimeScopeState["status"];
 
 export type RuntimeScopeObserver = () => void;
 
 type RuntimeScopeState =
-  | { readonly tag: "running" }
-  | { readonly tag: "closing" }
-  | { readonly tag: "completed" }
-  | { readonly tag: "canceling" }
-  | { readonly tag: "canceled" }
-  | RuntimeScopeFailingState
-  | RuntimeScopeFailedState;
+  | { readonly status: "running" }
+  | { readonly status: "closing" }
+  | { readonly status: "completed" }
+  | { readonly status: "canceling" }
+  | { readonly status: "canceled" }
+  | {
+      readonly status: "failing";
+      readonly draft: ScopeFailureDraft;
+    }
+  | {
+      readonly status: "failed";
+      readonly failure: Failure;
+    };
 
-interface RuntimeScopeFailingState {
-  readonly tag: "failing";
-  readonly draft: ScopeFailureDraft;
-}
-
-interface RuntimeScopeFailedState {
-  readonly tag: "failed";
-  readonly failure: Failure;
-}
+type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
+  RuntimeScopeState,
+  { readonly status: Status }
+>;
 
 function failureOfProcess(process: RuntimeProcess): Failure {
   return (process.result as either.Left<Failure>).left;
