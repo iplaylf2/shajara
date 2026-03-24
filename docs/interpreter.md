@@ -105,7 +105,14 @@
 
 `RuntimeScope` 不直接承接 `halt(process, failure)` 这类入口。`halt` 是 process 级事件：`Interpreter` 解释到 `Halt` sigil 后，直接调用对应 `RuntimeProcess.halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系去推进本地收敛路径进入 `closing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。与之相对，`cancel()` 是 scope 级事件：它取消当前 scope，并使该 scope 子树沿取消路径收敛。
 
-关于级联取消、终态 future settlement，以及成员移除时机，本文档只约束职责落点：这些语义由 `RuntimeScope` 通过事件驱动方式承接。
+关于级联取消、终态 future settlement，以及成员移除时机，这些语义由 `RuntimeScope` 通过事件驱动方式承接。
+
+在设计上，`RuntimeScope` 的取消路径承担两件事：
+
+- 取消当前 scope 所管理的 members，并把派生 future settle 为 canceled。
+- 从被取消的 process 收集 cleanup rituals，再在当前 scope 内以 `structural` mode 重新激活这些 cleanup。
+
+cleanup process 的出生口必须与解释环境自身的 process 接入规则保持一致。
 
 `RuntimeScope` 的事件驱动规则分成两类：
 
@@ -154,7 +161,7 @@ child scope 的状态变化按当前 scope 状态解释：
 - `defer` 注册与 cleanup 触发由 `RuntimeProcess` 自身承接；具体时序由 `semantics.md` 定义。
 - `halt(failure)` 是 process 进入 `failed` 的公开入口。
 - `cancel()` 是当前 scope 进入取消路径的公开入口；被波及的 process 因此收敛到 `canceled`。
-- process 终态后的 cleanup 责任通过 `takeCleanups()` 交接给外部编排方。
+- `cancel()` 额外负责一次性交出该 process 上登记的 cleanup rituals；cleanup 激活由 `RuntimeScope` 的取消路径继续承接。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 

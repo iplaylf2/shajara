@@ -34,8 +34,10 @@
 - 当前实现中，scope 起因的 draft 只先锚定 child scope ref；对应 failure 要等 child `failed` 后再读取
 - `RuntimeScope` 的内部生命周期状态当前已收敛成判别联合：`failing` 携带 draft，`failed` 携带最终 failure；公开 `status` 只暴露该内部状态的 tag
 - `defer` 的设计基线已改为 process 级注册：cleanup 由 `RuntimeProcess` 持有；具体触发时序回到 `semantics.md` 单源定义
-- `RuntimeProcess` 的公开承接面当前仍保留 `defer(cleanup)`、`halt(failure)`、`cancel()` 与 `takeCleanups()`；但语义基线已经转向 `cancel()` 由当前 scope 承接，process 的 `canceled` 作为级联结果出现
-- `halt`、closing 级联、`ScopeRef.exitFuture`、派生 future 的 settle，以及 closing failure 收束仍未恢复；当前继续留待后续实现
+- `RuntimeProcess.cancel()` 当前阶段性改为返回 cleanup rituals；cleanup 的一次性交接时机被并入 cancel 路径，而不再通过单独的 `takeCleanups()` 暴露
+- `RuntimeScope` 当前阶段性把取消路径命名收为 `cancelManaged` / `isQuiet` / `isIdle`，并在 `canceling` / `failing` 时先取消 managed members、收集 cleanups，再以 `structural` mode 在 scope 内重新 `spawn` cleanup rituals
+- `RuntimeScope` 当前已补回 `ScopeRef.exitFuture` 的 `completed / canceled / failed` settlement，以及派生 future 在 cancel path 上的 canceled settlement
+- 上述 cleanup 激活方案目前只是阶段性实现：它把 cleanup process 插回当前 scope，但还没有重新接入 `Interpreter` / `RuntimeIndex` 的全局 process 出生口；因此该路径当前被视为已知错误，而不是最终设计
 
 ---
 
@@ -49,23 +51,22 @@
 2. `Interpreter.observeRunnable(listener)` 目前仍通过 root zone 的 `trackProcess(process)` 获得 runnable 视图；它还没有与 `RuntimeProcess.observe(...)` / `RuntimeScope.observe(...)` 建立新的统一关系。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`
 
-3. `RuntimeScope` 的事件分派口径已经明确，但“尝试进入完成/失败/取消收敛”的具体判定条件、成员移除时机、`ScopeRef.exitFuture` 的 settle、派生 future 的强制收敛，以及 closing failure 的归并都还没有重新建立。  
+3. `RuntimeScope` 的事件分派口径已经明确，并且当前阶段性实现已经补回 `ScopeRef.exitFuture` settlement、派生 future 的 canceled settlement，以及 cancel 后 cleanup 的收集/重启；但 cleanup process 目前仍是 scope 本地重新 `spawn`，没有重新接入 `Interpreter` / `RuntimeIndex`，所以这条路径的长期边界仍未闭合。  
    证据：`packages/kernel/src/interpreter/runtime-scope.ts`
 
-4. failure draft 与 `scope-failed` 的基本接线已经恢复，但 closing failure 的最终收束时机、`ScopeRef.exitFuture` 的 settle，以及 suppressed failure 的完整边界仍未补齐。  
+4. failure draft 与 `scope-failed` 的基本接线已经恢复，但 closing failure 的最终收束时机、cleanup 激活的正确出生口，以及 suppressed failure 的完整边界仍未补齐。  
    证据：`packages/kernel/src/interpreter/interpreter.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`
 
 ---
 
 ## 下一步
 
-1. 继续补齐 `RuntimeProcess` 与 `RuntimeScope` 的运行协议，明确 `halt(failure)` 如何使 process 落到 `failed`，以及 `cancel()` 如何由当前 scope 承接并让级联成员落到 `canceled`。
-2. 明确 `RuntimeProcess.observe(...)`、`RuntimeScope.observe(...)` 与 `Interpreter.observeRunnable(...)` 之间的长期边界，避免不同层重复承接同一类事件语义。
-3. 继续补全 `RuntimeScope` 的收敛判定，明确“尝试进入完成/失败/取消收敛”各自依赖哪些成员状态，以及何时补回 scope `exitFuture`、派生 future 与 failure 收束的接线。
-4. 按新的 `defer` 语义补齐 `RuntimeProcess` 的承接面，明确 `takeCleanups()` 的一次性交接时机，以及 scope cancel 与 process canceled 之间的状态关系。
-5. 如果后续仍需要 scope 关闭时机的 cleanup，单独命名并单独定义，不再复用 `defer`。
-6. 重新定义 closing failure 的收集语义与 failure draft 的最终接线位置，但不要重新引入 `onClosing` / `HaltHandler` 这类干预点，也不要再把它当成状态驱动主通道。
-7. 继续实现 executor，并在那时确定它如何消费这些观察面；`zone` 继续只作为结构组织层来协作。
+1. 继续补齐 `RuntimeProcess` 与 `RuntimeScope` 的运行协议，明确 `halt(failure)` 如何使 process 落到 `failed`，以及 `cancel(): Ritual<void>[]` 的最终承接语义。
+2. 重新定义 cleanup activation 的正确出生口：决定 cleanup process 应由 `RuntimeScope` 本地 `spawn`、还是通过解释环境主控层统一激活，并把这条规则收成静态结构约束，而不是靠调用纪律。
+3. 明确 `RuntimeProcess.observe(...)`、`RuntimeScope.observe(...)` 与 `Interpreter.observeRunnable(...)` 之间的长期边界，避免不同层重复承接同一类事件语义。
+4. 继续补全 `RuntimeScope` 的收敛判定，明确“尝试进入完成/失败/取消收敛”各自依赖哪些成员状态，以及派生 future 与 failure 收束的最终接线。
+5. 重新定义 closing failure 的收集语义与 failure draft 的最终接线位置，但不要重新引入 `onClosing` / `HaltHandler` 这类干预点，也不要再把它当成状态驱动主通道。
+6. 继续实现 executor，并在那时确定它如何消费这些观察面；`zone` 继续只作为结构组织层来协作。
 
 ---
 

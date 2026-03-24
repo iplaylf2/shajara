@@ -7,7 +7,7 @@ export class ScopeFailureDraft {
     this.#resolveFailure = resolveFailure;
   }
 
-  public suppress(failure: Failure): void {
+  public collect(failure: Failure): void {
     this.#suppressedFailures.push(failure);
   }
 
