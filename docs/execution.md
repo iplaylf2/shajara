@@ -27,11 +27,12 @@
 - `halt` 不再由 `RuntimeScope.halt(process, failure)` 承接；解释器应直接调用 `RuntimeProcess.halt(failure)`，其余收敛通过观察事件推进
 - `RuntimeScope` 的事件表已经明确分成 child scope 与 owned process 两条观察链；`closing` 的目标终态是 `completed`，`canceling` 的目标终态是 `canceled`，`failing` 的目标终态是 `failed`
 - child scope 的失败传播判定在 child 进入 `failing` 时按 child 自身的 `failureMode` 完成；child 的 `failed` 负责交付失败结果
-- `RuntimeScope` 已按 structural process、detached process 与 `children` 分开承接容器语义；成员终态后的移除逻辑仍停留在观察回调后的 `notImplemented(...)`
+- `RuntimeScope` 已按 structural process、detached process 与 `children` 分开承接容器语义；成员终态后会在观察回调中从对应容器移除
 - scope failure draft 当前已恢复为 `interpreter/` 内部建模；`failures/scope-failed.ts` 只保留 `FailureShape` 契约，以避免重新形成环依赖
 - `ScopeFailure` 当前已改成 `cause + suppressedFailures` 形状；`cause` 是 `process | scope` 的 sum type，分别记录触发 failing 的 process 或 child scope 及其 failure
 - `RuntimeScope` 当前在 process failed 与 child scope 传播 failing 时初始化 failure draft，并在后续成员失败时把它们作为 `suppressedFailures` 追加收集
 - 当前实现中，scope 起因的 draft 只先锚定 child scope ref；对应 failure 要等 child `failed` 后再读取
+- `RuntimeScope` 的内部生命周期状态当前已收敛成判别联合：`failing` 携带 draft，`failed` 携带最终 failure；公开 `status` 只暴露该内部状态的 tag
 - `defer` 的设计基线已改为 process 级注册：cleanup 由 `RuntimeProcess` 持有；具体触发时序回到 `semantics.md` 单源定义
 - `RuntimeProcess` 的公开承接面当前仍保留 `defer(cleanup)`、`halt(failure)`、`cancel()` 与 `takeCleanups()`；但语义基线已经转向 `cancel()` 由当前 scope 承接，process 的 `canceled` 作为级联结果出现
 - `halt`、closing 级联、`ScopeRef.exitFuture`、派生 future 的 settle，以及 closing failure 收束仍未恢复；当前继续留待后续实现

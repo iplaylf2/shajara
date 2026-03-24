@@ -75,6 +75,12 @@
 - 监听直系 Process 与子 Scope 的状态变化，并据此驱动 scope 生命周期推进。
 - 作为 scope 收敛与级联取消编排的承接点，决定何时进入 `closing` / `canceling` / `failing`，以及何时在所有归属成员退出后收敛到终态。
 
+实现上，`RuntimeScope` 内部已把生命周期状态收敛成判别联合：
+
+- `failing` 状态携带 failure draft。
+- `failed` 状态携带最终 failure。
+- 对外暴露的 `status` 仍只是该内部状态的 tag。
+
 当 scope 进入 `failing` 时，通过 failure draft 暂存失败收束所需的信息：
 
 - 由 process `failed` 首次触发 `failing` 时，draft 以该 process 引用与 failure resolver 作为 `cause` 初始化。

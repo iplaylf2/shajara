@@ -104,11 +104,11 @@ export class RuntimeScope {
   }
 
   public get status(): RuntimeScopeStatus {
-    return this.#status;
+    return this.#state.tag;
   }
 
   public get isClosed(): boolean {
-    switch (this.#status) {
+    switch (this.#state.tag) {
       case "running":
       case "closing":
       case "canceling":
@@ -187,23 +187,32 @@ export class RuntimeScope {
           this.#forgetChildScope(scope);
           this.#tryCanceled();
         })
-        .with(["failing", P.union("completed", "canceled")], () => {
+        .with(["failing", P.union("completed", "canceled")], ([status]) => {
           this.#forgetChildScope(scope);
-          this.#tryFailed();
+
+          const state = this.#stateAs(status);
+          this.#tryFailed(state.draft);
         })
-        .with(["failing", "failed"], () => {
+        .with(["failing", "failed"], ([status, scopeStatus]) => {
           this.#forgetChildScope(scope);
-          this.#suppressScopeFailure(scope);
-          this.#tryFailed();
+
+          const state = this.#stateAs(status);
+          state.draft.suppress(scope.#stateAs(scopeStatus).failure);
+          this.#tryFailed(state.draft);
         })
         .with([P.union("running", "closing", "canceling"), "failing"], () => {
           if (scope.descriptor.failureMode === "propagate") {
-            this.#startFailingByScope(scope);
+            this.#enterFailing(
+              new ScopeFailureDraft(
+                { kind: "scope", scope: scope.ref },
+                () => scope.#stateAs("failed").failure,
+              ),
+            );
           }
         })
-        .with(["failing", "failing"], () => {
+        .with(["failing", "failing"], ([status]) => {
           if (scope.descriptor.failureMode === "propagate") {
-            this.#enterFailing();
+            this.#enterFailing(this.#stateAs(status).draft);
           }
         })
         .with([P.union("completed", "canceled", "failed"), P._], unreachable)
@@ -232,17 +241,27 @@ export class RuntimeScope {
           this.#forgetOwnedProcess(process);
           this.#tryCanceled();
         })
-        .with(["failing", P.union("completed", "canceled")], () => {
+        .with(["failing", P.union("completed", "canceled")], ([status]) => {
           this.#forgetOwnedProcess(process);
-          this.#tryFailed();
+
+          const state = this.#stateAs(status);
+          this.#tryFailed(state.draft);
         })
         .with([P.union("running", "closing", "canceling"), "failed"], () => {
           this.#forgetOwnedProcess(process);
-          this.#startFailingByProcess(process);
+
+          this.#enterFailing(
+            new ScopeFailureDraft({ kind: "process", process: process.ref }, () =>
+              failureOfProcess(process),
+            ),
+          );
         })
-        .with(["failing", "failed"], () => {
+        .with(["failing", "failed"], ([status]) => {
           this.#forgetOwnedProcess(process);
-          this.#reenterFailingByProcess(process);
+
+          const state = this.#stateAs(status);
+          state.draft.suppress(failureOfProcess(process));
+          this.#enterFailing(state.draft);
         })
         .with([P.union("completed", "canceled", "failed"), P._], unreachable)
         .with([P._, P.union("running", "waiting")], () => {
@@ -259,57 +278,41 @@ export class RuntimeScope {
   }
 
   #enterClosing(): void {
-    this.#transitionTo("closing");
+    this.#transitionTo({ tag: "closing" });
     this.#cancelDetachedProcesses();
     this.#tryCompleted();
   }
 
   #tryCompleted(): void {
     if (this.#hasNoTrackedMembers()) {
-      this.#transitionTo("completed");
+      this.#transitionTo({ tag: "completed" });
     }
   }
 
   #enterCanceling(): void {
-    this.#transitionTo("canceling");
+    this.#transitionTo({ tag: "canceling" });
     this.#cascadeCancellation();
     this.#tryCanceled();
   }
 
   #tryCanceled(): void {
     if (this.#hasNoTrackedMembers()) {
-      this.#transitionTo("canceled");
+      this.#transitionTo({ tag: "canceled" });
     }
   }
 
-  #startFailingByScope(scope: RuntimeScope): void {
-    this.#failureDraft = new ScopeFailureDraft({ kind: "scope", scope: scope.ref }, () =>
-      scope.#failure(),
-    );
-    this.#enterFailing();
-  }
-
-  #startFailingByProcess(process: RuntimeProcess): void {
-    this.#failureDraft = new ScopeFailureDraft({ kind: "process", process: process.ref }, () =>
-      RuntimeScope.#failureByProcess(process),
-    );
-    this.#enterFailing();
-  }
-
-  #reenterFailingByProcess(process: RuntimeProcess): void {
-    this.#failureDraft!.suppress(RuntimeScope.#failureByProcess(process));
-    this.#enterFailing();
-  }
-
-  #enterFailing(): void {
-    this.#transitionTo("failing");
+  #enterFailing(draft: ScopeFailureDraft): void {
+    this.#transitionTo({ draft, tag: "failing" });
     this.#cascadeCancellation();
-    this.#tryFailed();
+    this.#tryFailed(draft);
   }
 
-  #tryFailed(): void {
+  #tryFailed(draft: ScopeFailureDraft): void {
     if (this.#hasNoTrackedMembers()) {
-      this.#transitionTo("failed");
+      this.#transitionTo({
+        failure: draft.build(),
+        tag: "failed",
+      });
     }
   }
 
@@ -323,10 +326,6 @@ export class RuntimeScope {
 
   #forgetChildScope(scope: RuntimeScope): void {
     this.#children.delete(scope);
-  }
-
-  #suppressScopeFailure(scope: RuntimeScope): void {
-    this.#failureDraft!.suppress(scope.#failure());
   }
 
   #forgetOwnedProcess(process: RuntimeProcess): void {
@@ -397,14 +396,6 @@ export class RuntimeScope {
     }
   }
 
-  #failure(): Failure {
-    return (this.exitFuture.poll() as option.Some<either.Left<Failure>>).value.left;
-  }
-
-  static #failureByProcess(process: RuntimeProcess): Failure {
-    return (process.result as either.Left<Failure>).left;
-  }
-
   #hasNoStructuralWork(): boolean {
     return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
   }
@@ -417,9 +408,17 @@ export class RuntimeScope {
     );
   }
 
-  #transitionTo(status: RuntimeScopeStatus): void {
-    this.#status = status;
+  #transitionTo(state: RuntimeScopeState): void {
+    this.#state = state;
     this.#notifyObservers();
+  }
+
+  #stateAs<Tag extends RuntimeScopeState["tag"]>(
+    tag: Tag,
+  ): Extract<RuntimeScopeState, { readonly tag: Tag }> {
+    // oxlint-disable-next-line no-void
+    void tag;
+    return this.#state as Extract<RuntimeScopeState, { readonly tag: Tag }>;
   }
 
   #notifyObservers(): void {
@@ -437,7 +436,7 @@ export class RuntimeScope {
   readonly #descriptor: ScopeDescriptor;
   readonly #zone: RuntimeZone;
 
-  #status: RuntimeScopeStatus = "running";
+  #state: RuntimeScopeState = { tag: "running" };
   readonly #children = new Set<RuntimeScope>();
   readonly #observers = new Set<RuntimeScopeObserver>();
 
@@ -450,8 +449,6 @@ export class RuntimeScope {
   readonly #detachedProcesses = new Set<RuntimeProcess>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
-
-  #failureDraft: ScopeFailureDraft | null = null;
 }
 
 export interface RuntimeZone {
@@ -468,3 +465,26 @@ export type RuntimeScopeStatus =
   | "failed";
 
 export type RuntimeScopeObserver = () => void;
+
+type RuntimeScopeState =
+  | { readonly tag: "running" }
+  | { readonly tag: "closing" }
+  | { readonly tag: "completed" }
+  | { readonly tag: "canceling" }
+  | { readonly tag: "canceled" }
+  | RuntimeScopeFailingState
+  | RuntimeScopeFailedState;
+
+interface RuntimeScopeFailingState {
+  readonly tag: "failing";
+  readonly draft: ScopeFailureDraft;
+}
+
+interface RuntimeScopeFailedState {
+  readonly tag: "failed";
+  readonly failure: Failure;
+}
+
+function failureOfProcess(process: RuntimeProcess): Failure {
+  return (process.result as either.Left<Failure>).left;
+}
