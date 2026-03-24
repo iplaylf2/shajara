@@ -36,9 +36,9 @@
 - `RuntimeProcess.observe(...)`：订阅 process 自身的状态变化。
 - `RuntimeScope.observe(...)`：订阅 scope 自身的状态变化。
 
-解释环境外的调度或观察逻辑，应建立在这些对象自己的观察面之上，而不是要求 `RuntimeProcess` 再额外持有一个 `cell` 承载位。
+解释环境外的调度或观察逻辑，建立在这些对象自己的观察面之上。
 
-`zone` 仍然是 `RuntimeScope` 所持有的结构承接位。它适合描述 scope 级或子树级的组织边界；它不是 process 运行态本身的必要组成，也不应反过来把 `RuntimeProcess` 塑造成依赖 `cell builder` 的对象。
+`zone` 是 `RuntimeScope` 所持有的结构承接位。它描述 scope 级或子树级的组织边界。
 
 索引对象 `RuntimeIndex` 只负责：
 
@@ -64,7 +64,7 @@
 其中：
 
 - `closing` 表示该 scope 已进入本地收敛过渡态，并在 cleanup 完成后再决定终态是 `completed` 还是 `failed`。
-- `canceling` 表示该 scope 自身不是 failure 起点，而是在祖先或外部编排驱动下进入级联取消。
+- `canceling` 表示该 scope 在祖先或外部编排驱动下进入级联取消。
 - `failing` 表示该 scope 已完成失败传播判定，并开始汇集失败收敛所需的信息。
 - `completed / failed / canceled` 是互斥终态。
 - `RuntimeScope.isClosed` 表达“已进入终态”；`closing / canceling / failing` 这些过程态由 `status` 承接。
@@ -102,7 +102,7 @@
 
 - process 按 `completionMode` 分别进入 structural / detached 两组容器；`entryProcess` 也走同一套注册路径。
 - `children` 与 process 容器表达 runtime scope 需要追踪的归属成员。
-- 成员进入终态后，应从对应容器中移除，不再继续作为活跃成员被追踪。
+- 成员进入终态后，从对应容器中移除；容器只追踪活跃成员。
 
 `halt` 作为 process 级事件由 `RuntimeProcess.halt(failure)` 承接：`Interpreter` 解释到 `Halt` sigil 后，调用对应 process 的 `halt(failure)`，再由 `RuntimeScope.observe(...)` 与 `RuntimeProcess.observe(...)` 的事件关系推进本地收敛路径进入 `closing`，其余被波及的 scope 进入 `canceling`，最后分别收敛到对应终态。`cancel()` 作为 scope 级事件承接当前 scope 的取消，并使该 scope 子树沿取消路径收敛。
 
@@ -113,25 +113,44 @@
 - 取消当前 scope 所管理的 members，并在 scope 确认真正进入终态时完成派生 future 的最终强制收束。
 - 在进入取消路径时先对将被取消的 processes / child scopes 做 snapshot，再基于 snapshot 执行取消，以避免遍历期间被新成员扰动。
 
-派生 future 的收束时机进一步明确为：
+派生 future 的收束时机为：
 
 - scope 确认可收敛到 `completed / canceled / failed` 这些最终状态时，统一把仍 pending 的派生 future 以 canceled settle。
 - 这条批量动作承接的是“取消未收敛 future”；scope 自身终态结果通过 `ScopeRef.exitFuture` 交付。
 
-cleanup ritual 的提取由 `RuntimeProcess` 自身承接，cleanup process 的激活与出生口由解释环境主控层承接。
+cleanup 的注册以 `Ritual<void>` 为用户语义；在 runtime 内部，`RuntimeProcess` 保管 cleanup task。
+
+这里需要显式区分两层职责：
+
+- `RuntimeProcess` 承接“本 process 关闭后需要触发哪些 cleanup task”。
+- `RuntimeScope` 承接“在本地生命周期的哪个时机触发这些 cleanup task”。
+- `Interpreter` 保留 cleanup process 的唯一出生口，并继续负责新 process 的登记。
+
+cleanup task 的语义是：接收一个由解释环境主控层提供的 `spawn` 能力，并通过该能力把 cleanup ritual 作为新的 process 插回当前 scope。该 `spawn` 复用解释环境内部的统一出生协议，因此同时完成：
+
+- 在目标 `RuntimeScope` 内创建 owned process。
+- 在 `RuntimeIndex` 中登记该 process。
+- 补齐解释环境对新 process 的其余登记链路。
+
+因此，cleanup 的触发权与 process 的出生权需要分开：
+
+- 触发 cleanup 的时机由 `RuntimeScope` 精细决定。
+- 真正出生 cleanup process 的 procedure 仍由 `Interpreter` 提供。
+
+这样设计使 scope 在 process 关闭路径上直接触发 cleanup，同时让 cleanup process 完全服从解释环境既有的统一出生口。
 
 `RuntimeScope` 的事件驱动规则分成两类：
 
 - 监听 owned process 事件。
 - 监听 child scope 事件。
 
-owned process 的状态变化按当前 scope 状态解释：
+owned process 的状态变化按当前 scope 状态解释时，把“触发 cleanup”纳入同一条生命周期编排。
 
-- `["running", "completed"]`：尝试进入 scope 完成收敛。
-- `["running" | "closing" | "canceling" | "failing", "failed"]`：scope 收集 process 的失败，并进入或重进 `failing`。
-- `["closing", "completed" | "canceled"]`：尝试进入 scope 本地收敛。
-- `["canceling", "completed" | "canceled"]`：尝试进入 scope 取消收敛。
-- `["failing", "completed" | "canceled"]`：尝试进入 scope 失败收敛。
+- `["running", "completed"]`：先触发该 process 的 cleanup task，再尝试进入 scope 完成收敛。
+- `["running" | "closing" | "canceling" | "failing", "failed"]`：scope 收集 process 的失败并进入或重进 `failing`；cleanup task 的触发属于该失败路径内部的编排步骤。
+- `["closing", "completed" | "canceled"]`：先触发该 process 的 cleanup task，再尝试进入 scope 本地收敛。
+- `["canceling", "completed" | "canceled"]`：先触发该 process 的 cleanup task，再尝试进入 scope 取消收敛。
+- `["failing", "completed" | "canceled"]`：先触发该 process 的 cleanup task，再尝试进入 scope 失败收敛。
 
 child scope 的状态变化按当前 scope 状态解释：
 
@@ -164,10 +183,10 @@ child scope 的状态变化按当前 scope 状态解释：
 
 - `failed` 表示 process 自身因 `halt` 或其他 failure 退出。
 - `canceled` 表示 process 因 scope 级联取消而退出。
-- `defer` 注册与 cleanup 触发由 `RuntimeProcess` 自身承接；具体时序由 `semantics.md` 定义。
+- `defer` 注册由 `RuntimeProcess` 自身承接；它在 runtime 内部保管为 cleanup task。cleanup 触发时机由所属 `RuntimeScope` 编排，具体时序由 `semantics.md` 定义。
 - `halt(failure)` 是 process 进入 `failed` 的公开入口。
 - `cancel()` 是当前 scope 进入取消路径的公开入口；被波及的 process 因此收敛到 `canceled`。
-- `takeCleanups()` 负责一次性交出该 process 上登记的 cleanup rituals；cleanup 激活由解释环境主控层继续承接。
+- `takeCleanups()` 负责一次性交出该 process 上登记的 cleanup task；task 的执行由 `RuntimeScope` 触发，但 task 内部使用的 process 出生能力由解释环境主控层提供。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 
@@ -205,6 +224,8 @@ child scope 的状态变化按当前 scope 状态解释：
 它表达的是解释环境内部新增并发参与者的入口。
 
 cleanup process 的激活也复用这条解释环境内部的出生口；解释环境主控层承接 cleanup process 的创建。
+
+这条出生口同时也是 cleanup task 被调用时所使用的能力来源。`RuntimeScope` 决定何时触发 cleanup task；cleanup process 由 `Interpreter` 的统一出生协议创建并登记。
 
 ## 4. 接口
 

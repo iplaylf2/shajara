@@ -197,7 +197,6 @@ export class RuntimeScope {
     });
   }
 
-  // oxlint-disable-next-line max-lines-per-function
   #driveByChildScope(scope: RuntimeScope): void {
     match([this.status, scope.status])
       .with(["running", P.union("completed", "failed", "canceled")], () => {
