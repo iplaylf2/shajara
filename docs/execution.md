@@ -36,6 +36,7 @@
 - `defer` 的设计基线已改为 process 级注册：cleanup 由 `RuntimeProcess` 持有；具体触发时序回到 `semantics.md` 单源定义
 - `RuntimeProcess` 当前阶段性恢复为 `cancel()` 与 `takeCleanups()` 分离：process 自身只承接取消与 cleanup 保管，cleanup 仍通过一次性提取交给外部编排方激活
 - `RuntimeScope` 当前阶段性把取消路径命名收为 `cancelManaged` / `isQuiet` / `isIdle`，并在 `canceling` / `failing` 时先对 managed processes / children 做 snapshot，再基于 snapshot 执行取消，避免遍历过程中被新成员扰动
+- `RuntimeScope.cancel()` 当前在 `failing` 上重入 `enterFailing(existingDraft)`，以继续复用成员取消而不改写 scope 自身的失败终态目标；其他状态仍沿既有 `enterCanceling()` 路径推进，并由既有 `unreachable` 分支兜底非法组合
 - `RuntimeScope` 当前已补回 `ScopeRef.exitFuture` 的 `completed / canceled / failed` settlement；派生 future 改为在 scope 确认最终收敛时统一以 canceled settle，并在此时结束本 scope 的追踪
 - `RuntimeScope` 当前把 `unreachable` 分支作为状态机门控本体，而不是额外叠加“调用失败”式 fallback；`Branch/Spawn` 在非终态下仍允许发生
 - `RuntimeScope` 当前把 membership 的 `add/delete` 聚合回 `registerChildScope / registerOwnedProcess / createFuture` 这些注册函数自身；`driveByChildScope / driveByOwnedProcess` 只承接状态机推进，不再负责容器移除

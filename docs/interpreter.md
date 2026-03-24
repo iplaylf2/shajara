@@ -68,6 +68,7 @@
 - `failing` 表示该 scope 已完成失败传播判定，并开始汇集失败收敛所需的信息。
 - `completed / failed / canceled` 是互斥终态。
 - `RuntimeScope.isClosed` 表达“已进入终态”；`closing / canceling / failing` 这些过程态由 `status` 承接。
+- scope 一旦进入 `failing`，后续 `cancel()` 继续复用成员取消流程，同时保持失败收敛方向；该 scope 的终态目标保持为 `failed`。
 
 `RuntimeScope` 的对象设计包含三层职责：
 

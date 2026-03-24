@@ -109,7 +109,11 @@ export class RuntimeScope {
   }
 
   public cancel(): void {
-    this.#enterCanceling();
+    if (this.status === "failing") {
+      this.#enterFailing(this.#stateAs(this.status).draft);
+    } else {
+      this.#enterCanceling();
+    }
   }
 
   public get ref(): ScopeRef<unknown> {
