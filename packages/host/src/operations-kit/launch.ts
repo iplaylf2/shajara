@@ -88,11 +88,6 @@ function toStatefulPromise<Return>(
     state(): LaunchState {
       return execution.state();
     },
-    then<TResult1 = Return, TResult2 = never>(
-      onfulfilled?: ((value: Return) => TResult1 | PromiseLike<TResult1>) | null | undefined,
-      onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null | undefined,
-    ): PromiseLike<TResult1 | TResult2> {
-      return settled.then(onfulfilled, onrejected);
-    },
+    then: settled.then.bind(settled),
   };
 }
