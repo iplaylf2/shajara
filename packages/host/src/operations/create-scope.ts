@@ -1,8 +1,8 @@
-import type { LaunchState, RiteRoutine } from "#src/contracts";
-import type { RunOptions, StatefulPromise } from "#src/operations-kit";
+import type { LaunchState, RiteRoutine } from "#/contracts";
+import type { RunOptions, StatefulPromise } from "#/operations-kit";
 import { ensureExecutor } from "@shajara/kernel";
-import { launch } from "#src/operations-kit";
-import { park } from "#src/primitives";
+import { launch } from "#/operations-kit";
+import { park } from "#/primitives";
 
 export function createScope(): Scope {
   const executor = ensureExecutor();

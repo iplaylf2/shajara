@@ -1,5 +1,5 @@
-import type { Failure, ProcessCause, ScopeCause, ScopeFailure } from "#src/failures";
-import { scopeFailed } from "#src/failures";
+import type { Failure, ProcessCause, ScopeCause, ScopeFailure } from "#/failures";
+import { scopeFailed } from "#/failures";
 
 export class ScopeFailureDraft {
   public constructor(cause: FailureCauseSeed, resolveFailure: () => Failure) {

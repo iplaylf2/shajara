@@ -1,6 +1,6 @@
-import { CanceledError, ExternalError, ScopeFailedError } from "#src/errors";
-import type { Failure } from "#src/contracts";
-import { ShajaraError } from "#src/contracts";
+import { CanceledError, ExternalError, ScopeFailedError } from "#/errors";
+import type { Failure } from "#/contracts";
+import { ShajaraError } from "#/contracts";
 import { externalFailure } from "@shajara/kernel";
 
 export function toFailure(error: Error): Failure {

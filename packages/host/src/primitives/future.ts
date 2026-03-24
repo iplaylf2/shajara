@@ -1,5 +1,5 @@
-import type { RiteCoroutine, RiteFuture, RiteFutureSettle } from "#src/contracts";
-import { encodeRitual } from "#src/boundary";
+import type { RiteCoroutine, RiteFuture, RiteFutureSettle } from "#/contracts";
+import { encodeRitual } from "#/boundary";
 import { future as kernelFuture } from "@shajara/kernel";
 
 export function future<Result>(): RiteCoroutine<[RiteFuture<Result>, RiteFutureSettle<Result>]> {

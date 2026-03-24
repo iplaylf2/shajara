@@ -1,5 +1,5 @@
-import type { ContextKey, RiteCoroutine } from "#src/contracts";
-import { encodeRitual, unwrapOption } from "#src/boundary";
+import type { ContextKey, RiteCoroutine } from "#/contracts";
+import { encodeRitual, unwrapOption } from "#/boundary";
 import { lookup as kernelLookup } from "@shajara/kernel";
 
 export function* lookup<Value>(key: ContextKey<Value>): RiteCoroutine<Value | undefined> {

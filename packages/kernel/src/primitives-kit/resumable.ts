@@ -1,5 +1,5 @@
-import type { ContextKey, FailureShape, FutureSettleKey, ScopeRef } from "#src/contracts";
-import { contextKey, messageKey } from "#src/contracts";
+import type { ContextKey, FailureShape, FutureSettleKey, ScopeRef } from "#/contracts";
+import { contextKey, messageKey } from "#/contracts";
 
 export const resumableDelegateKey: ContextKey<ScopeRef<unknown>> = contextKey<ScopeRef<unknown>>();
 

@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, MessageKey, ScopeRef, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, MessageKey, ScopeRef, SigilShape } from "#/contracts";
 
 export function send<Value>(
   scope: ScopeRef<unknown>,

@@ -1,4 +1,4 @@
-import type { FailureShape } from "#src/contracts";
+import type { FailureShape } from "#/contracts";
 
 export function externalFailure(raw: unknown, message: () => string): ExternalFailure {
   return {

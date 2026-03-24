@@ -1,4 +1,4 @@
-import type { FutureKey, FutureSettleKey, ProcessRef, ScopeRef } from "#src/contracts";
+import type { FutureKey, FutureSettleKey, ProcessRef, ScopeRef } from "#/contracts";
 import type { RuntimeFuture } from "./runtime-future";
 import type { RuntimeProcess } from "./runtime-process";
 import type { RuntimeScope } from "./runtime-scope";

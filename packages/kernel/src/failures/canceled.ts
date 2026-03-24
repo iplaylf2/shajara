@@ -1,4 +1,4 @@
-import type { FailureShape } from "#src/contracts";
+import type { FailureShape } from "#/contracts";
 
 export function canceled(): CanceledFailure {
   return {

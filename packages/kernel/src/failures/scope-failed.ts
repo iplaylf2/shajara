@@ -1,4 +1,4 @@
-import type { FailureShape, ProcessRef, ScopeRef } from "#src/contracts";
+import type { FailureShape, ProcessRef, ScopeRef } from "#/contracts";
 
 export function scopeFailed(
   cause: ScopeFailureCause,

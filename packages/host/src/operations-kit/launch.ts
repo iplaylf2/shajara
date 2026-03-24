@@ -5,9 +5,9 @@ import type {
   LaunchResult,
   LaunchState,
 } from "@shajara/kernel";
-import { decodeRitual, fromFailure } from "#src/boundary";
-import { CanceledError } from "#src/errors";
-import type { RiteRoutine } from "#src/contracts";
+import { decodeRitual, fromFailure } from "#/boundary";
+import { CanceledError } from "#/errors";
+import type { RiteRoutine } from "#/contracts";
 
 export function launch<Return>(
   executor: Executor,

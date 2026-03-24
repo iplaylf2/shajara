@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FailureShape, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, FailureShape, SigilShape } from "#/contracts";
 
 export function halt(failure: FailureShape): HaltSigil {
   return { failure, kind: "halt" };

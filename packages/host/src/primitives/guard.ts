@@ -1,5 +1,5 @@
-import type { Failure, RiteCoroutine, RiteFuture, RiteRoutine } from "#src/contracts";
-import { decodeRitual, encodeRitual, fromFailure, toFailureUnknown } from "#src/boundary";
+import type { Failure, RiteCoroutine, RiteFuture, RiteRoutine } from "#/contracts";
+import { decodeRitual, encodeRitual, fromFailure, toFailureUnknown } from "#/boundary";
 import { left, right } from "@shajara/kernel/utils";
 import type { Either } from "@shajara/kernel/utils";
 import type { FailureShape } from "@shajara/kernel";

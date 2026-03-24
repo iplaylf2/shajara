@@ -1,8 +1,8 @@
-import type { RiteCoroutine, RiteFuture } from "#src/contracts";
+import type { RiteCoroutine, RiteFuture } from "#/contracts";
 import { left, right } from "@shajara/kernel/utils";
 import { ensureExecutor } from "@shajara/kernel";
-import { future } from "#src/primitives";
-import { toFailure } from "#src/boundary";
+import { future } from "#/primitives";
+import { toFailure } from "#/boundary";
 
 export function* action<Return>(): RiteCoroutine<Action<Return>> {
   const [actionFuture, actionSettle] = yield* future<Return>();

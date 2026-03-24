@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureResult, FutureSettleKey, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, FutureResult, FutureSettleKey, SigilShape } from "#/contracts";
 
 export function settle<Result>(
   futureSettle: FutureSettleKey<Result>,

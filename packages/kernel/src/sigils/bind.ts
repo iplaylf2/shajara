@@ -1,4 +1,4 @@
-import type { ContextKey, ECHO_TOKEN, SigilShape } from "#src/contracts";
+import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 
 export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Value> {
   return {

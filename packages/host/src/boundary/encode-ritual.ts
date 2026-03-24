@@ -1,4 +1,4 @@
-import type { RiteCoroutine, RiteRoutine } from "#src/contracts";
+import type { RiteCoroutine, RiteRoutine } from "#/contracts";
 import type { Ritual, Wisp } from "@shajara/kernel";
 import type { Sigil } from "@shajara/kernel/sigils";
 

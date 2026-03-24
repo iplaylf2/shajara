@@ -1,9 +1,9 @@
-import type { FutureKey, ProcessRef, Ritual, Wisp } from "#src/contracts";
-import { branch, halt, spawn, wait } from "#src/sigils";
+import type { FutureKey, ProcessRef, Ritual, Wisp } from "#/contracts";
+import { branch, halt, spawn, wait } from "#/sigils";
 import { flow, pipe } from "fp-ts/function";
-import { wisp, wispEither } from "#src/internal/fp";
+import { wisp, wispEither } from "#/internal/fp";
 import type { either } from "fp-ts";
-import { narrowAs } from "#src/utils";
+import { narrowAs } from "#/utils";
 
 /**
  * Awaits a process through the in-band completion path only.

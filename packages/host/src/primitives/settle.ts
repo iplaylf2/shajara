@@ -1,5 +1,5 @@
-import type { RiteCoroutine, RiteFutureSettle } from "#src/contracts";
-import { encodeRitual } from "#src/boundary";
+import type { RiteCoroutine, RiteFutureSettle } from "#/contracts";
+import { encodeRitual } from "#/boundary";
 import { settle as kernelSettle } from "@shajara/kernel";
 import { right } from "@shajara/kernel/utils";
 

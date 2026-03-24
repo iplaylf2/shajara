@@ -1,4 +1,4 @@
-import { ShajaraError } from "#src/contracts";
+import { ShajaraError } from "#/contracts";
 import { externalFailure } from "@shajara/kernel";
 
 export class ExternalError extends ShajaraError {

@@ -1,4 +1,4 @@
-import type { RiteRoutine } from "#src/contracts";
+import type { RiteRoutine } from "#/contracts";
 import type { Ritual } from "@shajara/kernel";
 import type { UnknownArray } from "type-fest";
 import { decodeRitual } from "./decode-ritual";

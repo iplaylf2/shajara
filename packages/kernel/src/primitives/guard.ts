@@ -1,10 +1,10 @@
-import type { FailureShape, FutureKey, Ritual, Wisp } from "#src/contracts";
-import { bind, branch, receive, self, settle, spawn } from "#src/sigils";
-import { resumableDelegateKey, resumableFailureKey } from "#src/primitives-kit";
-import type { Either } from "#src/utils";
-import type { ResumableRecoveryRequest } from "#src/primitives-kit";
+import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
+import { bind, branch, receive, self, settle, spawn } from "#/sigils";
+import { resumableDelegateKey, resumableFailureKey } from "#/primitives-kit";
+import type { Either } from "#/utils";
+import type { ResumableRecoveryRequest } from "#/primitives-kit";
 import { pipe } from "fp-ts/function";
-import { wisp } from "#src/internal/fp";
+import { wisp } from "#/internal/fp";
 
 export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<FutureKey<void>> {
   return pipe(

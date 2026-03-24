@@ -1,7 +1,7 @@
-import type { RunOptions, StatefulPromise } from "#src/operations-kit";
-import type { RiteRoutine } from "#src/contracts";
+import type { RunOptions, StatefulPromise } from "#/operations-kit";
+import type { RiteRoutine } from "#/contracts";
 import { ensureExecutor } from "@shajara/kernel";
-import { launch } from "#src/operations-kit";
+import { launch } from "#/operations-kit";
 
 export function run<Return>(
   ritual: RiteRoutine<Return>,

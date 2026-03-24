@@ -1,5 +1,5 @@
-import type { RiteCoroutine } from "#src/contracts";
-import { encodeRitual } from "#src/boundary";
+import type { RiteCoroutine } from "#/contracts";
+import { encodeRitual } from "#/boundary";
 import { park as kernelPark } from "@shajara/kernel";
 
 export function park(): RiteCoroutine<never> {

@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, ProcessRef, ScopeRef, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, ProcessRef, ScopeRef, SigilShape } from "#/contracts";
 
 export function self<Scope extends ScopeRef<unknown>>(): SelfSigil<Scope> {
   return {

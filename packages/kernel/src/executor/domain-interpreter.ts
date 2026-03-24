@@ -1,5 +1,5 @@
-import { Interpreter } from "#src/interpreter";
-import { notImplemented } from "#src/internal/not-implemented";
+import { Interpreter } from "#/interpreter";
+import { notImplemented } from "#/internal/not-implemented";
 
 export class DomainInterpreter extends Interpreter {
   public constructor() {

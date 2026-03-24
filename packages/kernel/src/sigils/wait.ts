@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts";
 
 export function wait<Result>(future: FutureKey<Result>): WaitSigil<Result> {
   return {

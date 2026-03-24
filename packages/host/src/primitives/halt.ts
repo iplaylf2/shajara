@@ -1,5 +1,5 @@
-import { encodeRitual, toFailure } from "#src/boundary";
-import type { RiteCoroutine } from "#src/contracts";
+import { encodeRitual, toFailure } from "#/boundary";
+import type { RiteCoroutine } from "#/contracts";
 import { halt as kernelHalt } from "@shajara/kernel";
 
 export function halt(error: Error): RiteCoroutine<never> {

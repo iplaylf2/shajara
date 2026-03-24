@@ -16,7 +16,7 @@ import type {
   SpawnSigil,
   UnbindSigil,
   WaitSigil,
-} from "#src/sigils";
+} from "#/sigils";
 import type {
   ContextKey,
   FutureHandle,
@@ -30,7 +30,7 @@ import type {
   ScopeRef,
   SigilShape,
   StirringWisp,
-} from "#src/contracts";
+} from "#/contracts";
 import {
   processCededStep,
   processExitedStep,
@@ -38,12 +38,12 @@ import {
   processResonatedStep,
   processWaitingStep,
 } from "./process-step";
-import type { Failure } from "#src/failures";
+import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeIndex } from "./runtime-index";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
-import type { Unsubscribe } from "#src/interpreter-kit";
+import type { Unsubscribe } from "#/interpreter-kit";
 import { option } from "fp-ts";
 
 export class Interpreter {

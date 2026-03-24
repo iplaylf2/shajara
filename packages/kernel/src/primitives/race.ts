@@ -1,9 +1,9 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#src/contracts";
-import { branch, cancel, future, settle, spawn } from "#src/sigils";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts";
+import { branch, cancel, future, settle, spawn } from "#/sigils";
 import { either, readonlyArray } from "fp-ts";
 import { pipe } from "fp-ts/function";
-import { wisp } from "#src/internal/fp";
+import { wisp } from "#/internal/fp";
 
 export function race<BranchReturns extends NonEmptyTuple<unknown>>(
   branches: RaceBranches<BranchReturns>,

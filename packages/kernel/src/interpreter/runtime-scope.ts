@@ -6,15 +6,15 @@ import type {
   Ritual,
   ScopeDescriptor,
   ScopeRef,
-} from "#src/contracts";
+} from "#/contracts";
 import { P, match } from "ts-pattern";
 import { either, option, readonlyArray, readonlySet } from "fp-ts";
-import type { Failure } from "#src/failures";
+import type { Failure } from "#/failures";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeProcess } from "./runtime-process";
 import { ScopeFailureDraft } from "./scope-failure-draft";
-import type { Unsubscribe } from "#src/interpreter-kit";
-import { unreachable } from "#src/utils";
+import type { Unsubscribe } from "#/interpreter-kit";
+import { unreachable } from "#/utils";
 
 export class RuntimeScope {
   public static create(

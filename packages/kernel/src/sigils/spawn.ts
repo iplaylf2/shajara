@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, ProcessDescriptor, ProcessRef, Ritual, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, ProcessDescriptor, ProcessRef, Ritual, SigilShape } from "#/contracts";
 
 export function spawn<Relic>(
   worker: Ritual<Relic>,

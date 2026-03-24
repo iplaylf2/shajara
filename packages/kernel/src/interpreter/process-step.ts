@@ -1,4 +1,4 @@
-import type { FutureResult, ProcessRef } from "#src/contracts";
+import type { FutureResult, ProcessRef } from "#/contracts";
 
 export type ProcessStep<Relic> =
   | ProcessWaitingStep<Relic>

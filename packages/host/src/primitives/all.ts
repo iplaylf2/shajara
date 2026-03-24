@@ -1,6 +1,6 @@
-import type { RiteCoroutine, RiteFuture } from "#src/contracts";
-import { decodeRituals, encodeRitual } from "#src/boundary";
-import type { RiteRoutineTuple } from "#src/boundary";
+import type { RiteCoroutine, RiteFuture } from "#/contracts";
+import { decodeRituals, encodeRitual } from "#/boundary";
+import type { RiteRoutineTuple } from "#/boundary";
 import type { UnknownArray } from "type-fest";
 import { all as kernelAll } from "@shajara/kernel";
 

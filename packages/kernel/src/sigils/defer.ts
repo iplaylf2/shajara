@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, Ritual, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, Ritual, SigilShape } from "#/contracts";
 
 export function defer(cleanup: Ritual<void>): DeferSigil {
   return { cleanup, kind: "defer" };

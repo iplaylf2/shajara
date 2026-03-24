@@ -1,7 +1,7 @@
 // oxlint-disable class-methods-use-this
-import type { FutureHandle, FutureKey, FutureResult, FutureSettleKey } from "#src/contracts";
-import type { Option } from "#src/utils";
-import { notImplemented } from "#src/internal/not-implemented";
+import type { FutureHandle, FutureKey, FutureResult, FutureSettleKey } from "#/contracts";
+import type { Option } from "#/utils";
+import { notImplemented } from "#/internal/not-implemented";
 
 export class RuntimeFuture<Result = unknown> {
   public static create<Result>(): RuntimeFuture<Result> {

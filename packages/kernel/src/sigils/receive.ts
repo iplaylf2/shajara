@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, MessageKey, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, MessageKey, SigilShape } from "#/contracts";
 
 export function receive<ReceiveValue>(
   messageKey: MessageKey<ReceiveValue>,

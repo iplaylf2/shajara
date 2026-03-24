@@ -1,4 +1,4 @@
-import type { ContextKey, ECHO_TOKEN, SigilShape } from "#src/contracts";
+import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 
 export function unbind(key: ContextKey<unknown>): UnbindSigil {
   return {

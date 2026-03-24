@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, SigilShape } from "#src/contracts";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts";
 
 export function cede(): CedeSigil {
   return {

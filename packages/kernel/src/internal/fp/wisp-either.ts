@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { SigilShape, Wisp } from "#src/contracts";
+import type { SigilShape, Wisp } from "#/contracts";
 import type { applicative, apply, either, functor, monad, pointed } from "fp-ts";
 import { eitherT, chain as fpChain, fromIO as fpFromIO, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";

@@ -5,7 +5,7 @@ import type {
   ScopeDescriptor,
   ScopeRef,
   SigilShape,
-} from "#src/contracts";
+} from "#/contracts";
 
 export function branch<Relic>(
   entry: Ritual<Relic>,

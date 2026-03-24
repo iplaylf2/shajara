@@ -1,7 +1,7 @@
-import type { Wisp } from "#src/contracts";
-import { messageKey } from "#src/contracts";
-import { receive } from "#src/sigils";
-import { wisp } from "#src/internal/fp";
+import type { Wisp } from "#/contracts";
+import { messageKey } from "#/contracts";
+import { receive } from "#/sigils";
+import { wisp } from "#/internal/fp";
 
 export function park(): Wisp<never> {
   return wisp.liftF(receive(parkMessageKey));

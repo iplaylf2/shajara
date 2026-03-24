@@ -10,12 +10,12 @@ import type {
   ScopeRef,
   SigilShape,
   Wisp,
-} from "#src/contracts";
-import type { Failure } from "#src/failures";
+} from "#/contracts";
+import type { Failure } from "#/failures";
 import { RuntimeFuture } from "./runtime-future";
-import type { SelfHandle } from "#src/sigils";
-import type { Unsubscribe } from "#src/interpreter-kit";
-import { notImplemented } from "#src/internal/not-implemented";
+import type { SelfHandle } from "#/sigils";
+import type { Unsubscribe } from "#/interpreter-kit";
+import { notImplemented } from "#/internal/not-implemented";
 
 const HANDLE_FUTURE_KEY_INDEX = 0;
 

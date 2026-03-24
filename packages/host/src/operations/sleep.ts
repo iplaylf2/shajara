@@ -1,5 +1,5 @@
-import { future, wait } from "#src/primitives";
-import type { RiteCoroutine } from "#src/contracts";
+import { future, wait } from "#/primitives";
+import type { RiteCoroutine } from "#/contracts";
 import { ensureExecutor } from "@shajara/kernel";
 import { right } from "@shajara/kernel/utils";
 

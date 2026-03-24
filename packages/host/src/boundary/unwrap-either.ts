@@ -1,5 +1,5 @@
 import type { Either } from "@shajara/kernel/utils";
-import type { Failure } from "#src/contracts";
+import type { Failure } from "#/contracts";
 import { fromFailure } from "./failure-mapping";
 import { isLeft } from "@shajara/kernel/utils";
 
