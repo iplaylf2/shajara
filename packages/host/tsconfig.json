@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "module": "esnext",
     "moduleResolution": "bundler",
+    "rootDir": "./src",
     "paths": {
-      "#src/*": ["src/*"]
+      "#src/*": ["./src/*"]
     }
   },
   "extends": "@shajara/presets/tsconfig.shared.json",

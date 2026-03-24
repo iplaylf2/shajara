@@ -140,7 +140,7 @@ function* runRitual(): RiteCoroutine<string> {
 }
 
 function* haltRitual(): RiteCoroutine<never> {
-  yield* halt();
+  yield* halt(new Error("halted"));
   throw new Error("Not implemented: halt() never returns.");
 }
 
