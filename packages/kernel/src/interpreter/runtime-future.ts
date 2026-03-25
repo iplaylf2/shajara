@@ -1,8 +1,14 @@
-import type { FutureHandle, FutureKey, FutureResult, FutureSettleKey } from "#/contracts";
+import type {
+  FutureHandle,
+  FutureKey,
+  FutureResult,
+  FutureSettleKey,
+  KEY_TOKEN,
+} from "#/contracts";
 import { io, option } from "fp-ts";
 import type { Unsubscribe } from "#/interpreter-kit";
 
-export class RuntimeFuture<out Result> {
+export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): option.Option<FutureResult<Result>> {
     if (this.#result) {
       return option.some(this.#result);
@@ -39,11 +45,12 @@ export class RuntimeFuture<out Result> {
   }
 
   public get handle(): FutureHandle<Result> {
-    return [this.#key, this.#settleKey];
+    return [this, this];
   }
 
-  readonly #key = {} as FutureKey<Result>;
-  readonly #settleKey = {} as FutureSettleKey<Result>;
+  // oxlint-disable-next-line no-undef
+  declare public readonly [KEY_TOKEN]: FutureKey<Result>[typeof KEY_TOKEN] &
+    FutureSettleKey<Result>[typeof KEY_TOKEN];
   readonly #waiters = new Set<FutureSettler<Result>>();
   #result: FutureResult<Result> | null = null;
 }

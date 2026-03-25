@@ -5,6 +5,7 @@ import type {
   MessageKey,
   ProcessDescriptor,
   ProcessRef,
+  REF_TOKEN,
   Resonance,
   Ritual,
   ScopeRef,
@@ -17,9 +18,7 @@ import type { SelfHandle } from "#/sigils";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { notImplemented } from "#/internal/not-implemented";
 
-const HANDLE_FUTURE_KEY_INDEX = 0;
-
-export class RuntimeProcess<Relic> {
+export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
     worker: Ritual<Relic>,
@@ -27,9 +26,6 @@ export class RuntimeProcess<Relic> {
   ) {
     this.#exitFuture = new RuntimeFuture<Relic>();
     this.#descriptor = descriptor;
-    this.ref = {
-      exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],
-    } as ProcessRef<Relic>;
     this.scopeRef = scopeRef;
     this.#status = "running";
     this.wisp = worker() as Wisp<unknown>;
@@ -65,7 +61,7 @@ export class RuntimeProcess<Relic> {
 
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
     return {
-      process: this.ref,
+      process: this,
       scope: this.scopeRef,
     };
   }
@@ -128,7 +124,8 @@ export class RuntimeProcess<Relic> {
     notImplemented("RuntimeProcess.cancel");
   }
 
-  public readonly ref: ProcessRef<Relic>;
+  // oxlint-disable-next-line no-undef
+  declare public readonly [REF_TOKEN]: ProcessRef<Relic>[typeof REF_TOKEN];
   public readonly scopeRef: ScopeRef<unknown>;
   public result: FutureResult<Relic> | null = null;
   public wisp: Wisp<unknown>;

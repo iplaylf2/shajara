@@ -38,12 +38,12 @@
 
 `zone` 是 `RuntimeScope` 持有的结构承接位，用于表达 scope 级或子树级的组织边界。
 
-`RuntimeIndex` 只承接索引职责：
+`RuntimeScope`、`RuntimeProcess` 与 `RuntimeFuture` 直接实现对应的 `ScopeRef`、`ProcessRef`、`FutureKey` 与 `FutureSettleKey` 契约。
 
-- `registerScope / registerProcess / registerFuture`
-- `resolveScope / resolveProcess / resolveFuture / resolveFutureBySettle`
+- 对外公开面由 `ref / key` 视图表达。
+- `Interpreter` 通过私有 helper 承认这些公开视图对应的 runtime type。
 
-`Interpreter` 通过这些运行时对象推进解释环境。mailbox、future、process 局部运行态，以及 scope / process 自身的观察面分别由对应 runtime object 承接；与 `Scope` / `Process` 一起创建的 descriptor 也由对应 runtime object 持有。
+`Interpreter` 直接通过这些运行时对象推进解释环境。mailbox、future、process 局部运行态，以及 scope / process 自身的观察面分别由对应 runtime object 承接；与 `Scope` / `Process` 一起创建的 descriptor 也由对应 runtime object 持有。
 
 ### 2.1 `RuntimeScope`
 
@@ -78,10 +78,10 @@
 
 `RuntimeScope` 直接依赖 `RuntimeProcess`，并将其视为所属 scope 的 lifecycle member。
 
-这条依赖只覆盖 member lifecycle：
+这条依赖覆盖 member lifecycle：
 
 - `RuntimeScope` 读取 process descriptor、终态、cleanup 与取消入口。
-- `RuntimeScope` 不推进 process 的 ritual 执行，不组装 continuation，不负责等待恢复协议。
+- ritual 步进、continuation 组装与等待恢复协议由 `Interpreter` 承接。
 
 `RuntimeScope` 是 structure coordinator。
 
@@ -153,15 +153,15 @@ cleanup 的职责边界固定如下：
 
 - `RuntimeProcess` 保存本 process 的 cleanup task。
 - `RuntimeScope` 决定 cleanup task 的触发时机。
-- `Interpreter` 提供 cleanup process 的出生与登记。
+- `Interpreter` 提供 cleanup process 的出生。
 
-cleanup task 接收一个由解释环境主控层提供的 `spawn` 能力，并通过该能力把 cleanup ritual 作为新的 process 插回当前 scope。该 `spawn` 在目标 `RuntimeScope` 内创建 owned process，并在 `RuntimeIndex` 中完成登记。
+cleanup task 接收一个由解释环境主控层提供的 `spawn` 能力，并通过该能力把 cleanup ritual 作为新的 process 插回当前 scope。该 `spawn` 在目标 `RuntimeScope` 内创建 owned process，并返回其 `ProcessRef`。
 
 message 协议的归属固定如下：
 
 - `RuntimeScope` 承接 `send/receive` 的结构归属，并把 mailbox 缓冲与 receiver registration 委托给其私有持有的 `RuntimeMailbox`。
-- process 的等待原因、恢复 continuation 的方式，以及恢复后的执行推进属于 process/interpreter 一侧的执行协议。
-- receiver registration 与 process 生命周期保持一致；关闭后的 process 不再作为活跃 receiver 留在消费队列中。
+- process 的等待原因、恢复 continuation 的方式，以及恢复后的执行推进由 process/interpreter 一侧的执行协议承接。
+- receiver registration 与 process 生命周期保持一致；process 关闭时退出活跃 receiver 队列。
 - scope 进入 `completed / failed / canceled` 后，`RuntimeScope` 清空其私有持有的 `RuntimeMailbox`。
 
 ### 2.2 `RuntimeProcess`
@@ -185,7 +185,7 @@ message 协议的归属固定如下：
 - `cancel()` 是 process 接受 scope 级联取消的公开入口。
 - `takeCleanups()` 暴露本 process 上登记的 cleanup task。
 
-`RuntimeProcess` 接受 `RuntimeScope` 的 lifecycle 级控制，但 ritual 解释推进由 `Interpreter.step(...)` 驱动。
+`RuntimeProcess` 接受 `RuntimeScope` 的 lifecycle 级控制；ritual 解释推进由 `Interpreter.step(...)` 驱动。
 
 `RuntimeProcess` 的局部状态采用 sum type。
 
@@ -209,7 +209,7 @@ message 协议的归属固定如下：
 - lifecycle-facing：descriptor、终态、cleanup、取消入口，以及供 `RuntimeScope` 推进结构收敛所需的信息。
 - execution-facing：当前 wisp、continuation、等待恢复协议，以及推进 ritual 解释所需的信息。
 
-外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
+外部接口以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 据此组织解释环境。
 
 ## 3. 驱动模型
 

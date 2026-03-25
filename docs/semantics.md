@@ -47,7 +47,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 文档中提到“边界”时，指的是某段计算对应的 Scope。需要精确指称时，以 `Scope` 为准：生命周期、上下文继承、future 归属与失败传播范围，都由该 Scope 承载。
 
-`ScopeRef` 显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Scope 入口结果的收敛。
+`ScopeRef` 显式携带 `exitFuture`。它用于观察该 Scope 入口结果的收敛，并作为 Scope 的控制面引用。
 
 每个 Scope 在创建时都带有一份只读的 `ScopeDescriptor`。它不是运行中可变更的配置，而是该 Scope 身份的一部分；对象创建后不再改写。
 
@@ -68,7 +68,7 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 Process 是 Wisp 的动态实例。每个 Process 拥有唯一 `ProcessRef`，自创建起始终属于且仅属于一个 Scope。`ProcessRef` 与 `ScopeRef` 均为控制面引用。
 
-`ProcessRef` 也显式携带 `exitFuture`。它本身只是一个 `FutureKey<T>`，用于观察该 Process 结果的收敛。
+`ProcessRef` 也显式携带 `exitFuture`。它用于观察该 Process 结果的收敛，并作为 Process 的控制面引用。
 
 每个 Process 在创建时都带有一份只读的 `ProcessDescriptor`。它同样是创建期固定的声明信息，而不是运行中可重配的参数集合。
 
@@ -102,7 +102,7 @@ mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果�
 
 ### 2.7 FutureKey / FutureSettleKey 与单次收敛
 
-`FutureKey<Value>` 与 `FutureSettleKey<Value>` 是成对出现的 phantom-typed 不透明令牌，其中 `Value` 表示成功值类型。它们共同标识 owner Scope 内一个 **单次收敛槽位**。
+`FutureKey<Value>` 与 `FutureSettleKey<Value>` 是成对出现的强类型 capability handle，其中 `Value` 表示成功值类型。它们共同标识 owner Scope 内一个 **单次收敛槽位**。
 
 普通 future 由当前 Scope 通过 `Future()` sigil 创建。创建后得到一对 key：`[FutureKey, FutureSettleKey]`。future 本体的生命周期仍附着于 owner Scope。
 

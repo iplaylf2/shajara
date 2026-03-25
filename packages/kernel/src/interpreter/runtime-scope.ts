@@ -3,6 +3,7 @@ import type {
   ContextKey,
   MessageKey,
   ProcessDescriptor,
+  REF_TOKEN,
   Ritual,
   ScopeDescriptor,
   ScopeRef,
@@ -18,7 +19,7 @@ import type { Unsubscribe } from "#/interpreter-kit";
 import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils";
 
-export class RuntimeScope {
+export class RuntimeScope implements ScopeRef<unknown> {
   public static create(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
@@ -40,7 +41,7 @@ export class RuntimeScope {
   }
 
   public spawn<Relic>(worker: Ritual<Relic>, descriptor: ProcessDescriptor): RuntimeProcess<Relic> {
-    const spawnedProcess = new RuntimeProcess<Relic>(this.#ref, worker, descriptor);
+    const spawnedProcess = new RuntimeProcess<Relic>(this, worker, descriptor);
 
     this.#registerOwnedProcess(spawnedProcess);
 
@@ -109,10 +110,6 @@ export class RuntimeScope {
     }
   }
 
-  public get ref(): ScopeRef<unknown> {
-    return this.#ref;
-  }
-
   public get descriptor(): ScopeDescriptor {
     return this.#descriptor;
   }
@@ -143,6 +140,9 @@ export class RuntimeScope {
     return this.#entryProcess;
   }
 
+  // oxlint-disable-next-line no-undef
+  declare public readonly [REF_TOKEN]: ScopeRef<unknown>[typeof REF_TOKEN];
+
   private constructor(
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
@@ -151,10 +151,7 @@ export class RuntimeScope {
   ) {
     this.#exitFuture = new RuntimeFuture<unknown>();
     this.#zone = zone;
-    const [scopeExitFuture] = this.#exitFuture.handle;
-    this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
-
-    const entryProcess = new RuntimeProcess(this.#ref, entry, { completionMode: "structural" });
+    const entryProcess = new RuntimeProcess(this, entry, { completionMode: "structural" });
 
     this.#registerOwnedProcess(entryProcess);
 
@@ -214,7 +211,7 @@ export class RuntimeScope {
       .with([P.union("running", "closing", "canceling"), "failing"], () => {
         if (scope.descriptor.failureMode === "propagate") {
           const draft = new ScopeFailureDraft(
-            { kind: "scope", scope: scope.ref },
+            { kind: "scope", scope },
             () => scope.#stateAs("failed").failure,
           );
 
@@ -255,7 +252,7 @@ export class RuntimeScope {
         this.#tryFailed(draft);
       })
       .with([P.union("running", "closing", "canceling"), "failed"], () => {
-        const draft = new ScopeFailureDraft({ kind: "process", process: process.ref }, () =>
+        const draft = new ScopeFailureDraft({ kind: "process", process }, () =>
           failureOfProcess(process),
         );
 
@@ -292,7 +289,7 @@ export class RuntimeScope {
     if (this.#isIdle()) {
       this.#cancelDerivedFutures();
 
-      this.exitFuture.settle(either.right(resultOfProcess(this.#entryProcess)));
+      this.#exitFuture.settle(either.right(resultOfProcess(this.#entryProcess)));
       this.#transitionTo({ status: "completed" });
     }
   }
@@ -308,7 +305,7 @@ export class RuntimeScope {
       this.#cancelDerivedFutures();
 
       const canceled = either.left(canceledFailure());
-      this.exitFuture.settle(canceled);
+      this.#exitFuture.settle(canceled);
       this.#transitionTo({ status: "canceled" });
     }
   }
@@ -326,7 +323,7 @@ export class RuntimeScope {
 
       const failure = draft.build();
       const failed = either.left(failure);
-      this.exitFuture.settle(failed);
+      this.#exitFuture.settle(failed);
       this.#transitionTo({
         failure,
         status: "failed",
@@ -416,7 +413,6 @@ export class RuntimeScope {
   static readonly #sentinel = null as unknown as RuntimeScope;
 
   readonly #exitFuture: RuntimeFuture<unknown>;
-  readonly #ref: ScopeRef<unknown>;
   readonly #entryProcess: RuntimeProcess<unknown>;
   readonly #parent: RuntimeScope;
   readonly #descriptor: ScopeDescriptor;
