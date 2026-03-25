@@ -43,10 +43,6 @@ export class RuntimeProcess<Relic> {
     return this.#descriptor;
   }
 
-  public get completionMode(): ProcessDescriptor["completionMode"] {
-    return this.#descriptor.completionMode;
-  }
-
   public get hasQueuedContinuation(): boolean {
     return this.#continuation !== null;
   }

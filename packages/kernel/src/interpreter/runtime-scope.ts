@@ -195,6 +195,7 @@ export class RuntimeScope {
         ownedProcesses.delete(process);
       }
 
+      this.#zone.trackProcess(process);
       this.#driveByOwnedProcess(process);
     });
   }
@@ -242,8 +243,6 @@ export class RuntimeScope {
   }
 
   #driveByOwnedProcess(process: RuntimeProcess<unknown>): void {
-    this.#zone.trackProcess(process);
-
     match([this.status, process.status])
       .with(["running", "completed"], () => {
         this.#triggerCleanup(process);
