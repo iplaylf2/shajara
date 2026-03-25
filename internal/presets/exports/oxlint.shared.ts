@@ -19,6 +19,7 @@ export default defineConfig({
       "error",
       { allowSeparateTypeImports: true, includeExports: true },
     ],
+    "eslint/no-continue": "off",
     "eslint/no-ternary": "off",
     "eslint/no-use-before-define": "off",
     "import/exports-last": "off",

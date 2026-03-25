@@ -8,9 +8,10 @@ import type {
   ScopeRef,
 } from "#/contracts";
 import { P, match } from "ts-pattern";
-import { either, io, option, readonlyArray, readonlySet } from "fp-ts";
+import { either, io, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "./runtime-future";
+import { RuntimeMailbox } from "./runtime-mailbox";
 import { RuntimeProcess } from "./runtime-process";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { Unsubscribe } from "#/interpreter-kit";
@@ -83,21 +84,11 @@ export class RuntimeScope {
   }
 
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
-    const mailboxQueue = this.#mailboxes.get(messageKey);
-
-    if (!mailboxQueue || readonlyArray.isEmpty(mailboxQueue)) {
-      return option.none;
-    }
-
-    const value = mailboxQueue.shift() as Value;
-
-    return option.some(value);
+    return this.#mailbox.tryReceive(messageKey);
   }
 
   public receive(process: RuntimeProcess<unknown>, messageKey: MessageKey<unknown>): void {
-    process.receive(messageKey);
-
-    this.#registerReceiver(messageKey, process);
+    this.#mailbox.receive(process, messageKey);
   }
 
   public observe(observer: RuntimeScopeObserver): Unsubscribe {
@@ -353,11 +344,7 @@ export class RuntimeScope {
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    if (this.#deliverToReceiver(messageKey, value)) {
-      return;
-    }
-
-    this.#bufferMessage(messageKey, value);
+    this.#mailbox.send(messageKey, value);
   }
 
   #cancelManaged(): void {
@@ -389,37 +376,6 @@ export class RuntimeScope {
     }
   }
 
-  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess<unknown>): void {
-    const receiveQueue = this.#receiverQueues.get(messageKey);
-
-    if (receiveQueue) {
-      receiveQueue.push(process);
-    } else {
-      this.#receiverQueues.set(messageKey, [process]);
-    }
-  }
-
-  #deliverToReceiver<Value>(messageKey: MessageKey<Value>, value: Value): boolean {
-    const process = this.#receiverQueues.get(messageKey)?.shift();
-
-    if (process) {
-      process.accept(value);
-
-      return true;
-    }
-    return false;
-  }
-
-  #bufferMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    const mailboxQueue = this.#mailboxes.get(messageKey);
-
-    if (mailboxQueue) {
-      mailboxQueue.push(value);
-    } else {
-      this.#mailboxes.set(messageKey, [value]);
-    }
-  }
-
   #processContainerFor(process: RuntimeProcess<unknown>): Set<RuntimeProcess<unknown>> {
     if (process.descriptor.completionMode === "structural") {
       return this.#structuralProcesses;
@@ -438,6 +394,11 @@ export class RuntimeScope {
   #transitionTo(state: RuntimeScopeState): void {
     this.#state = state;
     this.#notifyObservers();
+
+    if (this.isClosed) {
+      this.#mailbox.clear();
+      this.#observers.clear();
+    }
   }
 
   #stateAs<Status extends RuntimeScopeStatus>(status: Status): RuntimeScopeStateOf<Status> {
@@ -449,10 +410,6 @@ export class RuntimeScope {
   #notifyObservers(): void {
     for (const observer of this.#observers) {
       observer();
-    }
-
-    if (this.isClosed) {
-      this.#observers.clear();
     }
   }
 
@@ -468,9 +425,7 @@ export class RuntimeScope {
   #state: RuntimeScopeState = { status: "running" };
   readonly #children = new Set<RuntimeScope>();
   readonly #observers = new Set<RuntimeScopeObserver>();
-
-  readonly #mailboxes = new WeakMap<MessageKey<unknown>, unknown[]>();
-  readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess<unknown>[]>();
+  readonly #mailbox = new RuntimeMailbox();
 
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
 

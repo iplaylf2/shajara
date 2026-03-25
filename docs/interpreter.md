@@ -27,7 +27,7 @@
 
 解释环境中的运行时对象分为三类：
 
-- `RuntimeScope`：承接 scope 树、mailbox、scope 派生 future、scope descriptor、成员归属与 scope 自身状态。
+- `RuntimeScope`：承接 scope 树、scope mailbox、scope 派生 future、scope descriptor、成员归属与 scope 自身状态。
 - `RuntimeProcess`：承接 process descriptor、局部执行状态、等待状态、终态收束与 process 自身状态。
 - `RuntimeFuture`：承接 future 的单次收敛状态与观察面。
 
@@ -70,9 +70,11 @@
 
 `RuntimeScope` 承接三层职责：
 
-- 持有 scope 自身状态、descriptor、mailbox、派生 future，以及父子 scope 结构归属。
+- 持有 scope 自身状态、descriptor、scope mailbox、派生 future，以及父子 scope 结构归属。
 - 监听直系 Process 与子 Scope 的状态变化，并据此推进 scope 生命周期。
 - 编排 scope 收敛、级联取消与失败传播，并在归属成员退出后收敛到终态。
+
+`RuntimeMailbox` 是 `RuntimeScope` 私有持有的实现承接位，用于封装单个 scope 上的 message buffer、receiver queue、receiver 反向索引与消息投递规则。
 
 `RuntimeScope` 直接依赖 `RuntimeProcess`，并将其视为所属 scope 的 lifecycle member。
 
@@ -157,9 +159,10 @@ cleanup task 接收一个由解释环境主控层提供的 `spawn` 能力，并�
 
 message 协议的归属固定如下：
 
-- `RuntimeScope` 承接 `send/receive` 的结构归属、mailbox 缓冲与 receiver registration。
+- `RuntimeScope` 承接 `send/receive` 的结构归属，并把 mailbox 缓冲与 receiver registration 委托给其私有持有的 `RuntimeMailbox`。
 - process 的等待原因、恢复 continuation 的方式，以及恢复后的执行推进属于 process/interpreter 一侧的执行协议。
 - receiver registration 与 process 生命周期保持一致；关闭后的 process 不再作为活跃 receiver 留在消费队列中。
+- scope 进入 `completed / failed / canceled` 后，`RuntimeScope` 清空其私有持有的 `RuntimeMailbox`。
 
 ### 2.2 `RuntimeProcess`
 
