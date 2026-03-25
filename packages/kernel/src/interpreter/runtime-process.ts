@@ -31,7 +31,7 @@ export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
     this.wisp = worker() as Wisp<unknown>;
   }
 
-  public get exitFuture(): RuntimeFuture<Relic> {
+  public get exitFuture(): FutureKey<Relic> {
     return this.#exitFuture;
   }
 

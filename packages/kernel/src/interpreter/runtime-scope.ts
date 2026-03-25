@@ -1,6 +1,7 @@
 // oxlint-disable class-methods-use-this, max-lines
 import type {
   ContextKey,
+  FutureKey,
   MessageKey,
   ProcessDescriptor,
   REF_TOKEN,
@@ -132,7 +133,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#state.status;
   }
 
-  public get exitFuture(): RuntimeFuture<unknown> {
+  public get exitFuture(): FutureKey<unknown> {
     return this.#exitFuture;
   }
 
