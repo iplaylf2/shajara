@@ -93,18 +93,6 @@ export class Interpreter {
     };
   }
 
-  public get scopeRoot(): ScopeRef<void> {
-    return this.#rootScope.ref as ScopeRef<void>;
-  }
-
-  public get processRoot(): ProcessRef<void> {
-    return this.#rootScope.entryProcess.ref as ProcessRef<void>;
-  }
-
-  public get isClosed(): boolean {
-    return this.#rootScope.isClosed;
-  }
-
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
     return this.#spawnIn(this.#resolveScope(scope), worker, { completionMode: "structural" });
   }
@@ -125,6 +113,18 @@ export class Interpreter {
     onSettled: (result: FutureResult<Result>) => void,
   ): void {
     this.#resolveFuture(future).wait(onSettled);
+  }
+
+  public get scopeRoot(): ScopeRef<void> {
+    return this.#rootScope.ref as ScopeRef<void>;
+  }
+
+  public get processRoot(): ProcessRef<void> {
+    return this.#rootScope.entryProcess.ref as ProcessRef<void>;
+  }
+
+  public get isClosed(): boolean {
+    return this.#rootScope.isClosed;
   }
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
@@ -338,10 +338,6 @@ export class Interpreter {
     return process.ref;
   }
 
-  readonly #rootScope: RuntimeScope;
-  readonly #runtimeIndex = new RuntimeIndex();
-  readonly #runnableListeners = new Set<RunnableListener>();
-
   #resolveScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
     return this.#runtimeIndex.resolveScope(scopeRef);
   }
@@ -357,6 +353,10 @@ export class Interpreter {
   #resolveFutureBySettle<Result>(future: FutureSettleKey<Result>) {
     return this.#runtimeIndex.resolveFutureBySettle(future);
   }
+
+  readonly #rootScope: RuntimeScope;
+  readonly #runtimeIndex = new RuntimeIndex();
+  readonly #runnableListeners = new Set<RunnableListener>();
 }
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
