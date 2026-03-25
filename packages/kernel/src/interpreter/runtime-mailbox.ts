@@ -1,18 +1,30 @@
-import { option, readonlyArray } from "fp-ts";
+// oxlint-disable no-magic-numbers
 import type { MessageKey } from "#/contracts";
 import type { RuntimeProcess } from "./runtime-process";
+import { option } from "fp-ts";
 
 export class RuntimeMailbox {
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
-    const mailboxQueue = this.#mailboxes.get(messageKey);
+    const mailbox = this.#mailboxes.get(messageKey);
 
-    if (!mailboxQueue || readonlyArray.isEmpty(mailboxQueue)) {
-      return option.none;
+    if (mailbox) {
+      switch (mailbox.length) {
+        case 0: {
+          this.#mailboxes.delete(messageKey);
+          break;
+        }
+        case 1: {
+          this.#mailboxes.delete(messageKey);
+          return option.some(mailbox[0] as Value);
+        }
+        default: {
+          const value = mailbox.shift() as Value;
+          return option.some(value);
+        }
+      }
     }
 
-    const value = mailboxQueue.shift() as Value;
-
-    return option.some(value);
+    return option.none;
   }
 
   public receive(process: RuntimeProcess<unknown>, messageKey: MessageKey<unknown>): void {
@@ -30,13 +42,28 @@ export class RuntimeMailbox {
     process.receive(messageKey);
   }
 
+  // oxlint-disable-next-line max-statements
   public send<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    const process = this.#receiverQueues.get(messageKey)?.shift();
+    const queues = this.#receiverQueues.get(messageKey);
 
-    if (process) {
-      process.accept(value);
-
-      return;
+    if (queues) {
+      switch (queues.length) {
+        case 0: {
+          this.#receiverQueues.delete(messageKey);
+          break;
+        }
+        case 1: {
+          this.#receiverQueues.delete(messageKey);
+          const [process] = queues;
+          process!.accept(value);
+          return;
+        }
+        default: {
+          const process = queues.shift()!;
+          process.accept(value);
+          return;
+        }
+      }
     }
 
     this.#bufferMessage(messageKey, value);
