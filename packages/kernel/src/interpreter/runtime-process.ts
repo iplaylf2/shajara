@@ -19,13 +19,13 @@ import { notImplemented } from "#/internal/not-implemented";
 
 const HANDLE_FUTURE_KEY_INDEX = 0;
 
-export class RuntimeProcess<Relic = unknown> {
+export class RuntimeProcess<Relic> {
   public constructor(
     scopeRef: ScopeRef<unknown>,
     worker: Ritual<Relic>,
     descriptor: ProcessDescriptor,
   ) {
-    this.#exitFuture = RuntimeFuture.create<Relic>();
+    this.#exitFuture = new RuntimeFuture<Relic>();
     this.#descriptor = descriptor;
     this.ref = {
       exitFuture: this.#exitFuture.handle[HANDLE_FUTURE_KEY_INDEX],

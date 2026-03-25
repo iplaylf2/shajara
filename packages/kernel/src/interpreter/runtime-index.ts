@@ -20,7 +20,7 @@ export class RuntimeIndex {
     throw new Error("Unknown scope reference.");
   }
 
-  public registerProcess(process: RuntimeProcess): void {
+  public registerProcess(process: RuntimeProcess<unknown>): void {
     this.#processByRef.set(process.ref, process);
     this.registerFuture(process.exitFuture);
   }
@@ -64,6 +64,6 @@ export class RuntimeIndex {
 
   readonly #futureByKey = new WeakMap<FutureKey<unknown>, RuntimeFuture<unknown>>();
   readonly #futureBySettle = new WeakMap<FutureSettleKey<unknown>, RuntimeFuture<unknown>>();
-  readonly #processByRef = new WeakMap<ProcessRef<unknown>, RuntimeProcess>();
+  readonly #processByRef = new WeakMap<ProcessRef<unknown>, RuntimeProcess<unknown>>();
   readonly #scopeByRef = new WeakMap<ScopeRef<unknown>, RuntimeScope>();
 }

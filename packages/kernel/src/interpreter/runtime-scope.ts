@@ -47,7 +47,7 @@ export class RuntimeScope {
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
-    const future = RuntimeFuture.create<Result>();
+    const future = new RuntimeFuture<Result>();
 
     this.#derivedFutures.add(future);
 
@@ -94,7 +94,7 @@ export class RuntimeScope {
     return option.some(value);
   }
 
-  public receive(process: RuntimeProcess, messageKey: MessageKey<unknown>): void {
+  public receive(process: RuntimeProcess<unknown>, messageKey: MessageKey<unknown>): void {
     process.receive(messageKey);
 
     this.#registerReceiver(messageKey, process);
@@ -148,7 +148,7 @@ export class RuntimeScope {
     return this.#exitFuture;
   }
 
-  public get entryProcess(): RuntimeProcess {
+  public get entryProcess(): RuntimeProcess<unknown> {
     return this.#entryProcess;
   }
 
@@ -158,7 +158,7 @@ export class RuntimeScope {
     parent: RuntimeScope,
     zone: RuntimeZone,
   ) {
-    this.#exitFuture = RuntimeFuture.create<unknown>();
+    this.#exitFuture = new RuntimeFuture<unknown>();
     this.#zone = zone;
     const [scopeExitFuture] = this.#exitFuture.handle;
     this.#ref = { exitFuture: scopeExitFuture } as ScopeRef<unknown>;
@@ -185,7 +185,7 @@ export class RuntimeScope {
     });
   }
 
-  #registerOwnedProcess(process: RuntimeProcess): void {
+  #registerOwnedProcess(process: RuntimeProcess<unknown>): void {
     const ownedProcesses = this.#processContainerFor(process);
 
     ownedProcesses.add(process);
@@ -241,7 +241,7 @@ export class RuntimeScope {
       .exhaustive();
   }
 
-  #driveByOwnedProcess(process: RuntimeProcess): void {
+  #driveByOwnedProcess(process: RuntimeProcess<unknown>): void {
     this.#zone.trackProcess(process);
 
     match([this.status, process.status])
@@ -344,7 +344,7 @@ export class RuntimeScope {
     }
   }
 
-  #triggerCleanup(process: RuntimeProcess): void {
+  #triggerCleanup(process: RuntimeProcess<unknown>): void {
     const spawn = (worker: Ritual<void>): RuntimeProcess<void> =>
       this.spawn(worker, { completionMode: "structural" });
 
@@ -376,7 +376,7 @@ export class RuntimeScope {
     this.#cancelProcesses([...this.#detachedProcesses]);
   }
 
-  #cancelProcesses(processes: readonly RuntimeProcess[]): void {
+  #cancelProcesses(processes: readonly RuntimeProcess<unknown>[]): void {
     for (const process of processes) {
       process.cancel();
     }
@@ -385,12 +385,12 @@ export class RuntimeScope {
   #cancelDerivedFutures(): void {
     const canceled = either.left(canceledFailure());
 
-    for (const future of [...this.#derivedFutures]) {
+    for (const future of this.#derivedFutures) {
       future.settle(canceled);
     }
   }
 
-  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess): void {
+  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess<unknown>): void {
     const receiveQueue = this.#receiverQueues.get(messageKey);
 
     if (receiveQueue) {
@@ -421,7 +421,7 @@ export class RuntimeScope {
     }
   }
 
-  #processContainerFor(process: RuntimeProcess): Set<RuntimeProcess> {
+  #processContainerFor(process: RuntimeProcess<unknown>): Set<RuntimeProcess<unknown>> {
     if (process.descriptor.completionMode === "structural") {
       return this.#structuralProcesses;
     }
@@ -461,7 +461,7 @@ export class RuntimeScope {
 
   readonly #exitFuture: RuntimeFuture<unknown>;
   readonly #ref: ScopeRef<unknown>;
-  readonly #entryProcess: RuntimeProcess;
+  readonly #entryProcess: RuntimeProcess<unknown>;
   readonly #parent: RuntimeScope;
   readonly #descriptor: ScopeDescriptor;
   readonly #zone: RuntimeZone;
@@ -471,18 +471,18 @@ export class RuntimeScope {
   readonly #observers = new Set<RuntimeScopeObserver>();
 
   readonly #mailboxes = new WeakMap<MessageKey<unknown>, unknown[]>();
-  readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess[]>();
+  readonly #receiverQueues = new WeakMap<MessageKey<unknown>, RuntimeProcess<unknown>[]>();
 
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
 
-  readonly #structuralProcesses = new Set<RuntimeProcess>();
-  readonly #detachedProcesses = new Set<RuntimeProcess>();
+  readonly #structuralProcesses = new Set<RuntimeProcess<unknown>>();
+  readonly #detachedProcesses = new Set<RuntimeProcess<unknown>>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
 export interface RuntimeZone {
-  trackProcess(process: RuntimeProcess): void;
+  trackProcess(process: RuntimeProcess<unknown>): void;
 }
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
@@ -509,10 +509,10 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   { readonly status: Status }
 >;
 
-function failureOfProcess(process: RuntimeProcess): Failure {
+function failureOfProcess(process: RuntimeProcess<unknown>): Failure {
   return (process.result as either.Left<Failure>).left;
 }
 
-function resultOfProcess(process: RuntimeProcess): unknown {
+function resultOfProcess(process: RuntimeProcess<unknown>): unknown {
   return (process.result as either.Right<unknown>).right;
 }

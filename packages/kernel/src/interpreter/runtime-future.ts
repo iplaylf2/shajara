@@ -1,37 +1,51 @@
-// oxlint-disable class-methods-use-this
 import type { FutureHandle, FutureKey, FutureResult, FutureSettleKey } from "#/contracts";
-import type { Option } from "#/utils";
-import { notImplemented } from "#/internal/not-implemented";
+import { io, option } from "fp-ts";
+import type { Unsubscribe } from "#/interpreter-kit";
 
-export class RuntimeFuture<Result = unknown> {
-  public static create<Result>(): RuntimeFuture<Result> {
-    const key = {} as FutureKey<Result>;
-    const settleKey = {} as FutureSettleKey<Result>;
+export class RuntimeFuture<out Result> {
+  public poll(): option.Option<FutureResult<Result>> {
+    if (this.#result) {
+      return option.some(this.#result);
+    }
 
-    return new RuntimeFuture<Result>(key, settleKey);
+    return option.none;
   }
 
-  public constructor(key: FutureKey<Result>, settleKey: FutureSettleKey<Result>) {
-    this.#key = key;
-    this.#settleKey = settleKey;
+  public wait(onSettled: FutureSettler<Result>): Unsubscribe {
+    if (this.#result) {
+      onSettled(this.#result);
+      return io.Do;
+    }
+
+    this.#waiters.add(onSettled);
+
+    return () => {
+      this.#waiters.delete(onSettled);
+    };
   }
 
-  public poll(): Option<FutureResult<Result>> {
-    return notImplemented("RuntimeFuture.poll");
-  }
+  public settle(result: FutureResult<Result>): void {
+    if (this.#result) {
+      return;
+    }
 
-  public wait(_onSettled: (result: FutureResult<Result>) => void): void {
-    notImplemented("RuntimeFuture.wait");
-  }
+    this.#result = result;
 
-  public settle(_result: FutureResult<Result>): void {
-    notImplemented("RuntimeFuture.settle");
+    for (const waiter of this.#waiters) {
+      waiter(result);
+    }
+
+    this.#waiters.clear();
   }
 
   public get handle(): FutureHandle<Result> {
     return [this.#key, this.#settleKey];
   }
 
-  readonly #key: FutureKey<Result>;
-  readonly #settleKey: FutureSettleKey<Result>;
+  readonly #key = {} as FutureKey<Result>;
+  readonly #settleKey = {} as FutureSettleKey<Result>;
+  readonly #waiters = new Set<FutureSettler<Result>>();
+  #result: FutureResult<Result> | null = null;
 }
+
+export type FutureSettler<out Result> = (result: FutureResult<Result>) => void;

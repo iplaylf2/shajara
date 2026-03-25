@@ -39,6 +39,7 @@ import {
   processWaitingStep,
 } from "./process-step";
 import type { Failure } from "#/failures";
+import type { FutureSettler } from "./runtime-future";
 import type { ProcessStep } from "./process-step";
 import { RuntimeIndex } from "./runtime-index";
 import { RuntimeProcess } from "./runtime-process";
@@ -75,7 +76,7 @@ export class Interpreter {
       case "completed":
       case "canceled":
       case "failed":
-        return processExitedStep(processRef, process.result as FutureResult<Relic>);
+        return processExitedStep(processRef, process.result!);
       case "running":
         if (process.hasQueuedContinuation) {
           return this.#resonateWisp(process);
@@ -108,10 +109,7 @@ export class Interpreter {
     return this.#resolveFuture(future).poll();
   }
 
-  public wait<Result>(
-    future: FutureKey<Result>,
-    onSettled: (result: FutureResult<Result>) => void,
-  ): void {
+  public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): void {
     this.#resolveFuture(future).wait(onSettled);
   }
 
@@ -223,11 +221,11 @@ export class Interpreter {
     return processResonatedStep(process.ref);
   }
 
-  #bind(process: RuntimeProcess, sigil: BindSigil<unknown>): void {
+  #bind(process: RuntimeProcess<unknown>, sigil: BindSigil<unknown>): void {
     this.#resolveScope(process.scopeRef).bind(sigil.key, sigil.value);
   }
 
-  #branch(process: RuntimeProcess, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
+  #branch(process: RuntimeProcess<unknown>, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
     const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
 
     this.#runtimeIndex.registerScope(branchScope);
@@ -238,7 +236,7 @@ export class Interpreter {
     };
   }
 
-  #defer(process: RuntimeProcess, sigil: DeferSigil): void {
+  #defer(process: RuntimeProcess<unknown>, sigil: DeferSigil): void {
     process.defer((spawn) => {
       const cleanupProcess = spawn(sigil.cleanup);
 
@@ -246,11 +244,11 @@ export class Interpreter {
     });
   }
 
-  #cancel(process: RuntimeProcess, _sigil: CancelSigil): void {
+  #cancel(process: RuntimeProcess<unknown>, _sigil: CancelSigil): void {
     this.#resolveScope(process.scopeRef).cancel();
   }
 
-  #future(process: RuntimeProcess): FutureHandle<unknown> {
+  #future(process: RuntimeProcess<unknown>): FutureHandle<unknown> {
     const scope = this.#resolveScope(process.scopeRef);
     const future = scope.createFuture();
 
@@ -259,7 +257,7 @@ export class Interpreter {
     return future.handle;
   }
 
-  #halt(process: RuntimeProcess, sigil: HaltSigil): void {
+  #halt(process: RuntimeProcess<unknown>, sigil: HaltSigil): void {
     process.halt(sigil.failure as Failure);
   }
 
@@ -267,7 +265,7 @@ export class Interpreter {
     this.#resolveFutureBySettle(sigil.futureSettle).settle(sigil.result);
   }
 
-  #spawn(process: RuntimeProcess, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
+  #spawn(process: RuntimeProcess<unknown>, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
     return this.#spawnIn<unknown>(
       this.#resolveScope(process.scopeRef),
       sigil.worker,
@@ -275,7 +273,7 @@ export class Interpreter {
     );
   }
 
-  #lookup(process: RuntimeProcess, sigil: LookupSigil<unknown>): option.Option<unknown> {
+  #lookup(process: RuntimeProcess<unknown>, sigil: LookupSigil<unknown>): option.Option<unknown> {
     return this.lookup(process.scopeRef, sigil.key);
   }
 
@@ -283,7 +281,7 @@ export class Interpreter {
     return this.#resolveFuture(sigil.future).poll();
   }
 
-  #self(process: RuntimeProcess): SelfHandle<ScopeRef<unknown>> {
+  #self(process: RuntimeProcess<unknown>): SelfHandle<ScopeRef<unknown>> {
     return process.selfHandle();
   }
 
@@ -291,23 +289,26 @@ export class Interpreter {
     return this.#resolveFuture(sigil.future).poll();
   }
 
-  #wait(process: RuntimeProcess, sigil: WaitSigil<unknown>): void {
+  #wait(process: RuntimeProcess<unknown>, sigil: WaitSigil<unknown>): void {
     process.wait(sigil.future);
   }
 
-  #unbind(process: RuntimeProcess, sigil: UnbindSigil): void {
+  #unbind(process: RuntimeProcess<unknown>, sigil: UnbindSigil): void {
     this.#resolveScope(process.scopeRef).unbind(sigil.key);
   }
 
-  #tryReceive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): option.Option<unknown> {
+  #tryReceive(
+    process: RuntimeProcess<unknown>,
+    sigil: ReceiveSigil<unknown>,
+  ): option.Option<unknown> {
     return this.#resolveScope(process.scopeRef).tryReceive(sigil.messageKey);
   }
 
-  #receive(process: RuntimeProcess, sigil: ReceiveSigil<unknown>): void {
+  #receive(process: RuntimeProcess<unknown>, sigil: ReceiveSigil<unknown>): void {
     this.#resolveScope(process.scopeRef).receive(process, sigil.messageKey);
   }
 
-  #send(process: RuntimeProcess, sigil: SendSigil<unknown>): void {
+  #send(process: RuntimeProcess<unknown>, sigil: SendSigil<unknown>): void {
     const sourceScope = this.#resolveScope(process.scopeRef);
     const targetScope = this.#resolveScope(sigil.scope);
 
@@ -315,14 +316,17 @@ export class Interpreter {
   }
 
   #setContinuation(
-    process: RuntimeProcess,
+    process: RuntimeProcess<unknown>,
     resonate: Resonance<SigilShape, unknown>,
     echo: unknown,
   ): void {
     process.setContinuation(resonate, echo);
   }
 
-  #primeContinuation(process: RuntimeProcess, resonate: Resonance<SigilShape, unknown>): void {
+  #primeContinuation(
+    process: RuntimeProcess<unknown>,
+    resonate: Resonance<SigilShape, unknown>,
+  ): void {
     process.primeContinuation(resonate);
   }
 
