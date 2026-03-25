@@ -274,10 +274,10 @@ export class Interpreter {
   }
 
   #lookup(process: RuntimeProcess<unknown>, sigil: LookupSigil<unknown>): option.Option<unknown> {
-    return this.lookup(process.scopeRef, sigil.key);
+    return this.#resolveScope(process.scopeRef).lookup(sigil.key);
   }
 
-  #poll(sigil: PollSigil<unknown>): option.Option<unknown> {
+  #poll(sigil: PollSigil<unknown>): option.Option<FutureResult<unknown>> {
     return this.#resolveFuture(sigil.future).poll();
   }
 
