@@ -15,5 +15,5 @@ export type ResourceBody<Value> = (provide: ResourceProvide<Value>) => RiteCorou
 export type ResourceProvide<Value> = (value: Value) => RiteCoroutine<never>;
 
 function toHostProvide<Value>(provide: KernelResourceProvide<Value>): ResourceProvide<Value> {
-  return (value) => encodeRitual(() => provide(value))() as RiteCoroutine<never>;
+  return (value) => encodeRitual(() => provide(value))();
 }

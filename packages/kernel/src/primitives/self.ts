@@ -6,5 +6,5 @@ import { wisp } from "#/internal/fp";
 export type { SelfHandle } from "#/sigils";
 
 export function self<Scope extends ScopeRef<unknown>>(): Wisp<SelfHandle<Scope>> {
-  return wisp.liftF(selfSigil()) as Wisp<SelfHandle<Scope>>;
+  return wisp.liftF(selfSigil<Scope>());
 }
