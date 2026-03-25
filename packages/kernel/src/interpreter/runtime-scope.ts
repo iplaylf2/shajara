@@ -110,7 +110,9 @@ export class RuntimeScope {
 
   public cancel(): void {
     if (this.status === "failing") {
-      this.#enterFailing(this.#stateAs(this.status).draft);
+      const { draft } = this.#stateAs(this.status);
+
+      this.#enterFailing(draft, io.Do);
     } else {
       this.#enterCanceling();
     }
@@ -219,17 +221,19 @@ export class RuntimeScope {
       })
       .with([P.union("running", "closing", "canceling"), "failing"], () => {
         if (scope.descriptor.failureMode === "propagate") {
-          this.#enterFailing(
-            new ScopeFailureDraft(
-              { kind: "scope", scope: scope.ref },
-              () => scope.#stateAs("failed").failure,
-            ),
+          const draft = new ScopeFailureDraft(
+            { kind: "scope", scope: scope.ref },
+            () => scope.#stateAs("failed").failure,
           );
+
+          this.#enterFailing(draft, io.Do);
         }
       })
       .with(["failing", "failing"], ([status]) => {
         if (scope.descriptor.failureMode === "propagate") {
-          this.#enterFailing(this.#stateAs(status).draft);
+          const { draft } = this.#stateAs(status);
+
+          this.#enterFailing(draft, io.Do);
         }
       })
       .with([P.union("completed", "canceled", "failed"), P._], unreachable)
@@ -242,30 +246,40 @@ export class RuntimeScope {
 
     match([this.status, process.status])
       .with(["running", "completed"], () => {
+        this.#triggerCleanup(process);
         this.#tryClosing();
       })
       .with(["running", "canceled"], unreachable)
       .with(["closing", P.union("completed", "canceled")], () => {
+        this.#triggerCleanup(process);
         this.#tryCompleted();
       })
       .with(["canceling", P.union("completed", "canceled")], () => {
+        this.#triggerCleanup(process);
         this.#tryCanceled();
       })
       .with(["failing", P.union("completed", "canceled")], ([status]) => {
-        const state = this.#stateAs(status);
-        this.#tryFailed(state.draft);
+        const { draft } = this.#stateAs(status);
+
+        this.#triggerCleanup(process);
+        this.#tryFailed(draft);
       })
       .with([P.union("running", "closing", "canceling"), "failed"], () => {
-        this.#enterFailing(
-          new ScopeFailureDraft({ kind: "process", process: process.ref }, () =>
-            failureOfProcess(process),
-          ),
+        const draft = new ScopeFailureDraft({ kind: "process", process: process.ref }, () =>
+          failureOfProcess(process),
         );
+
+        this.#enterFailing(draft, () => {
+          this.#triggerCleanup(process);
+        });
       })
       .with(["failing", "failed"], ([status]) => {
-        const state = this.#stateAs(status);
-        state.draft.collect(failureOfProcess(process));
-        this.#enterFailing(state.draft);
+        const { draft } = this.#stateAs(status);
+
+        draft.collect(failureOfProcess(process));
+        this.#enterFailing(draft, () => {
+          this.#triggerCleanup(process);
+        });
       })
       .with([P.union("completed", "canceled", "failed"), P._], unreachable)
       .with([P._, P.union("running", "waiting")], io.Do)
@@ -309,9 +323,10 @@ export class RuntimeScope {
     }
   }
 
-  #enterFailing(draft: ScopeFailureDraft): void {
+  #enterFailing(draft: ScopeFailureDraft, beforeTry: () => void): void {
     this.#transitionTo({ draft, status: "failing" });
     this.#cancelManaged();
+    beforeTry();
     this.#tryFailed(draft);
   }
 
@@ -326,6 +341,15 @@ export class RuntimeScope {
         failure,
         status: "failed",
       });
+    }
+  }
+
+  #triggerCleanup(process: RuntimeProcess): void {
+    const spawn = (worker: Ritual<void>): RuntimeProcess<void> =>
+      this.spawn(worker, { completionMode: "structural" });
+
+    for (const cleanup of process.takeCleanups()) {
+      cleanup(spawn);
     }
   }
 

@@ -186,7 +186,7 @@ child scope 的状态变化按当前 scope 状态解释：
 - `defer` 注册由 `RuntimeProcess` 自身承接；它在 runtime 内部保管为 cleanup task。cleanup 触发时机由所属 `RuntimeScope` 编排，具体时序由 `semantics.md` 定义。
 - `halt(failure)` 是 process 进入 `failed` 的公开入口。
 - `cancel()` 是当前 scope 进入取消路径的公开入口；被波及的 process 因此收敛到 `canceled`。
-- `takeCleanups()` 负责一次性交出该 process 上登记的 cleanup task；task 的执行由 `RuntimeScope` 触发，但 task 内部使用的 process 出生能力由解释环境主控层提供。
+- `takeCleanups()` 暴露该 process 上登记的 cleanup task；task 的执行由 `RuntimeScope` 触发，而“一次性触发”由生命周期语义约束保证。
 
 外部接口始终以 `ScopeRef` / `ProcessRef` 作为边界；`Interpreter` 维持这组引用边界并据此组织解释环境。
 

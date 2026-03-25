@@ -108,12 +108,12 @@ export class RuntimeProcess<Relic = unknown> {
     notImplemented("RuntimeProcess.receive");
   }
 
-  public defer(_cleanup: Ritual<void>): void {
-    notImplemented("RuntimeProcess.defer");
+  public defer(cleanup: CleanupTask): void {
+    this.#cleanups.push(cleanup);
   }
 
-  public takeCleanups(): Ritual<void>[] {
-    return notImplemented("RuntimeProcess.takeCleanups");
+  public takeCleanups(): CleanupTask[] {
+    return this.#cleanups;
   }
 
   public accept(_value: unknown): void {
@@ -142,11 +142,16 @@ export class RuntimeProcess<Relic = unknown> {
   readonly #descriptor: ProcessDescriptor;
   readonly #exitFuture: RuntimeFuture<Relic>;
   readonly #observers = new Set<RuntimeProcessObserver>();
+  #cleanups: CleanupTask[] = [];
 }
 
 export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "canceled" | "failed";
 
 export type RuntimeProcessObserver = () => void;
+
+export type ProcessSpawner = (worker: Ritual<void>) => RuntimeProcess<void>;
+
+export type CleanupTask = (spawn: ProcessSpawner) => void;
 
 export interface RuntimeContinuation {
   readonly echo: unknown;

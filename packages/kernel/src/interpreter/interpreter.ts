@@ -64,7 +64,6 @@ export class Interpreter {
       },
     );
     this.#runtimeIndex.registerScope(this.#rootScope);
-    this.#registerCleanups(this.#rootScope, this.#rootScope.entryProcess);
   }
 
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
@@ -232,7 +231,6 @@ export class Interpreter {
     const branchScope = this.#resolveScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
 
     this.#runtimeIndex.registerScope(branchScope);
-    this.#registerCleanups(branchScope, branchScope.entryProcess);
 
     return {
       process: branchScope.entryProcess.ref,
@@ -241,7 +239,11 @@ export class Interpreter {
   }
 
   #defer(process: RuntimeProcess, sigil: DeferSigil): void {
-    process.defer(sigil.cleanup);
+    process.defer((spawn) => {
+      const cleanupProcess = spawn(sigil.cleanup);
+
+      this.#runtimeIndex.registerProcess(cleanupProcess);
+    });
   }
 
   #cancel(process: RuntimeProcess, _sigil: CancelSigil): void {
@@ -332,21 +334,8 @@ export class Interpreter {
     const process = scope.spawn(worker, descriptor);
 
     this.#runtimeIndex.registerProcess(process);
-    this.#registerCleanups(scope, process);
 
     return process.ref;
-  }
-
-  #registerCleanups(scope: RuntimeScope, process: RuntimeProcess): void {
-    process.observe(() => {
-      if (!process.isClosed) {
-        return;
-      }
-
-      for (const cleanup of process.takeCleanups()) {
-        this.#spawnIn(scope, cleanup, { completionMode: "structural" });
-      }
-    });
   }
 
   readonly #rootScope: RuntimeScope;
