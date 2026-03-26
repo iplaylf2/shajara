@@ -74,7 +74,7 @@
 - 监听直系 Process 与子 Scope 的状态变化，并据此推进 scope 生命周期。
 - 编排 scope 收敛、级联取消与失败传播，并在归属成员退出后收敛到终态。
 
-`RuntimeMailbox` 是 `RuntimeScope` 私有持有的实现承接位，用于封装单个 scope 上的 message buffer、receiver queue、receiver 反向索引与消息投递规则。
+`RuntimeMailbox` 是 `RuntimeScope` 私有持有的实现承接位，用于封装单个 scope 上的 message buffer、receiver queue 与消息匹配规则。
 
 `RuntimeScope` 直接依赖 `RuntimeProcess`，并将其视为所属 scope 的 lifecycle member。
 
@@ -159,8 +159,10 @@ cleanup task 接收一个由解释环境主控层提供的 `spawn` 能力，并�
 
 message 协议的归属固定如下：
 
-- `RuntimeScope` 承接 `send/receive` 的结构归属，并把 mailbox 缓冲与 receiver registration 委托给其私有持有的 `RuntimeMailbox`。
+- `RuntimeScope` 承接 `send/receive` 的结构归属，并编排 mailbox 缓冲、receiver registration、消息匹配与 delivery。
 - process 的等待原因、恢复 continuation 的方式，以及恢复后的执行推进由 process/interpreter 一侧的执行协议承接。
+- `RuntimeMailbox` 承接单个 scope 上的 message buffer、receiver queue 与消息匹配。
+- `RuntimeScope` 把 owned process 视作 scope-local receiver，并在消息匹配后把 receiver 交还给对应 process。
 - receiver registration 与 process 生命周期保持一致；process 关闭时退出活跃 receiver 队列。
 - scope 进入 `completed / failed / canceled` 后，`RuntimeScope` 清空其私有持有的 `RuntimeMailbox`。
 

@@ -12,6 +12,7 @@ import type {
 import { P, match } from "ts-pattern";
 import { either, io, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
+import type { MailboxReceiver } from "./runtime-mailbox";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { RuntimeProcess } from "./runtime-process";
@@ -90,7 +91,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public receive(process: RuntimeProcess<unknown>, messageKey: MessageKey<unknown>): void {
-    this.#mailbox.receive(process, messageKey);
+    this.#mailbox.enqueueReceiver(asMailboxReceiver(process), messageKey);
+    process.receive(messageKey);
   }
 
   public observe(observer: RuntimeScopeObserver): Unsubscribe {
@@ -182,6 +184,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     process.observe(() => {
       if (process.isClosed) {
         ownedProcesses.delete(process);
+        this.#releaseOwnedProcess(process);
       }
 
       this.#zone.trackProcess(process);
@@ -342,7 +345,15 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    this.#mailbox.send(messageKey, value);
+    const receiver = this.#mailbox.send(messageKey, value);
+
+    if (receiver) {
+      asRuntimeProcess(receiver).accept(value);
+    }
+  }
+
+  #releaseOwnedProcess(process: RuntimeProcess<unknown>): void {
+    this.#mailbox.cancelReceiver(asMailboxReceiver(process));
   }
 
   #cancelManaged(): void {
@@ -394,8 +405,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#notifyObservers();
 
     if (this.isClosed) {
-      this.#mailbox.clear();
-      this.#observers.clear();
+      this.#releaseAfterClosed();
     }
   }
 
@@ -409,6 +419,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const observer of this.#observers) {
       observer();
     }
+  }
+
+  #releaseAfterClosed(): void {
+    this.#mailbox.clear();
+    this.#observers.clear();
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
@@ -466,4 +481,12 @@ function failureOfProcess(process: RuntimeProcess<unknown>): Failure {
 
 function resultOfProcess(process: RuntimeProcess<unknown>): unknown {
   return (process.result as either.Right<unknown>).right;
+}
+
+function asMailboxReceiver(process: RuntimeProcess<unknown>): MailboxReceiver {
+  return process as unknown as MailboxReceiver;
+}
+
+function asRuntimeProcess(receiver: MailboxReceiver): RuntimeProcess<unknown> {
+  return receiver as unknown as RuntimeProcess<unknown>;
 }

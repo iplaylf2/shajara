@@ -1,7 +1,6 @@
 // oxlint-disable no-magic-numbers
+import { option, readonlyArray } from "fp-ts";
 import type { MessageKey } from "#/contracts";
-import type { RuntimeProcess } from "./runtime-process";
-import { option } from "fp-ts";
 
 export class RuntimeMailbox {
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
@@ -27,23 +26,16 @@ export class RuntimeMailbox {
     return option.none;
   }
 
-  public receive(process: RuntimeProcess<unknown>, messageKey: MessageKey<unknown>): void {
-    if (!this.#receiverKeys.has(process)) {
-      process.observe(() => {
-        if (!process.isClosed) {
-          return;
-        }
+  public enqueueReceiver(receiver: MailboxReceiver, messageKey: MessageKey<unknown>): void {
+    const keys = this.#receiverKeys.getOrInsertComputed(receiver, () => new Set());
+    keys.add(messageKey);
 
-        this.#unregisterReceiver(process);
-      });
-    }
-
-    this.#registerReceiver(messageKey, process);
-    process.receive(messageKey);
+    const queues = this.#receiverQueues.getOrInsertComputed(messageKey, () => []);
+    queues.push(receiver);
   }
 
   // oxlint-disable-next-line max-statements
-  public send<Value>(messageKey: MessageKey<Value>, value: Value): void {
+  public send<Value>(messageKey: MessageKey<Value>, value: Value): MailboxReceiver | null {
     const queues = this.#receiverQueues.get(messageKey);
 
     if (queues) {
@@ -54,19 +46,30 @@ export class RuntimeMailbox {
         }
         case 1: {
           this.#receiverQueues.delete(messageKey);
-          const [process] = queues;
-          process!.accept(value);
-          return;
+          const [receiver] = queues;
+          return receiver!;
         }
         default: {
-          const process = queues.shift()!;
-          process.accept(value);
-          return;
+          const receiver = queues.shift()!;
+          return receiver;
         }
       }
     }
 
     this.#bufferMessage(messageKey, value);
+    return null;
+  }
+
+  public cancelReceiver(receiver: MailboxReceiver): void {
+    const messageKeys = this.#receiverKeys.get(receiver);
+
+    if (messageKeys) {
+      for (const messageKey of messageKeys) {
+        this.#removeReceiverFromQueue(messageKey, receiver);
+      }
+
+      this.#receiverKeys.delete(receiver);
+    }
   }
 
   public clear(): void {
@@ -75,35 +78,19 @@ export class RuntimeMailbox {
     this.#receiverKeys.clear();
   }
 
-  #registerReceiver(messageKey: MessageKey<unknown>, process: RuntimeProcess<unknown>): void {
-    const keys = this.#receiverKeys.getOrInsertComputed(process, () => new Set());
-    keys.add(messageKey);
+  #removeReceiverFromQueue(messageKey: MessageKey<unknown>, receiver: MailboxReceiver): void {
+    const receiveQueue = this.#receiverQueues.get(messageKey);
 
-    const queues = this.#receiverQueues.getOrInsertComputed(messageKey, () => []);
-    queues.push(process);
-  }
-
-  // oxlint-disable-next-line max-statements
-  #unregisterReceiver(process: RuntimeProcess<unknown>): void {
-    const messageKeys = this.#receiverKeys.get(process);
-
-    if (!messageKeys) {
-      this.#receiverKeys.delete(process);
+    if (!receiveQueue) {
       return;
     }
 
-    for (const messageKey of messageKeys) {
-      const receiveQueue = this.#receiverQueues.get(messageKey);
-
-      if (!receiveQueue) {
-        continue;
-      }
-
-      const nextQueue = receiveQueue.filter((receiver) => receiver !== process);
-      receiveQueue.splice(QUEUE_BEGIN, receiveQueue.length, ...nextQueue);
+    const nextQueue = receiveQueue.filter((entry) => entry !== receiver);
+    if (readonlyArray.isEmpty(nextQueue)) {
+      this.#receiverQueues.delete(messageKey);
+    } else {
+      receiveQueue.splice(0, receiveQueue.length, ...nextQueue);
     }
-
-    this.#receiverKeys.delete(process);
   }
 
   #bufferMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -112,8 +99,12 @@ export class RuntimeMailbox {
   }
 
   readonly #mailboxes = new Map<MessageKey<unknown>, unknown[]>();
-  readonly #receiverQueues = new Map<MessageKey<unknown>, RuntimeProcess<unknown>[]>();
-  readonly #receiverKeys = new Map<RuntimeProcess<unknown>, Set<MessageKey<unknown>>>();
+  readonly #receiverQueues = new Map<MessageKey<unknown>, MailboxReceiver[]>();
+  readonly #receiverKeys = new Map<MailboxReceiver, Set<MessageKey<unknown>>>();
 }
 
-const QUEUE_BEGIN = 0;
+export interface MailboxReceiver {
+  readonly [MAILBOX_RECEIVER_TOKEN]: "mailbox-receiver";
+}
+
+declare const MAILBOX_RECEIVER_TOKEN: unique symbol;
