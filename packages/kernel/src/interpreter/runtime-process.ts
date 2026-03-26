@@ -92,7 +92,7 @@ export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
     }
   }
 
-  public wait(_future: FutureKey<unknown>): void {
+  public wait(_future: RuntimeFuture<unknown>): void {
     notImplemented("RuntimeProcess.wait");
   }
 
