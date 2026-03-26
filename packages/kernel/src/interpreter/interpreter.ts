@@ -66,7 +66,7 @@ export class Interpreter {
   }
 
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
-    const process = this.#narrowProcess(processRef);
+    const process = narrowProcess(processRef);
 
     switch (process.status) {
       case "waiting":
@@ -93,22 +93,22 @@ export class Interpreter {
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    return this.#spawnIn(this.#narrowScope(scope), worker, { completionMode: "structural" });
+    return this.#spawnIn(narrowScope(scope), worker, { completionMode: "structural" });
   }
 
   public lookup<Value>(
     scope: ScopeRef<unknown>,
     contextKey: ContextKey<Value>,
   ): option.Option<Value> {
-    return this.#narrowScope(scope).lookup(contextKey);
+    return narrowScope(scope).lookup(contextKey);
   }
 
   public poll<Result>(future: FutureKey<Result>): option.Option<FutureResult<Result>> {
-    return this.#narrowFuture(future).poll();
+    return narrowFuture(future).poll();
   }
 
   public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): void {
-    this.#narrowFuture(future).wait(onSettled);
+    narrowFuture(future).wait(onSettled);
   }
 
   public get scopeRoot(): ScopeRef<void> {
@@ -208,11 +208,7 @@ export class Interpreter {
   #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     process.resonate();
 
-    if (
-      process.status === "completed" ||
-      process.status === "failed" ||
-      process.status === "canceled"
-    ) {
+    if (process.isClosed) {
       return processExitedStep(process, process.result as FutureResult<Relic>);
     }
 
@@ -220,11 +216,11 @@ export class Interpreter {
   }
 
   #bind(process: RuntimeProcess<unknown>, sigil: BindSigil<unknown>): void {
-    this.#narrowScope(process.scopeRef).bind(sigil.key, sigil.value);
+    narrowScope(process.scopeRef).bind(sigil.key, sigil.value);
   }
 
   #branch(process: RuntimeProcess<unknown>, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
-    const branchScope = this.#narrowScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
+    const branchScope = narrowScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
 
     return {
       process: branchScope.entryProcess,
@@ -239,12 +235,11 @@ export class Interpreter {
   }
 
   #cancel(process: RuntimeProcess<unknown>, _sigil: CancelSigil): void {
-    this.#narrowScope(process.scopeRef).cancel();
+    narrowScope(process.scopeRef).cancel();
   }
 
   #future(process: RuntimeProcess<unknown>): FutureHandle<unknown> {
-    const scope = this.#narrowScope(process.scopeRef);
-    return scope.createFuture().handle;
+    return narrowScope(process.scopeRef).createFuture().handle;
   }
 
   #halt(process: RuntimeProcess<unknown>, sigil: HaltSigil): void {
@@ -252,23 +247,19 @@ export class Interpreter {
   }
 
   #settle(sigil: SettleSigil<unknown>): void {
-    this.#narrowFutureSettleKey(sigil.futureSettle).settle(sigil.result);
+    narrowFutureSettleKey(sigil.futureSettle).settle(sigil.result);
   }
 
   #spawn(process: RuntimeProcess<unknown>, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    return this.#spawnIn<unknown>(
-      this.#narrowScope(process.scopeRef),
-      sigil.worker,
-      sigil.descriptor,
-    );
+    return narrowScope(process.scopeRef).spawn(sigil.worker, sigil.descriptor);
   }
 
   #lookup(process: RuntimeProcess<unknown>, sigil: LookupSigil<unknown>): option.Option<unknown> {
-    return this.#narrowScope(process.scopeRef).lookup(sigil.key);
+    return narrowScope(process.scopeRef).lookup(sigil.key);
   }
 
   #poll(sigil: PollSigil<unknown>): option.Option<FutureResult<unknown>> {
-    return this.#narrowFuture(sigil.future).poll();
+    return narrowFuture(sigil.future).poll();
   }
 
   #self(process: RuntimeProcess<unknown>): SelfHandle<ScopeRef<unknown>> {
@@ -276,7 +267,7 @@ export class Interpreter {
   }
 
   #tryWait(sigil: WaitSigil<unknown>): option.Option<FutureResult<unknown>> {
-    return this.#narrowFuture(sigil.future).poll();
+    return narrowFuture(sigil.future).poll();
   }
 
   #wait(process: RuntimeProcess<unknown>, sigil: WaitSigil<unknown>): void {
@@ -284,23 +275,23 @@ export class Interpreter {
   }
 
   #unbind(process: RuntimeProcess<unknown>, sigil: UnbindSigil): void {
-    this.#narrowScope(process.scopeRef).unbind(sigil.key);
+    narrowScope(process.scopeRef).unbind(sigil.key);
   }
 
   #tryReceive(
     process: RuntimeProcess<unknown>,
     sigil: ReceiveSigil<unknown>,
   ): option.Option<unknown> {
-    return this.#narrowScope(process.scopeRef).tryReceive(sigil.messageKey);
+    return narrowScope(process.scopeRef).tryReceive(sigil.messageKey);
   }
 
   #receive(process: RuntimeProcess<unknown>, sigil: ReceiveSigil<unknown>): void {
-    this.#narrowScope(process.scopeRef).receive(process, sigil.messageKey);
+    narrowScope(process.scopeRef).receive(process, sigil.messageKey);
   }
 
   #send(process: RuntimeProcess<unknown>, sigil: SendSigil<unknown>): void {
-    const sourceScope = this.#narrowScope(process.scopeRef);
-    const targetScope = this.#narrowScope(sigil.scope);
+    const sourceScope = narrowScope(process.scopeRef);
+    const targetScope = narrowScope(sigil.scope);
 
     sourceScope.send(targetScope, sigil.messageKey, sigil.value);
   }
@@ -328,24 +319,24 @@ export class Interpreter {
     return scope.spawn(worker, descriptor);
   }
 
-  #narrowScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
-    return scopeRef as RuntimeScope;
-  }
-
-  #narrowProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
-    return processRef as RuntimeProcess<Relic>;
-  }
-
-  #narrowFuture<Result>(future: FutureKey<Result>): RuntimeFuture<Result> {
-    return future as RuntimeFuture<Result>;
-  }
-
-  #narrowFutureSettleKey<Result>(future: FutureSettleKey<Result>): RuntimeFuture<Result> {
-    return future as RuntimeFuture<Result>;
-  }
-
   readonly #rootScope: RuntimeScope;
   readonly #runnableListeners = new Set<RunnableListener>();
 }
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
+
+function narrowScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
+  return scopeRef as RuntimeScope;
+}
+
+function narrowProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic> {
+  return processRef as RuntimeProcess<Relic>;
+}
+
+function narrowFuture<Result>(future: FutureKey<Result>): RuntimeFuture<Result> {
+  return future as RuntimeFuture<Result>;
+}
+
+function narrowFutureSettleKey<Result>(future: FutureSettleKey<Result>): RuntimeFuture<Result> {
+  return future as RuntimeFuture<Result>;
+}

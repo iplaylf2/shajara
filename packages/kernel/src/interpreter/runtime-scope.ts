@@ -1,4 +1,4 @@
-// oxlint-disable class-methods-use-this, max-lines
+// oxlint-disable max-lines
 import type {
   ContextKey,
   FutureKey,
@@ -81,6 +81,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#bindings.delete(contextKey);
   }
 
+  // oxlint-disable-next-line class-methods-use-this
   public send<Value>(targetScope: RuntimeScope, messageKey: MessageKey<Value>, value: Value): void {
     targetScope.#acceptMessage(messageKey, value);
   }
@@ -359,7 +360,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];
 
-    this.#cancelProcesses(processes);
+    for (const process of processes) {
+      process.cancel();
+    }
 
     for (const child of children) {
       child.cancel();
@@ -367,11 +370,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #cancelDetached(): void {
-    this.#cancelProcesses([...this.#detachedProcesses]);
-  }
-
-  #cancelProcesses(processes: readonly RuntimeProcess<unknown>[]): void {
-    for (const process of processes) {
+    for (const process of [...this.#detachedProcesses]) {
       process.cancel();
     }
   }
