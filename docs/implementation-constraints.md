@@ -30,6 +30,7 @@
 - 角色命名使用 `*Scope`，控制面句柄使用 `*Ref`，消息/查找/future capability 令牌使用 `*Key`。
 - 字段全必填时使用 `*Config`，不使用 `*Options`。
 - 创建时固定、供运行时读取的对象声明信息使用 `*Descriptor`；不要以 `metadata` 或泛化的 `policy` 命名这类核心语义载体。
+- 在 `Interpreter` 中，`resolve` / `touch` 这类名字保留给协议级 callout：`resolve` 表达从 `ref/key` 进入 runtime object，`touch` 表达新 runtime object 已被解释环境承认；不要用只强调类型技巧的名字弱化这层语义。
 - 显式类型 shape 若已是稳定语义概念，应由对应语义宿主提供命名 alias；若只服务于某个实现边界，则 alias 应贴近该边界承载体。
 - 不要恢复 `ScopeSpec` 或 `standard / supervisor / governor` 这类 scope taxonomy 作为 kernel 设计基线；若未来需要调度/回收治理扩展，应直接围绕 executor / governance 边界重新设计。
 

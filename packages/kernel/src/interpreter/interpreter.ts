@@ -35,7 +35,7 @@ import { option } from "fp-ts";
 export class Interpreter {
   // oxlint-disable-next-line class-methods-use-this
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
-    const process = this.#narrow(processRef);
+    const process = this.#resolve(processRef);
 
     switch (process.status) {
       case "waiting":
@@ -62,7 +62,7 @@ export class Interpreter {
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    const process = this.#narrow(scope).spawn(worker, { completionMode: "structural" });
+    const process = this.#resolve(scope).spawn(worker, { completionMode: "structural" });
     this.#touch(process);
     return process;
   }
@@ -71,15 +71,15 @@ export class Interpreter {
     scope: ScopeRef<unknown>,
     contextKey: ContextKey<Value>,
   ): option.Option<Value> {
-    return this.#narrow(scope).lookup(contextKey);
+    return this.#resolve(scope).lookup(contextKey);
   }
 
   public poll<Result>(future: FutureKey<Result>): option.Option<FutureResult<Result>> {
-    return this.#narrow(future).poll();
+    return this.#resolve(future).poll();
   }
 
   public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): void {
-    this.#narrow(future).wait(onSettled);
+    this.#resolve(future).wait(onSettled);
   }
 
   public constructor(protected readonly entry: Ritual<void>) {
@@ -112,7 +112,7 @@ export class Interpreter {
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
   #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
-    const scope = this.#narrow(process.scopeRef);
+    const scope = this.#resolve(process.scopeRef);
 
     const [kind, sigil, resonate] = fixedStirringWisp(
       process.wisp as StirringWisp<SigilShape, Relic>,
@@ -161,13 +161,13 @@ export class Interpreter {
         setContinuation(process, resonate, lookup(scope, sigil.key));
         return processInterpretedStep(process);
       case "poll":
-        setContinuation(process, resonate, poll(this.#narrow(sigil.future)));
+        setContinuation(process, resonate, poll(this.#resolve(sigil.future)));
         return processInterpretedStep(process);
       case "self":
         setContinuation(process, resonate, self(process));
         return processInterpretedStep(process);
       case "settle":
-        settle(this.#narrow(sigil.futureSettle), sigil.result);
+        settle(this.#resolve(sigil.futureSettle), sigil.result);
         setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
       case "spawn": {
@@ -182,7 +182,7 @@ export class Interpreter {
         setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
       case "wait": {
-        const future = this.#narrow(sigil.future);
+        const future = this.#resolve(sigil.future);
 
         const settled = tryWait(future);
         if (option.isSome(settled)) {
@@ -207,7 +207,7 @@ export class Interpreter {
         return processWaitingStep(process);
       }
       case "send":
-        send(scope, this.#narrow(sigil.scope), sigil.messageKey, sigil.value);
+        send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value);
         setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
     }
@@ -237,12 +237,12 @@ export class Interpreter {
     // Do nothing
   }
 
-  #narrow<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
-  #narrow<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic>;
-  #narrow<Result>(futureKey: FutureKey<Result>): RuntimeFuture<Result>;
-  #narrow<Result>(futureSettleKey: FutureSettleKey<Result>): RuntimeFuture<Result>;
+  #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
+  #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic>;
+  #resolve<Result>(futureKey: FutureKey<Result>): RuntimeFuture<Result>;
+  #resolve<Result>(futureSettleKey: FutureSettleKey<Result>): RuntimeFuture<Result>;
   // oxlint-disable-next-line class-methods-use-this
-  #narrow(token: unknown): unknown {
+  #resolve(token: unknown): unknown {
     return token;
   }
 
