@@ -2,6 +2,7 @@
 import type { BranchHandle, SelfHandle, Sigil } from "#/sigils";
 import type {
   ContextKey,
+  Echo,
   FutureHandle,
   FutureKey,
   FutureResult,
@@ -112,32 +113,34 @@ export class Interpreter {
   // oxlint-disable-next-line max-lines-per-function, max-statements
   #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
     const scope = this.#narrow(process.scopeRef);
-    const { sigil, resonate } = process.wisp as StirringWisp<Sigil, Relic>;
 
-    switch (sigil.kind) {
+    const [kind, sigil, resonate] = fixedStirringWisp(
+      process.wisp as StirringWisp<SigilShape, Relic>,
+    );
+    switch (kind) {
       case "bind":
         bind(scope, sigil.key, sigil.value);
-        setContinuation(process, resonate, null);
+        setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
       case "branch":
         setContinuation(process, resonate, branch(scope, sigil.entry, sigil.descriptor));
         return processInterpretedStep(process);
       case "cede":
-        setContinuation(process, resonate, null);
+        setContinuation(process, resonate, VOID);
         return processCededStep(process);
       case "cancel":
         cancel(scope);
-        return processExitedStep(process, process.result as FutureResult<Relic>);
+        return processExitedStep(process, process.result!);
       case "defer":
         defer(process, sigil.cleanup);
-        setContinuation(process, resonate, null);
+        setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
       case "future":
         setContinuation(process, resonate, createFuture(scope));
         return processInterpretedStep(process);
       case "halt":
         halt(process, sigil.failure as Failure);
-        return processExitedStep(process, process.result as FutureResult<Relic>);
+        return processExitedStep(process, process.result!);
       case "lookup":
         setContinuation(process, resonate, lookup(scope, sigil.key));
         return processInterpretedStep(process);
@@ -149,14 +152,14 @@ export class Interpreter {
         return processInterpretedStep(process);
       case "settle":
         settle(this.#narrow(sigil.futureSettle), sigil.result);
-        setContinuation(process, resonate, null);
+        setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
       case "spawn":
         setContinuation(process, resonate, spawn(scope, sigil.worker, sigil.descriptor));
         return processInterpretedStep(process);
       case "unbind":
         unbind(scope, sigil.key);
-        setContinuation(process, resonate, null);
+        setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
       case "wait": {
         const future = this.#narrow(sigil.future);
@@ -185,7 +188,7 @@ export class Interpreter {
       }
       case "send":
         send(scope, this.#narrow(sigil.scope), sigil.messageKey, sigil.value);
-        setContinuation(process, resonate, null);
+        setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
     }
   }
@@ -228,6 +231,12 @@ export class Interpreter {
 }
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
+
+function fixedStirringWisp<Relic>(
+  wisp: StirringWisp<SigilShape, Relic>,
+): FixedStirringWisp<Sigil, Relic> {
+  return [wisp.sigil.kind, wisp.sigil, wisp.resonate] as FixedStirringWisp<Sigil, Relic>;
+}
 
 function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value): void {
   scope.bind(key, value);
@@ -328,10 +337,10 @@ function send<Value>(
   scope.send(targetScope, messageKey, value);
 }
 
-function setContinuation(
+function setContinuation<SigilItem extends SigilShape>(
   process: RuntimeProcess<unknown>,
-  resonate: Resonance<SigilShape, unknown>,
-  echo: unknown,
+  resonate: Resonance<SigilItem, unknown>,
+  echo: Echo<SigilItem>,
 ): void {
   process.setContinuation(resonate, echo);
 }
@@ -342,3 +351,13 @@ function primeContinuation(
 ): void {
   process.primeContinuation(resonate);
 }
+
+type FixedStirringWisp<SigilItem extends SigilShape, Relic> = SigilItem extends SigilShape
+  ? [
+      SigilItem["kind"],
+      StirringWisp<SigilItem, Relic>["sigil"],
+      StirringWisp<SigilItem, Relic>["resonate"],
+    ]
+  : never;
+
+const VOID: void = null as unknown as void;

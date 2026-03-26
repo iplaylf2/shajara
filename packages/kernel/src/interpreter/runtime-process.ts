@@ -1,5 +1,6 @@
 // oxlint-disable class-methods-use-this
 import type {
+  Echo,
   FutureKey,
   FutureResult,
   MessageKey,
@@ -74,7 +75,10 @@ export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
     };
   }
 
-  public setContinuation(resonate: (echo: unknown) => Wisp<unknown>, echo: unknown): void {
+  public setContinuation<SigilItem extends SigilShape>(
+    resonate: Resonance<SigilItem, unknown>,
+    echo: Echo<SigilItem>,
+  ): void {
     this.#continuation = {
       echo,
       resonate,

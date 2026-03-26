@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureKey, FutureSettleKey, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, FutureHandle, SigilShape } from "#/contracts";
 
 export function future<Result>(): FutureSigil<Result> {
   return {
@@ -8,5 +8,5 @@ export function future<Result>(): FutureSigil<Result> {
 
 export interface FutureSigil<Result> extends SigilShape {
   readonly kind: "future";
-  readonly [ECHO_TOKEN]?: readonly [[FutureKey<Result>, FutureSettleKey<Result>]];
+  readonly [ECHO_TOKEN]?: readonly [FutureHandle<Result>];
 }
