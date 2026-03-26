@@ -1,4 +1,4 @@
-// oxlint-disable class-methods-use-this, max-lines
+// oxlint-disable max-lines
 import type {
   BindSigil,
   BranchHandle,
@@ -23,7 +23,6 @@ import type {
   FutureKey,
   FutureResult,
   FutureSettleKey,
-  ProcessDescriptor,
   ProcessRef,
   Resonance,
   Ritual,
@@ -65,6 +64,7 @@ export class Interpreter {
     );
   }
 
+  // oxlint-disable-next-line class-methods-use-this
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
     const process = narrowProcess(processRef);
 
@@ -77,10 +77,10 @@ export class Interpreter {
         return processExitedStep(processRef, process.result!);
       case "running":
         if (process.hasQueuedContinuation) {
-          return this.#resonateWisp(process);
+          return resonateWisp(process);
         }
 
-        return this.#interpretWisp(process);
+        return interpretWisp(process);
     }
   }
 
@@ -92,10 +92,12 @@ export class Interpreter {
     };
   }
 
+  // oxlint-disable-next-line class-methods-use-this
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    return this.#spawnIn(narrowScope(scope), worker, { completionMode: "structural" });
+    return narrowScope(scope).spawn(worker, { completionMode: "structural" });
   }
 
+  // oxlint-disable-next-line class-methods-use-this
   public lookup<Value>(
     scope: ScopeRef<unknown>,
     contextKey: ContextKey<Value>,
@@ -103,10 +105,12 @@ export class Interpreter {
     return narrowScope(scope).lookup(contextKey);
   }
 
+  // oxlint-disable-next-line class-methods-use-this
   public poll<Result>(future: FutureKey<Result>): option.Option<FutureResult<Result>> {
     return narrowFuture(future).poll();
   }
 
+  // oxlint-disable-next-line class-methods-use-this
   public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): void {
     narrowFuture(future).wait(onSettled);
   }
@@ -122,208 +126,205 @@ export class Interpreter {
   public get isClosed(): boolean {
     return this.#rootScope.isClosed;
   }
-
-  // oxlint-disable-next-line max-lines-per-function, max-statements
-  #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
-    // `Step` only reaches `#interpretWisp` when there is no queued continuation.
-    // Process is not completed here, so the current wisp must still be stirring.
-    const current = process.wisp as StirringWisp<Sigil, Relic>;
-    const sigil = current.sigil as Sigil;
-
-    switch (sigil.kind) {
-      case "bind":
-        this.#bind(process, sigil);
-        this.#setContinuation(process, current.resonate, null);
-        return processInterpretedStep(process);
-      case "branch":
-        this.#setContinuation(process, current.resonate, this.#branch(process, sigil));
-        return processInterpretedStep(process);
-      case "cede":
-        this.#setContinuation(process, current.resonate, null);
-        return processCededStep(process);
-      case "cancel":
-        this.#cancel(process, sigil);
-        return processExitedStep(process, process.result as FutureResult<Relic>);
-      case "defer":
-        this.#defer(process, sigil);
-        this.#setContinuation(process, current.resonate, null);
-        return processInterpretedStep(process);
-      case "future":
-        this.#setContinuation(process, current.resonate, this.#future(process));
-        return processInterpretedStep(process);
-      case "halt":
-        this.#halt(process, sigil);
-        return processExitedStep(process, process.result as FutureResult<Relic>);
-      case "lookup":
-        this.#setContinuation(process, current.resonate, this.#lookup(process, sigil));
-        return processInterpretedStep(process);
-      case "poll":
-        this.#setContinuation(process, current.resonate, this.#poll(sigil));
-        return processInterpretedStep(process);
-      case "self":
-        this.#setContinuation(process, current.resonate, this.#self(process));
-        return processInterpretedStep(process);
-      case "settle":
-        this.#settle(sigil);
-        this.#setContinuation(process, current.resonate, null);
-        return processInterpretedStep(process);
-      case "spawn":
-        this.#setContinuation(process, current.resonate, this.#spawn(process, sigil));
-        return processInterpretedStep(process);
-      case "unbind":
-        this.#unbind(process, sigil);
-        this.#setContinuation(process, current.resonate, null);
-        return processInterpretedStep(process);
-      case "wait": {
-        const settled = this.#tryWait(sigil);
-
-        if (option.isSome(settled)) {
-          this.#setContinuation(process, current.resonate, settled.value);
-          return processInterpretedStep(process);
-        }
-
-        this.#wait(process, sigil);
-        this.#primeContinuation(process, current.resonate);
-        return processWaitingStep(process);
-      }
-      case "receive": {
-        const received = this.#tryReceive(process, sigil);
-
-        if (option.isSome(received)) {
-          this.#setContinuation(process, current.resonate, received.value);
-          return processInterpretedStep(process);
-        }
-
-        this.#receive(process, sigil);
-        this.#primeContinuation(process, current.resonate);
-        return processWaitingStep(process);
-      }
-      case "send":
-        this.#send(process, sigil);
-        this.#setContinuation(process, current.resonate, null);
-        return processInterpretedStep(process);
-    }
-  }
-
-  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
-    process.resonate();
-
-    if (process.isClosed) {
-      return processExitedStep(process, process.result as FutureResult<Relic>);
-    }
-
-    return processResonatedStep(process);
-  }
-
-  #bind(process: RuntimeProcess<unknown>, sigil: BindSigil<unknown>): void {
-    narrowScope(process.scopeRef).bind(sigil.key, sigil.value);
-  }
-
-  #branch(process: RuntimeProcess<unknown>, sigil: BranchSigil<unknown>): BranchHandle<unknown> {
-    const branchScope = narrowScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
-
-    return {
-      process: branchScope.entryProcess,
-      scope: branchScope,
-    };
-  }
-
-  #defer(process: RuntimeProcess<unknown>, sigil: DeferSigil): void {
-    process.defer((spawn) => {
-      spawn(sigil.cleanup);
-    });
-  }
-
-  #cancel(process: RuntimeProcess<unknown>, _sigil: CancelSigil): void {
-    narrowScope(process.scopeRef).cancel();
-  }
-
-  #future(process: RuntimeProcess<unknown>): FutureHandle<unknown> {
-    return narrowScope(process.scopeRef).createFuture().handle;
-  }
-
-  #halt(process: RuntimeProcess<unknown>, sigil: HaltSigil): void {
-    process.halt(sigil.failure as Failure);
-  }
-
-  #settle(sigil: SettleSigil<unknown>): void {
-    narrowFutureSettleKey(sigil.futureSettle).settle(sigil.result);
-  }
-
-  #spawn(process: RuntimeProcess<unknown>, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
-    return narrowScope(process.scopeRef).spawn(sigil.worker, sigil.descriptor);
-  }
-
-  #lookup(process: RuntimeProcess<unknown>, sigil: LookupSigil<unknown>): option.Option<unknown> {
-    return narrowScope(process.scopeRef).lookup(sigil.key);
-  }
-
-  #poll(sigil: PollSigil<unknown>): option.Option<FutureResult<unknown>> {
-    return narrowFuture(sigil.future).poll();
-  }
-
-  #self(process: RuntimeProcess<unknown>): SelfHandle<ScopeRef<unknown>> {
-    return process.selfHandle();
-  }
-
-  #tryWait(sigil: WaitSigil<unknown>): option.Option<FutureResult<unknown>> {
-    return narrowFuture(sigil.future).poll();
-  }
-
-  #wait(process: RuntimeProcess<unknown>, sigil: WaitSigil<unknown>): void {
-    process.wait(sigil.future);
-  }
-
-  #unbind(process: RuntimeProcess<unknown>, sigil: UnbindSigil): void {
-    narrowScope(process.scopeRef).unbind(sigil.key);
-  }
-
-  #tryReceive(
-    process: RuntimeProcess<unknown>,
-    sigil: ReceiveSigil<unknown>,
-  ): option.Option<unknown> {
-    return narrowScope(process.scopeRef).tryReceive(sigil.messageKey);
-  }
-
-  #receive(process: RuntimeProcess<unknown>, sigil: ReceiveSigil<unknown>): void {
-    narrowScope(process.scopeRef).receive(process, sigil.messageKey);
-  }
-
-  #send(process: RuntimeProcess<unknown>, sigil: SendSigil<unknown>): void {
-    const sourceScope = narrowScope(process.scopeRef);
-    const targetScope = narrowScope(sigil.scope);
-
-    sourceScope.send(targetScope, sigil.messageKey, sigil.value);
-  }
-
-  #setContinuation(
-    process: RuntimeProcess<unknown>,
-    resonate: Resonance<SigilShape, unknown>,
-    echo: unknown,
-  ): void {
-    process.setContinuation(resonate, echo);
-  }
-
-  #primeContinuation(
-    process: RuntimeProcess<unknown>,
-    resonate: Resonance<SigilShape, unknown>,
-  ): void {
-    process.primeContinuation(resonate);
-  }
-
-  #spawnIn<Relic>(
-    scope: RuntimeScope,
-    worker: Ritual<Relic>,
-    descriptor: ProcessDescriptor,
-  ): ProcessRef<Relic> {
-    return scope.spawn(worker, descriptor);
-  }
-
   readonly #rootScope: RuntimeScope;
   readonly #runnableListeners = new Set<RunnableListener>();
 }
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
+
+// oxlint-disable-next-line max-lines-per-function, max-statements
+function interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
+  // `step` only reaches `interpretWisp` when there is no queued continuation.
+  // Process is not completed here, so the current wisp must still be stirring.
+  const current = process.wisp as StirringWisp<Sigil, Relic>;
+  const sigil = current.sigil as Sigil;
+
+  switch (sigil.kind) {
+    case "bind":
+      bind(process, sigil);
+      setContinuation(process, current.resonate, null);
+      return processInterpretedStep(process);
+    case "branch":
+      setContinuation(process, current.resonate, branch(process, sigil));
+      return processInterpretedStep(process);
+    case "cede":
+      setContinuation(process, current.resonate, null);
+      return processCededStep(process);
+    case "cancel":
+      cancel(process, sigil);
+      return processExitedStep(process, process.result as FutureResult<Relic>);
+    case "defer":
+      defer(process, sigil);
+      setContinuation(process, current.resonate, null);
+      return processInterpretedStep(process);
+    case "future":
+      setContinuation(process, current.resonate, createFuture(process));
+      return processInterpretedStep(process);
+    case "halt":
+      halt(process, sigil);
+      return processExitedStep(process, process.result as FutureResult<Relic>);
+    case "lookup":
+      setContinuation(process, current.resonate, lookup(process, sigil));
+      return processInterpretedStep(process);
+    case "poll":
+      setContinuation(process, current.resonate, poll(sigil));
+      return processInterpretedStep(process);
+    case "self":
+      setContinuation(process, current.resonate, self(process));
+      return processInterpretedStep(process);
+    case "settle":
+      settle(sigil);
+      setContinuation(process, current.resonate, null);
+      return processInterpretedStep(process);
+    case "spawn":
+      setContinuation(process, current.resonate, spawn(process, sigil));
+      return processInterpretedStep(process);
+    case "unbind":
+      unbind(process, sigil);
+      setContinuation(process, current.resonate, null);
+      return processInterpretedStep(process);
+    case "wait": {
+      const settled = tryWait(sigil);
+
+      if (option.isSome(settled)) {
+        setContinuation(process, current.resonate, settled.value);
+        return processInterpretedStep(process);
+      }
+
+      wait(process, sigil);
+      primeContinuation(process, current.resonate);
+      return processWaitingStep(process);
+    }
+    case "receive": {
+      const received = tryReceive(process, sigil);
+
+      if (option.isSome(received)) {
+        setContinuation(process, current.resonate, received.value);
+        return processInterpretedStep(process);
+      }
+
+      receive(process, sigil);
+      primeContinuation(process, current.resonate);
+      return processWaitingStep(process);
+    }
+    case "send":
+      send(process, sigil);
+      setContinuation(process, current.resonate, null);
+      return processInterpretedStep(process);
+  }
+}
+
+function resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
+  process.resonate();
+
+  if (process.isClosed) {
+    return processExitedStep(process, process.result as FutureResult<Relic>);
+  }
+
+  return processResonatedStep(process);
+}
+
+function bind(process: RuntimeProcess<unknown>, sigil: BindSigil<unknown>): void {
+  narrowScope(process.scopeRef).bind(sigil.key, sigil.value);
+}
+
+function branch(
+  process: RuntimeProcess<unknown>,
+  sigil: BranchSigil<unknown>,
+): BranchHandle<unknown> {
+  const branchScope = narrowScope(process.scopeRef).branch(sigil.entry, sigil.descriptor);
+
+  return {
+    process: branchScope.entryProcess,
+    scope: branchScope,
+  };
+}
+
+function defer(process: RuntimeProcess<unknown>, sigil: DeferSigil): void {
+  process.defer((spawnCleanup) => {
+    spawnCleanup(sigil.cleanup);
+  });
+}
+
+function cancel(process: RuntimeProcess<unknown>, _sigil: CancelSigil): void {
+  narrowScope(process.scopeRef).cancel();
+}
+
+function createFuture(process: RuntimeProcess<unknown>): FutureHandle<unknown> {
+  return narrowScope(process.scopeRef).createFuture().handle;
+}
+
+function halt(process: RuntimeProcess<unknown>, sigil: HaltSigil): void {
+  process.halt(sigil.failure as Failure);
+}
+
+function settle(sigil: SettleSigil<unknown>): void {
+  narrowFutureSettleKey(sigil.futureSettle).settle(sigil.result);
+}
+
+function spawn(process: RuntimeProcess<unknown>, sigil: SpawnSigil<unknown>): ProcessRef<unknown> {
+  return narrowScope(process.scopeRef).spawn(sigil.worker, sigil.descriptor);
+}
+
+function lookup(
+  process: RuntimeProcess<unknown>,
+  sigil: LookupSigil<unknown>,
+): option.Option<unknown> {
+  return narrowScope(process.scopeRef).lookup(sigil.key);
+}
+
+function poll(sigil: PollSigil<unknown>): option.Option<FutureResult<unknown>> {
+  return narrowFuture(sigil.future).poll();
+}
+
+function self(process: RuntimeProcess<unknown>): SelfHandle<ScopeRef<unknown>> {
+  return process.selfHandle();
+}
+
+function tryWait(sigil: WaitSigil<unknown>): option.Option<FutureResult<unknown>> {
+  return narrowFuture(sigil.future).poll();
+}
+
+function wait(process: RuntimeProcess<unknown>, sigil: WaitSigil<unknown>): void {
+  process.wait(sigil.future);
+}
+
+function unbind(process: RuntimeProcess<unknown>, sigil: UnbindSigil): void {
+  narrowScope(process.scopeRef).unbind(sigil.key);
+}
+
+function tryReceive(
+  process: RuntimeProcess<unknown>,
+  sigil: ReceiveSigil<unknown>,
+): option.Option<unknown> {
+  return narrowScope(process.scopeRef).tryReceive(sigil.messageKey);
+}
+
+function receive(process: RuntimeProcess<unknown>, sigil: ReceiveSigil<unknown>): void {
+  narrowScope(process.scopeRef).receive(process, sigil.messageKey);
+}
+
+function send(process: RuntimeProcess<unknown>, sigil: SendSigil<unknown>): void {
+  const sourceScope = narrowScope(process.scopeRef);
+  const targetScope = narrowScope(sigil.scope);
+
+  sourceScope.send(targetScope, sigil.messageKey, sigil.value);
+}
+
+function setContinuation(
+  process: RuntimeProcess<unknown>,
+  resonate: Resonance<SigilShape, unknown>,
+  echo: unknown,
+): void {
+  process.setContinuation(resonate, echo);
+}
+
+function primeContinuation(
+  process: RuntimeProcess<unknown>,
+  resonate: Resonance<SigilShape, unknown>,
+): void {
+  process.primeContinuation(resonate);
+}
 
 function narrowScope<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope {
   return scopeRef as RuntimeScope;
@@ -333,10 +334,12 @@ function narrowProcess<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Rel
   return processRef as RuntimeProcess<Relic>;
 }
 
-function narrowFuture<Result>(future: FutureKey<Result>): RuntimeFuture<Result> {
-  return future as RuntimeFuture<Result>;
+function narrowFuture<Result>(futureKey: FutureKey<Result>): RuntimeFuture<Result> {
+  return futureKey as RuntimeFuture<Result>;
 }
 
-function narrowFutureSettleKey<Result>(future: FutureSettleKey<Result>): RuntimeFuture<Result> {
-  return future as RuntimeFuture<Result>;
+function narrowFutureSettleKey<Result>(
+  futureSettleKey: FutureSettleKey<Result>,
+): RuntimeFuture<Result> {
+  return futureSettleKey as RuntimeFuture<Result>;
 }
