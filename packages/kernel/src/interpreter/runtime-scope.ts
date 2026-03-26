@@ -12,7 +12,6 @@ import type {
 import { P, match } from "ts-pattern";
 import { either, io, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
-import type { MailboxReceiver } from "./runtime-mailbox";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { RuntimeProcess } from "./runtime-process";
@@ -91,7 +90,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public receive(process: RuntimeProcess<unknown>, messageKey: MessageKey<unknown>): void {
-    this.#mailbox.enqueueReceiver(asMailboxReceiver(process), messageKey);
+    this.#mailbox.enqueueReceiver(process, messageKey);
     process.receive(messageKey);
   }
 
@@ -345,15 +344,15 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    const receiver = this.#mailbox.send(messageKey, value);
+    const process = this.#mailbox.send(messageKey, value);
 
-    if (receiver) {
-      asRuntimeProcess(receiver).accept(value);
+    if (process) {
+      process.accept(value);
     }
   }
 
   #releaseOwnedProcess(process: RuntimeProcess<unknown>): void {
-    this.#mailbox.cancelReceiver(asMailboxReceiver(process));
+    this.#mailbox.cancelReceiver(process);
   }
 
   #cancelManaged(): void {
@@ -437,7 +436,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #state: RuntimeScopeState = { status: "running" };
   readonly #children = new Set<RuntimeScope>();
   readonly #observers = new Set<RuntimeScopeObserver>();
-  readonly #mailbox = new RuntimeMailbox();
+  readonly #mailbox = new RuntimeMailbox<RuntimeProcess<unknown>>();
 
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
 
@@ -481,12 +480,4 @@ function failureOfProcess(process: RuntimeProcess<unknown>): Failure {
 
 function resultOfProcess(process: RuntimeProcess<unknown>): unknown {
   return (process.result as either.Right<unknown>).right;
-}
-
-function asMailboxReceiver(process: RuntimeProcess<unknown>): MailboxReceiver {
-  return process as unknown as MailboxReceiver;
-}
-
-function asRuntimeProcess(receiver: MailboxReceiver): RuntimeProcess<unknown> {
-  return receiver as unknown as RuntimeProcess<unknown>;
 }

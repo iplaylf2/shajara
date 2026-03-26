@@ -2,7 +2,7 @@
 import { option, readonlyArray } from "fp-ts";
 import type { MessageKey } from "#/contracts";
 
-export class RuntimeMailbox {
+export class RuntimeMailbox<Receiver> {
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
     const mailbox = this.#mailboxes.get(messageKey);
 
@@ -26,7 +26,7 @@ export class RuntimeMailbox {
     return option.none;
   }
 
-  public enqueueReceiver(receiver: MailboxReceiver, messageKey: MessageKey<unknown>): void {
+  public enqueueReceiver(receiver: Receiver, messageKey: MessageKey<unknown>): void {
     const keys = this.#receiverKeys.getOrInsertComputed(receiver, () => new Set());
     keys.add(messageKey);
 
@@ -35,7 +35,7 @@ export class RuntimeMailbox {
   }
 
   // oxlint-disable-next-line max-statements
-  public send<Value>(messageKey: MessageKey<Value>, value: Value): MailboxReceiver | null {
+  public send<Value>(messageKey: MessageKey<Value>, value: Value): Receiver | null {
     const queues = this.#receiverQueues.get(messageKey);
 
     if (queues) {
@@ -60,7 +60,7 @@ export class RuntimeMailbox {
     return null;
   }
 
-  public cancelReceiver(receiver: MailboxReceiver): void {
+  public cancelReceiver(receiver: Receiver): void {
     const messageKeys = this.#receiverKeys.get(receiver);
 
     if (messageKeys) {
@@ -78,7 +78,7 @@ export class RuntimeMailbox {
     this.#receiverKeys.clear();
   }
 
-  #removeReceiverFromQueue(messageKey: MessageKey<unknown>, receiver: MailboxReceiver): void {
+  #removeReceiverFromQueue(messageKey: MessageKey<unknown>, receiver: Receiver): void {
     const receiveQueue = this.#receiverQueues.get(messageKey);
 
     if (!receiveQueue) {
@@ -99,12 +99,6 @@ export class RuntimeMailbox {
   }
 
   readonly #mailboxes = new Map<MessageKey<unknown>, unknown[]>();
-  readonly #receiverQueues = new Map<MessageKey<unknown>, MailboxReceiver[]>();
-  readonly #receiverKeys = new Map<MailboxReceiver, Set<MessageKey<unknown>>>();
+  readonly #receiverQueues = new Map<MessageKey<unknown>, Receiver[]>();
+  readonly #receiverKeys = new Map<Receiver, Set<MessageKey<unknown>>>();
 }
-
-export interface MailboxReceiver {
-  readonly [MAILBOX_RECEIVER_TOKEN]: "mailbox-receiver";
-}
-
-declare const MAILBOX_RECEIVER_TOKEN: unique symbol;
