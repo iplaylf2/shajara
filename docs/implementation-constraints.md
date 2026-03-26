@@ -40,8 +40,10 @@
 | ------------------------------------- | ------------------------------------------------------------ |
 | `kernel/src/contracts/`               | 核心类型契约                                                 |
 | `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                           |
-| `kernel/src/contracts/scope.ts`       | `ScopeRef/ScopeDescriptor/FailureMode` 单源                  |
-| `kernel/src/contracts/process.ts`     | `ProcessRef/ProcessDescriptor/CompletionMode` 单源           |
+| `kernel/src/contracts/scope.ts`       | `ScopeRef` 单源                                              |
+| `kernel/src/contracts/process.ts`     | `ProcessRef` 单源                                            |
+| `kernel/src/sigils/branch.ts`         | `branch` 与 `ScopeDescriptor/FailureMode` 单源               |
+| `kernel/src/sigils/spawn.ts`          | `spawn` 与 `ProcessDescriptor/CompletionMode` 单源           |
 | `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                            |
 | `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey/FutureHandle` 单源                |
 | `kernel/src/sigils/`                  | sigil 声明 + index                                           |

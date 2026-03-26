@@ -19,7 +19,7 @@ export function toFailureUnknown(caught: unknown): Failure {
 
 export function fromFailure(failure: Failure): Error {
   switch (failure.kind) {
-    case "scope-failed":
+    case "scope":
       return new ScopeFailedError(failure);
     case "canceled":
       return new CanceledError();

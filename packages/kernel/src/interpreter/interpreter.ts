@@ -6,17 +6,15 @@ import type {
   FutureResult,
   FutureSettleKey,
   MessageKey,
-  ProcessDescriptor,
   ProcessRef,
   Resonance,
   Ritual,
-  ScopeDescriptor,
   ScopeRef,
   SigilShape,
   StirringWisp,
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
-import type { SelfHandle, Sigil } from "#/sigils";
+import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils";
 import {
   processCededStep,
   processExitedStep,

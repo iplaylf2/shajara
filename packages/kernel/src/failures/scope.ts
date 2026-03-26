@@ -6,7 +6,7 @@ export function scopeFailure(
 ): ScopeFailure {
   return {
     cause,
-    kind: "scope-failed",
+    kind: "scope",
     message() {
       return "Scope failed during closing";
     },
@@ -17,7 +17,7 @@ export function scopeFailure(
 export interface ScopeFailure extends FailureShape {
   readonly cause: ScopeFailureCause;
   readonly suppressedFailures: readonly FailureShape[];
-  readonly kind: "scope-failed";
+  readonly kind: "scope";
 }
 
 export type ScopeFailureCause = ProcessCause | ScopeCause;

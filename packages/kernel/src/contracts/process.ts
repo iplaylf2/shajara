@@ -5,9 +5,3 @@ export interface ProcessRef<Value> {
   readonly [REF_TOKEN]: "process";
   readonly exitFuture: FutureKey<Value>;
 }
-
-export type CompletionMode = "structural" | "detached";
-
-export interface ProcessDescriptor {
-  readonly completionMode: CompletionMode;
-}

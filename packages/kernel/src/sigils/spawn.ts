@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, ProcessDescriptor, ProcessRef, Ritual, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, ProcessRef, Ritual, SigilShape } from "#/contracts";
 
 export function spawn<Relic>(
   worker: Ritual<Relic>,
@@ -17,3 +17,9 @@ export interface SpawnSigil<Relic> extends SigilShape {
   readonly worker: Ritual<Relic>;
   readonly [ECHO_TOKEN]?: readonly [ProcessRef<Relic>];
 }
+
+export interface ProcessDescriptor {
+  readonly completionMode: CompletionMode;
+}
+
+export type CompletionMode = "structural" | "detached";

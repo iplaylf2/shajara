@@ -1,15 +1,7 @@
 // oxlint-disable max-lines
-import type {
-  ContextKey,
-  FutureKey,
-  MessageKey,
-  ProcessDescriptor,
-  REF_TOKEN,
-  Ritual,
-  ScopeDescriptor,
-  ScopeRef,
-} from "#/contracts";
+import type { ContextKey, FutureKey, MessageKey, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
 import { P, match } from "ts-pattern";
+import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
 import { either, io, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "./runtime-future";

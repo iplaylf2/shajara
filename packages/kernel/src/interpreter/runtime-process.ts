@@ -4,7 +4,6 @@ import type {
   FutureKey,
   FutureResult,
   MessageKey,
-  ProcessDescriptor,
   ProcessRef,
   REF_TOKEN,
   Resonance,
@@ -13,9 +12,9 @@ import type {
   SigilShape,
   Wisp,
 } from "#/contracts";
+import type { ProcessDescriptor, SelfHandle } from "#/sigils";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "./runtime-future";
-import type { SelfHandle } from "#/sigils";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { notImplemented } from "#/internal/not-implemented";
 
