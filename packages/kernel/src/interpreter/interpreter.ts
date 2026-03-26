@@ -1,9 +1,7 @@
 // oxlint-disable max-lines
-import type { BranchHandle, SelfHandle, Sigil } from "#/sigils";
 import type {
   ContextKey,
   Echo,
-  FutureHandle,
   FutureKey,
   FutureResult,
   FutureSettleKey,
@@ -18,6 +16,7 @@ import type {
   StirringWisp,
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
+import type { SelfHandle, Sigil } from "#/sigils";
 import {
   processCededStep,
   processExitedStep,
@@ -25,6 +24,7 @@ import {
   processResonatedStep,
   processWaitingStep,
 } from "./process-step";
+import type { CleanupTask } from "./runtime-process";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
@@ -122,9 +122,16 @@ export class Interpreter {
         bind(scope, sigil.key, sigil.value);
         setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
-      case "branch":
-        setContinuation(process, resonate, branch(scope, sigil.entry, sigil.descriptor));
+      case "branch": {
+        const branchScope = branch(scope, sigil.entry, sigil.descriptor);
+        this.#touch(branchScope);
+
+        setContinuation(process, resonate, {
+          process: branchScope.entryProcess,
+          scope: branchScope,
+        });
         return processInterpretedStep(process);
+      }
       case "cede":
         setContinuation(process, resonate, VOID);
         return processCededStep(process);
@@ -132,12 +139,21 @@ export class Interpreter {
         cancel(scope);
         return processExitedStep(process, process.result!);
       case "defer":
-        defer(process, sigil.cleanup);
+        defer(process, (spawnCleanup) => {
+          const cleanupProcess = spawnCleanup(sigil.cleanup);
+
+          this.#touch(cleanupProcess);
+        });
+
         setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
-      case "future":
-        setContinuation(process, resonate, createFuture(scope));
+      case "future": {
+        const future = createFuture(scope);
+        this.#touch(future);
+
+        setContinuation(process, resonate, future.handle);
         return processInterpretedStep(process);
+      }
       case "halt":
         halt(process, sigil.failure as Failure);
         return processExitedStep(process, process.result!);
@@ -154,9 +170,13 @@ export class Interpreter {
         settle(this.#narrow(sigil.futureSettle), sigil.result);
         setContinuation(process, resonate, VOID);
         return processInterpretedStep(process);
-      case "spawn":
-        setContinuation(process, resonate, spawn(scope, sigil.worker, sigil.descriptor));
+      case "spawn": {
+        const spawnedProcess = spawn(scope, sigil.worker, sigil.descriptor);
+        this.#touch(spawnedProcess);
+
+        setContinuation(process, resonate, spawnedProcess);
         return processInterpretedStep(process);
+      }
       case "unbind":
         unbind(scope, sigil.key);
         setContinuation(process, resonate, VOID);
@@ -246,30 +266,20 @@ function branch<Relic>(
   scope: RuntimeScope,
   entry: Ritual<Relic>,
   descriptor: ScopeDescriptor,
-): BranchHandle<Relic> {
-  const branchScope = scope.branch(entry, descriptor);
-  // Need touch
-
-  return {
-    process: branchScope.entryProcess,
-    scope: branchScope,
-  } as BranchHandle<Relic>;
+): RuntimeScope {
+  return scope.branch(entry, descriptor);
 }
 
-function defer(process: RuntimeProcess<unknown>, cleanup: Ritual<void>): void {
-  process.defer((spawnCleanup) => {
-    spawnCleanup(cleanup);
-    // Need touch
-  });
+function defer(process: RuntimeProcess<unknown>, cleanup: CleanupTask): void {
+  process.defer(cleanup);
 }
 
 function cancel(scope: RuntimeScope): void {
   scope.cancel();
 }
 
-function createFuture(scope: RuntimeScope): FutureHandle<unknown> {
-  return scope.createFuture().handle;
-  // Need touch
+function createFuture(scope: RuntimeScope): RuntimeFuture<unknown> {
+  return scope.createFuture();
 }
 
 function halt(process: RuntimeProcess<unknown>, failure: Failure): void {
@@ -286,7 +296,6 @@ function spawn<Relic>(
   descriptor: ProcessDescriptor,
 ): ProcessRef<Relic> {
   return scope.spawn(worker, descriptor);
-  // Need touch
 }
 
 function lookup<Value>(scope: RuntimeScope, key: ContextKey<Value>): option.Option<Value> {
