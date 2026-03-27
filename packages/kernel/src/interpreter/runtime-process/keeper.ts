@@ -1,28 +1,51 @@
-import type { FutureResult, MessageKey, ProcessRef, ScopeRef } from "#/contracts";
+import type { MessageKey, ProcessRef, ScopeRef } from "#/contracts";
+import type { Failure } from "#/failures";
 import type { ProcessDescriptor } from "#/sigils";
 import type { Unsubscribe } from "#/interpreter-kit";
 
-export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "canceled" | "failed";
+export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
+  accept(value: unknown): void;
+  cancel(): void;
+  observe(observer: RuntimeProcessObserver): Unsubscribe;
+  receive(messageKey: MessageKey<unknown>): void;
+  stateAs<Status extends RuntimeProcessStatus>(status: Status): RuntimeProcessStateOf<Status>;
+  takeCleanups(): CleanupTask[];
+  readonly descriptor: ProcessDescriptor;
+  readonly isClosed: boolean;
+  readonly status: RuntimeProcessStatus;
+}
 
 export type RuntimeProcessObserver = () => void;
+
+export type RuntimeProcessStateOf<Status extends RuntimeProcessStatus> = Extract<
+  RuntimeProcessState,
+  { readonly status: Status }
+>;
+
+export type RuntimeProcessStatus = RuntimeProcessState["status"];
+
+export type CleanupTask = (spawn: CleanupSpawner) => void;
+
+export type RuntimeProcessState =
+  | { readonly status: "running" }
+  | {
+      readonly status: "waiting";
+    }
+  | {
+      readonly status: "completed";
+      readonly result: unknown;
+    }
+  | {
+      readonly status: "canceled";
+    }
+  | {
+      readonly status: "failed";
+      readonly failure: Failure;
+    };
+
+export type CleanupSpawner = (provideProcess: ProvideRuntimeProcess) => void;
 
 export type ProvideRuntimeProcess = (
   scopeRef: ScopeRef<unknown>,
   descriptor: ProcessDescriptor,
 ) => RuntimeProcessKeeper;
-
-export type CleanupSpawner = (provideProcess: ProvideRuntimeProcess) => void;
-
-export type CleanupTask = (spawn: CleanupSpawner) => void;
-
-export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
-  readonly descriptor: ProcessDescriptor;
-  readonly isClosed: boolean;
-  readonly result: FutureResult<unknown> | null;
-  readonly status: RuntimeProcessStatus;
-  accept(value: unknown): void;
-  cancel(): void;
-  observe(observer: RuntimeProcessObserver): Unsubscribe;
-  receive(messageKey: MessageKey<unknown>): void;
-  takeCleanups(): CleanupTask[];
-}

@@ -89,12 +89,14 @@
 这份双重面向应落实为一个公开代表和两套纯类型切面：
 
 - `RuntimeProcessHandle`：公开代表；外部通过它显式取得不同切面，而不是直接获得完整内部实现。
-- `RuntimeProcessKeeper`：scope-facing surface，例如观察、取消、message waiting / accept、cleanup 收束与终态读取。
+- `RuntimeProcessKeeper`：scope-facing surface，例如观察、取消、message waiting / accept、cleanup 收束，以及通过 `stateAs(...)` 进行的 process state 读取。
 - `RuntimeProcessRunner`：interpreter-facing surface，例如 continuation、`wait`、`halt`、`selfHandle`、当前 `wisp` 与执行推进所需状态。
 
 它们不通过运行时 wrapper 或 guard 区分，而是由同一个内部 `RuntimeProcess` 实例直接实现，并经由公开代表显式暴露出不同切面。
 
 切面划分的标准应是“哪一方实际需要直接依赖这项能力”，而不是只按抽象语义归类。也就是说，切面不是为了把概念词汇分得好看，而是为了把模块依赖边界落实到类型表面。
+
+这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessState` 分支进行读取。当前已冻结的状态载荷只有 completed result 与 failed failure；其余状态载荷仍在后续设计阶段继续冻结。
 
 ## 3. 驱动模型
 

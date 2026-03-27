@@ -255,25 +255,26 @@ export class RuntimeScope implements ScopeRef<unknown> {
         this.#triggerCleanup(process);
         this.#tryCanceled();
       })
-      .with(["failing", P.union("completed", "canceled")], ([status]) => {
-        const { draft } = this.#stateAs(status);
+      .with(["failing", P.union("completed", "canceled")], ([scopeStatus]) => {
+        const { draft } = this.#stateAs(scopeStatus);
 
         this.#triggerCleanup(process);
         this.#tryFailed(draft);
       })
-      .with([P.union("running", "closing", "canceling"), "failed"], () => {
-        const draft = new ScopeFailureDraft({ kind: "process", process }, () =>
-          failureOfProcess(process),
+      .with([P.union("running", "closing", "canceling"), "failed"], ([, processStatus]) => {
+        const draft = new ScopeFailureDraft(
+          { kind: "process", process },
+          () => process.stateAs(processStatus).failure,
         );
 
         this.#enterFailing(draft, () => {
           this.#triggerCleanup(process);
         });
       })
-      .with(["failing", "failed"], ([status]) => {
-        const { draft } = this.#stateAs(status);
+      .with(["failing", "failed"], ([scopeStatus, processStatus]) => {
+        const { draft } = this.#stateAs(scopeStatus);
 
-        draft.collect(failureOfProcess(process));
+        draft.collect(process.stateAs(processStatus).failure);
         this.#enterFailing(draft, () => {
           this.#triggerCleanup(process);
         });
@@ -299,7 +300,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle()) {
       this.#cancelDerivedFutures();
 
-      this.#exitFuture.settle(either.right(resultOfProcess(this.#entryProcess)));
+      const { result } = this.#entryProcess.stateAs("completed");
+      this.#exitFuture.settle(either.right(result));
       this.#transitionTo({ status: "completed" });
     }
   }
@@ -479,11 +481,3 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,
   { readonly status: Status }
 >;
-
-function failureOfProcess(process: RuntimeProcessKeeper): Failure {
-  return (process.result as either.Left<Failure>).left;
-}
-
-function resultOfProcess(process: RuntimeProcessKeeper): unknown {
-  return (process.result as either.Right<unknown>).right;
-}

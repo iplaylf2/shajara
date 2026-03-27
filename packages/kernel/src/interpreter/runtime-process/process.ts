@@ -3,6 +3,7 @@ import type {
   CleanupTask,
   RuntimeProcessKeeper,
   RuntimeProcessObserver,
+  RuntimeProcessStateOf,
   RuntimeProcessStatus,
 } from "./keeper";
 import type {
@@ -104,6 +105,12 @@ export class RuntimeProcess<Relic>
 
   public keeper(): RuntimeProcessKeeper {
     return this;
+  }
+
+  public stateAs<Status extends RuntimeProcessStatus>(
+    _status: Status,
+  ): RuntimeProcessStateOf<Status> {
+    return notImplemented("RuntimeProcess.stateAs");
   }
 
   public setContinuation<SigilItem extends SigilShape>(
