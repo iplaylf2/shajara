@@ -27,7 +27,7 @@ import type { Unsubscribe } from "#/interpreter-kit";
 import { notImplemented } from "#/internal/not-implemented";
 
 export class RuntimeProcess<Relic>
-  implements RuntimeProcessHandle<Relic>, RuntimeProcessKeeper<Relic>, RuntimeProcessRunner<Relic>
+  implements RuntimeProcessHandle<Relic>, RuntimeProcessRunner<Relic>, RuntimeProcessKeeper
 {
   public static create<Relic>(
     scopeRef: ScopeRef<unknown>,
@@ -38,7 +38,7 @@ export class RuntimeProcess<Relic>
   }
 
   public static resolve<Relic>(
-    process: RuntimeProcessKeeper<Relic> | RuntimeProcessRunner<Relic>,
+    process: RuntimeProcessKeeper | RuntimeProcessRunner<Relic>,
   ): RuntimeProcessHandle<Relic> {
     return process as RuntimeProcess<Relic> as RuntimeProcessHandle<Relic>;
   }
@@ -102,7 +102,7 @@ export class RuntimeProcess<Relic>
     return this;
   }
 
-  public keeper(): RuntimeProcessKeeper<Relic> {
+  public keeper(): RuntimeProcessKeeper {
     return this;
   }
 

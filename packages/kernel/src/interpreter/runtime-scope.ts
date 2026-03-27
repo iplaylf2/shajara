@@ -25,7 +25,7 @@ import { unreachable } from "#/utils";
 
 export class RuntimeScope implements ScopeRef<unknown> {
   public static create(
-    entry: ProvideRuntimeProcess<unknown>,
+    entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: RuntimeZone,
   ): RuntimeScope {
@@ -33,7 +33,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public branch(
-    entry: ProvideRuntimeProcess<unknown>,
+    entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: RuntimeZone = this.#zone,
   ): RuntimeScope {
@@ -45,14 +45,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public spawn<Relic>(
-    provideProcess: ProvideRuntimeProcess<Relic>,
+    provideProcess: ProvideRuntimeProcess,
     descriptor: ProcessDescriptor,
   ): ProcessRef<Relic> {
     const process = provideProcess(this, descriptor);
 
     this.#registerOwnedProcess(process);
 
-    return process;
+    return process as ProcessRef<Relic>;
   }
 
   public createFuture<Result>(): RuntimeFuture<Result> {
@@ -96,7 +96,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#mailbox.tryReceive(messageKey);
   }
 
-  public receive(process: RuntimeProcessKeeper<unknown>, messageKey: MessageKey<unknown>): void {
+  public receive(process: RuntimeProcessKeeper, messageKey: MessageKey<unknown>): void {
     this.#mailbox.enqueueReceiver(process, messageKey);
     process.receive(messageKey);
   }
@@ -153,7 +153,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   declare public readonly [REF_TOKEN]: ScopeRef<unknown>[typeof REF_TOKEN];
 
   private constructor(
-    entry: ProvideRuntimeProcess<unknown>,
+    entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     parent: RuntimeScope,
     zone: RuntimeZone,
@@ -182,7 +182,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     });
   }
 
-  #registerOwnedProcess(process: RuntimeProcessKeeper<unknown>): void {
+  #registerOwnedProcess(process: RuntimeProcessKeeper): void {
     const ownedProcesses = this.#processContainerFor(process);
 
     ownedProcesses.add(process);
@@ -240,7 +240,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       .exhaustive();
   }
 
-  #driveByOwnedProcess(process: RuntimeProcessKeeper<unknown>): void {
+  #driveByOwnedProcess(process: RuntimeProcessKeeper): void {
     match([this.status, process.status])
       .with(["running", "completed"], () => {
         this.#triggerCleanup(process);
@@ -341,7 +341,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #triggerCleanup(process: RuntimeProcessKeeper<unknown>): void {
+  #triggerCleanup(process: RuntimeProcessKeeper): void {
     const spawn: CleanupSpawner = (prepare) => {
       this.spawn(prepare, { completionMode: "structural" });
     };
@@ -359,7 +359,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #releaseOwnedProcess(process: RuntimeProcessKeeper<unknown>): void {
+  #releaseOwnedProcess(process: RuntimeProcessKeeper): void {
     this.#mailbox.cancelReceiver(process);
   }
 
@@ -390,7 +390,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #processContainerFor(process: RuntimeProcessKeeper<unknown>): Set<RuntimeProcessKeeper<unknown>> {
+  #processContainerFor(process: RuntimeProcessKeeper): Set<RuntimeProcessKeeper> {
     if (process.descriptor.completionMode === "structural") {
       return this.#structuralProcesses;
     }
@@ -434,7 +434,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   static readonly #sentinel = null as unknown as RuntimeScope;
 
   readonly #exitFuture: RuntimeFuture<unknown>;
-  readonly #entryProcess: RuntimeProcessKeeper<unknown>;
+  readonly #entryProcess: RuntimeProcessKeeper;
   readonly #parent: RuntimeScope;
   readonly #descriptor: ScopeDescriptor;
   readonly #zone: RuntimeZone;
@@ -442,12 +442,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #state: RuntimeScopeState = { status: "running" };
   readonly #children = new Set<RuntimeScope>();
   readonly #observers = new Set<RuntimeScopeObserver>();
-  readonly #mailbox = new RuntimeMailbox<RuntimeProcessKeeper<unknown>>();
+  readonly #mailbox = new RuntimeMailbox<RuntimeProcessKeeper>();
 
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
 
-  readonly #structuralProcesses = new Set<RuntimeProcessKeeper<unknown>>();
-  readonly #detachedProcesses = new Set<RuntimeProcessKeeper<unknown>>();
+  readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
+  readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
@@ -480,10 +480,10 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   { readonly status: Status }
 >;
 
-function failureOfProcess(process: RuntimeProcessKeeper<unknown>): Failure {
+function failureOfProcess(process: RuntimeProcessKeeper): Failure {
   return (process.result as either.Left<Failure>).left;
 }
 
-function resultOfProcess(process: RuntimeProcessKeeper<unknown>): unknown {
+function resultOfProcess(process: RuntimeProcessKeeper): unknown {
   return (process.result as either.Right<unknown>).right;
 }

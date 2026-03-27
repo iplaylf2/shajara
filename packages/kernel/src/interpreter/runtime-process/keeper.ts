@@ -6,19 +6,19 @@ export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "cancel
 
 export type RuntimeProcessObserver = () => void;
 
-export type ProvideRuntimeProcess<Relic> = (
+export type ProvideRuntimeProcess = (
   scopeRef: ScopeRef<unknown>,
   descriptor: ProcessDescriptor,
-) => RuntimeProcessKeeper<Relic>;
+) => RuntimeProcessKeeper;
 
-export type CleanupSpawner = <Relic>(provideProcess: ProvideRuntimeProcess<Relic>) => void;
+export type CleanupSpawner = (provideProcess: ProvideRuntimeProcess) => void;
 
 export type CleanupTask = (spawn: CleanupSpawner) => void;
 
-export interface RuntimeProcessKeeper<Relic> extends ProcessRef<Relic> {
+export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   readonly descriptor: ProcessDescriptor;
   readonly isClosed: boolean;
-  readonly result: FutureResult<Relic> | null;
+  readonly result: FutureResult<unknown> | null;
   readonly status: RuntimeProcessStatus;
   accept(value: unknown): void;
   cancel(): void;

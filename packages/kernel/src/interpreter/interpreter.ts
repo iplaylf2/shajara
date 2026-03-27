@@ -230,7 +230,7 @@ export class Interpreter {
     return processResonatedStep(process);
   }
 
-  #provideProcess<Relic>(worker: Ritual<Relic>): ProvideRuntimeProcess<Relic> {
+  #provideProcess<Relic>(worker: Ritual<Relic>): ProvideRuntimeProcess {
     return (scopeRef, descriptor) => {
       const process = RuntimeProcess.create(scopeRef, worker, descriptor);
 
@@ -276,9 +276,9 @@ function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value):
   scope.bind(key, value);
 }
 
-function branch<Relic>(
+function branch(
   scope: RuntimeScope,
-  provideProcess: ProvideRuntimeProcess<Relic>,
+  provideProcess: ProvideRuntimeProcess,
   descriptor: ScopeDescriptor,
 ): RuntimeScope {
   return scope.branch(provideProcess, descriptor);
@@ -306,7 +306,7 @@ function settle<Result>(future: RuntimeFuture<Result>, result: FutureResult<Resu
 
 function spawn<Relic>(
   scope: RuntimeScope,
-  provideProcess: ProvideRuntimeProcess<Relic>,
+  provideProcess: ProvideRuntimeProcess,
   descriptor: ProcessDescriptor,
 ): ProcessRef<Relic> {
   return scope.spawn(provideProcess, descriptor);
@@ -345,7 +345,7 @@ function tryReceive<Value>(
 
 function receive(
   scope: RuntimeScope,
-  process: RuntimeProcessKeeper<unknown>,
+  process: RuntimeProcessKeeper,
   messageKey: MessageKey<unknown>,
 ): void {
   scope.receive(process, messageKey);
