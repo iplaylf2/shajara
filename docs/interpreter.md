@@ -31,7 +31,14 @@
 - `RuntimeProcess`：承接单个 process 的执行推进与退出。
 - `RuntimeFuture`：承接 future 的观察与单次收敛。
 
-它们直接实现对应的 `ScopeRef`、`ProcessRef`、`FutureKey` 与 `FutureSettleKey` 契约。对外只暴露 `ref / key` 视图；`Interpreter` 在内部通过 `resolve(...)` 进入 runtime object，通过 `touch(...)` 把新对象的出生点写在解释流程中。
+它们直接实现对应的 `ScopeRef`、`ProcessRef`、`FutureKey` 与 `FutureSettleKey` 契约。对外只暴露 `ref / key` 视图。
+
+`Interpreter` 在内部通过两类协议操作这些对象：
+
+- `resolve(...)`：面向抽象 token，例如 `ScopeRef`、`ProcessRef`、`FutureKey` 与 `FutureSettleKey`，用于回到运行时承载体。
+- `touch(...)`：面向具体 runtime instance，例如 `RuntimeScope`、`RuntimeProcessHandle` 与 `RuntimeFuture`，用于记录对象出生点。
+
+这两类协议不应在同一个局部调用点里互相嵌套来弥补边界设计问题。
 
 这一层设计要表达的不是“解释器拥有所有状态”，而是“解释器主控协议推进，具体承载体各有单一职责”。
 
@@ -43,7 +50,7 @@
 - 编排结构化收敛，包括本地完成、级联取消与失败传播。
 - 承接 scope-local 的 mailbox 与派生 future。
 
-设计上，`RuntimeScope` 只把 `RuntimeProcess` 当作 lifecycle member，而不把它当作 ritual driver。也就是说：
+设计上，`RuntimeScope` 只把 `RuntimeProcess` 当作 lifecycle member，而不把它当作 ritual runner。也就是说：
 
 - `RuntimeScope` 负责决定成员何时应被等待、取消、清理和移出归属集合。
 - `Interpreter` 负责解释 wisp、组织 continuation，并推动 process 继续执行。
@@ -79,7 +86,15 @@
 - 对 `RuntimeScope`，它是一个可被归属、观察和收束的 member。
 - 对 `Interpreter`，它是一个可被步进解释的执行现场。
 
-这份双重面向意味着 process 文档需要强调接口边界，而不是展开其内部状态拼接方式。内部怎样表示 waiting、continuation 或终态，是实现问题；设计上只要求这些执行面能够稳定支持解释推进与结构收敛。
+这份双重面向应落实为一个公开代表和两套纯类型切面：
+
+- `RuntimeProcessHandle`：公开代表；外部通过它显式取得不同切面，而不是直接获得完整内部实现。
+- `RuntimeProcessKeeper`：scope-facing surface，例如观察、取消、message waiting / accept、cleanup 收束与终态读取。
+- `RuntimeProcessRunner`：interpreter-facing surface，例如 continuation、`wait`、`halt`、`selfHandle`、当前 `wisp` 与执行推进所需状态。
+
+它们不通过运行时 wrapper 或 guard 区分，而是由同一个内部 `RuntimeProcess` 实例直接实现，并经由公开代表显式暴露出不同切面。
+
+切面划分的标准应是“哪一方实际需要直接依赖这项能力”，而不是只按抽象语义归类。也就是说，切面不是为了把概念词汇分得好看，而是为了把模块依赖边界落实到类型表面。
 
 ## 3. 驱动模型
 
@@ -108,7 +123,7 @@
 
 “解释 sigil”与“执行 `resonate`”是两个可分离的外部可见步骤。
 
-对 `branch / future / spawn / defer` 这类会引入新对象或新后续责任的 sigil，`step(...)` 会显式写出 `resolve(...)` / `touch(...)` 这组协议 callout。通常 `touch(...)` 直接落在对象出生点；`defer` 是例外，因为 cleanup process 的出生发生在延后触发的 cleanup task 中。
+对 `branch / future / spawn / defer` 这类会引入新对象或新后续责任的 sigil，`step(...)` 会显式写出 `resolve(...)` / `touch(...)` 这组协议 callout。通常 `touch(...)` 直接落在对象出生点；cleanup process 也应沿同一出生协议被登记。
 
 ### 3.2 `spawn`
 

@@ -1,5 +1,11 @@
 // oxlint-disable class-methods-use-this
 import type {
+  CleanupTask,
+  RuntimeProcessKeeper,
+  RuntimeProcessObserver,
+  RuntimeProcessStatus,
+} from "./keeper";
+import type {
   Echo,
   FutureKey,
   FutureResult,
@@ -14,12 +20,30 @@ import type {
 } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle } from "#/sigils";
 import type { Failure } from "#/failures";
-import { RuntimeFuture } from "./runtime-future";
+import { RuntimeFuture } from "#/interpreter/runtime-future";
+import type { RuntimeProcessHandle } from "./handle";
+import type { RuntimeProcessRunner } from "./runner";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { notImplemented } from "#/internal/not-implemented";
 
-export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
-  public constructor(
+export class RuntimeProcess<Relic>
+  implements RuntimeProcessHandle<Relic>, RuntimeProcessKeeper<Relic>, RuntimeProcessRunner<Relic>
+{
+  public static create<Relic>(
+    scopeRef: ScopeRef<unknown>,
+    worker: Ritual<Relic>,
+    descriptor: ProcessDescriptor,
+  ): RuntimeProcessHandle<Relic> {
+    return new RuntimeProcess(scopeRef, worker, descriptor);
+  }
+
+  public static resolve<Relic>(
+    process: RuntimeProcessKeeper<Relic> | RuntimeProcessRunner<Relic>,
+  ): RuntimeProcessHandle<Relic> {
+    return process as RuntimeProcess<Relic> as RuntimeProcessHandle<Relic>;
+  }
+
+  private constructor(
     scopeRef: ScopeRef<unknown>,
     worker: Ritual<Relic>,
     descriptor: ProcessDescriptor,
@@ -74,6 +98,14 @@ export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
     };
   }
 
+  public runner(): RuntimeProcessRunner<Relic> {
+    return this;
+  }
+
+  public keeper(): RuntimeProcessKeeper<Relic> {
+    return this;
+  }
+
   public setContinuation<SigilItem extends SigilShape>(
     resonate: Resonance<SigilItem, unknown>,
     echo: Echo<SigilItem>,
@@ -115,7 +147,7 @@ export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
     notImplemented("RuntimeProcess.accept");
   }
 
-  public primeContinuation(_continuation: (echo: unknown) => Wisp<unknown>): void {
+  public primeContinuation(_continuation: Resonance<SigilShape, unknown>): void {
     notImplemented("RuntimeProcess.primeContinuation");
   }
 
@@ -141,15 +173,7 @@ export class RuntimeProcess<Relic> implements ProcessRef<Relic> {
   #cleanups: CleanupTask[] = [];
 }
 
-export type RuntimeProcessStatus = "running" | "waiting" | "completed" | "canceled" | "failed";
-
-export type RuntimeProcessObserver = () => void;
-
-export type ProcessSpawner = (worker: Ritual<void>) => RuntimeProcess<void>;
-
-export type CleanupTask = (spawn: ProcessSpawner) => void;
-
-export interface RuntimeContinuation {
+interface RuntimeContinuation {
   readonly echo: unknown;
   readonly resonate: Resonance<SigilShape, unknown>;
 }

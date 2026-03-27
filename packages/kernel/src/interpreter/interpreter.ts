@@ -1,5 +1,12 @@
 // oxlint-disable max-lines
 import type {
+  CleanupTask,
+  ProvideRuntimeProcess,
+  RuntimeProcessHandle,
+  RuntimeProcessKeeper,
+  RuntimeProcessRunner,
+} from "./runtime-process";
+import type {
   ContextKey,
   Echo,
   FutureKey,
@@ -22,7 +29,6 @@ import {
   processResonatedStep,
   processWaitingStep,
 } from "./process-step";
-import type { CleanupTask } from "./runtime-process";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
@@ -34,16 +40,17 @@ export class Interpreter {
   // oxlint-disable-next-line class-methods-use-this
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
     const process = this.#resolve(processRef);
+    const runner = process.runner();
 
-    switch (process.status) {
+    switch (runner.status) {
       case "waiting":
         return processWaitingStep(processRef);
       case "completed":
       case "canceled":
       case "failed":
-        return processExitedStep(processRef, process.result!);
+        return processExitedStep(processRef, runner.result!);
       case "running":
-        if (process.hasQueuedContinuation) {
+        if (runner.hasQueuedContinuation) {
           return this.#resonateWisp(process);
         }
 
@@ -60,9 +67,9 @@ export class Interpreter {
   }
 
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
-    const process = this.#resolve(scope).spawn(worker, { completionMode: "structural" });
-    this.#touch(process);
-    return process;
+    return this.#resolve(scope).spawn(this.#provideProcess(worker), {
+      completionMode: "structural",
+    });
   }
 
   public lookup<Value>(
@@ -82,11 +89,13 @@ export class Interpreter {
 
   public constructor(protected readonly entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
-      entry,
+      this.#provideProcess(entry),
       { failureMode: "contain" },
       {
-        trackProcess: (process) => {
-          if (process.status === "running") {
+        trackProcess: (processRef) => {
+          const process = this.#resolve(processRef);
+
+          if (process.runner().status === "running") {
             this.#onRunnable(process);
           }
         },
@@ -109,134 +118,141 @@ export class Interpreter {
   }
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
-  #interpretWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
+  #interpretWisp<Relic>(process: RuntimeProcessHandle<Relic>): ProcessStep<Relic> {
     const scope = this.#resolve(process.scopeRef);
+    const runner = process.runner();
 
     const [kind, sigil, resonate] = fixedStirringWisp(
-      process.wisp as StirringWisp<SigilShape, Relic>,
+      runner.wisp as StirringWisp<SigilShape, Relic>,
     );
     switch (kind) {
       case "bind":
         bind(scope, sigil.key, sigil.value);
-        setContinuation(process, resonate, VOID);
+        setContinuation(runner, resonate, VOID);
         return processInterpretedStep(process);
       case "branch": {
-        const branchScope = branch(scope, sigil.entry, sigil.descriptor);
+        const branchScope = branch(scope, this.#provideProcess(sigil.entry), sigil.descriptor);
         this.#touch(branchScope);
 
-        setContinuation(process, resonate, {
+        setContinuation(runner, resonate, {
           process: branchScope.entryProcess,
           scope: branchScope,
         });
         return processInterpretedStep(process);
       }
       case "cede":
-        setContinuation(process, resonate, VOID);
+        setContinuation(runner, resonate, VOID);
         return processCededStep(process);
       case "cancel":
         cancel(scope);
-        return processExitedStep(process, process.result!);
+        return processExitedStep(process, runner.result!);
       case "defer":
-        defer(process, (spawnCleanup) => {
-          const cleanupProcess = spawnCleanup(sigil.cleanup);
-
-          this.#touch(cleanupProcess);
+        defer(runner, (spawnCleanup) => {
+          spawnCleanup(this.#provideProcess(sigil.cleanup));
         });
 
-        setContinuation(process, resonate, VOID);
+        setContinuation(runner, resonate, VOID);
         return processInterpretedStep(process);
       case "future": {
         const future = createFuture(scope);
         this.#touch(future);
 
-        setContinuation(process, resonate, future.handle);
+        setContinuation(runner, resonate, future.handle);
         return processInterpretedStep(process);
       }
       case "halt":
-        halt(process, sigil.failure as Failure);
-        return processExitedStep(process, process.result!);
+        halt(runner, sigil.failure as Failure);
+        return processExitedStep(process, runner.result!);
       case "lookup":
-        setContinuation(process, resonate, lookup(scope, sigil.key));
+        setContinuation(runner, resonate, lookup(scope, sigil.key));
         return processInterpretedStep(process);
       case "poll":
-        setContinuation(process, resonate, poll(this.#resolve(sigil.future)));
+        setContinuation(runner, resonate, poll(this.#resolve(sigil.future)));
         return processInterpretedStep(process);
       case "self":
-        setContinuation(process, resonate, self(process));
+        setContinuation(runner, resonate, self(runner));
         return processInterpretedStep(process);
       case "settle":
         settle(this.#resolve(sigil.futureSettle), sigil.result);
-        setContinuation(process, resonate, VOID);
+        setContinuation(runner, resonate, VOID);
         return processInterpretedStep(process);
       case "spawn": {
-        const spawnedProcess = spawn(scope, sigil.worker, sigil.descriptor);
-        this.#touch(spawnedProcess);
+        const spawnedProcess = spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor);
 
-        setContinuation(process, resonate, spawnedProcess);
+        setContinuation(runner, resonate, spawnedProcess);
         return processInterpretedStep(process);
       }
       case "unbind":
         unbind(scope, sigil.key);
-        setContinuation(process, resonate, VOID);
+        setContinuation(runner, resonate, VOID);
         return processInterpretedStep(process);
       case "wait": {
         const future = this.#resolve(sigil.future);
 
         const settled = tryWait(future);
         if (option.isSome(settled)) {
-          setContinuation(process, resonate, settled.value);
+          setContinuation(runner, resonate, settled.value);
           return processInterpretedStep(process);
         }
 
-        wait(process, future);
-        primeContinuation(process, resonate);
+        wait(runner, future);
+        primeContinuation(runner, resonate);
         return processWaitingStep(process);
       }
       case "receive": {
         const received = tryReceive(scope, sigil.messageKey);
 
         if (option.isSome(received)) {
-          setContinuation(process, resonate, received.value);
+          setContinuation(runner, resonate, received.value);
           return processInterpretedStep(process);
         }
 
-        receive(scope, process, sigil.messageKey);
-        primeContinuation(process, resonate);
+        receive(scope, process.keeper(), sigil.messageKey);
+        primeContinuation(runner, resonate);
         return processWaitingStep(process);
       }
       case "send":
         send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value);
-        setContinuation(process, resonate, VOID);
+        setContinuation(runner, resonate, VOID);
         return processInterpretedStep(process);
     }
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #resonateWisp<Relic>(process: RuntimeProcess<Relic>): ProcessStep<Relic> {
-    process.resonate();
+  #resonateWisp<Relic>(process: RuntimeProcessHandle<Relic>): ProcessStep<Relic> {
+    const runner = process.runner();
+    runner.resonate();
 
-    if (process.isClosed) {
-      return processExitedStep(process, process.result as FutureResult<Relic>);
+    if (runner.isClosed) {
+      return processExitedStep(process, runner.result as FutureResult<Relic>);
     }
 
     return processResonatedStep(process);
   }
 
-  #onRunnable(process: RuntimeProcess<unknown>) {
+  #provideProcess<Relic>(worker: Ritual<Relic>): ProvideRuntimeProcess<Relic> {
+    return (scopeRef, descriptor) => {
+      const process = RuntimeProcess.create(scopeRef, worker, descriptor);
+
+      this.#touch(process);
+
+      return process.keeper();
+    };
+  }
+
+  #onRunnable(process: ProcessRef<unknown>) {
     for (const listener of this.#runnableListeners) {
       listener(process);
     }
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #touch(
-    _token: ScopeRef<unknown> | ProcessRef<unknown> | FutureKey<unknown> | FutureSettleKey<unknown>,
-  ): void {
+  #touch(_token: RuntimeScope | RuntimeProcessHandle<unknown> | RuntimeFuture<unknown>): void {
     // Do nothing
   }
 
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
-  #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcess<Relic>;
+  #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcessHandle<Relic>;
   #resolve<Result>(futureKey: FutureKey<Result>): RuntimeFuture<Result>;
   #resolve<Result>(futureSettleKey: FutureSettleKey<Result>): RuntimeFuture<Result>;
   // oxlint-disable-next-line class-methods-use-this
@@ -262,13 +278,13 @@ function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value):
 
 function branch<Relic>(
   scope: RuntimeScope,
-  entry: Ritual<Relic>,
+  provideProcess: ProvideRuntimeProcess<Relic>,
   descriptor: ScopeDescriptor,
 ): RuntimeScope {
-  return scope.branch(entry, descriptor);
+  return scope.branch(provideProcess, descriptor);
 }
 
-function defer(process: RuntimeProcess<unknown>, cleanup: CleanupTask): void {
+function defer(process: RuntimeProcessRunner<unknown>, cleanup: CleanupTask): void {
   process.defer(cleanup);
 }
 
@@ -280,7 +296,7 @@ function createFuture(scope: RuntimeScope): RuntimeFuture<unknown> {
   return scope.createFuture();
 }
 
-function halt(process: RuntimeProcess<unknown>, failure: Failure): void {
+function halt(process: RuntimeProcessRunner<unknown>, failure: Failure): void {
   process.halt(failure);
 }
 
@@ -290,10 +306,10 @@ function settle<Result>(future: RuntimeFuture<Result>, result: FutureResult<Resu
 
 function spawn<Relic>(
   scope: RuntimeScope,
-  worker: Ritual<Relic>,
+  provideProcess: ProvideRuntimeProcess<Relic>,
   descriptor: ProcessDescriptor,
 ): ProcessRef<Relic> {
-  return scope.spawn(worker, descriptor);
+  return scope.spawn(provideProcess, descriptor);
 }
 
 function lookup<Value>(scope: RuntimeScope, key: ContextKey<Value>): option.Option<Value> {
@@ -304,7 +320,7 @@ function poll<Result>(future: RuntimeFuture<Result>): option.Option<FutureResult
   return future.poll();
 }
 
-function self(process: RuntimeProcess<unknown>): SelfHandle<ScopeRef<unknown>> {
+function self(process: RuntimeProcessRunner<unknown>): SelfHandle<ScopeRef<unknown>> {
   return process.selfHandle();
 }
 
@@ -312,7 +328,7 @@ function tryWait<Result>(future: RuntimeFuture<Result>): option.Option<FutureRes
   return future.poll();
 }
 
-function wait(process: RuntimeProcess<unknown>, future: RuntimeFuture<unknown>): void {
+function wait(process: RuntimeProcessRunner<unknown>, future: RuntimeFuture<unknown>): void {
   process.wait(future);
 }
 
@@ -329,7 +345,7 @@ function tryReceive<Value>(
 
 function receive(
   scope: RuntimeScope,
-  process: RuntimeProcess<unknown>,
+  process: RuntimeProcessKeeper<unknown>,
   messageKey: MessageKey<unknown>,
 ): void {
   scope.receive(process, messageKey);
@@ -345,7 +361,7 @@ function send<Value>(
 }
 
 function setContinuation<SigilItem extends SigilShape>(
-  process: RuntimeProcess<unknown>,
+  process: RuntimeProcessRunner<unknown>,
   resonate: Resonance<SigilItem, unknown>,
   echo: Echo<SigilItem>,
 ): void {
@@ -353,7 +369,7 @@ function setContinuation<SigilItem extends SigilShape>(
 }
 
 function primeContinuation(
-  process: RuntimeProcess<unknown>,
+  process: RuntimeProcessRunner<unknown>,
   resonate: Resonance<SigilShape, unknown>,
 ): void {
   process.primeContinuation(resonate);
