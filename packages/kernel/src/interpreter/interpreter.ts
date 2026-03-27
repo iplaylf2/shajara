@@ -5,10 +5,12 @@ import type {
   RuntimeProcessHandle,
   RuntimeProcessKeeper,
   RuntimeProcessRunner,
+  RuntimeProcessRunningNext,
   RuntimeProcessRunningState,
 } from "./runtime-process";
 import type {
   ContextKey,
+  Echo,
   FutureKey,
   FutureResult,
   FutureSettleKey,
@@ -16,7 +18,6 @@ import type {
   ProcessRef,
   Ritual,
   ScopeRef,
-  StirringWisp,
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
 import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils";
@@ -52,10 +53,7 @@ export class Interpreter {
         return processExitedStep(processRef, either.left(runner.stateAs(runner.status).failure));
       case "running": {
         const state = runner.stateAs(runner.status);
-        const nextWisp = state.next();
-        return nextWisp === null
-          ? processResonatedStep(process)
-          : this.#interpretWisp(process, state, nextWisp);
+        return this.#step(process, state);
       }
     }
   }
@@ -120,31 +118,37 @@ export class Interpreter {
   }
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
-  #interpretWisp<Relic>(
+  #step<Relic>(
     process: RuntimeProcessHandle<Relic>,
     runnerState: RuntimeProcessRunningState<Relic>,
-    wisp: StirringWisp<Sigil, Relic>,
   ): ProcessStep<Relic> {
+    const next = runnerState.next();
+
+    if (next === null) {
+      return processResonatedStep(process);
+    }
+
     const scope = this.#resolve(process.scopeRef);
     const runner = process.runner();
-    const [kind, sigil] = fixedStirringWisp(wisp);
+
+    const [kind, sigil, accept] = fixRunningNext(next);
     switch (kind) {
       case "bind":
         bind(scope, sigil.key, sigil.value);
-        runnerState.accept(VOID);
+        accept(VOID);
         return processInterpretedStep(process);
       case "branch": {
         const branchScope = branch(scope, this.#provideProcess(sigil.entry), sigil.descriptor);
         this.#touch(branchScope);
 
-        runnerState.accept({
+        accept({
           process: branchScope.entryProcess,
           scope: branchScope,
         });
         return processInterpretedStep(process);
       }
       case "cede":
-        runnerState.accept(VOID);
+        accept(VOID);
         return processCededStep(process);
       case "cancel":
         cancel(scope);
@@ -154,47 +158,47 @@ export class Interpreter {
           spawnCleanup(this.#provideProcess(sigil.cleanup));
         });
 
-        runnerState.accept(VOID);
+        accept(VOID);
         return processInterpretedStep(process);
       case "future": {
         const future = createFuture(scope);
         this.#touch(future);
 
-        runnerState.accept(future.handle);
+        accept(future.handle);
         return processInterpretedStep(process);
       }
       case "halt":
         halt(runner, sigil.failure as Failure);
         return processExitedStep(process, either.left(runner.stateAs("failed").failure));
       case "lookup":
-        runnerState.accept(lookup(scope, sigil.key));
+        accept(lookup(scope, sigil.key));
         return processInterpretedStep(process);
       case "poll":
-        runnerState.accept(poll(this.#resolve(sigil.future)));
+        accept(poll(this.#resolve(sigil.future)));
         return processInterpretedStep(process);
       case "self":
-        runnerState.accept(self(runner));
+        accept(self(runner));
         return processInterpretedStep(process);
       case "settle":
         settle(this.#resolve(sigil.futureSettle), sigil.result);
-        runnerState.accept(VOID);
+        accept(VOID);
         return processInterpretedStep(process);
       case "spawn": {
         const spawnedProcess = spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor);
 
-        runnerState.accept(spawnedProcess);
+        accept(spawnedProcess);
         return processInterpretedStep(process);
       }
       case "unbind":
         unbind(scope, sigil.key);
-        runnerState.accept(VOID);
+        accept(VOID);
         return processInterpretedStep(process);
       case "wait": {
         const future = this.#resolve(sigil.future);
 
         const settled = tryWait(future);
         if (option.isSome(settled)) {
-          runnerState.accept(settled.value);
+          accept(settled.value);
           return processInterpretedStep(process);
         }
 
@@ -205,7 +209,7 @@ export class Interpreter {
         const received = tryReceive(scope, sigil.messageKey);
 
         if (option.isSome(received)) {
-          runnerState.accept(received.value);
+          accept(received.value);
           return processInterpretedStep(process);
         }
 
@@ -214,7 +218,7 @@ export class Interpreter {
       }
       case "send":
         send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value);
-        runnerState.accept(VOID);
+        accept(VOID);
         return processInterpretedStep(process);
     }
   }
@@ -255,10 +259,9 @@ export class Interpreter {
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
 
-function fixedStirringWisp<Relic>(
-  wisp: StirringWisp<Sigil, Relic>,
-): FixedStirringWisp<Sigil, Relic> {
-  return [wisp.sigil.kind, wisp.sigil] as FixedStirringWisp<Sigil, Relic>;
+function fixRunningNext(next: RuntimeProcessRunningNext<Sigil, unknown>): RunningNext<Sigil> {
+  const [wisp, accept] = next;
+  return [wisp.sigil.kind, wisp.sigil, accept] as RunningNext<Sigil>;
 }
 
 function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value): void {
@@ -349,8 +352,8 @@ function send<Value>(
   scope.send(targetScope, messageKey, value);
 }
 
-type FixedStirringWisp<SigilItem extends Sigil, Relic> = SigilItem extends Sigil
-  ? [SigilItem["kind"], StirringWisp<SigilItem, Relic>["sigil"]]
+type RunningNext<SigilItem extends Sigil> = SigilItem extends Sigil
+  ? [SigilItem["kind"], SigilItem, (echo: Echo<SigilItem>) => void]
   : never;
 
 const VOID: void = null as unknown as void;

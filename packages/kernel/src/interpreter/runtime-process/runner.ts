@@ -16,6 +16,8 @@ export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {
   readonly status: RuntimeProcessRunnerStatus;
 }
 
+export type RuntimeProcessRunnerStatus = RuntimeProcessRunnerState<unknown>["status"];
+
 export type RuntimeProcessRunnerStateOf<Relic, Status extends RuntimeProcessRunnerStatus> = Extract<
   RuntimeProcessRunnerState<Relic>,
   { readonly status: Status }
@@ -40,8 +42,10 @@ export type RuntimeProcessRunnerState<Relic> =
 
 export interface RuntimeProcessRunningState<Relic> {
   readonly status: "running";
-  accept<SigilItem extends Sigil>(echo: Echo<SigilItem>): void;
-  next(): StirringWisp<Sigil, Relic> | null;
+  next(): RuntimeProcessRunningNext<Sigil, Relic> | null;
 }
 
-export type RuntimeProcessRunnerStatus = RuntimeProcessRunnerState<unknown>["status"];
+export type RuntimeProcessRunningNext<SigilItem extends Sigil, Relic> = readonly [
+  wisp: StirringWisp<SigilItem, Relic>,
+  accept: (echo: Echo<SigilItem>) => void,
+];
