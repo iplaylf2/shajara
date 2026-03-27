@@ -3,10 +3,9 @@ import type {
   CleanupTask,
   ProvideRuntimeProcess,
   RuntimeProcessHandle,
-  RuntimeProcessInterpretingState,
   RuntimeProcessKeeper,
-  RuntimeProcessResonatingState,
   RuntimeProcessRunner,
+  RuntimeProcessRunningState,
 } from "./runtime-process";
 import type {
   ContextKey,
@@ -17,7 +16,6 @@ import type {
   ProcessRef,
   Ritual,
   ScopeRef,
-  SigilShape,
   StirringWisp,
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
@@ -54,12 +52,10 @@ export class Interpreter {
         return processExitedStep(processRef, either.left(runner.stateAs(runner.status).failure));
       case "running": {
         const state = runner.stateAs(runner.status);
-
-        if ("resonate" in state) {
-          return this.#resonateWisp(process, state);
-        }
-
-        return this.#interpretWisp(process, state);
+        const nextWisp = state.next();
+        return nextWisp === null
+          ? processResonatedStep(process)
+          : this.#interpretWisp(process, state, nextWisp);
       }
     }
   }
@@ -126,31 +122,29 @@ export class Interpreter {
   // oxlint-disable-next-line max-lines-per-function, max-statements
   #interpretWisp<Relic>(
     process: RuntimeProcessHandle<Relic>,
-    runnerState: RuntimeProcessInterpretingState<Relic>,
+    runnerState: RuntimeProcessRunningState<Relic>,
+    wisp: StirringWisp<Sigil, Relic>,
   ): ProcessStep<Relic> {
     const scope = this.#resolve(process.scopeRef);
     const runner = process.runner();
-
-    const [kind, sigil, resonate] = fixedStirringWisp(
-      runnerState.wisp as StirringWisp<SigilShape, Relic>,
-    );
+    const [kind, sigil] = fixedStirringWisp(wisp);
     switch (kind) {
       case "bind":
         bind(scope, sigil.key, sigil.value);
-        runnerState.setResonate(resonate, VOID);
+        runnerState.accept(VOID);
         return processInterpretedStep(process);
       case "branch": {
         const branchScope = branch(scope, this.#provideProcess(sigil.entry), sigil.descriptor);
         this.#touch(branchScope);
 
-        runnerState.setResonate(resonate, {
+        runnerState.accept({
           process: branchScope.entryProcess,
           scope: branchScope,
         });
         return processInterpretedStep(process);
       }
       case "cede":
-        runnerState.setResonate(resonate, VOID);
+        runnerState.accept(VOID);
         return processCededStep(process);
       case "cancel":
         cancel(scope);
@@ -160,80 +154,69 @@ export class Interpreter {
           spawnCleanup(this.#provideProcess(sigil.cleanup));
         });
 
-        runnerState.setResonate(resonate, VOID);
+        runnerState.accept(VOID);
         return processInterpretedStep(process);
       case "future": {
         const future = createFuture(scope);
         this.#touch(future);
 
-        runnerState.setResonate(resonate, future.handle);
+        runnerState.accept(future.handle);
         return processInterpretedStep(process);
       }
       case "halt":
         halt(runner, sigil.failure as Failure);
         return processExitedStep(process, either.left(runner.stateAs("failed").failure));
       case "lookup":
-        runnerState.setResonate(resonate, lookup(scope, sigil.key));
+        runnerState.accept(lookup(scope, sigil.key));
         return processInterpretedStep(process);
       case "poll":
-        runnerState.setResonate(resonate, poll(this.#resolve(sigil.future)));
+        runnerState.accept(poll(this.#resolve(sigil.future)));
         return processInterpretedStep(process);
       case "self":
-        runnerState.setResonate(resonate, self(runner));
+        runnerState.accept(self(runner));
         return processInterpretedStep(process);
       case "settle":
         settle(this.#resolve(sigil.futureSettle), sigil.result);
-        runnerState.setResonate(resonate, VOID);
+        runnerState.accept(VOID);
         return processInterpretedStep(process);
       case "spawn": {
         const spawnedProcess = spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor);
 
-        runnerState.setResonate(resonate, spawnedProcess);
+        runnerState.accept(spawnedProcess);
         return processInterpretedStep(process);
       }
       case "unbind":
         unbind(scope, sigil.key);
-        runnerState.setResonate(resonate, VOID);
+        runnerState.accept(VOID);
         return processInterpretedStep(process);
       case "wait": {
         const future = this.#resolve(sigil.future);
 
         const settled = tryWait(future);
         if (option.isSome(settled)) {
-          runnerState.setResonate(resonate, settled.value);
+          runnerState.accept(settled.value);
           return processInterpretedStep(process);
         }
 
         wait(runner, future);
-        runner.stateAs("waiting").primeResonate(resonate);
         return processWaitingStep(process);
       }
       case "receive": {
         const received = tryReceive(scope, sigil.messageKey);
 
         if (option.isSome(received)) {
-          runnerState.setResonate(resonate, received.value);
+          runnerState.accept(received.value);
           return processInterpretedStep(process);
         }
 
         receive(scope, process.keeper(), sigil.messageKey);
-        runner.stateAs("waiting").primeResonate(resonate);
         return processWaitingStep(process);
       }
       case "send":
         send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value);
-        runnerState.setResonate(resonate, VOID);
+        runnerState.accept(VOID);
         return processInterpretedStep(process);
     }
-  }
-
-  // oxlint-disable-next-line class-methods-use-this
-  #resonateWisp<Relic>(
-    process: RuntimeProcessHandle<Relic>,
-    runnerState: RuntimeProcessResonatingState,
-  ): ProcessStep<Relic> {
-    runnerState.resonate();
-    return processResonatedStep(process);
   }
 
   #provideProcess<Relic>(worker: Ritual<Relic>): ProvideRuntimeProcess {
@@ -273,9 +256,9 @@ export class Interpreter {
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
 
 function fixedStirringWisp<Relic>(
-  wisp: StirringWisp<SigilShape, Relic>,
+  wisp: StirringWisp<Sigil, Relic>,
 ): FixedStirringWisp<Sigil, Relic> {
-  return [wisp.sigil.kind, wisp.sigil, wisp.resonate] as FixedStirringWisp<Sigil, Relic>;
+  return [wisp.sigil.kind, wisp.sigil] as FixedStirringWisp<Sigil, Relic>;
 }
 
 function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value): void {
@@ -366,12 +349,8 @@ function send<Value>(
   scope.send(targetScope, messageKey, value);
 }
 
-type FixedStirringWisp<SigilItem extends SigilShape, Relic> = SigilItem extends SigilShape
-  ? [
-      SigilItem["kind"],
-      StirringWisp<SigilItem, Relic>["sigil"],
-      StirringWisp<SigilItem, Relic>["resonate"],
-    ]
+type FixedStirringWisp<SigilItem extends Sigil, Relic> = SigilItem extends Sigil
+  ? [SigilItem["kind"], StirringWisp<SigilItem, Relic>["sigil"]]
   : never;
 
 const VOID: void = null as unknown as void;

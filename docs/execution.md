@@ -26,7 +26,7 @@
   证据：`packages/kernel/src/interpreter/runtime-process/process.ts`
 - `RuntimeProcessKeeper` 的设计基线已经开始收口到显式 `RuntimeProcessKeeperState`：keeper 负责公开 `stateAs(...)`，供 `RuntimeScope` 读取挂在状态分支上的 process 终态信息；`RuntimeProcess` 再在 process 侧承接更完整的状态合并。  
   证据：`packages/kernel/src/interpreter/runtime-process/keeper.ts`、`packages/kernel/src/interpreter/runtime-scope.ts`、`docs/interpreter.md`
-- `RuntimeProcessRunner` 的设计基线也已经开始收口到显式 runner state：`running` 细分为解释中与可 `resonate` 两个分支，`waiting` 独占 `primeResonate(...)`，closed 分支只承接终态载荷。  
+- `RuntimeProcessRunner` 的设计基线已经收口到显式 runner state：`running` 只保留一种形态，通过 `accept(echo)` 交付 echo，再由 `next()` 推进当前 wisp 与暂存 continuation；`waiting` 不再承接 `primeResonate(...)`，closed 分支只承接终态载荷。  
   证据：`packages/kernel/src/interpreter/runtime-process/runner.ts`、`packages/kernel/src/interpreter/interpreter.ts`
 - `ProvideRuntimeProcess` 这条统一出生口已经落在 `runtime-process` 侧，并被 `Interpreter` 用来把 process 创建与 `touch(...)` 登记收在同一处；相对地，`resolve(...)` 继续面向 `ref / key` 这类抽象 token。  
   证据：`packages/kernel/src/interpreter/runtime-process/keeper.ts`、`packages/kernel/src/interpreter/interpreter.ts`、`docs/interpreter.md`
@@ -50,7 +50,7 @@
 ## 下一步
 
 1. 在已经分出的 `RuntimeProcessKeeper / RuntimeProcessRunner` 切面上，继续冻结 `RuntimeScope` 不应触碰的 execution 面。
-2. 继续把 `RuntimeProcess` 内部状态迁移到 keeper / runner 已冻结的状态视图上，使 completed result、failed failure 以及 interpreting / resonating / waiting 分支能力真正由状态机承载，而不是停留在设计层投影。
+2. 继续把 `RuntimeProcess` 内部状态迁移到 keeper / runner 已冻结的状态视图上，使 completed result、failed failure 以及单一 running / waiting 分支能力真正由状态机承载，而不是停留在设计层投影。
 3. 在已经收口的 `send/receive` 接线上继续保持边界稳定，不让 mailbox 重新回流到 process 执行协议里。
 4. 完成 `RuntimeProcess` 的剩余运行协议实现，再回到 runnable observation 与 executor 对接。
 

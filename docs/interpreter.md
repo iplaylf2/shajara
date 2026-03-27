@@ -53,7 +53,7 @@
 设计上，`RuntimeScope` 只把 `RuntimeProcess` 当作 lifecycle member，而不把它当作 ritual runner。也就是说：
 
 - `RuntimeScope` 负责决定成员何时应被等待、取消、清理和移出归属集合。
-- `Interpreter` 负责解释 wisp、组织后续 `resonate` / `primeResonate` 的推进，并推动 process 继续执行。
+- `Interpreter` 负责解释 wisp，并通过 `accept(echo)` 与 `next()` 推动 process 继续执行。
 
 由此形成一条明确边界：scope 协议关心“谁属于谁、何时收敛”，不关心“下一步怎样执行某个 wisp”。
 
@@ -96,7 +96,7 @@
 
 切面划分的标准应是“哪一方实际需要直接依赖这项能力”，而不是只按抽象语义归类。也就是说，切面不是为了把概念词汇分得好看，而是为了把模块依赖边界落实到类型表面。
 
-这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessKeeperState` 分支进行读取。当前 keeper 侧已冻结的状态载荷只有 completed result 与 failed failure。runner 侧则进一步按 interpreting / resonating / waiting / closed 分支冻结解释所需能力。
+这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessKeeperState` 分支进行读取。当前 keeper 侧已冻结的状态载荷只有 completed result 与 failed failure。runner 侧只保留一类 `running` 状态：`accept(echo)` 负责交付 echo，`next()` 负责推进一步并返回下一段 wisp 或 `null`。
 
 ## 3. 驱动模型
 
@@ -123,7 +123,12 @@
 - `resonated`
 - `exited`
 
-“解释 sigil”与“执行 `resonate`”是两个可分离的外部可见步骤。
+“解释 sigil”与“执行 `resonate`”仍是两个可分离的外部可见步骤，但不再要求 runner 暴露两种不同的 running 形态。
+
+`step(processRef)` 在 process 处于 `running` 时，统一通过 `next()` 取下一步：
+
+- 返回 `null`：表示 process 刚完成一次内部 `resonate`，本次步进结果为 `resonated`。
+- 返回 `StirringWisp`：表示当前有待解释的一枚 sigil；`Interpreter` 解释它，并在得到 echo 后通过 `accept(echo)` 交回 process。
 
 对 `branch / future / spawn / defer` 这类会引入新对象或新后续责任的 sigil，`step(...)` 会显式写出 `resolve(...)` / `touch(...)` 这组协议 callout。通常 `touch(...)` 直接落在对象出生点；cleanup process 也应沿同一出生协议被登记。
 

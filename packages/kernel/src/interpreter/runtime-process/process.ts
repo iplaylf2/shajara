@@ -6,17 +6,7 @@ import type {
   RuntimeProcessKeeperStatus,
   RuntimeProcessObserver,
 } from "./keeper";
-import type {
-  Echo,
-  FutureKey,
-  MessageKey,
-  ProcessRef,
-  REF_TOKEN,
-  Resonance,
-  Ritual,
-  ScopeRef,
-  SigilShape,
-} from "#/contracts";
+import type { FutureKey, MessageKey, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle } from "#/sigils";
 import type {
   RuntimeProcessRunner,
@@ -38,12 +28,6 @@ export class RuntimeProcess<Relic>
     descriptor: ProcessDescriptor,
   ): RuntimeProcessHandle<Relic> {
     return new RuntimeProcess(scopeRef, worker, descriptor);
-  }
-
-  public static resolve<Relic>(
-    process: RuntimeProcessKeeper | RuntimeProcessRunner<Relic>,
-  ): RuntimeProcessHandle<Relic> {
-    return process as RuntimeProcess<Relic> as RuntimeProcessHandle<Relic>;
   }
 
   private constructor(
@@ -98,17 +82,6 @@ export class RuntimeProcess<Relic>
     return notImplemented("RuntimeProcess.stateAs");
   }
 
-  public setResonate<SigilItem extends SigilShape>(
-    _resonate: Resonance<SigilItem, unknown>,
-    _echo: Echo<SigilItem>,
-  ): void {
-    notImplemented("RuntimeProcess.setResonate");
-  }
-
-  public resonate(): void {
-    notImplemented("RuntimeProcess.resonate");
-  }
-
   public wait(_future: RuntimeFuture<unknown>): void {
     notImplemented("RuntimeProcess.wait");
   }
@@ -129,10 +102,6 @@ export class RuntimeProcess<Relic>
 
   public accept(_value: unknown): void {
     notImplemented("RuntimeProcess.accept");
-  }
-
-  public primeResonate(_resonate: Resonance<SigilShape, unknown>): void {
-    notImplemented("RuntimeProcess.primeResonate");
   }
 
   public halt(_failure: Failure): void {

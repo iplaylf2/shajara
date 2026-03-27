@@ -1,8 +1,8 @@
-import type { Echo, ProcessRef, Resonance, ScopeRef, SigilShape, Wisp } from "#/contracts";
+import type { Echo, ProcessRef, ScopeRef, StirringWisp } from "#/contracts";
+import type { SelfHandle, Sigil } from "#/sigils";
 import type { CleanupTask } from "./keeper";
 import type { Failure } from "#/failures";
 import type { RuntimeFuture } from "#/interpreter/runtime-future";
-import type { SelfHandle } from "#/sigils";
 
 export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {
   defer(cleanup: CleanupTask): void;
@@ -22,9 +22,10 @@ export type RuntimeProcessRunnerStateOf<Relic, Status extends RuntimeProcessRunn
 >;
 
 export type RuntimeProcessRunnerState<Relic> =
-  | RuntimeProcessInterpretingState<Relic>
-  | RuntimeProcessResonatingState
-  | RuntimeProcessWaitingState
+  | RuntimeProcessRunningState<Relic>
+  | {
+      readonly status: "waiting";
+    }
   | {
       readonly status: "completed";
       readonly result: Relic;
@@ -37,23 +38,10 @@ export type RuntimeProcessRunnerState<Relic> =
       readonly failure: Failure;
     };
 
-export interface RuntimeProcessInterpretingState<Relic> {
+export interface RuntimeProcessRunningState<Relic> {
   readonly status: "running";
-  setResonate<SigilItem extends SigilShape>(
-    resonate: Resonance<SigilItem, unknown>,
-    echo: Echo<SigilItem>,
-  ): void;
-  readonly wisp: Wisp<Relic>;
-}
-
-export interface RuntimeProcessResonatingState {
-  readonly status: "running";
-  resonate(): void;
-}
-
-export interface RuntimeProcessWaitingState {
-  readonly status: "waiting";
-  primeResonate(resonate: Resonance<SigilShape, unknown>): void;
+  accept<SigilItem extends Sigil>(echo: Echo<SigilItem>): void;
+  next(): StirringWisp<Sigil, Relic> | null;
 }
 
 export type RuntimeProcessRunnerStatus = RuntimeProcessRunnerState<unknown>["status"];
