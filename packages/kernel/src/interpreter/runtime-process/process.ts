@@ -2,14 +2,13 @@
 import type {
   CleanupTask,
   RuntimeProcessKeeper,
+  RuntimeProcessKeeperStateOf,
+  RuntimeProcessKeeperStatus,
   RuntimeProcessObserver,
-  RuntimeProcessStateOf,
-  RuntimeProcessStatus,
 } from "./keeper";
 import type {
   Echo,
   FutureKey,
-  FutureResult,
   MessageKey,
   ProcessRef,
   REF_TOKEN,
@@ -17,13 +16,16 @@ import type {
   Ritual,
   ScopeRef,
   SigilShape,
-  Wisp,
 } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle } from "#/sigils";
+import type {
+  RuntimeProcessRunner,
+  RuntimeProcessRunnerStateOf,
+  RuntimeProcessRunnerStatus,
+} from "./runner";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import type { RuntimeProcessHandle } from "./handle";
-import type { RuntimeProcessRunner } from "./runner";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { notImplemented } from "#/internal/not-implemented";
 
@@ -46,42 +48,27 @@ export class RuntimeProcess<Relic>
 
   private constructor(
     scopeRef: ScopeRef<unknown>,
-    worker: Ritual<Relic>,
-    descriptor: ProcessDescriptor,
+    _worker: Ritual<Relic>,
+    _descriptor: ProcessDescriptor,
   ) {
-    this.#exitFuture = new RuntimeFuture<Relic>();
-    this.#descriptor = descriptor;
     this.scopeRef = scopeRef;
-    this.#status = "running";
-    this.wisp = worker() as Wisp<unknown>;
+    notImplemented("RuntimeProcess.constructor");
   }
 
   public get exitFuture(): FutureKey<Relic> {
-    return this.#exitFuture;
+    return notImplemented("RuntimeProcess.exitFuture");
   }
 
   public get descriptor(): ProcessDescriptor {
-    return this.#descriptor;
-  }
-
-  public get hasQueuedContinuation(): boolean {
-    return this.#continuation !== null;
+    return notImplemented("RuntimeProcess.descriptor");
   }
 
   public get status(): RuntimeProcessStatus {
-    return this.#status;
+    return notImplemented("RuntimeProcess.status");
   }
 
   public get isClosed(): boolean {
-    switch (this.#status) {
-      case "running":
-      case "waiting":
-        return false;
-      case "completed":
-      case "canceled":
-      case "failed":
-        return true;
-    }
+    return notImplemented("RuntimeProcess.isClosed");
   }
 
   public selfHandle(): SelfHandle<ScopeRef<unknown>> {
@@ -92,11 +79,9 @@ export class RuntimeProcess<Relic>
   }
 
   public observe(observer: RuntimeProcessObserver): Unsubscribe {
-    this.#observers.add(observer);
-
-    return () => {
-      this.#observers.delete(observer);
-    };
+    // oxlint-disable-next-line no-void
+    void observer;
+    return notImplemented("RuntimeProcess.observe");
   }
 
   public runner(): RuntimeProcessRunner<Relic> {
@@ -109,29 +94,19 @@ export class RuntimeProcess<Relic>
 
   public stateAs<Status extends RuntimeProcessStatus>(
     _status: Status,
-  ): RuntimeProcessStateOf<Status> {
+  ): RuntimeProcessStateOf<Relic, Status> {
     return notImplemented("RuntimeProcess.stateAs");
   }
 
-  public setContinuation<SigilItem extends SigilShape>(
-    resonate: Resonance<SigilItem, unknown>,
-    echo: Echo<SigilItem>,
+  public setResonate<SigilItem extends SigilShape>(
+    _resonate: Resonance<SigilItem, unknown>,
+    _echo: Echo<SigilItem>,
   ): void {
-    this.#continuation = {
-      echo,
-      resonate,
-    };
+    notImplemented("RuntimeProcess.setResonate");
   }
 
   public resonate(): void {
-    const continuation = this.#continuation!;
-
-    this.#continuation = null;
-    this.wisp = continuation.resonate(continuation.echo);
-
-    if (this.wisp.bearing === "resting") {
-      notImplemented("RuntimeProcess.resonate resting completion");
-    }
+    notImplemented("RuntimeProcess.resonate");
   }
 
   public wait(_future: RuntimeFuture<unknown>): void {
@@ -143,19 +118,21 @@ export class RuntimeProcess<Relic>
   }
 
   public defer(cleanup: CleanupTask): void {
-    this.#cleanups.push(cleanup);
+    // oxlint-disable-next-line no-void
+    void cleanup;
+    notImplemented("RuntimeProcess.defer");
   }
 
   public takeCleanups(): CleanupTask[] {
-    return this.#cleanups;
+    return notImplemented("RuntimeProcess.takeCleanups");
   }
 
   public accept(_value: unknown): void {
     notImplemented("RuntimeProcess.accept");
   }
 
-  public primeContinuation(_continuation: Resonance<SigilShape, unknown>): void {
-    notImplemented("RuntimeProcess.primeContinuation");
+  public primeResonate(_resonate: Resonance<SigilShape, unknown>): void {
+    notImplemented("RuntimeProcess.primeResonate");
   }
 
   public halt(_failure: Failure): void {
@@ -169,18 +146,10 @@ export class RuntimeProcess<Relic>
   // oxlint-disable-next-line no-undef
   declare public readonly [REF_TOKEN]: ProcessRef<Relic>[typeof REF_TOKEN];
   public readonly scopeRef: ScopeRef<unknown>;
-  public result: FutureResult<Relic> | null = null;
-  public wisp: Wisp<unknown>;
-
-  #continuation: RuntimeContinuation | null = null;
-  #status: RuntimeProcessStatus;
-  readonly #descriptor: ProcessDescriptor;
-  readonly #exitFuture: RuntimeFuture<Relic>;
-  readonly #observers = new Set<RuntimeProcessObserver>();
-  #cleanups: CleanupTask[] = [];
 }
 
-interface RuntimeContinuation {
-  readonly echo: unknown;
-  readonly resonate: Resonance<SigilShape, unknown>;
-}
+type RuntimeProcessStateOf<
+  Relic,
+  Status extends RuntimeProcessStatus,
+> = RuntimeProcessKeeperStateOf<Status> & RuntimeProcessRunnerStateOf<Relic, Status>;
+type RuntimeProcessStatus = RuntimeProcessKeeperStatus & RuntimeProcessRunnerStatus;

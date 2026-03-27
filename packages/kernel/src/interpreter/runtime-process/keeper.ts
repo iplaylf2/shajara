@@ -8,25 +8,25 @@ export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   cancel(): void;
   observe(observer: RuntimeProcessObserver): Unsubscribe;
   receive(messageKey: MessageKey<unknown>): void;
-  stateAs<Status extends RuntimeProcessStatus>(status: Status): RuntimeProcessStateOf<Status>;
+  stateAs<Status extends RuntimeProcessKeeperStatus>(
+    status: Status,
+  ): RuntimeProcessKeeperStateOf<Status>;
   takeCleanups(): CleanupTask[];
   readonly descriptor: ProcessDescriptor;
   readonly isClosed: boolean;
-  readonly status: RuntimeProcessStatus;
+  readonly status: RuntimeProcessKeeperStatus;
 }
 
 export type RuntimeProcessObserver = () => void;
 
-export type RuntimeProcessStateOf<Status extends RuntimeProcessStatus> = Extract<
-  RuntimeProcessState,
+export type RuntimeProcessKeeperStateOf<Status extends RuntimeProcessKeeperStatus> = Extract<
+  RuntimeProcessKeeperState,
   { readonly status: Status }
 >;
 
-export type RuntimeProcessStatus = RuntimeProcessState["status"];
-
 export type CleanupTask = (spawn: CleanupSpawner) => void;
 
-export type RuntimeProcessState =
+export type RuntimeProcessKeeperState =
   | { readonly status: "running" }
   | {
       readonly status: "waiting";
@@ -42,6 +42,8 @@ export type RuntimeProcessState =
       readonly status: "failed";
       readonly failure: Failure;
     };
+
+export type RuntimeProcessKeeperStatus = RuntimeProcessKeeperState["status"];
 
 export type CleanupSpawner = (provideProcess: ProvideRuntimeProcess) => void;
 
