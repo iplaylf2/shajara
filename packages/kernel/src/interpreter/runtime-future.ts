@@ -44,7 +44,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
     this.#waiters.clear();
   }
 
-  public get handle(): FutureHandle<Result> {
+  public handle(): FutureHandle<Result> {
     return [this, this];
   }
 

@@ -161,7 +161,7 @@ export class Interpreter {
         const future = createFuture(scope);
         this.#touch(future);
 
-        accept(future.handle);
+        accept(future.handle());
         return processInterpretedStep(process);
       }
       case "halt":
