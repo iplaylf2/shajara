@@ -47,7 +47,7 @@ export class Interpreter {
       case "completed":
         return processExitedStep(processRef, either.right(runner.stateAs(runner.status).result));
       case "canceled":
-        return processExitedStep(processRef, either.left(canceledFailure()));
+        return processExitedStep(processRef, either.left(canceledFailure));
       case "failed":
         return processExitedStep(processRef, either.left(runner.stateAs(runner.status).failure));
       case "running": {
@@ -149,7 +149,7 @@ export class Interpreter {
         return processCededStep(process);
       case "cancel":
         cancel(scope);
-        return processExitedStep(process, either.left(canceledFailure()));
+        return processExitedStep(process, either.left(canceledFailure));
       case "defer":
         defer(runner, (spawnCleanup) => {
           spawnCleanup(this.#provideProcess(sigil.cleanup));

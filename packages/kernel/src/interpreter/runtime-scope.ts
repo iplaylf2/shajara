@@ -316,7 +316,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle()) {
       this.#cancelDerivedFutures();
 
-      const canceled = either.left(canceledFailure());
+      const canceled = either.left(canceledFailure);
       this.#exitFuture.settle(canceled);
       this.#transitionTo({ status: "canceled" });
     }
@@ -385,7 +385,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #cancelDerivedFutures(): void {
-    const canceled = either.left(canceledFailure());
+    const canceled = either.left(canceledFailure);
 
     for (const future of this.#derivedFutures) {
       future.settle(canceled);
