@@ -285,8 +285,8 @@ function createFuture(scope: RuntimeScope): RuntimeFuture<unknown> {
   return scope.createFuture();
 }
 
-function halt(process: RuntimeProcessRunner<unknown>, failure: Failure): void {
-  process.halt(failure);
+function halt(scope: RuntimeScope, process: RuntimeProcessKeeper, failure: Failure): void {
+  scope.halt(process, failure);
 }
 
 function settle<Result>(future: RuntimeFuture<Result>, result: FutureResult<Result>): void {

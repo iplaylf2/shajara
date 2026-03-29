@@ -1,12 +1,10 @@
 import type { MessageKey, ProcessRef, ScopeRef } from "#/contracts";
 import type { Failure } from "#/failures";
 import type { ProcessDescriptor } from "#/sigils";
-import type { Unsubscribe } from "#/interpreter-kit";
 
 export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   accept(value: unknown): void;
   cancel(): void;
-  observe(observer: RuntimeProcessObserver): Unsubscribe;
   receive(messageKey: MessageKey<unknown>): void;
   stateAs<Status extends RuntimeProcessKeeperStatus>(
     status: Status,
@@ -16,8 +14,6 @@ export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   readonly isClosed: boolean;
   readonly status: RuntimeProcessKeeperStatus;
 }
-
-export type RuntimeProcessObserver = () => void;
 
 export type RuntimeProcessKeeperStateOf<Status extends RuntimeProcessKeeperStatus> = Extract<
   RuntimeProcessKeeperState,

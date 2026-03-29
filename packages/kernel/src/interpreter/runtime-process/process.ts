@@ -4,7 +4,6 @@ import type {
   RuntimeProcessKeeper,
   RuntimeProcessKeeperStateOf,
   RuntimeProcessKeeperStatus,
-  RuntimeProcessObserver,
 } from "./keeper";
 import type { FutureKey, MessageKey, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle } from "#/sigils";
@@ -16,7 +15,6 @@ import type {
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import type { RuntimeProcessHandle } from "./handle";
-import type { Unsubscribe } from "#/interpreter-kit";
 import { notImplemented } from "#/internal/not-implemented";
 
 export class RuntimeProcess<Relic>
@@ -62,12 +60,6 @@ export class RuntimeProcess<Relic>
     };
   }
 
-  public observe(observer: RuntimeProcessObserver): Unsubscribe {
-    // oxlint-disable-next-line no-void
-    void observer;
-    return notImplemented("RuntimeProcess.observe");
-  }
-
   public runner(): RuntimeProcessRunner<Relic> {
     return this;
   }
@@ -80,10 +72,6 @@ export class RuntimeProcess<Relic>
     _status: Status,
   ): RuntimeProcessStateOf<Relic, Status> {
     return notImplemented("RuntimeProcess.stateAs");
-  }
-
-  public wait(_future: RuntimeFuture<unknown>): void {
-    notImplemented("RuntimeProcess.wait");
   }
 
   public receive(_messageKey: MessageKey<unknown>): void {

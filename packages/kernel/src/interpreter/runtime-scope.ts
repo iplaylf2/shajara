@@ -32,6 +32,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
   }
 
+  public complete(process: RuntimeProcessKeeper, result: unknown): void {
+    throw new Error("Method not implemented.");
+  }
+
   public branch(
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
@@ -44,17 +48,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return child;
   }
 
-  public spawn<Relic>(
-    provideProcess: ProvideRuntimeProcess,
-    descriptor: ProcessDescriptor,
-  ): ProcessRef<Relic> {
-    const process = provideProcess(this, descriptor);
-
-    this.#registerOwnedProcess(process);
-
-    return process as ProcessRef<Relic>;
-  }
-
   public createFuture<Result>(): RuntimeFuture<Result> {
     const future = new RuntimeFuture<Result>();
 
@@ -65,6 +58,21 @@ export class RuntimeScope implements ScopeRef<unknown> {
     });
 
     return future;
+  }
+
+  public halt(process: RuntimeProcessKeeper, failure: Failure) {
+    throw new Error("Method not implemented.");
+  }
+
+  public spawn<Relic>(
+    provideProcess: ProvideRuntimeProcess,
+    descriptor: ProcessDescriptor,
+  ): ProcessRef<Relic> {
+    const process = provideProcess(this, descriptor);
+
+    this.#registerOwnedProcess(process);
+
+    return process as ProcessRef<Relic>;
   }
 
   public lookup<Value>(contextKey: ContextKey<Value>): option.Option<Value> {
@@ -99,6 +107,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public receive(process: RuntimeProcessKeeper, messageKey: MessageKey<unknown>): void {
     this.#mailbox.enqueueReceiver(process, messageKey);
     process.receive(messageKey);
+  }
+
+  public wait<Value>(process: RuntimeProcessKeeper, future: RuntimeFuture<Value>): Unsubscribe {
+    throw new Error("Method not implemented.");
   }
 
   public observe(observer: RuntimeScopeObserver): Unsubscribe {
@@ -186,16 +198,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const ownedProcesses = this.#processContainerFor(process);
 
     ownedProcesses.add(process);
-
-    process.observe(() => {
-      if (process.isClosed) {
-        ownedProcesses.delete(process);
-        this.#releaseOwnedProcess(process);
-      }
-
-      this.#zone.trackProcess(process);
-      this.#driveByOwnedProcess(process);
-    });
   }
 
   #driveByChildScope(scope: RuntimeScope): void {

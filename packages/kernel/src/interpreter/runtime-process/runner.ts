@@ -2,16 +2,13 @@ import type { Echo, ProcessRef, ScopeRef } from "#/contracts";
 import type { SelfHandle, Sigil } from "#/sigils";
 import type { CleanupTask } from "./keeper";
 import type { Failure } from "#/failures";
-import type { RuntimeFuture } from "#/interpreter/runtime-future";
 
 export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {
   defer(cleanup: CleanupTask): void;
-  halt(failure: Failure): void;
   selfHandle(): SelfHandle<ScopeRef<unknown>>;
   stateAs<Status extends RuntimeProcessRunnerStatus>(
     status: Status,
   ): RuntimeProcessRunnerStateOf<Relic, Status>;
-  wait(future: RuntimeFuture<unknown>): void;
   readonly isClosed: boolean;
   readonly status: RuntimeProcessRunnerStatus;
 }
