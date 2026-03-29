@@ -6,7 +6,6 @@ import type {
   RuntimeProcessKeeper,
   RuntimeProcessRunner,
   RuntimeProcessRunningNext,
-  RuntimeProcessRunningState,
 } from "./runtime-process";
 import type {
   ContextKey,
@@ -52,8 +51,12 @@ export class Interpreter {
       case "failed":
         return processExitedStep(processRef, either.left(runner.stateAs(runner.status).failure));
       case "running": {
-        const state = runner.stateAs(runner.status);
-        return this.#step(process, state);
+        const next = runner.stateAs(runner.status).next();
+
+        if (next) {
+          return this.#interpret(process, next);
+        }
+        return processResonatedStep(process);
       }
     }
   }
@@ -118,16 +121,10 @@ export class Interpreter {
   }
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
-  #step<Relic>(
+  #interpret<Relic>(
     process: RuntimeProcessHandle<Relic>,
-    runnerState: RuntimeProcessRunningState<Relic>,
+    next: RuntimeProcessRunningNext<Sigil>,
   ): ProcessStep<Relic> {
-    const next = runnerState.next();
-
-    if (next === null) {
-      return processResonatedStep(process);
-    }
-
     const scope = this.#resolve(process.scopeRef);
     const runner = process.runner();
 
@@ -259,9 +256,9 @@ export class Interpreter {
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
 
-function fixRunningNext(next: RuntimeProcessRunningNext<Sigil, unknown>): RunningNext<Sigil> {
-  const [wisp, accept] = next;
-  return [wisp.sigil.kind, wisp.sigil, accept] as RunningNext<Sigil>;
+function fixRunningNext(next: RuntimeProcessRunningNext<Sigil>): RunningNext<Sigil> {
+  const [sigil, accept] = next;
+  return [sigil.kind, sigil, accept] as RunningNext<Sigil>;
 }
 
 function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value): void {

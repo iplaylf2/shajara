@@ -1,4 +1,4 @@
-import type { Echo, ProcessRef, ScopeRef, StirringWisp } from "#/contracts";
+import type { Echo, ProcessRef, ScopeRef } from "#/contracts";
 import type { SelfHandle, Sigil } from "#/sigils";
 import type { CleanupTask } from "./keeper";
 import type { Failure } from "#/failures";
@@ -24,7 +24,10 @@ export type RuntimeProcessRunnerStateOf<Relic, Status extends RuntimeProcessRunn
 >;
 
 export type RuntimeProcessRunnerState<Relic> =
-  | RuntimeProcessRunningState<Relic>
+  | {
+      readonly status: "running";
+      next(): RuntimeProcessRunningNext<Sigil> | null;
+    }
   | {
       readonly status: "waiting";
     }
@@ -40,12 +43,7 @@ export type RuntimeProcessRunnerState<Relic> =
       readonly failure: Failure;
     };
 
-export interface RuntimeProcessRunningState<Relic> {
-  readonly status: "running";
-  next(): RuntimeProcessRunningNext<Sigil, Relic> | null;
-}
-
-export type RuntimeProcessRunningNext<SigilItem extends Sigil, Relic> = readonly [
-  wisp: StirringWisp<SigilItem, Relic>,
+export type RuntimeProcessRunningNext<SigilItem extends Sigil> = readonly [
+  sigil: SigilItem,
   accept: (echo: Echo<SigilItem>) => void,
 ];
