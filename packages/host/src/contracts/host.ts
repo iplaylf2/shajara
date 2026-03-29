@@ -1,4 +1,4 @@
-import type { Failure, FutureKey } from "./kernel";
+import type { FailureShape, FutureKey } from "./kernel";
 import type { FutureHandle, FutureSettleKey } from "@shajara/kernel";
 import type { Sigil } from "@shajara/kernel/sigils";
 
@@ -10,14 +10,7 @@ export type RiteFuture<Result> = FutureKey<Result>;
 export type RiteFutureSettle<Result> = FutureSettleKey<Result>;
 export type RiteFutureHandle<Result> = FutureHandle<Result>;
 
-export abstract class ShajaraError extends Error {
-  constructor(protected readonly failure: Failure) {
-    super(failure.message());
-  }
-
-  toFailure(): Failure {
-    return this.failure;
-  }
-
+export abstract class ShajaraError extends Error implements FailureShape {
+  abstract readonly kind: string;
   abstract override readonly name: string;
 }

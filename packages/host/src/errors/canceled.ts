@@ -1,10 +1,11 @@
+import type { CanceledFailure } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
-import { canceledFailure } from "@shajara/kernel";
 
-export class CanceledError extends ShajaraError {
-  constructor() {
-    super(canceledFailure());
-  }
-
+export class CanceledError extends ShajaraError implements CanceledFailure {
   override readonly name = "CanceledError";
+  readonly kind = "canceled" as const;
+
+  constructor() {
+    super("Canceled before completion");
+  }
 }

@@ -3,7 +3,7 @@ import type { FailureShape } from "#/contracts";
 export function canceledFailure(): CanceledFailure {
   return {
     kind: "canceled",
-    message(): string {
+    get message(): string {
       return "Canceled before completion";
     },
   };

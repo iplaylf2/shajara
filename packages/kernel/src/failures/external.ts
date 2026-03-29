@@ -3,7 +3,9 @@ import type { FailureShape } from "#/contracts";
 export function externalFailure(raw: unknown, message: () => string): ExternalFailure {
   return {
     kind: "external",
-    message,
+    get message(): string {
+      return message();
+    },
     raw,
   };
 }

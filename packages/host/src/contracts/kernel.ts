@@ -2,6 +2,7 @@
 export {
   type ContextKey,
   type Failure,
+  type FailureShape,
   type FutureKey,
   type LaunchState,
   type ScopeRef,

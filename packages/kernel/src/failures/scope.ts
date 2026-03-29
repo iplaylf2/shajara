@@ -7,7 +7,7 @@ export function scopeFailure(
   return {
     cause,
     kind: "scope",
-    message() {
+    get message(): string {
       return "Scope failed during closing";
     },
     suppressedFailures,
