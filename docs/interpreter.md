@@ -62,7 +62,7 @@
 - **complete**：scope 将 process 迁移到 completed，从归属集合移除，触发 cleanup，然后根据自身当前 status 尝试推进收敛。
 - **halt**：scope 将 process 迁移到 failed，从归属集合移除，进入 failing 流程；cleanup 在 failing 进入后、tryFailed 之前触发。
 - **cancel**（级联）：scope 批量将所有 member process 迁移到 canceled 并触发 cleanup。
-- **wait / receive**：scope 将 process 迁移到 waiting，并携带 `dispose` 回调（用于在 process 被级联取消时丢弃不再需要的 future 订阅或 mailbox receiver 注册）。恢复时由 future settle 回调或 mailbox send 将 process 迁移回 running。
+- **wait / receive**：scope 将 process 迁移到 waiting，并携带 `dispose` 回调（用于在这次 waiting 被废弃时丢弃不再需要的 future 订阅或 mailbox receiver 注册，例如 process 被关闭）。恢复时由 future settle 回调或 mailbox send 将 process 迁移回 running；这次恢复本身不触发 `dispose`。
 
 每次 process 状态迁移后，scope 都通过 `zone.trackProcess(process)` 上报，zone 侧自行判断是否需要调度。
 
@@ -105,7 +105,7 @@
 
 切面划分的标准应是“哪一方实际需要直接依赖这项能力”，而不是只按抽象语义归类。也就是说，切面不是为了把概念词汇分得好看，而是为了把模块依赖边界落实到类型表面。
 
-这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessKeeperState` 分支进行读取。当前 keeper 侧已冻结的状态载荷只有 completed result 与 failed failure。keeper 的状态迁移由 scope 统一驱动，通过 `RuntimeProcessKeeperTransition` 表达；`running` 迁入必须携带 `input`，`waiting` 迁入必须携带 `dispose` 回调。runner 侧只保留一类 `running` 状态：`next()` 负责推进一步，返回一个 tagged union：`echo`（带 sigil 与 accept）、`resonate`（内部续行完成）或 `relic`（ritual 结束并产出 relic）。
+这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessKeeperState` 分支进行读取。当前 keeper 侧已冻结的状态载荷只有 completed result 与 failed failure。keeper 的状态迁移由 scope 统一驱动，通过 `RuntimeProcessKeeperTransition` 表达；`running` 迁入必须携带 `input`，`waiting` 迁入必须携带 `dispose` 回调。runner 侧只保留一类 `running` 状态：`next()` 负责推进一步，返回一个 tagged union：`echo`（带 sigil 与 accept）、`resonate`（内部续行完成）或 `relic`（ritual 结束并产出 relic）；而 waiting 恢复则通过 `Stepper.current()` 复用此前已物化的 `echo.accept(...)` continuation，而不是再次调用新的 `next()`。
 
 ## 3. 驱动模型
 

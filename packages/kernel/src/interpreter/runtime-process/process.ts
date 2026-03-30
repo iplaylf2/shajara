@@ -1,4 +1,3 @@
-// oxlint-disable class-methods-use-this
 import type { CleanupTask, RuntimeProcessKeeper, RuntimeProcessKeeperTransition } from "./keeper";
 import type { FutureKey, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle, Sigil } from "#/sigils";
@@ -49,16 +48,12 @@ export class RuntimeProcess<Relic>
     return this.#state as RuntimeProcessStateOf<Relic, Status>;
   }
 
-  // oxlint-disable-next-line max-lines-per-function, max-statements
   public transitionTo(state: RuntimeProcessKeeperTransition): void {
     switch (state.status) {
       case "running": {
         const current = this.stateAs("waiting");
-        const next = current.stepper.next() as RuntimeProcessNextEcho<Sigil>;
-
-        // Known issue: waiting -> running should likely restore a previously prepared accept path
-        // Rather than advancing via a fresh next() call. Keep this as-is for the current snapshot.
-        next.accept(state.input as never);
+        const runner = current.stepper.current() as RuntimeProcessNextEcho<Sigil>;
+        runner.accept(state.input);
         this.#state = createRunningState(current.stepper);
         return;
       }
@@ -72,9 +67,7 @@ export class RuntimeProcess<Relic>
         return;
       }
       case "completed":
-        if (this.#state.status === "waiting") {
-          this.#state.dispose();
-        }
+        this.#disposeWhileWaiting();
         this.#state = {
           result: state.result as Relic,
           status: "completed",
@@ -82,9 +75,7 @@ export class RuntimeProcess<Relic>
         this.#exitFuture.settle(either.right(state.result as Relic));
         return;
       case "failed":
-        if (this.#state.status === "waiting") {
-          this.#state.dispose();
-        }
+        this.#disposeWhileWaiting();
         this.#state = {
           failure: state.failure,
           status: "failed",
@@ -92,9 +83,7 @@ export class RuntimeProcess<Relic>
         this.#exitFuture.settle(either.left(state.failure));
         return;
       case "canceled":
-        if (this.#state.status === "waiting") {
-          this.#state.dispose();
-        }
+        this.#disposeWhileWaiting();
         this.#state = {
           status: "canceled",
         };
@@ -148,6 +137,12 @@ export class RuntimeProcess<Relic>
     this.scopeRef = scopeRef;
     this.#descriptor = descriptor;
     this.#state = createRunningState(new Stepper(worker));
+  }
+
+  #disposeWhileWaiting(): void {
+    if (this.#state.status === "waiting") {
+      this.#state.dispose();
+    }
   }
 
   readonly #exitFuture = new RuntimeFuture<Relic>();

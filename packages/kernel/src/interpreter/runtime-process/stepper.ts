@@ -2,31 +2,71 @@ import type { Echo, Ritual, StirringWisp, Wisp } from "#/contracts";
 import type { RuntimeProcessRunnerNext } from "./runner";
 import type { Sigil } from "#/sigils";
 import type { TaggedUnion } from "type-fest";
+import { unreachable } from "#/utils";
 
 export class Stepper<Relic> {
-  public next(): RuntimeProcessRunnerNext<Relic> {
-    switch (this.#state.kind) {
-      case "echo":
+  public current(): RuntimeProcessRunnerNext<Relic> {
+    switch (this.#state.status) {
+      case "echo": {
+        const { wisp } = this.#state;
         return {
           accept: (echo) => {
-            this.#accept(echo as Echo<Sigil>);
+            this.#accept(wisp, echo as Echo<Sigil>);
           },
           kind: "echo",
           sigil: this.#state.wisp.sigil,
         };
+      }
       case "relic":
-        return this.#state;
-      case "resonate": {
-        const state = createStateFromWisp(this.#state.resonate());
-        this.#state = state;
+        return {
+          kind: "relic",
+          relic: this.#state.relic,
+        };
+      case "resonate":
+        return unreachable();
+    }
+  }
 
-        if (state.kind === "relic") {
-          return state;
+  public next(): RuntimeProcessRunnerNext<Relic> {
+    switch (this.#state.status) {
+      case "echo": {
+        const { wisp } = this.#state;
+        return {
+          accept: (echo) => {
+            this.#accept(wisp, echo as Echo<Sigil>);
+          },
+          kind: "echo",
+          sigil: this.#state.wisp.sigil,
+        };
+      }
+      case "relic":
+        return {
+          kind: "relic",
+          relic: this.#state.relic,
+        };
+      case "resonate": {
+        const wisp = this.#state.resonate();
+
+        if (wisp.bearing === "resting") {
+          this.#state = {
+            relic: wisp.relic,
+            status: "relic",
+          };
+
+          return {
+            kind: "relic",
+            relic: wisp.relic,
+          };
         }
+
+        this.#state = {
+          status: "echo",
+          wisp: wisp as StirringWisp<Sigil, Relic>,
+        };
 
         return {
           kind: "resonate",
-          sigil: state.wisp.sigil,
+          sigil: this.#state.wisp.sigil,
         };
       }
     }
@@ -34,24 +74,15 @@ export class Stepper<Relic> {
 
   public constructor(worker: Ritual<Relic>) {
     this.#state = {
-      kind: "resonate",
       resonate: worker,
+      status: "resonate",
     };
   }
 
-  #stateAs<Kind extends StepperState<Relic>["kind"]>(
-    kind: Kind,
-  ): Extract<StepperState<Relic>, { readonly kind: Kind }> {
-    // oxlint-disable-next-line no-void
-    void kind;
-    return this.#state as Extract<StepperState<Relic>, { readonly kind: Kind }>;
-  }
-
-  #accept(echo: Echo<Sigil>): void {
-    const state = this.#stateAs("echo");
+  #accept(wisp: StirringWisp<Sigil, Relic>, echo: Echo<Sigil>): void {
     this.#state = {
-      kind: "resonate",
-      resonate: () => state.wisp.resonate(echo),
+      resonate: () => wisp.resonate(echo),
+      status: "resonate",
     };
   }
 
@@ -59,7 +90,7 @@ export class Stepper<Relic> {
 }
 
 type StepperState<Relic> = TaggedUnion<
-  "kind",
+  "status",
   {
     echo: {
       readonly wisp: StirringWisp<Sigil, Relic>;
@@ -70,17 +101,3 @@ type StepperState<Relic> = TaggedUnion<
     };
   }
 >;
-
-function createStateFromWisp<Relic>(wisp: Wisp<Relic>) {
-  if (wisp.bearing === "resting") {
-    return {
-      kind: "relic",
-      relic: wisp.relic,
-    } as const;
-  }
-
-  return {
-    kind: "echo",
-    wisp: wisp as StirringWisp<Sigil, Relic>,
-  } as const;
-}
