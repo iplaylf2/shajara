@@ -3,7 +3,7 @@ import type {
   CleanupSpawner,
   ProvideRuntimeProcess,
   RuntimeProcessKeeper,
-} from "./runtime-process";
+} from "#/interpreter/runtime-process";
 import type {
   ContextKey,
   FutureKey,
@@ -16,7 +16,7 @@ import { P, match } from "ts-pattern";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
 import { either, io, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
-import { RuntimeFuture } from "./runtime-future";
+import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { TaggedUnion } from "type-fest";
