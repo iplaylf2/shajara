@@ -36,20 +36,19 @@ import type { Unsubscribe } from "#/interpreter-kit";
 import { canceledFailure } from "#/failures";
 
 export class Interpreter {
-  // oxlint-disable-next-line class-methods-use-this
   public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
     const process = this.#resolve(processRef);
     const runner = process.runner();
 
     switch (runner.status) {
       case "waiting":
-        return processWaitingStep(processRef);
+        return processWaitingStep();
       case "completed":
-        return processExitedStep(processRef, either.right(runner.stateAs(runner.status).result));
+        return processExitedStep(either.right(runner.stateAs(runner.status).result));
       case "canceled":
-        return processExitedStep(processRef, either.left(canceledFailure));
+        return processExitedStep(either.left(canceledFailure));
       case "failed":
-        return processExitedStep(processRef, either.left(runner.stateAs(runner.status).failure));
+        return processExitedStep(either.left(runner.stateAs(runner.status).failure));
       case "running": {
         const next = runner.stateAs(runner.status).next();
 
@@ -57,11 +56,11 @@ export class Interpreter {
           case "echo":
             return this.#interpret(process, next);
           case "resonate":
-            return processResonatedStep(process);
+            return processResonatedStep();
           case "relic": {
             const scope = this.#resolve(process.scopeRef);
             scope.complete(process.keeper(), next.relic);
-            return processExitedStep(processRef, either.right(next.relic));
+            return processExitedStep(either.right(next.relic));
           }
         }
       }
@@ -140,7 +139,7 @@ export class Interpreter {
       case "bind":
         bind(scope, sigil.key, sigil.value);
         accept(VOID);
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "branch": {
         const branchScope = branch(scope, this.#provideProcess(sigil.entry), sigil.descriptor);
         this.#touch(branchScope);
@@ -149,81 +148,81 @@ export class Interpreter {
           process: branchScope.entryProcess,
           scope: branchScope,
         });
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       }
       case "cede":
         accept(VOID);
-        return processCededStep(process);
+        return processCededStep();
       case "cancel":
         cancel(scope);
-        return processExitedStep(process, either.left(canceledFailure));
+        return processExitedStep(either.left(canceledFailure));
       case "defer":
         defer(runner, (spawnCleanup) => {
           spawnCleanup(this.#provideProcess(sigil.cleanup));
         });
 
         accept(VOID);
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "future": {
         const future = createFuture(scope);
         this.#touch(future);
 
         accept(future.handle());
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       }
       case "halt":
         halt(scope, process.keeper(), sigil.failure as Failure);
-        return processExitedStep(process, either.left(runner.stateAs("failed").failure));
+        return processExitedStep(either.left(runner.stateAs("failed").failure));
       case "lookup":
         accept(lookup(scope, sigil.key));
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "poll":
         accept(poll(this.#resolve(sigil.future)));
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "self":
         accept(self(runner));
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "settle":
         settle(this.#resolve(sigil.futureSettle), sigil.result);
         accept(VOID);
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "spawn": {
         const spawnedProcess = spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor);
 
         accept(spawnedProcess);
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       }
       case "unbind":
         unbind(scope, sigil.key);
         accept(VOID);
-        return processInterpretedStep(process);
+        return processInterpretedStep();
       case "wait": {
         const future = this.#resolve(sigil.future);
 
         const settled = tryWait(future);
         if (option.isSome(settled)) {
           accept(settled.value);
-          return processInterpretedStep(process);
+          return processInterpretedStep();
         }
 
         wait(scope, process.keeper(), future);
-        return processWaitingStep(process);
+        return processWaitingStep();
       }
       case "receive": {
         const received = tryReceive(scope, sigil.messageKey);
 
         if (option.isSome(received)) {
           accept(received.value);
-          return processInterpretedStep(process);
+          return processInterpretedStep();
         }
 
         receive(scope, process.keeper(), sigil.messageKey);
-        return processWaitingStep(process);
+        return processWaitingStep();
       }
       case "send":
         send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value);
         accept(VOID);
-        return processInterpretedStep(process);
+        return processInterpretedStep();
     }
   }
 

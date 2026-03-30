@@ -1,61 +1,42 @@
-import type { FutureResult, ProcessRef } from "#/contracts";
+import type { FutureResult } from "#/contracts";
+import type { TaggedUnion } from "type-fest";
 
-export type ProcessStep<Relic> =
-  | ProcessWaitingStep<Relic>
-  | ProcessCededStep<Relic>
-  | ProcessInterpretedStep<Relic>
-  | ProcessResonatedStep<Relic>
-  | ProcessExitedStep<Relic>;
+export type ProcessStep<Relic> = TaggedUnion<
+  "disposition",
+  {
+    waiting: {};
+    ceded: {};
+    interpreted: {};
+    resonated: {};
+    exited: { readonly result: FutureResult<Relic> };
+  }
+>;
 
-export interface ProcessWaitingStep<Relic> {
-  readonly disposition: "waiting";
-  readonly process: ProcessRef<Relic>;
+export type ProcessStepDisposition = ProcessStep<unknown>["disposition"];
+
+export type ProcessStepOf<Relic, Disposition extends ProcessStepDisposition> = Extract<
+  ProcessStep<Relic>,
+  { readonly disposition: Disposition }
+>;
+
+export function processWaitingStep<Relic>(): ProcessStepOf<Relic, "waiting"> {
+  return { disposition: "waiting" };
 }
 
-export interface ProcessCededStep<Relic> {
-  readonly disposition: "ceded";
-  readonly process: ProcessRef<Relic>;
+export function processCededStep<Relic>(): ProcessStepOf<Relic, "ceded"> {
+  return { disposition: "ceded" };
 }
 
-export interface ProcessInterpretedStep<Relic> {
-  readonly disposition: "interpreted";
-  readonly process: ProcessRef<Relic>;
+export function processInterpretedStep<Relic>(): ProcessStepOf<Relic, "interpreted"> {
+  return { disposition: "interpreted" };
 }
 
-export interface ProcessResonatedStep<Relic> {
-  readonly disposition: "resonated";
-  readonly process: ProcessRef<Relic>;
-}
-
-export interface ProcessExitedStep<Relic> {
-  readonly disposition: "exited";
-  readonly process: ProcessRef<Relic>;
-  readonly result: FutureResult<Relic>;
-}
-
-export function processWaitingStep<Relic>(process: ProcessRef<Relic>): ProcessWaitingStep<Relic> {
-  return { disposition: "waiting", process };
-}
-
-export function processCededStep<Relic>(process: ProcessRef<Relic>): ProcessCededStep<Relic> {
-  return { disposition: "ceded", process };
-}
-
-export function processInterpretedStep<Relic>(
-  process: ProcessRef<Relic>,
-): ProcessInterpretedStep<Relic> {
-  return { disposition: "interpreted", process };
-}
-
-export function processResonatedStep<Relic>(
-  process: ProcessRef<Relic>,
-): ProcessResonatedStep<Relic> {
-  return { disposition: "resonated", process };
+export function processResonatedStep<Relic>(): ProcessStepOf<Relic, "resonated"> {
+  return { disposition: "resonated" };
 }
 
 export function processExitedStep<Relic>(
-  process: ProcessRef<Relic>,
   result: FutureResult<Relic>,
-): ProcessExitedStep<Relic> {
-  return { disposition: "exited", process, result };
+): ProcessStepOf<Relic, "exited"> {
+  return { disposition: "exited", result };
 }
