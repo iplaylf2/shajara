@@ -32,6 +32,8 @@
 - 创建时固定、供运行时读取的对象声明信息使用 `*Descriptor`；不要以 `metadata` 或泛化的 `policy` 命名这类核心语义载体。
 - 在 `Interpreter` 中，`resolve` / `touch` 这类名字保留给协议级 callout：`resolve` 表达从 `ref/key` 进入 runtime object，`touch` 表达新 runtime object 已被解释环境承认；不要用只强调类型技巧的名字弱化这层语义。
 - 显式类型 shape 若已是稳定语义概念，应由对应语义宿主提供命名 alias；若只服务于某个实现边界，则 alias 应贴近该边界承载体。
+- 项目中的 discriminated union 在实现层统一优先使用 `type-fest` 的 `TaggedUnion` 定义，保留 `kind` / `status` 判别字段；不要继续手写 `| { ... }` 分支串联同一组变体。
+- 需要约束某个具体分支时，优先基于 `Extract<..., { kind: ... }>` 或 `Extract<..., { status: ... }>` 派生局部 alias，避免重复声明同一份 shape。
 - 不要恢复 `ScopeSpec` 或 `standard / supervisor / governor` 这类 scope taxonomy 作为 kernel 设计基线；若未来需要调度/回收治理扩展，应直接围绕 executor / governance 边界重新设计。
 
 ## 4. 实现落位

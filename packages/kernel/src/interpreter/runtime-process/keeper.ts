@@ -1,6 +1,7 @@
 import type { ProcessRef, ScopeRef } from "#/contracts";
 import type { Failure } from "#/failures";
 import type { ProcessDescriptor } from "#/sigils";
+import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   stateAs<Status extends RuntimeProcessKeeperStatus>(
@@ -20,30 +21,27 @@ export type RuntimeProcessKeeperStateOf<Status extends RuntimeProcessKeeperStatu
 
 export type CleanupTask = (spawn: CleanupSpawner) => void;
 
-export type RuntimeProcessKeeperState =
-  | { readonly status: "running" }
-  | {
-      readonly status: "waiting";
-    }
-  | {
-      readonly status: "completed";
-      readonly result: unknown;
-    }
-  | {
-      readonly status: "canceled";
-    }
-  | {
-      readonly status: "failed";
-      readonly failure: Failure;
-    };
+export type RuntimeProcessKeeperState = TaggedUnion<
+  "status",
+  {
+    canceled: {};
+    completed: { readonly result: unknown };
+    failed: { readonly failure: Failure };
+    running: {};
+    waiting: {};
+  }
+>;
 
-export type RuntimeProcessKeeperTransition =
-  | Exclude<
-      RuntimeProcessKeeperState,
-      { readonly status: "running" } | { readonly status: "waiting" }
-    >
-  | { readonly status: "running"; input: unknown }
-  | { readonly status: "waiting"; readonly dispose: () => void };
+export type RuntimeProcessKeeperTransition = TaggedUnion<
+  "status",
+  {
+    canceled: {};
+    completed: { readonly result: unknown };
+    failed: { readonly failure: Failure };
+    running: { input: unknown };
+    waiting: { dispose(): void };
+  }
+>;
 
 export type RuntimeProcessKeeperStatus = RuntimeProcessKeeperState["status"];
 

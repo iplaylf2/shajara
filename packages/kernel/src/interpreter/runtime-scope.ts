@@ -19,6 +19,7 @@ import type { Failure } from "#/failures";
 import { RuntimeFuture } from "./runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
+import type { TaggedUnion } from "type-fest";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils";
@@ -486,20 +487,18 @@ export type RuntimeScopeStatus = RuntimeScopeState["status"];
 
 export type RuntimeScopeObserver = () => void;
 
-type RuntimeScopeState =
-  | { readonly status: "running" }
-  | { readonly status: "closing" }
-  | { readonly status: "completed" }
-  | { readonly status: "canceling" }
-  | { readonly status: "canceled" }
-  | {
-      readonly status: "failing";
-      readonly draft: ScopeFailureDraft;
-    }
-  | {
-      readonly status: "failed";
-      readonly failure: Failure;
-    };
+type RuntimeScopeState = TaggedUnion<
+  "status",
+  {
+    canceled: {};
+    canceling: {};
+    closing: {};
+    completed: {};
+    failed: { readonly failure: Failure };
+    failing: { readonly draft: ScopeFailureDraft };
+    running: {};
+  }
+>;
 
 type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,

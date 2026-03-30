@@ -2,6 +2,7 @@ import type { Echo, ProcessRef, ScopeRef } from "#/contracts";
 import type { SelfHandle, Sigil } from "#/sigils";
 import type { CleanupTask } from "./keeper";
 import type { Failure } from "#/failures";
+import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {
   defer(cleanup: CleanupTask): void;
@@ -20,31 +21,30 @@ export type RuntimeProcessRunnerStateOf<Relic, Status extends RuntimeProcessRunn
   { readonly status: Status }
 >;
 
-export type RuntimeProcessRunnerState<Relic> =
-  | {
-      readonly status: "running";
-      next():
-        | RuntimeProcessNextEcho<Sigil>
-        | { kind: "resonate"; readonly sigil: Sigil }
-        | { kind: "relic"; readonly relic: Relic };
-    }
-  | {
-      readonly status: "waiting";
-    }
-  | {
-      readonly status: "completed";
-      readonly result: Relic;
-    }
-  | {
-      readonly status: "canceled";
-    }
-  | {
-      readonly status: "failed";
-      readonly failure: Failure;
-    };
+export type RuntimeProcessRunnerState<Relic> = TaggedUnion<
+  "status",
+  {
+    canceled: {};
+    completed: { readonly result: Relic };
+    failed: { readonly failure: Failure };
+    running: { next(): RuntimeProcessRunnerNext<Relic> };
+    waiting: {};
+  }
+>;
 
-export type RuntimeProcessNextEcho<SigilItem extends Sigil> = {
-  readonly kind: "echo";
-  readonly sigil: SigilItem;
-  accept: (echo: Echo<SigilItem>) => void;
-};
+export type RuntimeProcessRunnerNext<Relic, SigilItem extends Sigil = Sigil> = TaggedUnion<
+  "kind",
+  {
+    echo: {
+      accept(echo: Echo<SigilItem>): void;
+      readonly sigil: SigilItem;
+    };
+    relic: { readonly relic: Relic };
+    resonate: { readonly sigil: Sigil };
+  }
+>;
+
+export type RuntimeProcessNextEcho<SigilItem extends Sigil> = Extract<
+  RuntimeProcessRunnerNext<never, SigilItem>,
+  { readonly kind: "echo" }
+>;
