@@ -41,7 +41,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#zone.trackProcess(process);
     this.#triggerCleanup(process);
 
-    switch (this.status) {
+    switch (this.#state.status) {
       case "running":
         this.#tryClosing();
         break;
@@ -52,7 +52,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
         this.#tryCanceled();
         break;
       case "failing": {
-        const { draft } = this.#stateAs("failing");
+        const { draft } = this.#state;
         this.#tryFailed(draft);
         break;
       }
@@ -72,8 +72,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.#triggerCleanup(process);
     };
 
-    if (this.status === "failing") {
-      const { draft } = this.#stateAs("failing");
+    if (this.#state.status === "failing") {
+      const { draft } = this.#state;
       draft.collect(process.stateAs("failed").failure);
       this.#enterFailing(draft, triggerCleanup);
       return;
@@ -86,8 +86,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public cancel(): void {
-    if (this.status === "failing") {
-      const { draft } = this.#stateAs(this.status);
+    if (this.#state.status === "failing") {
+      const { draft } = this.#state;
 
       this.#enterFailing(draft, io.Do);
     } else {
@@ -253,8 +253,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.#cancelDerivedFutures();
 
       const { result } = this.#entryProcess.stateAs("completed");
-      this.#exitFuture.settle(either.right(result));
-      this.#transitionTo({ status: "completed" });
+      this.#transitionTo({ result, status: "completed" });
     }
   }
 
@@ -262,8 +261,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle()) {
       this.#cancelDerivedFutures();
 
-      const canceled = either.left(canceledFailure);
-      this.#exitFuture.settle(canceled);
       this.#transitionTo({ status: "canceled" });
     }
   }
@@ -273,8 +270,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.#cancelDerivedFutures();
 
       const failure = draft.build();
-      const failed = either.left(failure);
-      this.#exitFuture.settle(failed);
       this.#transitionTo({
         failure,
         status: "failed",
@@ -369,6 +364,26 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #transitionTo(state: RuntimeScopeState): void {
     this.#state = state;
+    switch (state.status) {
+      case "canceling":
+        break;
+      case "closing":
+        break;
+      case "failing":
+        break;
+      case "running":
+        break;
+      case "canceled":
+        this.#exitFuture.settle(either.left(canceledFailure));
+        break;
+      case "completed":
+        this.#exitFuture.settle(either.right(state.result));
+        break;
+      case "failed":
+        this.#exitFuture.settle(either.left(state.failure));
+        break;
+    }
+
     this.#notifyObservers();
 
     if (this.isClosed) {
@@ -493,7 +508,7 @@ type RuntimeScopeState = TaggedUnion<
     canceled: {};
     canceling: {};
     closing: {};
-    completed: {};
+    completed: { readonly result: unknown };
     failed: { readonly failure: Failure };
     failing: { readonly draft: ScopeFailureDraft };
     running: {};
