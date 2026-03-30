@@ -23,7 +23,10 @@ export type RuntimeProcessRunnerStateOf<Relic, Status extends RuntimeProcessRunn
 export type RuntimeProcessRunnerState<Relic> =
   | {
       readonly status: "running";
-      next(): RuntimeProcessRunningNext<Sigil> | null;
+      next():
+        | RuntimeProcessNextEcho<Sigil>
+        | { kind: "resonate"; readonly sigil: Sigil }
+        | { kind: "relic"; readonly relic: Relic };
     }
   | {
       readonly status: "waiting";
@@ -40,7 +43,8 @@ export type RuntimeProcessRunnerState<Relic> =
       readonly failure: Failure;
     };
 
-export type RuntimeProcessRunningNext<SigilItem extends Sigil> = readonly [
-  sigil: SigilItem,
-  accept: (echo: Echo<SigilItem>) => void,
-];
+export type RuntimeProcessNextEcho<SigilItem extends Sigil> = {
+  readonly kind: "echo";
+  readonly sigil: SigilItem;
+  accept: (echo: Echo<SigilItem>) => void;
+};

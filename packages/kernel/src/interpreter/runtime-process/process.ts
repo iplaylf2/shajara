@@ -4,16 +4,15 @@ import type {
   RuntimeProcessKeeper,
   RuntimeProcessKeeperStateOf,
   RuntimeProcessKeeperStatus,
+  RuntimeProcessKeeperTransition,
 } from "./keeper";
-import type { FutureKey, MessageKey, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
+import type { FutureKey, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle } from "#/sigils";
 import type {
   RuntimeProcessRunner,
   RuntimeProcessRunnerStateOf,
   RuntimeProcessRunnerStatus,
 } from "./runner";
-import type { Failure } from "#/failures";
-import { RuntimeFuture } from "#/interpreter/runtime-future";
 import type { RuntimeProcessHandle } from "./handle";
 import { notImplemented } from "#/internal/not-implemented";
 
@@ -74,8 +73,8 @@ export class RuntimeProcess<Relic>
     return notImplemented("RuntimeProcess.stateAs");
   }
 
-  public receive(_messageKey: MessageKey<unknown>): void {
-    notImplemented("RuntimeProcess.receive");
+  public transitionTo(_state: RuntimeProcessKeeperTransition): void {
+    notImplemented("RuntimeProcess.transitionTo");
   }
 
   public defer(cleanup: CleanupTask): void {
@@ -86,18 +85,6 @@ export class RuntimeProcess<Relic>
 
   public takeCleanups(): CleanupTask[] {
     return notImplemented("RuntimeProcess.takeCleanups");
-  }
-
-  public accept(_value: unknown): void {
-    notImplemented("RuntimeProcess.accept");
-  }
-
-  public halt(_failure: Failure): void {
-    notImplemented("RuntimeProcess.halt");
-  }
-
-  public cancel(): void {
-    notImplemented("RuntimeProcess.cancel");
   }
 
   // oxlint-disable-next-line no-undef

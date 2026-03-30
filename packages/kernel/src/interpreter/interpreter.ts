@@ -4,8 +4,8 @@ import type {
   ProvideRuntimeProcess,
   RuntimeProcessHandle,
   RuntimeProcessKeeper,
+  RuntimeProcessNextEcho,
   RuntimeProcessRunner,
-  RuntimeProcessRunningNext,
 } from "./runtime-process";
 import type {
   ContextKey,
@@ -53,10 +53,17 @@ export class Interpreter {
       case "running": {
         const next = runner.stateAs(runner.status).next();
 
-        if (next) {
-          return this.#interpret(process, next);
+        switch (next.kind) {
+          case "echo":
+            return this.#interpret(process, next);
+          case "resonate":
+            return processResonatedStep(process);
+          case "relic": {
+            const scope = this.#resolve(process.scopeRef);
+            scope.complete(process.keeper(), next.relic);
+            return processExitedStep(processRef, either.right(next.relic));
+          }
         }
-        return processResonatedStep(process);
       }
     }
   }
@@ -123,7 +130,7 @@ export class Interpreter {
   // oxlint-disable-next-line max-lines-per-function, max-statements
   #interpret<Relic>(
     process: RuntimeProcessHandle<Relic>,
-    next: RuntimeProcessRunningNext<Sigil>,
+    next: RuntimeProcessNextEcho<Sigil>,
   ): ProcessStep<Relic> {
     const scope = this.#resolve(process.scopeRef);
     const runner = process.runner();
@@ -165,7 +172,7 @@ export class Interpreter {
         return processInterpretedStep(process);
       }
       case "halt":
-        halt(runner, sigil.failure as Failure);
+        halt(scope, process.keeper(), sigil.failure as Failure);
         return processExitedStep(process, either.left(runner.stateAs("failed").failure));
       case "lookup":
         accept(lookup(scope, sigil.key));
@@ -199,7 +206,7 @@ export class Interpreter {
           return processInterpretedStep(process);
         }
 
-        wait(runner, future);
+        wait(scope, process.keeper(), future);
         return processWaitingStep(process);
       }
       case "receive": {
@@ -256,9 +263,8 @@ export class Interpreter {
 
 export type RunnableListener = (process: ProcessRef<unknown>) => void;
 
-function fixRunningNext(next: RuntimeProcessRunningNext<Sigil>): RunningNext<Sigil> {
-  const [sigil, accept] = next;
-  return [sigil.kind, sigil, accept] as RunningNext<Sigil>;
+function fixRunningNext(next: RuntimeProcessNextEcho<Sigil>): RunningNext<Sigil> {
+  return [next.sigil.kind, next.sigil, next.accept] as RunningNext<Sigil>;
 }
 
 function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value): void {
@@ -317,8 +323,12 @@ function tryWait<Result>(future: RuntimeFuture<Result>): option.Option<FutureRes
   return future.poll();
 }
 
-function wait(process: RuntimeProcessRunner<unknown>, future: RuntimeFuture<unknown>): void {
-  process.wait(future);
+function wait(
+  scope: RuntimeScope,
+  process: RuntimeProcessKeeper,
+  future: RuntimeFuture<unknown>,
+): void {
+  scope.wait(process, future);
 }
 
 function unbind(scope: RuntimeScope, key: ContextKey<unknown>): void {

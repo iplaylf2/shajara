@@ -1,14 +1,12 @@
-import type { MessageKey, ProcessRef, ScopeRef } from "#/contracts";
+import type { ProcessRef, ScopeRef } from "#/contracts";
 import type { Failure } from "#/failures";
 import type { ProcessDescriptor } from "#/sigils";
 
 export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
-  accept(value: unknown): void;
-  cancel(): void;
-  receive(messageKey: MessageKey<unknown>): void;
   stateAs<Status extends RuntimeProcessKeeperStatus>(
     status: Status,
   ): RuntimeProcessKeeperStateOf<Status>;
+  transitionTo(state: RuntimeProcessKeeperTransition): void;
   takeCleanups(): CleanupTask[];
   readonly descriptor: ProcessDescriptor;
   readonly isClosed: boolean;
@@ -38,6 +36,14 @@ export type RuntimeProcessKeeperState =
       readonly status: "failed";
       readonly failure: Failure;
     };
+
+export type RuntimeProcessKeeperTransition =
+  | Exclude<
+      RuntimeProcessKeeperState,
+      { readonly status: "running" } | { readonly status: "waiting" }
+    >
+  | { readonly status: "running"; input: unknown }
+  | { readonly status: "waiting"; readonly dispose: () => void };
 
 export type RuntimeProcessKeeperStatus = RuntimeProcessKeeperState["status"];
 

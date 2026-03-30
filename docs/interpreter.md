@@ -57,10 +57,19 @@
 
 由此形成一条明确边界：scope 协议关心“谁属于谁、何时收敛”，不关心“下一步怎样执行某个 wisp”。
 
+`RuntimeScope` 同时承担对所属 process 的状态迁移编排。process 不自行决定何时进入某个状态；scope 知道 process 该怎么变，变完后找到合适的时机驱动自身的收敛，或通过 zone 上报 process 的状态变化。具体来说：
+
+- **complete**：scope 将 process 迁移到 completed，从归属集合移除，触发 cleanup，然后根据自身当前 status 尝试推进收敛。
+- **halt**：scope 将 process 迁移到 failed，从归属集合移除，进入 failing 流程；cleanup 在 failing 进入后、tryFailed 之前触发。
+- **cancel**（级联）：scope 批量将所有 member process 迁移到 canceled 并触发 cleanup。
+- **wait / receive**：scope 将 process 迁移到 waiting，并携带 `dispose` 回调（用于在 process 被级联取消时丢弃不再需要的 future 订阅或 mailbox receiver 注册）。恢复时由 future settle 回调或 mailbox send 将 process 迁移回 running。
+
+每次 process 状态迁移后，scope 都通过 `zone.trackProcess(process)` 上报，zone 侧自行判断是否需要调度。
+
 关于 cleanup，这里只固定职责边界：
 
 - cleanup 注册归属于当前 process。
-- cleanup 触发时机由所属 scope 决定。
+- cleanup 触发时机由所属 scope 决定：scope 在 process 退出并从归属集合移除后立即触发。
 - cleanup process 的出生由 `Interpreter` 通过统一出生口接回解释环境。
 
 关于 future，这里只固定 owner 语义：
@@ -89,14 +98,14 @@
 这份双重面向应落实为一个公开代表和两套纯类型切面：
 
 - `RuntimeProcessHandle`：公开代表；外部通过它显式取得不同切面，而不是直接获得完整内部实现。
-- `RuntimeProcessKeeper`：scope-facing surface，例如观察、取消、message waiting / accept、cleanup 收束，以及通过 `stateAs(...)` 进行的 keeper state 读取。
-- `RuntimeProcessRunner`：interpreter-facing surface，例如 `wait`、`halt`、`selfHandle`，以及通过 runner state 推进执行所需的局部状态读取。
+- `RuntimeProcessKeeper`：scope-facing surface，包括 `transitionTo(...)` 状态迁移、`stateAs(...)` 终态读取、`takeCleanups()` cleanup 收束，以及 descriptor 与 status 等只读属性。
+- `RuntimeProcessRunner`：interpreter-facing surface，例如 `selfHandle`、`defer`，以及通过 runner state 推进执行所需的局部状态读取。
 
 它们不通过运行时 wrapper 或 guard 区分，而是由同一个内部 `RuntimeProcess` 实例直接实现，并经由公开代表显式暴露出不同切面。
 
 切面划分的标准应是“哪一方实际需要直接依赖这项能力”，而不是只按抽象语义归类。也就是说，切面不是为了把概念词汇分得好看，而是为了把模块依赖边界落实到类型表面。
 
-这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessKeeperState` 分支进行读取。当前 keeper 侧已冻结的状态载荷只有 completed result 与 failed failure。runner 侧只保留一类 `running` 状态：`next()` 负责推进一步，并返回 `null` 或一组配对的 `[wisp, accept]`，其中 `accept(echo)` 只对当前这枚 wisp 生效。
+这里固定一条设计约束：`RuntimeScope` 读取 process 终态时，通过 keeper 暴露的 `RuntimeProcessKeeperState` 分支进行读取。当前 keeper 侧已冻结的状态载荷只有 completed result 与 failed failure。keeper 的状态迁移由 scope 统一驱动，通过 `RuntimeProcessKeeperTransition` 表达；`running` 迁入必须携带 `input`，`waiting` 迁入必须携带 `dispose` 回调。runner 侧只保留一类 `running` 状态：`next()` 负责推进一步，返回一个 tagged union：`echo`（带 sigil 与 accept）、`resonate`（内部续行完成）或 `relic`（ritual 结束并产出 relic）。
 
 ## 3. 驱动模型
 
@@ -127,8 +136,9 @@
 
 `step(processRef)` 在 process 处于 `running` 时，统一通过 `next()` 取下一步：
 
-- 返回 `null`：表示 process 刚完成一次内部 `resonate`，本次步进结果为 `resonated`。
-- 返回 `[StirringWisp, accept]`：表示当前有待解释的一枚 sigil，以及只对这枚 sigil 有效的 echo 交付能力；`Interpreter` 解释它，并在得到 echo 后调用配对的 `accept(echo)`。
+- 返回 `{ kind: "echo", sigil, accept }`：当前有待解释的一枚 sigil，以及只对这枚 sigil 有效的 echo 交付能力；`Interpreter` 解释它，并在得到 echo 后调用配对的 `accept(echo)`。
+- 返回 `{ kind: "resonate" }`：process 刚完成一次内部 `resonate`，本次步进结果为 `resonated`。
+- 返回 `{ kind: "relic", relic }`：ritual 结束并产出 relic；`Interpreter` 调用 `scope.complete(keeper, relic)` 通知所属 scope，步进结果为 `exited`。
 
 对 `branch / future / spawn / defer` 这类会引入新对象或新后续责任的 sigil，`step(...)` 会显式写出 `resolve(...)` / `touch(...)` 这组协议 callout。通常 `touch(...)` 直接落在对象出生点；cleanup process 也应沿同一出生协议被登记。
 
