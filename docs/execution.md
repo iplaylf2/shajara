@@ -6,55 +6,61 @@
 
 ## 当前主题
 
-当前迭代的主题是完成 `RuntimeProcess` 的内部状态机实现，使 keeper / runner 两侧已冻结的状态视图真正由内部状态驱动。
+当前迭代的主题是把 `RuntimeProcess` 的内部运行协议落地到可执行状态，并保留下一轮继续修正 stepper / waiting-resume 语义所需的上下文。
 
 ---
 
 ## 当前现实
 
-当前可以作为这一轮实现前提的事实只有这些：
+当前仍然影响这一轮工作的事实只有这些：
 
-- `RuntimeScope` 已经完整承接 scope lifecycle、member ownership、mailbox、derived future、cleanup 触发时机，以及对所属 process 的状态迁移编排（complete / halt / cancel / wait / receive）。scope 知道 process 该怎么变，变完后驱动自身收敛或通过 zone 上报。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts`
-- `send/receive` 的结构归属已经收口在 `RuntimeScope`；`RuntimeMailbox` 只承接 message buffer、receiver queue 与匹配结果，不再直接依赖 `RuntimeProcess`。  
-  证据：`packages/kernel/src/interpreter/runtime-scope.ts`、`packages/kernel/src/interpreter/runtime-mailbox.ts`
-- `RuntimeProcess` 已经独占 `runtime-process/` 子目录，并分出 `Handle / Keeper / Runner` 三个公开面；但它的主要运行协议还没有落地。  
+- `RuntimeProcess` 已不再是 `notImplemented(...)` 空壳；`transitionTo(...)` 已直接承接 `running / waiting / completed / failed / canceled` 的状态迁移，keeper / runner 两侧都从同一份内部状态读取。  
   证据：`packages/kernel/src/interpreter/runtime-process/process.ts`
-- `RuntimeProcessKeeper` 已冻结 scope-facing 状态视图：`transitionTo(...)` 接受 `RuntimeProcessKeeperTransition`（`running` 必须携带 `input`，`waiting` 必须携带 `dispose` 回调，`completed` 携带 `result`，`failed` 携带 `failure`，`canceled` 无载荷）；`stateAs(...)` 供 scope 读取终态载荷。keeper 不再暴露 `accept`、`cancel`、`receive` 等独立方法——状态迁移统一由 scope 通过 `transitionTo(...)` 驱动。  
-  证据：`packages/kernel/src/interpreter/runtime-process/keeper.ts`
-- `RuntimeProcessRunner` 已冻结 interpreter-facing 状态视图：`running` 状态通过 `next()` 返回 tagged union（`echo` / `resonate` / `relic`）；`waiting` 与 closed 分支各自承接对应载荷。runner 不再暴露 `wait(...)` 或 `halt(...)`——这些能力已迁移到 scope 侧。  
-  证据：`packages/kernel/src/interpreter/runtime-process/runner.ts`、`packages/kernel/src/interpreter/interpreter.ts`
-- `Interpreter` 在 `step` 中对 `relic` 结果调用 `scope.complete(keeper, relic)`，对 `halt` sigil 调用 `scope.halt(keeper, failure)`，对 `wait` sigil 调用 `scope.wait(keeper, future)`——sigil 解释的副作用统一经由 scope 协调，而不是直接操作 process。  
-  证据：`packages/kernel/src/interpreter/interpreter.ts`
-- `ProvideRuntimeProcess` 这条统一出生口已经落在 `runtime-process` 侧，并被 `Interpreter` 用来把 process 创建与 `touch(...)` 登记收在同一处；相对地，`resolve(...)` 继续面向 `ref / key` 这类抽象 token。  
-  证据：`packages/kernel/src/interpreter/runtime-process/keeper.ts`、`packages/kernel/src/interpreter/interpreter.ts`、`docs/interpreter.md`
-- 当前设计基线已经明确采用软约束边界：`RuntimeScope` 可以直接依赖 `RuntimeProcess`，但只把它当作 lifecycle member，不把它当作 ritual execution runner。  
-  证据：`docs/interpreter.md`
+- `RuntimeProcess` 的 `running` / `waiting` 分支都显式保存 `Stepper`，因此等待态不会丢失 runner 侧的内部推进对象。  
+  证据：`packages/kernel/src/interpreter/runtime-process/process.ts`
+- `Stepper` 已从简单的 next 值缓存改成可旋转的内部状态机；它内部持有 `echo / resonate / relic` 三类源状态，并由 `next()` 把内部状态投影成公开 `RuntimeProcessRunnerNext`。  
+  证据：`packages/kernel/src/interpreter/runtime-process/stepper.ts`
+- `Stepper` 当前的 `resonate` 状态不再保存预计算后的后继，而是保存 `continue: () => Wisp<Relic>` thunk；初始 `worker` 调用与后续 `wisp.resonate(echo)` 都被延迟到命中 `resonate` 时执行。  
+  证据：`packages/kernel/src/interpreter/runtime-process/stepper.ts`
+- `RuntimeProcessRunnerNext` 的公开 `resonate` 载荷仍保留 `sigil`，并由 `Stepper` 在 thunk 执行后、结果进入新的 stirring 状态时投影出来。  
+  证据：`packages/kernel/src/interpreter/runtime-process/runner.ts`、`packages/kernel/src/interpreter/runtime-process/stepper.ts`
+- `RuntimeScope` 仍然是 lifecycle 协调者：它负责 `complete / halt / cancel / wait / receive` 的编排，而 `RuntimeProcess` 只消费这些迁移，不承担 scope 侧治理职责。  
+  证据：`packages/kernel/src/interpreter/runtime-scope/runtime-scope.ts`
 
 ---
 
 ## 当前偏差
 
-当前真正阻塞下一步实现的偏差只有一条：
+当前最值得在下一轮继续处理的偏差有两条：
 
-1. keeper / runner 两侧的状态视图已经冻结，但 `RuntimeProcess` 内部仍主要由 `notImplemented(...)` 占位承接，还没有真正按这些状态视图驱动内部状态迁移。`transitionTo(...)` 的实现、`next()` 的 tagged union 产出、以及 `stateAs(...)` 的内部状态读取均未落位。  
+1. `waiting -> running` 的恢复路径现在通过 `current.stepper.next().accept(input)` 重新取一次 `next()` 后推进；这很可能不符合预期，因为恢复语义更像是应当回到先前已准备好的 accept continuation，而不是再次执行一次新的 `next()`。这条问题已在代码里留下注释，当前先保留现状以便阶段性提交。  
    证据：`packages/kernel/src/interpreter/runtime-process/process.ts`
+2. `Stepper` 的内部状态机虽然已经具备明显的不对称性，但它的最终语义还没有被行为测试固定，尤其是 `resonate -> relic`、`resonate -> echo`、以及 waiting 恢复之后的连续步进路径。  
+   证据：`packages/kernel/src/interpreter/runtime-process/stepper.ts`、`packages/kernel/src/interpreter/runtime-process/process.ts`
+
+---
+
+## 相对设计基线的增量
+
+- 相对文档基线，`RuntimeProcess` 现在已经实际拥有 keeper / runner 双面共享的内部状态，而不再只是接口占位。
+- 相对早前实现尝试，`Stepper` 已从“直接缓存下一步结果”改成“保存内部源状态并在 `next()` 时投影公开结果”的结构；这使内部状态与公开 `RuntimeProcessRunnerNext` 明确不对称。
+- 相对设计预期，waiting 恢复语义仍未收敛；当前实现只是可运行快照，不应视为最终正确模型。
 
 ---
 
 ## 下一步
 
-1. 实现 `RuntimeProcess` 内部状态机，使 `transitionTo(...)` 真正驱动内部状态迁移，并使 `stateAs(...)` 从内部状态正确读取。
-2. 实现 runner 侧 `next()` 的 tagged union 产出（echo / resonate / relic），使 `Interpreter.step(...)` 的完整路径可执行。
-3. 完成后回到 runnable observation 与 executor 对接。
+1. 修正 `waiting -> running` 的恢复模型，避免恢复时通过新的 `next()` 重新生成 accept 路径。
+2. 为 `Stepper` 的 `echo / resonate / relic` 旋转路径补行为验证，先固定当前 intended semantics，再继续细修内部状态形状。
+3. 在 `RuntimeProcess` 语义稳定后，再回到 runnable observation / executor 对接。
 
 ---
 
 ## 验证
 
-建议验证命令：
+当前可复现的检查命令：
 
 ```sh
+yarn workspace @shajara/kernel run -T oxlint src/interpreter/runtime-process/process.ts src/interpreter/runtime-process/stepper.ts src/interpreter/runtime-process/runner.ts
 yarn workspace @shajara/kernel typecheck
-yarn workspace @shajara/kernel lint
 ```

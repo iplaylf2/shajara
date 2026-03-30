@@ -250,8 +250,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #tryCompleted(): void {
     if (this.#isIdle()) {
-      this.#cancelDerivedFutures();
-
       const { result } = this.#entryProcess.stateAs("completed");
       this.#transitionTo({ result, status: "completed" });
     }
@@ -259,16 +257,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #tryCanceled(): void {
     if (this.#isIdle()) {
-      this.#cancelDerivedFutures();
-
       this.#transitionTo({ status: "canceled" });
     }
   }
 
   #tryFailed(draft: ScopeFailureDraft): void {
     if (this.#isIdle()) {
-      this.#cancelDerivedFutures();
-
       const failure = draft.build();
       this.#transitionTo({
         failure,
@@ -290,10 +284,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#detachedProcesses;
   }
 
-  #enterFailing(draft: ScopeFailureDraft, beforeTry: () => void): void {
+  #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void): void {
     this.#transitionTo({ draft, status: "failing" });
-    this.#cancelManaged();
-    beforeTry();
+    failingDefer();
     this.#tryFailed(draft);
   }
 
@@ -309,7 +302,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #enterCanceling(): void {
     this.#transitionTo({ status: "canceling" });
-    this.#cancelManaged();
     this.#tryCanceled();
   }
 
@@ -342,7 +334,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #enterClosing(): void {
     this.#transitionTo({ status: "closing" });
-    this.#cancelDetached();
     this.#tryCompleted();
   }
 
@@ -365,29 +356,35 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #transitionTo(state: RuntimeScopeState): void {
     this.#state = state;
     switch (state.status) {
-      case "canceling":
-        break;
       case "closing":
+        this.#cancelDetached();
+        break;
+      case "canceling":
+        this.#cancelManaged();
         break;
       case "failing":
+        this.#cancelManaged();
         break;
       case "running":
-        break;
+        return unreachable();
       case "canceled":
         this.#exitFuture.settle(either.left(canceledFailure));
+        this.#releaseAfterClosed();
         break;
       case "completed":
         this.#exitFuture.settle(either.right(state.result));
+        this.#releaseAfterClosed();
         break;
       case "failed":
         this.#exitFuture.settle(either.left(state.failure));
+        this.#releaseAfterClosed();
         break;
     }
 
-    this.#notifyObservers();
+    const observers = [...this.#observers];
 
-    if (this.isClosed) {
-      this.#releaseAfterClosed();
+    for (const observer of observers) {
+      observer();
     }
   }
 
@@ -462,13 +459,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #notifyObservers(): void {
-    for (const observer of this.#observers) {
-      observer();
-    }
-  }
-
   #releaseAfterClosed(): void {
+    this.#cancelDerivedFutures();
     this.#mailbox.clear();
     this.#observers.clear();
   }
