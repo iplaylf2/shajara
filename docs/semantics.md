@@ -89,7 +89,7 @@ kernel 的最小驱动模型是 FIFO queue：可运行 Process 按入队顺序�
 
 mailbox 语义用于表达显式消息协议；future 与 `Scope` 承担结果收敛和结构化并发的主路径。
 
-每个 `(Scope, MessageKey)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited / InLimbo）而回收。
+每个 `(Scope, MessageKey)` 对隐式维护一条 **FIFO 消息队列（buffer）**，队列生命周期随 Scope 终结（Exited）而回收。
 
 - **Send(scopeRef, messageKey, value)**：向目标 Scope 的 `(scope, messageKey)` buffer 追加消息。若有 Process 阻塞在 `Receive(messageKey)`，最早的等待者出队并恢复，消息由该接收者独占。`[Non-Blocking]`
 - **Receive(messageKey)**：在调用方 Scope 上接收匹配 `messageKey` 的消息。buffer 非空时出队最早的消息并立即返回；buffer 为空时阻塞直至下次匹配 Send。返回 `value`。`[Blocking]`
@@ -125,13 +125,9 @@ owner Scope 在确认进入最终收敛时，会把仍为 pending 的 future 统
 
 `ScopeRef.exitFuture` 与 `ProcessRef.exitFuture` 复用同一 future 观察协议；成功值分别对应 Scope / Process 自身的结果值。
 
-### 2.8 结构性修剪承接位
+### 2.8 强制失败
 
-若系统支持结构性修剪，则需要维护一个全局承接位来接住被剪下的 Scope 子树。
-
-- 常态下不发生 Scope 父子迁移。
-- 仅当系统决定执行 `Prune` 时，目标 Scope 从原树断开并挂接到该承接位下。
-- 迁移保持被迁移子树的原子结构（仅变更根节点父指针），被迁移 Scope 状态变为 `InLimbo`。
+当 Scope 无法自然收敛时，运行时支持强制失败：以指定 `failure` 将目标 Scope 直接迁移为 Failed 终态，其中所有阻塞 Process 立即中止，相关 pending future 以 canceled 收敛。
 
 ---
 
@@ -184,7 +180,6 @@ Process 与 Scope 均有三种互斥终态：
 | `Running` | 正常运行。                             |
 | `Closing` | 正在关闭；终态在进入时确定并不再改变。 |
 | `Exited`  | 所有 Process 已退出。                  |
-| `InLimbo` | 被修剪到 Limbo 下。                    |
 
 ### 4.3 进入 Closing
 
@@ -221,12 +216,15 @@ kernel 的结构化并发以 `failureMode = "propagate"` 为默认形态；`cont
 
 `Wait(scope.exitFuture)` / `Wait(process.exitFuture)` 只提供结果观察。
 
-### 4.6 结构性收敛：Prune
+### 4.6 强制失败
 
-当 Scope 处于 Closing 且终止无法推进到 Exited 时，系统可以追加结构性修剪。仲裁决定：
+当 Scope 处于 Closing 且终止无法自然推进到 Exited 时，运行时支持以给定 `failure` 强制失败：
 
-- `none`：继续等待 cleanup 自行收敛（Wait）。
-- `some(failure)`：执行结构性修剪（Prune）：将待清理后代 Scope 子树断开并挂接到结构性修剪承接位，并以该 `failure` 使治理边界进入 Failed。
+- 目标 Scope 直接迁移为 Failed 终态，并附带 reaper 提供的 `failure`。
+- 所有阻塞中的 Process 立即以 canceled 中止。
+- 该 Scope 内仍为 pending 的 future 以 canceled 收敛。
+
+强制失败是终局手段，在结构性回收策略判定无法继续等待时触发。reaper 通过提供具体 `failure` 保留了对终止原因的表达能力。
 
 ---
 
@@ -296,7 +294,7 @@ EventQueue 入队由内核调度策略负责。可运行 Process 由创建/恢�
 - 返回 result：`Either<Failure, T>`
 - 多个观察者可同时等待；future 收敛后都恢复到同一个结果。
 
-通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察时，`Wait` 的返回值仍是 `Either<Failure, T>`。进入 `InLimbo` 的目标最终也通过同一协议收敛。
+通过 `ScopeRef.exitFuture` / `ProcessRef.exitFuture` 观察时，`Wait` 的返回值仍是 `Either<Failure, T>`。
 
 #### Poll(futureKey) → Option\<result\> `[Non-Blocking]`
 

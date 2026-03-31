@@ -65,9 +65,11 @@
 - `Interpreter` 持有并推进封闭解释环境。
 - `executor` 组织入口视图、环境治理与外部注入能力。
 
+`executor` 的实现归属于 host 包；host 包通过 `createExecutor(hostScheduler)` 创建 executor 实例，`hostScheduler` 是宿主侧的调度桥接，负责告知 executor 何时获得执行权（具体形状暂不固定）。
+
 ## 4. 执行环境对象
 
-`executor` 至少需要组织出三类对象或视图：执行入口视图、环境治理视图、结构性修剪承接位。
+`executor` 至少需要组织出两类对象或视图：执行入口视图、环境治理视图。
 
 ### 4.1 执行入口视图
 
@@ -91,18 +93,12 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 这些治理策略需要落实为可执行的 handler 或流程，并接入运行循环。
 
-这里保留一个明确的设计方向：执行环境应允许自定义 **scheduler** 与 **reaper** 这两类治理能力。
+这里保留一个明确的设计方向：执行环境应允许自定义 **process scheduler** 与 **reaper** 这两类治理能力。
 
-- **scheduler**：决定 runnable process 的选择与推进策略。
-- **reaper**：决定 closing 无法自然收敛时，是否继续等待、失败收敛或进入结构性修剪。
+- **process scheduler**：executor 内部的调度策略，决定在每次获得执行权时应选择哪个 runnable process 推进，以及推进多少步。这是 executor 自治的内部机制，与宿主无关。
+- **reaper**：在每次 tick 时检查处于 Closing 且长期无法收敛的 Scope。仲裁结果为继续等待（`none`）或强制失败（调用 `Interpreter.forceFailure(scopeRef, failure)`，由 reaper 提供具体 `failure`）。
 
-这类能力属于 `executor` 的环境治理问题，与 `ScopeDescriptor` 的稳定语义字段分层承接；其承载形态当前待定。若未来引入 governor / governance 设计，也应把它理解为治理角色或治理对象，服务于环境治理的组织。
-
-### 4.3 结构性修剪承接位
-
-结构性修剪承接位是全局唯一的位置，用来接住无法在原树上自然收敛、且仍需保留的 Scope 子树。
-
-当环境治理策略给出结构性修剪仲裁时，目标 scope 子树会从原树断开并挂接到这一承接位下。`executor` 负责维护这一全局单例位置，并支持将待清理子树迁入其中。
+这类能力属于 `executor` 的环境治理问题，与 `ScopeDescriptor` 的稳定语义字段分层承接；其承载形态当前待定。
 
 ## 5. 运行循环中的治理职责
 
@@ -112,12 +108,10 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ### 5.2 结构性回收
 
-当 scope 已进入 `Closing`，且终止推进后仍无法进入 `Exited`，`executor` 可以追加一类结构性回收策略。
-
-其仲裁结果决定两种路径：
+当 scope 已进入 `Closing`，且终止推进后仍无法进入 `Exited`，`executor` 在每次 tick 时通过 reaper 执行仲裁：
 
 - `none`：继续等待 cleanup 自行收敛。
-- `some(failure)`：执行结构性修剪，把子树挂到承接位，并以该 failure 使治理边界进入失败。
+- `forceFailure(failure)`：调用 `Interpreter.forceFailure(scopeRef, failure)`，将目标 Scope 以指定 `failure` 强制迁移为 Failed。
 
 ## 6. 与 `Interpreter` 的协作
 
@@ -131,13 +125,13 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ## 7. 实现导向
 
-`executor` 的实现应优先围绕以下主线展开：
+`executor` 的实现归属于 host 包，通过 `createExecutor(scheduler)` 创建。实现应优先围绕以下主线展开：
 
 - 维护一个长期存在的执行环境。
 - 提供统一的 `rootScope` 作为 execution root。
 - 为每次 `launch` 组织新的 execution scope，并返回稳定的收敛句柄。
 - 把 future settlement 与 termination 这些外部能力接入环境内部。
 - 在需要时接入相应的调度、回收或治理策略。
-- 维护全局唯一的结构性修剪承接位，用于结构性修剪。
+- 通过每次 tick 触发 reaper，对长期无法收敛的 Scope 执行 `forceFailure`。
 
 ---

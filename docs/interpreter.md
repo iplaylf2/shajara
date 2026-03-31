@@ -184,6 +184,14 @@ cleanup process 的激活复用同一条出生口。`RuntimeScope` 决定 cleanu
 
 这些接口读取解释环境中的既有状态，或登记收敛通知。
 
+### 4.4 `forceFailure`
+
+`Interpreter` 提供 `forceFailure(scopeRef, failure)` 作为终局强制能力。
+
+调用后，目标 Scope 以给定 `failure` 直接迁移为 Failed 终态：所有阻塞中的 Process 立即以 canceled 中止，该 Scope 内仍为 pending 的 future 以 canceled 收敛。
+
+此接口不应被业务流程直接使用，只应由外部调度方在结构性回收判定后调用。通过携带 `failure`，调用方保留了对终止原因的表达能力。
+
 ## 5. Closing 语义
 
 scope 的级联取消、failure 传播与终态收敛，统一由 kernel 的 closing 协议定义，`Interpreter` 负责触发并推进它。
