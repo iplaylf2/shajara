@@ -101,6 +101,14 @@ export class Interpreter {
     this.#resolve(scope).forceFailure(failure);
   }
 
+  public isScopeClosed(scope: ScopeRef<unknown>): boolean {
+    return this.#resolve(scope).isClosed;
+  }
+
+  public isProcessClosed(process: ProcessRef<unknown>): boolean {
+    return this.#resolve(process).runner().isClosed;
+  }
+
   public constructor(entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
       this.#provideProcess(entry),
