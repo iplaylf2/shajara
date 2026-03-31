@@ -65,7 +65,17 @@
 - `Interpreter` 持有并推进封闭解释环境。
 - `executor` 组织入口视图、环境治理与外部注入能力。
 
-`executor` 的实现归属于 host 包；host 包通过 `createExecutor(hostScheduler)` 创建 executor 实例，`hostScheduler` 是宿主侧的调度桥接，负责告知 executor 何时获得执行权（具体形状暂不固定）。
+`executor` 通过 `createExecutor(scheduler)` 创建，内部构造并持有 `Interpreter`。`Scheduler` 是宿主侧的调度桥接，形状固定为：
+
+```ts
+interface Scheduler {
+  nextTick(work: () => void): Disposable;
+  isExhausted(): boolean;
+}
+```
+
+- `nextTick`：注册一次执行机会，scheduler 在合适时机调用 `work`；返回 `Disposable` 可取消尚未交付的请求。
+- `isExhausted`：executor 在步进循环中主动询问当前 tick 预算是否耗尽；若耗尽则让出，剩余工作通过 `nextTick` 注册到下个 tick。
 
 ## 4. 执行环境对象
 
@@ -125,7 +135,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ## 7. 实现导向
 
-`executor` 的实现归属于 host 包，通过 `createExecutor(scheduler)` 创建。实现应优先围绕以下主线展开：
+`executor` 通过 `createExecutor(scheduler)` 创建，内部构造并持有 `Interpreter`（两者 1:1）。实现应优先围绕以下主线展开：
 
 - 维护一个长期存在的执行环境。
 - 提供统一的 `rootScope` 作为 execution root。

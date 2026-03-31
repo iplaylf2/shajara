@@ -1,6 +1,5 @@
 import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { Failure } from "#/failures";
-import type { Interpreter } from "#/interpreter";
 import type { TaggedUnion } from "type-fest";
 import { notImplemented } from "#/internal/not-implemented";
 
@@ -34,6 +33,15 @@ export interface Executor {
   cancel(scope: ExecutionScopeRef): void;
 }
 
-export function createExecutor(interpreter: Interpreter): Executor {
-  return notImplemented(`creating an executor from interpreter ${interpreter.constructor.name}`);
+export interface Disposable {
+  dispose(): void;
+}
+
+export interface Scheduler {
+  nextTick(work: () => void): Disposable;
+  isExhausted(): boolean;
+}
+
+export function createExecutor(scheduler: Scheduler): Executor {
+  return notImplemented(`creating an executor from scheduler ${String(scheduler)}`);
 }

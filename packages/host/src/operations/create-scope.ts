@@ -1,6 +1,6 @@
 import type { LaunchState, RiteRoutine } from "#/contracts";
 import type { RunOptions, StatefulPromise } from "#/operations-kit";
-import { ensureExecutor } from "@shajara/kernel";
+import { ensureExecutor } from "#/ensure-executor";
 import { launch } from "#/operations-kit";
 import { park } from "#/primitives";
 

@@ -38,28 +38,28 @@
 
 ## 4. 实现落位
 
-| 路径                                  | 职责                                                         |
-| ------------------------------------- | ------------------------------------------------------------ |
-| `kernel/src/contracts/`               | 核心类型契约                                                 |
-| `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                           |
-| `kernel/src/contracts/scope.ts`       | `ScopeRef` 单源                                              |
-| `kernel/src/contracts/process.ts`     | `ProcessRef` 单源                                            |
-| `kernel/src/sigils/branch.ts`         | `branch` 与 `ScopeDescriptor/FailureMode` 单源               |
-| `kernel/src/sigils/spawn.ts`          | `spawn` 与 `ProcessDescriptor/CompletionMode` 单源           |
-| `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                            |
-| `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey/FutureHandle` 单源                |
-| `kernel/src/sigils/`                  | sigil 声明 + index                                           |
-| `kernel/src/sigils.ts`                | sigil 公共入口                                               |
-| `kernel/src/primitives/`              | 原语 + index                                                 |
-| `kernel/src/interpreter/`             | `Interpreter` 单源；解释器局部 alias 贴近对应 runtime 承载体 |
-| `kernel/src/interpreter.ts`           | `Interpreter` 公共入口                                       |
-| `kernel/src/executor/`                | 执行入口契约与 executor 衍生句柄（如 `ExecutionScopeRef`）   |
-| `host/src/contracts/`                 | host 公共契约（`RiteCoroutine/RiteRoutine`）                 |
-| `host/src/primitives/`                | 原语 + index                                                 |
-| `host/src/operations/`                | 宿主操作 + index                                             |
-| `host/src/operations-kit/`            | 操作共享支撑                                                 |
-| `host/src/boundary/`                  | host↔kernel 边界共享支撑                                     |
-| `host/src/errors/`                    | 错误类型                                                     |
+| 路径                                  | 职责                                                                                   |
+| ------------------------------------- | -------------------------------------------------------------------------------------- |
+| `kernel/src/contracts/`               | 核心类型契约                                                                           |
+| `kernel/src/contracts/wisp.ts`        | `Wisp/Ritual` 单源                                                                     |
+| `kernel/src/contracts/scope.ts`       | `ScopeRef` 单源                                                                        |
+| `kernel/src/contracts/process.ts`     | `ProcessRef` 单源                                                                      |
+| `kernel/src/sigils/branch.ts`         | `branch` 与 `ScopeDescriptor/FailureMode` 单源                                         |
+| `kernel/src/sigils/spawn.ts`          | `spawn` 与 `ProcessDescriptor/CompletionMode` 单源                                     |
+| `kernel/src/contracts/message-key.ts` | `MessageKey` 单源                                                                      |
+| `kernel/src/contracts/future-key.ts`  | `FutureKey/FutureSettleKey/FutureHandle` 单源                                          |
+| `kernel/src/sigils/`                  | sigil 声明 + index                                                                     |
+| `kernel/src/sigils.ts`                | sigil 公共入口                                                                         |
+| `kernel/src/primitives/`              | 原语 + index                                                                           |
+| `kernel/src/interpreter/`             | `Interpreter` 单源；解释器局部 alias 贴近对应 runtime 承载体                           |
+| `kernel/src/interpreter.ts`           | `Interpreter` 公共入口                                                                 |
+| `kernel/src/executor/`                | 执行入口契约、`Scheduler` 接口与 executor 衍生句柄（如 `ExecutionScopeRef`）；不含实现 |
+| `host/src/contracts/`                 | host 公共契约（`RiteCoroutine/RiteRoutine`）                                           |
+| `host/src/primitives/`                | 原语 + index                                                                           |
+| `host/src/operations/`                | 宿主操作 + index                                                                       |
+| `host/src/operations-kit/`            | 操作共享支撑                                                                           |
+| `host/src/boundary/`                  | host↔kernel 边界共享支撑                                                               |
+| `host/src/errors/`                    | 错误类型                                                                               |
 
 - kernel 对外导出采用根入口分组导出；不要再保留 `@shajara/kernel/scopes` 这类为历史 taxonomy 服务的子路径。
 

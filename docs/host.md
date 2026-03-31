@@ -16,7 +16,7 @@
 
 - **kernel** 提供执行语义。
 - **host** 负责将用户侧 generator 表达映射为可执行 Wisp，并在宿主边界承载 `run`、`createScope`、`action`、`sleep`、`until` 等 API。
-- **host** 同时承担 executor 的具体实现，通过 `createExecutor(hostScheduler)` 创建并持有 executor 实例。`hostScheduler` 是宿主侧的调度桥接，负责告知 executor 何时获得执行权（tick），每次 tick 也是 reaper 的触发时机；executor 内部的 process scheduler（选择哪个 runnable process 推进）是与之独立的内部机制（具体形状暂不固定）。
+- **host** 同时承担 executor 的具体实现（`Scheduler` 与 executor 语义参见 [executor.md](executor.md)），通过 `createExecutor(scheduler)` 创建并持有 executor 实例。
 
 host 通过执行入口把降解后的 Ritual 提交给 executor。
 

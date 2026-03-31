@@ -1,6 +1,6 @@
 import { future, wait } from "#/primitives";
 import type { RiteCoroutine } from "#/contracts";
-import { ensureExecutor } from "@shajara/kernel";
+import { ensureExecutor } from "#/ensure-executor";
 import { right } from "@shajara/kernel/utils";
 
 export function* sleep(milliseconds: number): RiteCoroutine<void> {
