@@ -32,6 +32,7 @@ import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
+import type { ScopeZone } from "./scope-zone";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { canceledFailure } from "#/failures";
 
@@ -67,11 +68,11 @@ export class Interpreter {
     }
   }
 
-  public observeRunnable(listener: RunnableListener): Unsubscribe {
-    this.#runnableListeners.add(listener);
+  public observeRootZone(listener: ScopeZoneListener): Unsubscribe {
+    this.#rootZoneListeners.add(listener);
 
     return () => {
-      this.#runnableListeners.delete(listener);
+      this.#rootZoneListeners.delete(listener);
     };
   }
 
@@ -96,7 +97,7 @@ export class Interpreter {
     this.#resolve(future).wait(onSettled);
   }
 
-  public constructor(protected readonly entry: Ritual<void>) {
+  public constructor(entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
       this.#provideProcess(entry),
       { failureMode: "contain" },
@@ -126,6 +127,11 @@ export class Interpreter {
     return this.#rootScope.isClosed;
   }
 
+  // oxlint-disable-next-line class-methods-use-this
+  protected branchZone(parentZone: ScopeZone, _descriptor: ScopeDescriptor): ScopeZone {
+    return parentZone;
+  }
+
   // oxlint-disable-next-line max-lines-per-function, max-statements
   #interpret<Relic>(
     process: RuntimeProcessHandle<Relic>,
@@ -141,7 +147,13 @@ export class Interpreter {
         accept(VOID);
         return processInterpretedStep();
       case "branch": {
-        const branchScope = branch(scope, this.#provideProcess(sigil.entry), sigil.descriptor);
+        const childZone = this.branchZone(scope.zone, sigil.descriptor);
+        const branchScope = branch(
+          scope,
+          this.#provideProcess(sigil.entry),
+          sigil.descriptor,
+          childZone,
+        );
         this.#touch(branchScope);
 
         accept({
@@ -237,7 +249,7 @@ export class Interpreter {
   }
 
   #onRunnable(process: ProcessRef<unknown>) {
-    for (const listener of this.#runnableListeners) {
+    for (const listener of this.#rootZoneListeners) {
       listener(process);
     }
   }
@@ -257,10 +269,10 @@ export class Interpreter {
   }
 
   readonly #rootScope: RuntimeScope;
-  readonly #runnableListeners = new Set<RunnableListener>();
+  readonly #rootZoneListeners = new Set<ScopeZoneListener>();
 }
 
-export type RunnableListener = (process: ProcessRef<unknown>) => void;
+export type ScopeZoneListener = (process: ProcessRef<unknown>) => void;
 
 function fixRunningNext(next: RuntimeProcessNextEcho<Sigil>): RunningNext<Sigil> {
   return [next.sigil.kind, next.sigil, next.accept] as RunningNext<Sigil>;
@@ -274,8 +286,9 @@ function branch(
   scope: RuntimeScope,
   provideProcess: ProvideRuntimeProcess,
   descriptor: ScopeDescriptor,
+  zone: ScopeZone,
 ): RuntimeScope {
-  return scope.branch(provideProcess, descriptor);
+  return scope.branch(provideProcess, descriptor, zone);
 }
 
 function defer(process: RuntimeProcessRunner<unknown>, cleanup: CleanupTask): void {

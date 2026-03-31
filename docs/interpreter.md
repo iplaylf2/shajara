@@ -152,9 +152,9 @@ cleanup process 的激活复用同一条出生口。`RuntimeScope` 决定 cleanu
 
 ## 4. 接口
 
-### 4.1 `observeRunnable`
+### 4.1 `observeRootZone`
 
-`Interpreter` 保留 `observeRunnable(listener)`，它建立在 root scope 所持有的 zone 之上。
+`Interpreter` 保留 `observeRootZone(listener)`，它建立在 root scope 所持有的 zone 之上。
 
 它覆盖 runnable process 的观察：
 
@@ -163,7 +163,18 @@ cleanup process 的激活复用同一条出生口。`RuntimeScope` 决定 cleanu
 
 这条接口是 `Interpreter` 暴露给外部调度方的最小 runnable 观察面。
 
-### 4.2 只读接口
+### 4.2 `branchZone`
+
+`Interpreter` 提供 `protected branchZone(parentZone, descriptor)` 让子类参与 branch 行为中的 zone 决策。
+
+当 branch sigil 到达时，`Interpreter` 从 parent scope 读出当前 zone，调用 `branchZone(parentZone, descriptor)`，将返回值作为 child scope 的 zone 传给 `RuntimeScope.branch`。
+
+- 返回 `parentZone`：child 继承祖先的 zone。
+- 返回新构造的 `ScopeZone` 对象：child 脱离祖先 zone，形成新的 zone。
+
+默认实现直接返回 `parentZone`，所有 scope 共用 root zone，与未 override 时的行为一致。
+
+### 4.3 只读接口
 
 `Interpreter` 提供一组只读观察接口：
 

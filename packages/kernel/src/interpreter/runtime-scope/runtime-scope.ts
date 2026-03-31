@@ -19,6 +19,7 @@ import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
+import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
 import type { Unsubscribe } from "#/interpreter-kit";
 import { canceledFailure } from "#/failures";
@@ -28,7 +29,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public static create(
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
-    zone: RuntimeZone,
+    zone: ScopeZone,
   ): RuntimeScope {
     const scope = new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
     zone.trackProcess(scope.entryProcess);
@@ -98,7 +99,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public branch(
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
-    zone: RuntimeZone = this.#zone,
+    zone: ScopeZone,
   ): RuntimeScope {
     const child = new RuntimeScope(entry, descriptor, this, zone);
 
@@ -209,16 +210,20 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  public get status(): RuntimeScopeStatus {
-    return this.#state.status;
+  public get entryProcess(): ProcessRef<unknown> {
+    return this.#entryProcess;
+  }
+
+  public get zone(): ScopeZone {
+    return this.#zone;
   }
 
   public get exitFuture(): FutureKey<unknown> {
     return this.#exitFuture;
   }
 
-  public get entryProcess(): ProcessRef<unknown> {
-    return this.#entryProcess;
+  public get status(): RuntimeScopeStatus {
+    return this.#state.status;
   }
 
   // oxlint-disable-next-line no-undef
@@ -228,7 +233,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     parent: RuntimeScope,
-    zone: RuntimeZone,
+    zone: ScopeZone,
   ) {
     this.#exitFuture = new RuntimeFuture<unknown>();
     this.#zone = zone;
@@ -471,7 +476,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #entryProcess: RuntimeProcessKeeper;
   readonly #parent: RuntimeScope;
   readonly #descriptor: ScopeDescriptor;
-  readonly #zone: RuntimeZone;
+  readonly #zone: ScopeZone;
 
   #state: RuntimeScopeState = { status: "running" };
   readonly #children = new Set<RuntimeScope>();
@@ -484,10 +489,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
-}
-
-export interface RuntimeZone {
-  trackProcess(process: ProcessRef<unknown>): void;
 }
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];

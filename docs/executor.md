@@ -125,7 +125,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 - 公开能力：`step`、`spawn`、`lookup`、`poll`、`wait`
 
-此外，`executor` 可以使用 `Interpreter.observeRunnable(listener)` 把自己的调度循环接到 runnable 状态变化订阅接口上；该接口允许多个订阅同时生效。
+此外，`executor` 可以使用 `Interpreter.observeRootZone(listener)` 把自己的调度循环接到 runnable 状态变化订阅接口上；该接口允许多个订阅同时生效。
 
 这里的治理扩展建立在既有对象语义之上：`executor` 读取 `Scope` / `Process` 的 descriptor，决定如何组织调度、关闭和附加治理；descriptor 作为对象自带的只读声明信息参与这一协作。
 
