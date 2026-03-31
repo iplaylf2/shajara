@@ -184,12 +184,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#bindings.delete(contextKey);
   }
 
-  public observe(observer: RuntimeScopeObserver): Unsubscribe {
-    this.#observers.add(observer);
+  public forceFailure(failure: Failure): void {
+    if (this.#state.status === "failing") {
+      const { draft } = this.#state;
+      draft.collect(failure);
+      this.#enterFailing(draft, io.Do);
+    } else {
+      this.#enterFailing(
+        new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure),
+        io.Do,
+      );
+    }
 
-    return () => {
-      this.#observers.delete(observer);
-    };
+    // Double enter failing
+    if (this.#state.status === "failing") {
+      const { draft } = this.#state;
+      this.#enterFailing(draft, io.Do);
+    }
   }
 
   public get descriptor(): ScopeDescriptor {
@@ -248,26 +259,26 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #tryClosing(): void {
-    if (this.#isQuiet()) {
+    if (this.#isQuiet) {
       this.#enterClosing();
     }
   }
 
   #tryCompleted(): void {
-    if (this.#isIdle()) {
+    if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
       this.#transitionTo({ result, status: "completed" });
     }
   }
 
   #tryCanceled(): void {
-    if (this.#isIdle()) {
+    if (this.#isIdle) {
       this.#transitionTo({ status: "canceled" });
     }
   }
 
   #tryFailed(draft: ScopeFailureDraft): void {
-    if (this.#isIdle()) {
+    if (this.#isIdle) {
       const failure = draft.build();
       this.#transitionTo({
         failure,
@@ -313,7 +324,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #registerChildScope(scope: RuntimeScope) {
     this.#children.add(scope);
 
-    scope.observe(() => {
+    scope.#observe(() => {
       if (scope.isClosed) {
         this.#children.delete(scope);
       }
@@ -342,20 +353,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#tryCompleted();
   }
 
-  #isQuiet(): boolean {
-    return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
-  }
+  #observe(observer: RuntimeScopeObserver): Unsubscribe {
+    this.#observers.add(observer);
 
-  #isIdle(): boolean {
-    return this.#isQuiet() && readonlySet.isEmpty(this.#detachedProcesses);
-  }
-
-  #cancelDerivedFutures(): void {
-    const canceled = either.left(canceledFailure);
-
-    for (const future of this.#derivedFutures) {
-      future.settle(canceled);
-    }
+    return () => {
+      this.#observers.delete(observer);
+    };
   }
 
   #transitionTo(state: RuntimeScopeState): void {
@@ -465,9 +468,21 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #releaseAfterClosed(): void {
-    this.#cancelDerivedFutures();
+    const canceled = either.left(canceledFailure);
+    for (const future of this.#derivedFutures) {
+      future.settle(canceled);
+    }
+
     this.#mailbox.clear();
     this.#observers.clear();
+  }
+
+  get #isQuiet(): boolean {
+    return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
+  }
+
+  get #isIdle(): boolean {
+    return this.#isQuiet && readonlySet.isEmpty(this.#detachedProcesses);
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;

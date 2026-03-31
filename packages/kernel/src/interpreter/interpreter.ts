@@ -97,6 +97,10 @@ export class Interpreter {
     this.#resolve(future).wait(onSettled);
   }
 
+  public forceFailure(scope: ScopeRef<unknown>, failure: Failure): void {
+    this.#resolve(scope).forceFailure(failure);
+  }
+
   public constructor(entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
       this.#provideProcess(entry),
