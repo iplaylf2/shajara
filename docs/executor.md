@@ -107,10 +107,15 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 这些治理策略需要落实为可执行的 handler 或流程，并接入运行循环。
 
-这里保留一个明确的设计方向：执行环境应允许自定义 **process scheduler** 与 **reaper** 这两类治理能力。
+这里保留一个明确的设计方向：执行环境应允许通过 `executor/primitives/autonomy` 为某个入口 Scope 声明自治治理。`autonomy` 是一类由 executor 额外解释的 kernel primitive；它仍然以 primitive 形状出现，但其兑现责任不在纯 `Interpreter`，而在 executor 的运行循环。
 
-- **process scheduler**：executor 内部的调度策略，决定在每次获得执行权时应选择哪个 runnable process 推进，以及推进多少步。这是 executor 自治的内部机制，与宿主无关。
-- **reaper**：在每次 tick 时检查处于 Closing 且长期无法收敛的 Scope。仲裁结果为继续等待（`none`）或强制失败（调用 `Interpreter.forceFailure(scopeRef, failure)`，由 reaper 提供具体 `failure`）。
+`autonomy(entry, options)` 当前承载两类治理能力：
+
+- `scheduler`
+- `reaper`
+
+- **scheduler**：当自治 Scope 下某个 Process 刚转为 runnable 时，executor 调用 `scheduler.assign(processRef)`，由其返回一个 `Processor`。`ProcessRef` 只在这一步暴露给 scheduler，用于路由或分配；随后 executor 会把目标 Process 包装成匿名 `ProcessorTask` 并交给 `Processor.drive(task)`。`Processor` 不直接接触 `ProcessRef`，只通过 `task.step()` 反复推进；每次 `step()` 只执行最小一步，如何切片与何时继续由 processor 自主决定。
+- **reaper**：executor 不会在 Scope 一进入 Closing 时立刻触发 reaper。它会维护当前仍处于 Closing 的叶子 Scope 集合；当本轮准备让出执行权时，executor 安排一个 `continueLater(...)` 后触发的仲裁任务，并在下一次 slice 开始时，对其中仍然符合条件的 closing leaf 调用 `reaper.reap(closingScope)`。reaper 返回 `Wisp<Option<Failure>>`：`none` 表示继续等待自然收敛，`some(failure)` 表示现在就调用 `Interpreter.forceFailure(scopeRef, failure)` 执行强制失败。
 
 这类能力属于 `executor` 的环境治理问题，与 `ScopeDescriptor` 的稳定语义字段分层承接；其承载形态当前待定。
 
@@ -118,14 +123,14 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ### 5.1 调度扩展
 
-若执行环境需要更复杂的 ready 选择，`executor` 应接入 `Interpreter` 暴露的 runnable 接线承接位。
+若执行环境需要更复杂的 ready 处理，`executor` 应接入 `Interpreter` 暴露的 runnable 接线承接位。对声明了 `autonomy(..., { scheduler })` 的 Scope，executor 在 Process 刚转为 runnable 时调用 scheduler，并将该 Process 的最小步进驱动封装为 `ProcessorTask` 交给返回的 `Processor`。
 
 ### 5.2 结构性回收
 
-当 scope 已进入 `Closing`，且终止推进后仍无法进入 `Exited`，`executor` 在每次 tick 时通过 reaper 执行仲裁：
+当 scope 已进入 `Closing`，且终止推进后仍无法进入 `Exited`，`executor` 以 slice 为边界组织 reaper 仲裁。只有在下一次 slice 开始时仍然存在的 closing leaf scope，才会成为本轮仲裁对象。对每个对象，executor 调用 `reaper.reap(closingScope)`：
 
 - `none`：继续等待 cleanup 自行收敛。
-- `forceFailure(failure)`：调用 `Interpreter.forceFailure(scopeRef, failure)`，将目标 Scope 以指定 `failure` 强制迁移为 Failed。
+- `some(failure)`：调用 `Interpreter.forceFailure(scopeRef, failure)`，将目标 Scope 以指定 `failure` 强制迁移为 Failed。
 
 ## 6. 与 `Interpreter` 的协作
 
@@ -145,7 +150,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 - 提供统一的 `rootScope` 作为 execution root。
 - 为每次 `launch` 组织新的 execution scope，并返回稳定的收敛句柄。
 - 把 future settlement 与 termination 这些外部能力接入环境内部。
-- 在需要时接入相应的调度、回收或治理策略。
-- 通过每次 tick 触发 reaper，对长期无法收敛的 Scope 执行 `forceFailure`。
+- 在需要时解释 `autonomy` primitive，并接入相应的调度、回收或治理策略。
+- 通过 slice 边界触发 reaper，对跨过一次 `continueLater(...)` 后仍未自然收敛的 closing leaf 执行仲裁。
 
 ---
