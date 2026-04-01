@@ -1,6 +1,6 @@
 import type { LaunchState, RiteRoutine } from "#/contracts";
 import type { RunOptions, StatefulPromise } from "#/operations-kit";
-import { ensureExecutor } from "#/ensure-executor";
+import { ensureExecutor } from "#/executor";
 import { launch } from "#/operations-kit";
 import { park } from "#/primitives";
 

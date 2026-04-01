@@ -65,17 +65,21 @@
 - `Interpreter` 持有并推进封闭解释环境。
 - `executor` 组织入口视图、环境治理与外部注入能力。
 
-`executor` 通过 `createExecutor(scheduler)` 创建，内部构造并持有 `Interpreter`。`Scheduler` 是宿主侧的调度桥接，形状固定为：
+`executor` 通过 `createExecutor(pacer)` 创建，内部构造并持有 `Interpreter`。`Pacer` 是宿主侧的步进节流桥接，形状固定为：
 
 ```ts
-interface Scheduler {
-  nextTick(work: () => void): Disposable;
-  isExhausted(): boolean;
+interface Pacer {
+  beginSlice(): Slice;
+  continueLater(work: () => void): Disposable;
+}
+
+interface Slice {
+  shouldYield(): boolean;
 }
 ```
 
-- `nextTick`：注册一次执行机会，scheduler 在合适时机调用 `work`；返回 `Disposable` 可取消尚未交付的请求。
-- `isExhausted`：executor 在步进循环中主动询问当前 tick 预算是否耗尽；若耗尽则让出，剩余工作通过 `nextTick` 注册到下个 tick。
+- `beginSlice`：为一次同步推进申请新的时间片；executor 在当前 slice 上通过 `shouldYield()` 判断是否需要让出宿主线程。
+- `continueLater`：注册下一次执行机会，宿主在合适时机调用 `work`；返回 `Disposable` 可取消尚未交付的请求。
 
 ## 4. 执行环境对象
 
@@ -135,7 +139,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ## 7. 实现导向
 
-`executor` 通过 `createExecutor(scheduler)` 创建，内部构造并持有 `Interpreter`（两者 1:1）。实现应优先围绕以下主线展开：
+`executor` 通过 `createExecutor(pacer)` 创建，内部构造并持有 `Interpreter`（两者 1:1）。实现应优先围绕以下主线展开：
 
 - 维护一个长期存在的执行环境。
 - 提供统一的 `rootScope` 作为 execution root。

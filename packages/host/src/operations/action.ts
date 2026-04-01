@@ -1,6 +1,6 @@
 import type { RiteCoroutine, RiteFuture } from "#/contracts";
 import { left, right } from "@shajara/kernel/utils";
-import { ensureExecutor } from "#/ensure-executor";
+import { ensureExecutor } from "#/executor";
 import { future } from "#/primitives";
 import { toFailure } from "#/boundary";
 

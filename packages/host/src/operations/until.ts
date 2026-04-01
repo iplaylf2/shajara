@@ -1,7 +1,7 @@
 import { future, wait } from "#/primitives";
 import { left, right } from "@shajara/kernel/utils";
 import type { RiteCoroutine } from "#/contracts";
-import { ensureExecutor } from "#/ensure-executor";
+import { ensureExecutor } from "#/executor";
 import { toFailureUnknown } from "#/boundary";
 
 export function* until<Return>(thunk: PromiseThunk<Return>): RiteCoroutine<Return> {

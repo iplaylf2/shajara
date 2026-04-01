@@ -1,6 +1,6 @@
 import type { RunOptions, StatefulPromise } from "#/operations-kit";
 import type { RiteRoutine } from "#/contracts";
-import { ensureExecutor } from "#/ensure-executor";
+import { ensureExecutor } from "#/executor";
 import { launch } from "#/operations-kit";
 
 export function run<Return>(

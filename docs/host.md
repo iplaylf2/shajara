@@ -16,7 +16,7 @@
 
 - **kernel** 提供执行语义。
 - **host** 负责将用户侧 generator 表达映射为可执行 Wisp，并在宿主边界承载 `run`、`createScope`、`action`、`sleep`、`until` 等 API。
-- **host** 同时承担 executor 的具体实现（`Scheduler` 与 executor 语义参见 [executor.md](executor.md)），通过 `createExecutor(scheduler)` 创建并持有 executor 实例。
+- **host** 同时承担 executor 的宿主侧接线：通过 `host/src/executor/` 组织 `ensureExecutor`、`Pacer` 适配与任务投递器，并以 `createExecutor(pacer)` 创建并持有 executor 实例（executor 语义参见 [executor.md](executor.md)）。
 
 host 通过执行入口把降解后的 Ritual 提交给 executor。
 
