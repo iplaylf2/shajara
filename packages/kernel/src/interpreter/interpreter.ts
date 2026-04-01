@@ -131,6 +131,10 @@ export class Interpreter {
     }
   }
 
+  public isLeaf(scope: ScopeRef<unknown>): boolean {
+    return this.#resolve(scope).isLeaf;
+  }
+
   public constructor(entry: Ritual<void>) {
     this.#rootScope = RuntimeScope.create(
       this.#provideProcess(entry),

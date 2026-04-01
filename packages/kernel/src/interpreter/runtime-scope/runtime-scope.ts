@@ -207,20 +207,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#descriptor;
   }
 
-  public get isClosed(): boolean {
-    switch (this.status) {
-      case "running":
-      case "closing":
-      case "canceling":
-      case "failing":
-        return false;
-      case "completed":
-      case "canceled":
-      case "failed":
-        return true;
-    }
-  }
-
   public get entryProcess(): ProcessRef<unknown> {
     return this.#entryProcess;
   }
@@ -235,6 +221,24 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   public get status(): RuntimeScopeStatus {
     return this.#state.status;
+  }
+
+  public get isClosed(): boolean {
+    switch (this.status) {
+      case "running":
+      case "closing":
+      case "canceling":
+      case "failing":
+        return false;
+      case "completed":
+      case "canceled":
+      case "failed":
+        return true;
+    }
+  }
+
+  public get isLeaf(): boolean {
+    return readonlySet.isEmpty(this.#children);
   }
 
   // oxlint-disable-next-line no-undef
