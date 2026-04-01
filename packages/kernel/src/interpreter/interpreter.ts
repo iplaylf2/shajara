@@ -28,12 +28,12 @@ import {
   processResonatedStep,
   processWaitingStep,
 } from "./process-step";
+import type { Disposer } from "#/utils";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
-import type { Unsubscribe } from "#/utils";
 import { canceledFailure } from "#/failures";
 
 export class Interpreter {
@@ -68,7 +68,7 @@ export class Interpreter {
     }
   }
 
-  public observeRootZone(listener: ScopeZoneListener): Unsubscribe {
+  public observeRootZone(listener: ScopeZoneListener): Disposer {
     this.#rootZoneListeners.add(listener);
 
     return () => {
@@ -93,7 +93,7 @@ export class Interpreter {
     return this.#resolve(future).poll();
   }
 
-  public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): Unsubscribe {
+  public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): Disposer {
     return this.#resolve(future).wait(onSettled);
   }
 

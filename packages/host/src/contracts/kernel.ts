@@ -9,4 +9,4 @@ export {
   type SelfHandle,
   contextKey,
 } from "@shajara/kernel";
-export { type Unsubscribe } from "@shajara/kernel/utils";
+export { type Disposer } from "@shajara/kernel/utils";

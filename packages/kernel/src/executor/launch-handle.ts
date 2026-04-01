@@ -1,13 +1,13 @@
+import type { Disposer } from "#/utils";
 import type { ExecutionScopeRef } from "./execution-scope";
 import type { Failure } from "#/failures";
 import type { Interpreter } from "#/interpreter";
 import type { TaggedUnion } from "type-fest";
-import type { Unsubscribe } from "#/utils";
 import { canceledFailure } from "#/failures";
 import { either } from "fp-ts";
 
 export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
-  public onSettled(listener: (result: LaunchResult<Result>) => void): Unsubscribe {
+  public onSettled(listener: (result: LaunchResult<Result>) => void): Disposer {
     return this.interpreter.wait(this.executionScope.exitFuture, (result) => {
       if (either.isLeft(result)) {
         if (result.left === canceledFailure) {
@@ -35,7 +35,7 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
 }
 
 export interface LaunchHandle<Result> {
-  onSettled(listener: (result: LaunchResult<Result>) => void): Unsubscribe;
+  onSettled(listener: (result: LaunchResult<Result>) => void): Disposer;
 
   readonly scope: ExecutionScopeRef<Result>;
   readonly status: LaunchStatus;

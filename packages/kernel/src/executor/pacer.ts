@@ -1,8 +1,8 @@
-import type { Unsubscribe } from "#/utils";
+import type { Disposer } from "#/utils";
 
 export interface Pacer {
   beginSlice(): Slice;
-  continueLater(work: () => void): Unsubscribe;
+  continueLater(work: () => void): Disposer;
 }
 
 export interface Slice {

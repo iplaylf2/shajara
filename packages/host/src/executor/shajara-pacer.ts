@@ -1,7 +1,7 @@
 import { DEFAULT_QUANTUM_MS, TimeSlice } from "./time-slice";
 import type { Pacer, Slice } from "@shajara/kernel";
+import type { Disposer } from "@shajara/kernel/utils";
 import { TaskPoster } from "./task-poster";
-import type { Unsubscribe } from "@shajara/kernel/utils";
 
 export class ShajaraPacer implements Pacer {
   // oxlint-disable-next-line class-methods-use-this
@@ -9,7 +9,7 @@ export class ShajaraPacer implements Pacer {
     return new TimeSlice(DEFAULT_QUANTUM_MS);
   }
 
-  continueLater(work: () => void): Unsubscribe {
+  continueLater(work: () => void): Disposer {
     return this.#taskPoster.post(work);
   }
 

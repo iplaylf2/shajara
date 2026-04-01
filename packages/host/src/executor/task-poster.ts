@@ -1,7 +1,7 @@
-import type { Unsubscribe } from "@shajara/kernel/utils";
+import type { Disposer } from "@shajara/kernel/utils";
 
 export class TaskPoster {
-  post(work: () => void): Unsubscribe {
+  post(work: () => void): Disposer {
     this.#queue.push(work);
     this.#channel.port2.postMessage(null);
 
