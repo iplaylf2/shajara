@@ -64,7 +64,7 @@
 - **cancel**（级联）：scope 批量将所有 member process 迁移到 canceled 并触发 cleanup。
 - **wait / receive**：scope 将 process 迁移到 waiting，并携带 `dispose` 回调（用于在这次 waiting 被废弃时丢弃不再需要的 future 订阅或 mailbox receiver 注册，例如 process 被关闭）。恢复时由 future settle 回调或 mailbox send 将 process 迁移回 running；这次恢复本身不触发 `dispose`。
 
-每次 process 状态迁移后，scope 都通过 `zone.trackProcess(process)` 上报，zone 侧自行判断是否需要调度。
+每次 process 状态迁移后，scope 都通过 `zone.trackProcess(process)` 上报；每次 scope 状态迁移后，scope 也通过 `zone.trackScope(scope)` 上报。对 `branch` 新建的 child scope，构造完成后会立刻向 child 自己所属的 zone 发起一次 `trackScope(child)`；解释环境 root scope 的构造不要求自动触发这类通知。由此，scope 的出生追踪始终只进入它自己的 zone domain，而不把 zone 边界根错误地回流给父 zone；zone 侧自行决定如何解释这些追踪事件。
 
 关于 cleanup，这里只固定职责边界：
 
@@ -154,14 +154,23 @@ cleanup process 的激活复用同一条出生口。`RuntimeScope` 决定 cleanu
 
 ### 4.1 `observeRootZone`
 
-`Interpreter` 保留 `observeRootZone(listener)`，它建立在 root scope 所持有的 zone 之上。
+`Interpreter` 保留 `observeRootZone(observer)`，它建立在 root scope 所持有的 zone 之上。
 
-它覆盖 runnable process 的观察：
+这里的 `observer` 与 `ScopeZone` 同构：
 
-- 当 root zone 追踪到某个 runnable process，解释环境通知订阅者。
+```ts
+interface ScopeZone {
+  trackProcess(process: ProcessRef<unknown>): void;
+  trackScope(scope: ScopeRef<unknown>): void;
+}
+```
+
+它覆盖 root zone 追踪到的 process / scope 事件观察：
+
+- 当 root zone 追踪到某个 process 或 scope，解释环境通知订阅者。
 - 允许多个订阅同时生效；返回的 `unsubscribe` 只撤销当前订阅。
 
-这条接口是 `Interpreter` 暴露给外部调度方的最小 runnable 观察面。
+这条接口是 `Interpreter` 暴露给外部观察方的最小 zone 观察面。
 
 ### 4.2 `branchZone`
 
@@ -181,6 +190,7 @@ cleanup process 的激活复用同一条出生口。`RuntimeScope` 决定 cleanu
 - `lookup(scopeRef, contextKey)`
 - `poll(futureKey)`
 - `wait(futureKey, onSettled)`
+- `isRunnable(processRef)`
 
 这些接口读取解释环境中的既有状态，或登记收敛通知。
 
@@ -190,7 +200,7 @@ cleanup process 的激活复用同一条出生口。`RuntimeScope` 决定 cleanu
 
 调用后，目标 Scope 以给定 `failure` 直接迁移为 Failed 终态：所有阻塞中的 Process 立即以 canceled 中止，该 Scope 内仍为 pending 的 future 以 canceled 收敛。
 
-此接口不应被业务流程直接使用，只应由外部调度方在结构性回收判定后调用。通过携带 `failure`，调用方保留了对终止原因的表达能力。
+此接口不应被业务流程直接使用，只应由外部调用方在需要终局强制收束时调用。通过携带 `failure`，调用方保留了对终止原因的表达能力。
 
 ## 5. Closing 语义
 

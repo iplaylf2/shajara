@@ -105,6 +105,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     this.#registerChildScope(child);
     zone.trackProcess(child.entryProcess);
+    zone.trackScope(child);
 
     return child;
   }
@@ -398,6 +399,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const observer of observers) {
       observer();
     }
+
+    this.#zone.trackScope(this);
   }
 
   #cancelManaged(): void {

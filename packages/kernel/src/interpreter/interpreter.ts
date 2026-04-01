@@ -68,11 +68,11 @@ export class Interpreter {
     }
   }
 
-  public observeRootZone(listener: ScopeZoneListener): Disposer {
-    this.#rootZoneListeners.add(listener);
+  public observeRootZone(observer: ScopeZone): Disposer {
+    this.#rootZoneObservers.add(observer);
 
     return () => {
-      this.#rootZoneListeners.delete(listener);
+      this.#rootZoneObservers.delete(observer);
     };
   }
 
@@ -131,6 +131,10 @@ export class Interpreter {
     }
   }
 
+  public isRunnable(process: ProcessRef<unknown>): boolean {
+    return this.#resolve(process).runner().status === "running";
+  }
+
   public isLeaf(scope: ScopeRef<unknown>): boolean {
     return this.#resolve(scope).isLeaf;
   }
@@ -140,11 +144,14 @@ export class Interpreter {
       this.#provideProcess(entry),
       { failureMode: "contain" },
       {
-        trackProcess: (processRef) => {
-          const process = this.#resolve(processRef);
-
-          if (process.runner().status === "running") {
-            this.#onRunnable(process);
+        trackProcess: (process) => {
+          for (const observer of this.#rootZoneObservers) {
+            observer.trackProcess(process);
+          }
+        },
+        trackScope: (scope) => {
+          for (const observer of this.#rootZoneObservers) {
+            observer.trackScope(scope);
           }
         },
       },
@@ -286,12 +293,6 @@ export class Interpreter {
     };
   }
 
-  #onRunnable(process: ProcessRef<unknown>) {
-    for (const listener of this.#rootZoneListeners) {
-      listener(process);
-    }
-  }
-
   // oxlint-disable-next-line class-methods-use-this
   #touch(_token: RuntimeScope | RuntimeProcessHandle<unknown> | RuntimeFuture<unknown>): void {
     // Do nothing
@@ -307,10 +308,8 @@ export class Interpreter {
   }
 
   readonly #rootScope: RuntimeScope;
-  readonly #rootZoneListeners = new Set<ScopeZoneListener>();
+  readonly #rootZoneObservers = new Set<ScopeZone>();
 }
-
-export type ScopeZoneListener = (process: ProcessRef<unknown>) => void;
 
 function fixRunningNext(next: RuntimeProcessNextEcho<Sigil>): RunningNext<Sigil> {
   return [next.sigil.kind, next.sigil, next.accept] as RunningNext<Sigil>;
