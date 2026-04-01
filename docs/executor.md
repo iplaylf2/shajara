@@ -115,7 +115,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 - `reaper`
 
 - **scheduler**：当自治 Scope 下某个 Process 刚转为 runnable 时，executor 调用 `scheduler.assign(processRef)`，由其返回一个 `Processor`。`ProcessRef` 只在这一步暴露给 scheduler，用于路由或分配；随后 executor 会把目标 Process 包装成匿名 `ProcessorTask` 并交给 `Processor.drive(task)`。`Processor` 不直接接触 `ProcessRef`，只通过 `task.step()` 反复推进；每次 `step()` 只执行最小一步，如何切片与何时继续由 processor 自主决定。
-- **reaper**：executor 不会在 Scope 一进入 Closing 时立刻触发 reaper。它会维护当前仍处于 Closing 的叶子 Scope 集合；当本轮准备让出执行权时，executor 安排一个 `continueLater(...)` 后触发的仲裁任务，并在下一次 slice 开始时，对其中仍然符合条件的 closing leaf 调用 `reaper.reap(closingScope)`。reaper 返回 `Wisp<Option<Failure>>`：`none` 表示继续等待自然收敛，`some(failure)` 表示现在就调用 `Interpreter.forceFailure(scopeRef, failure)` 执行强制失败。
+- **reaper**：executor 不会在 Scope 一进入 Closing 时立刻触发 reaper。它会在每个自治治理域内部识别当前的 closing frontier，并在准备让出执行权时安排一个 `continueLater(...)` 后触发的仲裁任务；只有到下一次 slice 开始时仍然停留在 frontier 的 closing scope，才会被送入 `reaper.reap(closingScope)`。这里的 frontier 是 executor 内部使用的定位语义：它表示当前治理域里最深的一批、且尚未被更深层同域 closing scope 阻塞的关闭前沿。reaper 返回 `Wisp<Option<Failure>>`：`none` 表示继续等待自然收敛，`some(failure)` 表示现在就调用 `Interpreter.forceFailure(scopeRef, failure)` 执行强制失败。
 
 这类能力属于 `executor` 的环境治理问题，与 `ScopeDescriptor` 的稳定语义字段分层承接；其承载形态当前待定。
 
@@ -127,7 +127,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ### 5.2 结构性回收
 
-当 scope 已进入 `Closing`，且终止推进后仍无法进入 `Exited`，`executor` 以 slice 为边界组织 reaper 仲裁。只有在下一次 slice 开始时仍然存在的 closing leaf scope，才会成为本轮仲裁对象。对每个对象，executor 调用 `reaper.reap(closingScope)`：
+当 scope 已进入 `Closing`，且终止推进后仍无法进入 `Exited`，`executor` 以 slice 为边界组织 reaper 仲裁。仲裁对象不是“结构树叶子”，而是各自治治理域当前识别出的 closing frontier。只有在下一次 slice 开始时仍然停留在 frontier 的 closing scope，才会成为本轮仲裁对象。对每个对象，executor 调用 `reaper.reap(closingScope)`：
 
 - `none`：继续等待 cleanup 自行收敛。
 - `some(failure)`：调用 `Interpreter.forceFailure(scopeRef, failure)`，将目标 Scope 以指定 `failure` 强制迁移为 Failed。
@@ -142,6 +142,8 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 这里的治理扩展建立在既有对象语义之上：`executor` 读取 `Scope` / `Process` 的 descriptor，决定如何组织调度、关闭和附加治理；descriptor 作为对象自带的只读声明信息参与这一协作。
 
+zone / autonomy 只定义治理归属，不改写 kernel closing 的结构拓扑。closing 仍按 scope 树计算；executor 只是在各自治治理域内定位当前 frontier，并决定何时把某个 closing scope 交给对应的 reaper。
+
 ## 7. 实现导向
 
 `executor` 通过 `createExecutor(pacer)` 创建，内部构造并持有 `Interpreter`（两者 1:1）。实现应优先围绕以下主线展开：
@@ -151,6 +153,6 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 - 为每次 `launch` 组织新的 execution scope，并返回稳定的收敛句柄。
 - 把 future settlement 与 termination 这些外部能力接入环境内部。
 - 在需要时解释 `autonomy` primitive，并接入相应的调度、回收或治理策略。
-- 通过 slice 边界触发 reaper，对跨过一次 `continueLater(...)` 后仍未自然收敛的 closing leaf 执行仲裁。
+- 通过 slice 边界触发 reaper，对跨过一次 `continueLater(...)` 后仍未自然收敛、且仍位于治理域 frontier 的 closing scope 执行仲裁。
 
 ---

@@ -238,10 +238,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  public get isLeaf(): boolean {
-    return readonlySet.isEmpty(this.#children);
-  }
-
   // oxlint-disable-next-line no-undef
   declare public readonly [REF_TOKEN]: ScopeRef<unknown>[typeof REF_TOKEN];
 
