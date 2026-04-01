@@ -1,4 +1,4 @@
-import type { LaunchState, RiteRoutine } from "#/contracts";
+import type { LaunchStatus, RiteRoutine } from "#/contracts";
 import type { RunOptions, StatefulPromise } from "#/operations-kit";
 import { ensureExecutor } from "#/executor";
 import { launch } from "#/operations-kit";
@@ -15,8 +15,8 @@ export function createScope(): Scope {
     run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
       return launch(executor, launchedScope.scope, ritual, options).settled;
     },
-    get state(): ScopeState {
-      return launchedScope.settled.state();
+    get status(): ScopeStatus {
+      return launchedScope.settled.status;
     },
     [Symbol.asyncDispose](): Promise<void> {
       return cancelScope();
@@ -24,7 +24,7 @@ export function createScope(): Scope {
   };
 
   async function cancelScope(): Promise<void> {
-    if (launchedScope.settled.state() === "open") {
+    if (launchedScope.settled.status === "open") {
       executor.cancel(launchedScope.scope);
     }
     await closed;
@@ -34,9 +34,9 @@ export function createScope(): Scope {
 export interface Scope {
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
   cancel(): Promise<void>;
-  readonly state: ScopeState;
+  readonly status: ScopeStatus;
   readonly closed: Promise<void>;
   [Symbol.asyncDispose](): Promise<void>;
 }
 
-export type ScopeState = LaunchState;
+export type ScopeStatus = LaunchStatus;

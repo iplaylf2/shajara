@@ -4,8 +4,9 @@ export {
   type Failure,
   type FailureShape,
   type FutureKey,
-  type LaunchState,
+  type LaunchStatus,
   type ScopeRef,
   type SelfHandle,
   contextKey,
 } from "@shajara/kernel";
+export { type Unsubscribe } from "@shajara/kernel/utils";

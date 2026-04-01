@@ -21,7 +21,7 @@ import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
-import type { Unsubscribe } from "#/interpreter-kit";
+import type { Unsubscribe } from "#/utils";
 import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils";
 

@@ -33,13 +33,13 @@ import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
-import type { Unsubscribe } from "#/interpreter-kit";
+import type { Unsubscribe } from "#/utils";
 import { canceledFailure } from "#/failures";
 
 export class Interpreter {
-  public step<Relic>(processRef: ProcessRef<Relic>): ProcessStep<Relic> {
-    const process = this.#resolve(processRef);
-    const runner = process.runner();
+  public step<Relic>(process: ProcessRef<Relic>): ProcessStep<Relic> {
+    const processHandle = this.#resolve(process);
+    const runner = processHandle.runner();
 
     switch (runner.status) {
       case "waiting":
@@ -55,12 +55,12 @@ export class Interpreter {
 
         switch (next.kind) {
           case "echo":
-            return this.#interpret(process, next);
+            return this.#interpret(processHandle, next);
           case "resonate":
             return processResonatedStep();
           case "relic": {
-            const scope = this.#resolve(process.scopeRef);
-            scope.complete(process.keeper(), next.relic);
+            const scope = this.#resolve(processHandle.scopeRef);
+            scope.complete(processHandle.keeper(), next.relic);
             return processExitedStep(either.right(next.relic));
           }
         }
@@ -93,20 +93,42 @@ export class Interpreter {
     return this.#resolve(future).poll();
   }
 
-  public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): void {
-    this.#resolve(future).wait(onSettled);
+  public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): Unsubscribe {
+    return this.#resolve(future).wait(onSettled);
   }
 
   public forceFailure(scope: ScopeRef<unknown>, failure: Failure): void {
     this.#resolve(scope).forceFailure(failure);
   }
 
-  public isScopeClosed(scope: ScopeRef<unknown>): boolean {
-    return this.#resolve(scope).isClosed;
+  public scopeStatus(scope: ScopeRef<unknown>): "open" | "closing" | "closed" {
+    const runtimeScope = this.#resolve(scope);
+    switch (runtimeScope.status) {
+      case "running":
+        return "open";
+      case "closing":
+      case "canceling":
+      case "failing":
+        return "closing";
+      case "canceled":
+      case "completed":
+      case "failed":
+        return "closed";
+    }
   }
 
-  public isProcessClosed(process: ProcessRef<unknown>): boolean {
-    return this.#resolve(process).runner().isClosed;
+  public processStatus(process: ProcessRef<unknown>): "open" | "closed" {
+    const runner = this.#resolve(process).runner();
+
+    switch (runner.status) {
+      case "running":
+      case "waiting":
+        return "open";
+      case "completed":
+      case "canceled":
+      case "failed":
+        return "closed";
+    }
   }
 
   public constructor(entry: Ritual<void>) {

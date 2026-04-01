@@ -1,17 +1,15 @@
-import type { Disposable } from "@shajara/kernel";
+import type { Unsubscribe } from "@shajara/kernel/utils";
 
 export class TaskPoster {
-  post(work: () => void): Disposable {
+  post(work: () => void): Unsubscribe {
     this.#queue.push(work);
     this.#channel.port2.postMessage(null);
 
-    return {
-      dispose: () => {
-        const index = this.#queue.indexOf(work);
-        if (index !== MISSING_INDEX) {
-          this.#queue[index] = null;
-        }
-      },
+    return () => {
+      const index = this.#queue.indexOf(work);
+      if (index !== MISSING_INDEX) {
+        this.#queue[index] = null;
+      }
     };
   }
 

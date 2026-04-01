@@ -6,7 +6,7 @@ import type {
   KEY_TOKEN,
 } from "#/contracts";
 import { io, option } from "fp-ts";
-import type { Unsubscribe } from "#/interpreter-kit";
+import type { Unsubscribe } from "#/utils";
 
 export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): option.Option<FutureResult<Result>> {

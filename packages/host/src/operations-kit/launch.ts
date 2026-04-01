@@ -3,27 +3,27 @@ import type {
   Executor,
   LaunchHandle,
   LaunchResult,
-  LaunchState,
+  LaunchStatus,
 } from "@shajara/kernel";
 import { decodeRitual, fromFailure } from "#/boundary";
 import { CanceledError } from "#/errors";
 import type { RiteRoutine } from "#/contracts";
 
-export function launch<Return>(
+export function launch<Result>(
   executor: Executor,
-  scope: ExecutionScopeRef,
-  ritual: RiteRoutine<Return>,
+  scope: ExecutionScopeRef<unknown>,
+  ritual: RiteRoutine<Result>,
   options?: RunOptions,
-): HostLaunchResult<Return> {
+): HostLaunchResult<Result> {
   const signal = options?.signal;
 
-  function* guardedRitual(): ReturnType<RiteRoutine<Return>> {
+  function* guardedRitual(): ReturnType<RiteRoutine<Result>> {
     if (!signal) {
       return yield* ritual();
     }
 
     function onAbort(): void {
-      if (execution.state() === "open") {
+      if (execution.status === "open") {
         executor.cancel(execution.scope);
       }
     }
@@ -49,9 +49,9 @@ export function launch<Return>(
   };
 }
 
-export interface HostLaunchResult<Return> {
-  readonly scope: ExecutionScopeRef;
-  readonly settled: StatefulPromise<Return>;
+export interface HostLaunchResult<Result> {
+  readonly scope: ExecutionScopeRef<Result>;
+  readonly settled: StatefulPromise<Result>;
 }
 
 export interface RunOptions {
@@ -59,7 +59,7 @@ export interface RunOptions {
 }
 
 export interface StatefulPromise<Return> extends PromiseLike<Return> {
-  state(): LaunchState;
+  status: LaunchStatus;
 }
 
 function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Return> {
@@ -67,10 +67,10 @@ function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Retu
     execution.onSettled((result: LaunchResult<Return>) => {
       switch (result.kind) {
         case "success":
-          resolve(result.value);
+          resolve(result.result);
           break;
         case "failure":
-          reject(fromFailure(result.reason));
+          reject(fromFailure(result.failure));
           break;
         case "canceled":
           reject(new CanceledError());
@@ -85,8 +85,8 @@ function toStatefulPromise<Return>(
   settled: Promise<Return>,
 ): StatefulPromise<Return> {
   return {
-    state(): LaunchState {
-      return execution.state();
+    get status(): LaunchStatus {
+      return execution.status;
     },
     then: settled.then.bind(settled),
   };
