@@ -48,19 +48,19 @@ export class RuntimeProcess<Relic>
     return this.#state as RuntimeProcessStateOf<Relic, Status>;
   }
 
-  public transitionTo(state: RuntimeProcessKeeperTransition): void {
-    switch (state.status) {
+  public transitionTo(transition: RuntimeProcessKeeperTransition): void {
+    switch (transition.status) {
       case "running": {
         const current = this.stateAs("waiting");
         const runner = current.stepper.current() as RuntimeProcessNextEcho<Sigil>;
-        runner.accept(state.input);
+        runner.accept(transition.input);
         this.#state = createRunningState(current.stepper);
         return;
       }
       case "waiting": {
         const current = this.stateAs("running");
         this.#state = {
-          dispose: state.dispose,
+          dispose: transition.dispose,
           status: "waiting",
           stepper: current.stepper,
         };
@@ -69,18 +69,18 @@ export class RuntimeProcess<Relic>
       case "completed":
         this.#disposeWhileWaiting();
         this.#state = {
-          result: state.result as Relic,
+          result: transition.result as Relic,
           status: "completed",
         };
-        this.#exitFuture.settle(either.right(state.result as Relic));
+        this.#exitFuture.settle(either.right(transition.result as Relic));
         return;
       case "failed":
         this.#disposeWhileWaiting();
         this.#state = {
-          failure: state.failure,
+          failure: transition.failure,
           status: "failed",
         };
-        this.#exitFuture.settle(either.left(state.failure));
+        this.#exitFuture.settle(either.left(transition.failure));
         return;
       case "canceled":
         this.#disposeWhileWaiting();

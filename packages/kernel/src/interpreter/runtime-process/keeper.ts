@@ -7,7 +7,7 @@ export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   stateAs<Status extends RuntimeProcessKeeperStatus>(
     status: Status,
   ): RuntimeProcessKeeperStateOf<Status>;
-  transitionTo(state: RuntimeProcessKeeperTransition): void;
+  transitionTo(transition: RuntimeProcessKeeperTransition): void;
   takeCleanups(): CleanupTask[];
   readonly descriptor: ProcessDescriptor;
   readonly isClosed: boolean;

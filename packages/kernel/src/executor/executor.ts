@@ -1,3 +1,4 @@
+// oxlint-disable class-methods-use-this
 import type { FutureResult, FutureSettleKey, Ritual } from "#/contracts";
 import type { ExecutionScopeRef } from "./execution-scope";
 import type { LaunchHandle } from "./launch-handle";
@@ -22,12 +23,14 @@ class RuntimeExecutor implements Executor {
   ): LaunchHandle<Result> {
     return notImplemented("");
   }
+
   public settle<Result>(
     _futureSettle: FutureSettleKey<Result>,
     _result: FutureResult<Result>,
   ): void {
     return notImplemented("");
   }
+
   public cancel(_scope: ExecutionScopeRef<unknown>): void {
     return notImplemented("");
   }
