@@ -329,7 +329,7 @@ function defer(process: RuntimeProcessRunner<unknown>, cleanup: CleanupTask): vo
 }
 
 function cancel(scope: RuntimeScope): void {
-  scope.cancel();
+  scope.cancel({ syncReport: true });
 }
 
 function createFuture(scope: RuntimeScope): RuntimeFuture<unknown> {
