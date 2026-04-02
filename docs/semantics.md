@@ -37,9 +37,9 @@ cleanup 以 `Ritual` 身份锚定：每次启动的 ritual 入口可在其 proce
 
 sigil 成功恢复值由 `resonate(echo)` 承接。失败表达方式不做统一强制：是否以返回值、异常或其他形状表达，按具体 sigil 条目单独定义。
 
-`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由父 Scope 的 `failureMode` 决定（见 §4.5）。
+`Failure` 是失败事件。发生 Failure 时，目标 Process 立即退出，后续 continuation 不再执行。`Failed(failure)` 在 Scope 树上的传播策略由失败发生所在 Scope 自身的 `failureMode` 决定（见 §4.5）。
 
-`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由父 Scope 的 `failureMode` 决定（见 §4.5）。
+`halt` 触发的 failure 分层为：先形成 Process 的 `Failed(failure)`，再使该 Process 所属 Scope 进入 `Failed` 终态；是否继续影响父 Scope 由该 Scope 自身的 `failureMode` 决定（见 §4.5）。
 
 ### 2.3 Scope
 
@@ -51,14 +51,14 @@ Scope 是生命周期、身份与上下文的统一载体，承载父子关系�
 
 每个 Scope 在创建时都带有一份只读的 `ScopeDescriptor`。它不是运行中可变更的配置，而是该 Scope 身份的一部分；对象创建后不再改写。
 
-当前 `ScopeDescriptor` 中稳定进入 kernel 语义的字段只有一条：**failure 是否向父 Scope 上传**。
+当前 `ScopeDescriptor` 中稳定进入 kernel 语义的字段只有一条：**本 Scope 的 failure 是否向父 Scope 上传**。
 
 这一字段由 `FailureMode` 表达：
 
-| `FailureMode` | 含义                                                       |
-| ------------- | ---------------------------------------------------------- |
-| `propagate`   | 后代 `failed` 继续沿祖先链上传；这是默认的结构化并发边界。 |
-| `contain`     | 后代 `failed/canceled` 在本地收敛。                        |
+| `FailureMode` | 含义                                                             |
+| ------------- | ---------------------------------------------------------------- |
+| `propagate`   | 本 Scope `failed` 后继续沿祖先链上传；这是默认的结构化并发边界。 |
+| `contain`     | 本 Scope `failed/canceled` 在此形成收敛边界。                    |
 
 `FailureMode` 承载的就是 `ScopeDescriptor` 中这条稳定语义边界。
 
@@ -205,10 +205,10 @@ Scope 未进入终态时，`Branch/Spawn` 仍可继续创建成员；进入终�
 
 ### 4.5 终态上传策略
 
-子 Scope 终态向父 Scope 上传按父 Scope 的 `failureMode` 处理：
+子 Scope 终态是否继续向父 Scope 上传，按子 Scope 自身的 `failureMode` 处理：
 
-- **`propagate`**：后代 `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
-- **`contain`**：后代 `failed/canceled` 在本地收敛。
+- **`propagate`**：该子 Scope `Failed` 导致父 Scope 进入 Closing（终态 Failed），继续沿祖先链传播。
+- **`contain`**：该子 Scope 的 `failed/canceled` 在本地收敛，不继续影响父 Scope。
 
 `canceled` 与 `failed` 分别表示取消级联与失败传播。
 

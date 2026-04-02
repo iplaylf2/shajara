@@ -97,8 +97,8 @@ export class Interpreter {
     return this.#resolve(future).wait(onSettled);
   }
 
-  public forceFailure(scope: ScopeRef<unknown>, failure: Failure): void {
-    this.#resolve(scope).forceFailure(failure);
+  public forceFailed(scope: ScopeRef<unknown>, failure: Failure): void {
+    this.#resolve(scope).forceFailed(failure);
   }
 
   public scopeStatus(scope: ScopeRef<unknown>): "open" | "closing" | "closed" {

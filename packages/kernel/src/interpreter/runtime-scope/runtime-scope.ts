@@ -12,16 +12,15 @@ import type {
   REF_TOKEN,
   ScopeRef,
 } from "#/contracts";
-import { P, match } from "ts-pattern";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
-import { either, io, option, readonlySet } from "fp-ts";
-import type { Disposer } from "#/utils";
+import { either, io, option, readonlyArray, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
+import { TransitionQueue } from "./transition-queue";
 import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils";
 
@@ -40,60 +39,29 @@ export class RuntimeScope implements ScopeRef<unknown> {
     process.transitionTo({ result, status: "completed" });
     this.#processContainerFor(process).delete(process);
     this.#zone.trackProcess(process);
-    this.#triggerCleanup(process);
-
-    switch (this.#state.status) {
-      case "running":
-        this.#tryClosing();
-        break;
-      case "closing":
-        this.#tryCompleted();
-        break;
-      case "canceling":
-        this.#tryCanceled();
-        break;
-      case "failing": {
-        const { draft } = this.#state;
-        this.#tryFailed(draft);
-        break;
-      }
-      case "completed":
-      case "canceled":
-      case "failed":
-        unreachable();
-    }
+    this.#enqueueMemberClosed({
+      closedProcesses: [process],
+      failedProcesses: [],
+      scopes: [],
+    });
+    this.#exhaustTransitions();
   }
 
   public halt(process: RuntimeProcessKeeper, failure: Failure): void {
     process.transitionTo({ failure, status: "failed" });
     this.#processContainerFor(process).delete(process);
     this.#zone.trackProcess(process);
-
-    const triggerCleanup = () => {
-      this.#triggerCleanup(process);
-    };
-
-    if (this.#state.status === "failing") {
-      const { draft } = this.#state;
-      draft.collect(process.stateAs("failed").failure);
-      this.#enterFailing(draft, triggerCleanup);
-      return;
-    }
-
-    this.#enterFailing(
-      new ScopeFailureDraft({ kind: "process", process }, () => process.stateAs("failed").failure),
-      triggerCleanup,
-    );
+    this.#enqueueMemberClosed({
+      closedProcesses: [],
+      failedProcesses: [process],
+      scopes: [],
+    });
+    this.#exhaustTransitions();
   }
 
   public cancel(): void {
-    if (this.#state.status === "failing") {
-      const { draft } = this.#state;
-
-      this.#enterFailing(draft, io.Do);
-    } else {
-      this.#enterCanceling();
-    }
+    this.#enqueueCancel();
+    this.#exhaustTransitions();
   }
 
   public branch(
@@ -103,7 +71,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): RuntimeScope {
     const child = new RuntimeScope(entry, descriptor, this, zone);
 
-    this.#registerChildScope(child);
+    this.#children.add(child);
     zone.trackProcess(child.entryProcess);
     zone.trackScope(child);
 
@@ -116,7 +84,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): ProcessRef<Relic> {
     const process = provideProcess(this, descriptor);
 
-    this.#registerOwnedProcess(process);
+    this.#processContainerFor(process).add(process);
     this.#zone.trackProcess(process);
 
     return process as ProcessRef<Relic>;
@@ -185,23 +153,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#bindings.delete(contextKey);
   }
 
-  public forceFailure(failure: Failure): void {
-    if (this.#state.status === "failing") {
-      const { draft } = this.#state;
-      draft.collect(failure);
-      this.#enterFailing(draft, io.Do);
-    } else {
-      this.#enterFailing(
-        new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure),
-        io.Do,
-      );
-    }
-
-    // Double enter failing
-    if (this.#state.status === "failing") {
-      const { draft } = this.#state;
-      this.#enterFailing(draft, io.Do);
-    }
+  public forceFailed(failure: Failure): void {
+    this.#enqueueForceFailed(failure);
+    this.#exhaustTransitions();
   }
 
   public get descriptor(): ScopeDescriptor {
@@ -251,17 +205,212 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#zone = zone;
     const entryProcess = entry(this, { completionMode: "structural" });
 
-    this.#registerOwnedProcess(entryProcess);
+    this.#processContainerFor(entryProcess).add(entryProcess);
 
     this.#entryProcess = entryProcess;
     this.#descriptor = descriptor;
-
     this.#parent = parent;
+    this.#transitions = new TransitionQueue((signal: PendingSignal) => {
+      this.#consumeSignal(signal);
+    });
   }
 
-  #tryClosing(): void {
-    if (this.#isQuiet) {
-      this.#enterClosing();
+  #transitionTo(state: RuntimeScopeState): void {
+    this.#state = state;
+    switch (state.status) {
+      case "running":
+        return unreachable();
+      case "closing":
+        this.#cancelDetached();
+        break;
+      case "canceling":
+        this.#cancelManaged();
+        break;
+      case "failing":
+        this.#cancelManaged();
+        if (
+          this.#descriptor.failureMode === "propagate" &&
+          this.#parent !== RuntimeScope.#sentinel
+        ) {
+          this.#parent.#enqueueChildFailing(this);
+          this.#deferAfterTransition(() => {
+            this.#parent.#exhaustTransitions();
+          });
+        }
+        break;
+      case "canceled":
+        this.#afterClosed();
+        this.#exitFuture.settle(either.left(canceledFailure));
+        break;
+      case "completed":
+        this.#afterClosed();
+        this.#exitFuture.settle(either.right(state.result));
+        break;
+      case "failed":
+        this.#afterClosed();
+        this.#exitFuture.settle(either.left(state.failure));
+        break;
+    }
+
+    this.#zone.trackScope(this);
+  }
+
+  // oxlint-disable-next-line max-statements
+  #consumeSignal(signal: PendingSignal): void {
+    switch (signal.kind) {
+      case "cancel":
+        this.#consumeCancel();
+        break;
+      case "child-failing": {
+        const { scope } = signal;
+        this.#consumeChildFailing(scope);
+        break;
+      }
+      case "force-failed": {
+        const { failure } = signal;
+        this.#consumeForceFailed(failure);
+        break;
+      }
+      case "member-closed": {
+        const { closedProcesses, failedProcesses, scopes } = signal;
+        this.#consumeMemberClosed(closedProcesses, failedProcesses, scopes);
+        break;
+      }
+    }
+  }
+
+  #consumeCancel(): void {
+    if (this.#state.status === "failing") {
+      this.#enterFailing(this.#state.draft, io.Do);
+    } else {
+      this.#enterCanceling();
+    }
+  }
+
+  #consumeChildFailing(childScope: RuntimeScope): void {
+    if (this.#state.status === "failing") {
+      this.#enterFailing(this.#state.draft, io.Do);
+    } else {
+      this.#enterFailing(
+        new ScopeFailureDraft(
+          { kind: "scope", scope: childScope },
+          () => childScope.#stateAs("failed").failure,
+        ),
+        io.Do,
+      );
+    }
+  }
+
+  #consumeForceFailed(failure: Failure): void {
+    if (this.#state.status === "failing") {
+      const { draft } = this.#state;
+      draft.collect(failure);
+      this.#enterFailing(draft, io.Do);
+    } else {
+      this.#enterFailing(
+        new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure),
+        io.Do,
+      );
+    }
+
+    if (this.#state.status === "failing") {
+      this.#enterFailing(this.#state.draft, io.Do);
+    }
+  }
+
+  // oxlint-disable-next-line max-lines-per-function, max-statements
+  #consumeMemberClosed(
+    closedProcesses: RuntimeProcessKeeper[],
+    failedProcesses: RuntimeProcessKeeper[],
+    children: RuntimeScope[],
+  ): void {
+    for (const scope of children) {
+      this.#children.delete(scope);
+    }
+
+    const cleanupsTrigger = () => {
+      this.#triggerCleanups([...closedProcesses, ...failedProcesses]);
+    };
+
+    if (this.#state.status === "failing") {
+      for (const scope of children) {
+        if (scope.status === "failed" && scope.descriptor.failureMode === "propagate") {
+          this.#state.draft.collect(scope.#stateAs(scope.status).failure);
+        }
+      }
+
+      if (readonlyArray.isEmpty(failedProcesses)) {
+        cleanupsTrigger();
+        this.#tryFailed(this.#state.draft);
+      } else {
+        for (const process of failedProcesses) {
+          this.#state.draft.collect(process.stateAs("failed").failure);
+        }
+
+        this.#enterFailing(this.#state.draft, cleanupsTrigger);
+      }
+    } else {
+      // oxlint-disable-next-line no-lonely-if
+      if (readonlyArray.isEmpty(failedProcesses)) {
+        cleanupsTrigger();
+        switch (this.#state.status) {
+          case "running":
+            this.#tryClosing();
+            return;
+          case "closing":
+            this.#tryCompleted();
+            return;
+          case "canceling":
+            this.#tryCanceled();
+            return;
+          default:
+            return unreachable();
+        }
+      } else {
+        const [source, ...processes] = failedProcesses;
+
+        const draft = new ScopeFailureDraft(
+          { kind: "process", process: source! },
+          () => source!.stateAs("failed").failure,
+        );
+
+        for (const process of processes) {
+          draft.collect(process.stateAs("failed").failure);
+        }
+
+        this.#enterFailing(draft, cleanupsTrigger);
+      }
+    }
+  }
+
+  #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void): void {
+    this.#transitionTo({ draft, status: "failing" });
+    failingDefer();
+    this.#tryFailed(draft);
+  }
+
+  #enterCanceling(): void {
+    this.#transitionTo({ status: "canceling" });
+    this.#tryCanceled();
+  }
+
+  #enterClosing(): void {
+    this.#transitionTo({ status: "closing" });
+    this.#tryCompleted();
+  }
+
+  #tryFailed(draft: ScopeFailureDraft): void {
+    if (this.#isIdle) {
+      this.#transitionTo({
+        failure: draft.build(),
+        status: "failed",
+      });
+    }
+  }
+
+  #tryCanceled(): void {
+    if (this.#isIdle) {
+      this.#transitionTo({ status: "canceled" });
     }
   }
 
@@ -272,19 +421,141 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #tryCanceled(): void {
-    if (this.#isIdle) {
-      this.#transitionTo({ status: "canceled" });
+  #tryClosing(): void {
+    if (this.#isQuiet) {
+      this.#enterClosing();
     }
   }
 
-  #tryFailed(draft: ScopeFailureDraft): void {
-    if (this.#isIdle) {
-      const failure = draft.build();
-      this.#transitionTo({
-        failure,
-        status: "failed",
+  #afterClosed(): void {
+    const canceled = either.left(canceledFailure);
+    for (const future of this.#derivedFutures) {
+      future.settle(canceled);
+    }
+
+    this.#mailbox.clear();
+    this.#transitions.close();
+
+    if (this.#parent !== RuntimeScope.#sentinel) {
+      this.#parent.#enqueueMemberClosed({
+        closedProcesses: [],
+        failedProcesses: [],
+        scopes: [this],
       });
+      this.#deferAfterTransition(() => {
+        this.#parent.#exhaustTransitions();
+      });
+    }
+  }
+
+  // oxlint-disable-next-line max-statements
+  #cancelManaged(): void {
+    const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
+    const children = [...this.#children];
+
+    this.#structuralProcesses.clear();
+    this.#detachedProcesses.clear();
+    this.#children.clear();
+
+    for (const process of processes) {
+      process.transitionTo({ status: "canceled" });
+      this.#zone.trackProcess(process);
+      this.#triggerCleanup(process);
+    }
+
+    for (const child of children) {
+      child.cancel();
+    }
+  }
+
+  #cancelDetached(): void {
+    const processes = [...this.#detachedProcesses];
+    this.#detachedProcesses.clear();
+
+    for (const process of processes) {
+      process.transitionTo({ status: "canceled" });
+      this.#zone.trackProcess(process);
+      this.#triggerCleanup(process);
+    }
+  }
+
+  #triggerCleanup(process: RuntimeProcessKeeper): void {
+    const spawn: CleanupSpawner = (prepare) => {
+      this.spawn(prepare, { completionMode: "structural" });
+    };
+
+    for (const cleanup of process.takeCleanups()) {
+      cleanup(spawn);
+    }
+  }
+
+  #enqueueMemberClosed({
+    closedProcesses,
+    failedProcesses,
+    scopes,
+  }: PendingMemberClosedPayload): void {
+    this.#transitions.merge(
+      {
+        closedProcesses,
+        failedProcesses,
+        kind: "member-closed",
+        scopes,
+      },
+      (current, next) => {
+        const currentMemberClosed = current as PendingMemberClosedSignal;
+        const nextMemberClosed = next as PendingMemberClosedSignal;
+
+        currentMemberClosed.closedProcesses.push(...nextMemberClosed.closedProcesses);
+        currentMemberClosed.failedProcesses.push(...nextMemberClosed.failedProcesses);
+        currentMemberClosed.scopes.push(...nextMemberClosed.scopes);
+      },
+    );
+  }
+
+  #enqueueCancel(): void {
+    this.#transitions.append({ kind: "cancel" });
+  }
+
+  #enqueueForceFailed(failure: Failure): void {
+    this.#transitions.seal({ failure, kind: "force-failed" });
+  }
+
+  #enqueueChildFailing(scope: RuntimeScope): void {
+    this.#transitions.append({ kind: "child-failing", scope });
+  }
+
+  #exhaustTransitions(): void {
+    this.#transitions.exhaust(() => {
+      this.#flushDeferredAfterTransition();
+    });
+  }
+
+  #deferAfterTransition(callback: () => void): void {
+    this.#afterTransition.push(callback);
+  }
+
+  #flushDeferredAfterTransition(): void {
+    while (readonlyArray.isNonEmpty(this.#afterTransition)) {
+      const callbacks = [...this.#afterTransition];
+
+      for (const callback of callbacks) {
+        callback();
+      }
+    }
+  }
+
+  #triggerCleanups(processes: RuntimeProcessKeeper[]): void {
+    for (const process of processes) {
+      this.#triggerCleanup(process);
+    }
+  }
+
+  #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
+    const process = this.#mailbox.send(messageKey, value);
+
+    if (process) {
+      process.transitionTo({ input: value, status: "running" });
+      this.#zone.trackProcess(process);
     }
   }
 
@@ -299,185 +570,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
       return this.#structuralProcesses;
     }
     return this.#detachedProcesses;
-  }
-
-  #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void): void {
-    this.#transitionTo({ draft, status: "failing" });
-    failingDefer();
-    this.#tryFailed(draft);
-  }
-
-  #triggerCleanup(process: RuntimeProcessKeeper): void {
-    const spawn: CleanupSpawner = (prepare) => {
-      this.spawn(prepare, { completionMode: "structural" });
-    };
-
-    for (const cleanup of process.takeCleanups()) {
-      cleanup(spawn);
-    }
-  }
-
-  #enterCanceling(): void {
-    this.#transitionTo({ status: "canceling" });
-    this.#tryCanceled();
-  }
-
-  #registerChildScope(scope: RuntimeScope) {
-    this.#children.add(scope);
-
-    scope.#observe(() => {
-      if (scope.isClosed) {
-        this.#children.delete(scope);
-      }
-
-      this.#driveByChildScope(scope);
-    });
-  }
-
-  #registerOwnedProcess(process: RuntimeProcessKeeper): void {
-    const ownedProcesses = this.#processContainerFor(process);
-
-    ownedProcesses.add(process);
-  }
-
-  #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    const process = this.#mailbox.send(messageKey, value);
-
-    if (process) {
-      process.transitionTo({ input: value, status: "running" });
-      this.#zone.trackProcess(process);
-    }
-  }
-
-  #enterClosing(): void {
-    this.#transitionTo({ status: "closing" });
-    this.#tryCompleted();
-  }
-
-  #observe(observer: RuntimeScopeObserver): Disposer {
-    this.#observers.add(observer);
-
-    return () => {
-      this.#observers.delete(observer);
-    };
-  }
-
-  #transitionTo(state: RuntimeScopeState): void {
-    this.#state = state;
-    switch (state.status) {
-      case "closing":
-        this.#cancelDetached();
-        break;
-      case "canceling":
-        this.#cancelManaged();
-        break;
-      case "failing":
-        this.#cancelManaged();
-        break;
-      case "running":
-        return unreachable();
-      case "canceled":
-        this.#exitFuture.settle(either.left(canceledFailure));
-        this.#releaseAfterClosed();
-        break;
-      case "completed":
-        this.#exitFuture.settle(either.right(state.result));
-        this.#releaseAfterClosed();
-        break;
-      case "failed":
-        this.#exitFuture.settle(either.left(state.failure));
-        this.#releaseAfterClosed();
-        break;
-    }
-
-    const observers = [...this.#observers];
-
-    for (const observer of observers) {
-      observer();
-    }
-
-    this.#zone.trackScope(this);
-  }
-
-  #cancelManaged(): void {
-    const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
-    const children = [...this.#children];
-
-    this.#structuralProcesses.clear();
-    this.#detachedProcesses.clear();
-
-    for (const process of processes) {
-      process.transitionTo({ status: "canceled" });
-      this.#zone.trackProcess(process);
-      this.#triggerCleanup(process);
-    }
-
-    for (const child of children) {
-      child.cancel();
-    }
-  }
-
-  #driveByChildScope(scope: RuntimeScope): void {
-    match([this.status, scope.status])
-      .with(["running", P.union("completed", "failed", "canceled")], () => {
-        this.#tryClosing();
-      })
-      .with(["closing", P.union("completed", "canceled", "failed")], () => {
-        this.#tryCompleted();
-      })
-      .with(["canceling", P.union("completed", "canceled", "failed")], () => {
-        this.#tryCanceled();
-      })
-      .with(["failing", P.union("completed", "canceled")], ([status]) => {
-        const state = this.#stateAs(status);
-        this.#tryFailed(state.draft);
-      })
-      .with(["failing", "failed"], ([status, scopeStatus]) => {
-        const state = this.#stateAs(status);
-        state.draft.collect(scope.#stateAs(scopeStatus).failure);
-        this.#tryFailed(state.draft);
-      })
-      .with([P.union("running", "closing", "canceling"), "failing"], () => {
-        if (scope.descriptor.failureMode === "propagate") {
-          const draft = new ScopeFailureDraft(
-            { kind: "scope", scope },
-            () => scope.#stateAs("failed").failure,
-          );
-
-          this.#enterFailing(draft, io.Do);
-        }
-      })
-      .with(["failing", "failing"], ([status]) => {
-        if (scope.descriptor.failureMode === "propagate") {
-          const { draft } = this.#stateAs(status);
-
-          this.#enterFailing(draft, io.Do);
-        }
-      })
-      .with([P.union("completed", "canceled", "failed"), P._], unreachable)
-      .with([P._, P.union("running", "closing", "canceling")], io.Do)
-      .exhaustive();
-  }
-
-  #cancelDetached(): void {
-    const processes = [...this.#detachedProcesses];
-    this.#detachedProcesses.clear();
-
-    for (const process of processes) {
-      process.transitionTo({ status: "canceled" });
-      this.#zone.trackProcess(process);
-      this.#triggerCleanup(process);
-    }
-  }
-
-  #releaseAfterClosed(): void {
-    const canceled = either.left(canceledFailure);
-    for (const future of this.#derivedFutures) {
-      future.settle(canceled);
-    }
-
-    this.#mailbox.clear();
-    this.#observers.clear();
   }
 
   get #isQuiet(): boolean {
@@ -495,10 +587,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #parent: RuntimeScope;
   readonly #descriptor: ScopeDescriptor;
   readonly #zone: ScopeZone;
+  readonly #transitions: TransitionQueue<PendingSignal>;
 
   #state: RuntimeScopeState = { status: "running" };
   readonly #children = new Set<RuntimeScope>();
-  readonly #observers = new Set<RuntimeScopeObserver>();
   readonly #mailbox = new RuntimeMailbox<RuntimeProcessKeeper>();
 
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
@@ -507,11 +599,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
 
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
+  readonly #afterTransition: Array<() => void> = [];
 }
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
-
-export type RuntimeScopeObserver = () => void;
 
 type RuntimeScopeState = TaggedUnion<
   "status",
@@ -530,3 +621,32 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,
   { readonly status: Status }
 >;
+
+interface PendingCancelSignal {
+  kind: "cancel";
+}
+
+interface PendingChildFailingSignal {
+  kind: "child-failing";
+  scope: RuntimeScope;
+}
+
+interface PendingMemberClosedSignal {
+  kind: "member-closed";
+  closedProcesses: RuntimeProcessKeeper[];
+  failedProcesses: RuntimeProcessKeeper[];
+  scopes: RuntimeScope[];
+}
+
+type PendingMemberClosedPayload = Omit<PendingMemberClosedSignal, "kind">;
+
+interface PendingForcedFailureSignal {
+  failure: Failure;
+  kind: "force-failed";
+}
+
+type PendingSignal =
+  | PendingCancelSignal
+  | PendingMemberClosedSignal
+  | PendingChildFailingSignal
+  | PendingForcedFailureSignal;
