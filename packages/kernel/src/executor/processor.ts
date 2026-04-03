@@ -3,7 +3,7 @@ export interface Processor {
 }
 
 export interface ProcessorTask {
-  step(): ProcessorTaskState;
+  step(): ProcessorTaskStatus;
 }
 
-export type ProcessorTaskState = "continue" | "exited" | "waiting";
+export type ProcessorTaskStatus = "cede" | "exited" | "ready" | "waiting";

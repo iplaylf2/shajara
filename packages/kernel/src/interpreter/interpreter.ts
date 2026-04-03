@@ -168,9 +168,15 @@ export class Interpreter {
     return this.#rootScope.isClosed;
   }
 
-  // oxlint-disable-next-line class-methods-use-this
-  protected branchZone(parentZone: ScopeZone, _descriptor: ScopeDescriptor): ScopeZone {
-    return parentZone;
+  protected scopeBranch(
+    scope: ScopeRef<unknown>,
+    entry: Ritual<unknown>,
+    descriptor: ScopeDescriptor,
+    zone: ScopeZone,
+  ): ScopeRef<unknown> {
+    const childScope = branch(this.#resolve(scope), this.#provideProcess(entry), descriptor, zone);
+    this.#touch(childScope);
+    return childScope;
   }
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
@@ -188,18 +194,11 @@ export class Interpreter {
         accept(VOID);
         return processInterpretedStep();
       case "branch": {
-        const childZone = this.branchZone(scope.zone, sigil.descriptor);
-        const branchScope = branch(
-          scope,
-          this.#provideProcess(sigil.entry),
-          sigil.descriptor,
-          childZone,
-        );
-        this.#touch(branchScope);
-
+        const child = this.scopeBranch(scope, sigil.entry, sigil.descriptor, scope.zone);
+        const childScope = this.#resolve(child);
         accept({
-          process: branchScope.entryProcess,
-          scope: branchScope,
+          process: childScope.entryProcess,
+          scope: childScope,
         });
         return processInterpretedStep();
       }
