@@ -34,6 +34,7 @@ import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
+import type { TaggedUnion } from "type-fest";
 import { canceledFailure } from "#/failures";
 
 export class Interpreter {
@@ -101,38 +102,37 @@ export class Interpreter {
     this.#resolve(scope).forceFailed(failure);
   }
 
-  public scopeStatus(scope: ScopeRef<unknown>): "open" | "closing" | "closed" {
+  public scopeState(scope: ScopeRef<unknown>): ScopeState {
     const runtimeScope = this.#resolve(scope);
     switch (runtimeScope.status) {
       case "running":
-        return "open";
+        return { ...scopeInfo(runtimeScope), status: "open" };
       case "closing":
+        return { ...scopeInfo(runtimeScope), status: "closing" };
       case "canceling":
+        return { ...scopeInfo(runtimeScope), status: "closing" };
       case "failing":
-        return "closing";
+        return { ...scopeInfo(runtimeScope), status: "closing" };
       case "canceled":
       case "completed":
       case "failed":
-        return "closed";
+        return { ...scopeInfo(runtimeScope), status: "closed" };
     }
   }
 
-  public processStatus(process: ProcessRef<unknown>): "open" | "closed" {
+  public processState(process: ProcessRef<unknown>): ProcessState {
     const runner = this.#resolve(process).runner();
 
     switch (runner.status) {
       case "running":
+        return { activity: "running", status: "open" };
       case "waiting":
-        return "open";
+        return { activity: "waiting", status: "open" };
       case "completed":
       case "canceled":
       case "failed":
-        return "closed";
+        return { status: "closed" };
     }
-  }
-
-  public isRunnable(process: ProcessRef<unknown>): boolean {
-    return this.#resolve(process).runner().status === "running";
   }
 
   public constructor(entry: Ritual<void>) {
@@ -306,6 +306,32 @@ export class Interpreter {
   readonly #rootZoneObservers = new Set<ScopeZone>();
 }
 
+export type ScopeState = TaggedUnion<
+  "status",
+  {
+    closed: ScopeInfo;
+    closing: ScopeInfo;
+    open: ScopeInfo;
+  }
+>;
+
+export type ProcessState = TaggedUnion<
+  "status",
+  {
+    closed: {};
+    open: {
+      readonly activity: "running" | "waiting";
+    };
+  }
+>;
+
+export type ScopeInfo = {
+  readonly children: readonly ScopeRef<unknown>[];
+  readonly descriptor: ScopeDescriptor;
+  readonly parent: ScopeRef<unknown> | null;
+  readonly zone: ScopeZone;
+};
+
 function fixRunningNext(next: RuntimeProcessNextEcho<Sigil>): RunningNext<Sigil> {
   return [next.sigil.kind, next.sigil, next.accept] as RunningNext<Sigil>;
 }
@@ -401,6 +427,15 @@ function send<Value>(
   value: Value,
 ): void {
   scope.send(targetScope, messageKey, value);
+}
+
+function scopeInfo(scope: RuntimeScope): ScopeInfo {
+  return {
+    children: scope.children,
+    descriptor: scope.descriptor,
+    parent: scope.parent,
+    zone: scope.zone,
+  };
 }
 
 type RunningNext<SigilItem extends Sigil> = SigilItem extends Sigil

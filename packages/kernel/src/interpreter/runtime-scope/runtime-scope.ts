@@ -196,6 +196,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#zone;
   }
 
+  public get parent(): RuntimeScope | null {
+    return this.#hasParent ? this.#parent : null;
+  }
+
+  public get children(): readonly RuntimeScope[] {
+    return [...this.#children];
+  }
+
   public get exitFuture(): FutureKey<unknown> {
     return this.#exitFuture;
   }

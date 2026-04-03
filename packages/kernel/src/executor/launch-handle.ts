@@ -30,7 +30,7 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
     return this.executionScope;
   }
   public get status(): LaunchStatus {
-    return this.interpreter.scopeStatus(this.executionScope);
+    return this.interpreter.scopeState(this.executionScope).status;
   }
 }
 
