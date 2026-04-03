@@ -7,6 +7,7 @@ import type {
 import type {
   ContextKey,
   FutureKey,
+  FutureResult,
   MessageKey,
   ProcessRef,
   REF_TOKEN,
@@ -51,26 +52,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const cleanupTrigger = () => this.#triggerCleanup(process);
     if (this.#state.status === "failing") {
       this.#state.draft.collect(process.stateAs(failed).failure);
-      this.#enterFailing(
-        this.#state.draft,
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
-        cleanupTrigger,
-      );
+      this.#enterFailing(this.#state.draft, cleanupTrigger, {
+        propagateFailure: this.#propagatesFailure,
+      });
     } else {
       this.#enterFailing(
         new ScopeFailureDraft({ kind: "process", process }, () => process.stateAs(failed).failure),
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
         cleanupTrigger,
+        { propagateFailure: this.#propagatesFailure },
       );
     }
   }
 
-  public cancel(policy: ReportPolicy): void {
-    const syncReport = policy.syncReport && this.#hasParent;
+  public cancel(): void {
     if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, { propagateFailure: false, syncReport }, io.Do);
+      this.#enterFailing(this.#state.draft, io.Do, { propagateFailure: false });
     } else {
-      this.#enterCanceling({ syncReport });
+      this.#enterCanceling();
     }
   }
 
@@ -166,25 +164,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public forceFailed(failure: Failure): void {
     if (this.#state.status === "failing") {
       this.#state.draft.collect(failure);
-      this.#enterFailing(
-        this.#state.draft,
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
-        io.Do,
-      );
+      this.#enterFailing(this.#state.draft, io.Do, {
+        propagateFailure: this.#propagatesFailure,
+      });
     } else {
       this.#enterFailing(
         new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure),
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
         io.Do,
+        {
+          propagateFailure: this.#propagatesFailure,
+        },
       );
     }
 
     if (this.#state.status === "failing") {
-      this.#enterFailing(
-        this.#state.draft,
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
-        io.Do,
-      );
+      this.#enterFailing(this.#state.draft, io.Do, {
+        propagateFailure: this.#propagatesFailure,
+      });
     }
   }
 
@@ -242,71 +238,19 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#parent = parent;
   }
 
-  #processContainerFor(process: RuntimeProcessKeeper): Set<RuntimeProcessKeeper> {
-    if (process.descriptor.completionMode === "structural") {
-      return this.#structuralProcesses;
-    }
-    return this.#detachedProcesses;
-  }
-
-  #triggerCleanup(process: RuntimeProcessKeeper): void {
-    const spawn: CleanupSpawner = (prepare) => {
-      this.spawn(prepare, { completionMode: "structural" });
-    };
-
-    for (const cleanup of process.takeCleanups()) {
-      cleanup(spawn);
-    }
-  }
-
-  #handleChildClosed(child: RuntimeScope): void {
-    this.#children.delete(child);
-
-    const failed = "failed";
-    if (
-      this.#state.status === "failing" &&
-      child.status === failed &&
-      child.descriptor.failureMode === "propagate"
-    ) {
-      this.#state.draft.collect(child.#stateAs(failed).failure);
-    }
-
-    this.#advanceClosing();
-  }
-
-  #handleChildFailing(child: RuntimeScope): void {
-    if (this.#state.status === "failing") {
-      this.#enterFailing(
-        this.#state.draft,
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
-        io.Do,
-      );
-    } else {
-      this.#enterFailing(
-        new ScopeFailureDraft(
-          { kind: "scope", scope: child },
-          () => child.#stateAs("failed").failure,
-        ),
-        { propagateFailure: this.#propagatesFailure, syncReport: this.#hasParent },
-        io.Do,
-      );
-    }
-  }
-
   #advanceClosing(): void {
-    const closeReporting = { syncReport: this.#hasParent };
     switch (this.#state.status) {
       case "running":
         this.#tryClosing();
         return;
       case "closing":
-        this.#tryCompleted(closeReporting);
+        this.#tryCompleted();
         return;
       case "canceling":
-        this.#tryCanceled(closeReporting);
+        this.#tryCanceled();
         return;
       case "failing":
-        this.#tryFailed(this.#state.draft, closeReporting);
+        this.#tryFailed(this.#state.draft);
         return;
       case "canceled":
       case "completed":
@@ -322,64 +266,58 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #enterClosing(): void {
+    using _ = this.#reconcile();
     this.#transitionTo({ status: "closing" });
-    this.#tryCompleted({ syncReport: this.#hasParent });
+    this.#tryCompleted();
   }
 
-  #enterCanceling(policy: ReportPolicy): void {
+  #enterCanceling(): void {
+    using _ = this.#reconcile();
     this.#transitionTo({ status: "canceling" });
-    this.#tryCanceled(policy);
+    this.#tryCanceled();
   }
 
-  #enterFailing(draft: ScopeFailureDraft, policy: FailingPolicy, failingDefer: () => void): void {
+  #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void, control: FailingControl): void {
+    using _ = this.#reconcile();
     this.#transitionTo({
       draft,
       status: "failing",
     });
     failingDefer();
-    if (policy.propagateFailure) {
-      this.#parent.#handleChildFailing(this);
+    if (control.propagateFailure && this.#parent.#notReconciledFor(isFailing)) {
+      this.#parent.#enterFailingByChild(this);
     }
-    this.#tryFailed(draft, { syncReport: policy.syncReport });
+    this.#tryFailed(draft);
   }
 
-  #tryCompleted(closeReporting: ReportPolicy): void {
+  #tryCompleted(): void {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
       this.#transitionTo({ result, status: "completed" });
-      if (closeReporting.syncReport) {
-        this.#parent.#handleChildClosed(this);
+      if (this.#hasParent && this.#parent.#notReconciledFor(isAnyStatus)) {
+        this.#parent.#advanceClosing();
       }
     }
   }
 
-  #tryCanceled(closeReporting: ReportPolicy): void {
+  #tryCanceled(): void {
     if (this.#isIdle) {
       this.#transitionTo({ status: "canceled" });
-      if (closeReporting.syncReport) {
-        this.#parent.#handleChildClosed(this);
+      if (this.#hasParent && this.#parent.#notReconciledFor(isAnyStatus)) {
+        this.#parent.#advanceClosing();
       }
     }
   }
 
-  #tryFailed(draft: ScopeFailureDraft, closeReporting: ReportPolicy): void {
+  #tryFailed(draft: ScopeFailureDraft): void {
     if (this.#isIdle) {
       this.#transitionTo({
         failure: draft.build(),
         status: "failed",
       });
-      if (closeReporting.syncReport) {
-        this.#parent.#handleChildClosed(this);
+      if (this.#hasParent && this.#parent.#notReconciledFor(isAnyStatus)) {
+        this.#parent.#advanceClosing();
       }
-    }
-  }
-
-  #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
-    const process = this.#mailbox.send(messageKey, value);
-
-    if (process) {
-      process.transitionTo({ input: value, status: "running" });
-      this.#zone.trackProcess(process);
     }
   }
 
@@ -398,16 +336,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
         this.#cancelManaged();
         break;
       case "canceled":
-        this.#afterClosed();
-        this.#exitFuture.settle(either.left(canceledFailure));
+        this.#settleClosed(either.left(canceledFailure));
         break;
       case "completed":
-        this.#afterClosed();
-        this.#exitFuture.settle(either.right(state.result));
+        this.#settleClosed(either.right(state.result));
         break;
       case "failed":
-        this.#afterClosed();
-        this.#exitFuture.settle(either.left(state.failure));
+        this.#settleClosed(either.left(state.failure));
         break;
     }
 
@@ -429,7 +364,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
 
     for (const child of children) {
-      child.cancel({ syncReport: false });
+      if (child.#notReconciledFor(isCancelingOrFailing)) {
+        child.cancel();
+      }
     }
   }
 
@@ -444,19 +381,94 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #afterClosed(): void {
+  #settleClosed(result: FutureResult<unknown>): void {
+    if (this.#hasParent) {
+      this.#parent.#removeChild(this);
+    }
+
     const canceled = either.left(canceledFailure);
     for (const future of this.#derivedFutures) {
       future.settle(canceled);
     }
 
     this.#mailbox.clear();
+    this.#exitFuture.settle(result);
+  }
+
+  #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
+    const process = this.#mailbox.send(messageKey, value);
+
+    if (process) {
+      process.transitionTo({ input: value, status: "running" });
+      this.#zone.trackProcess(process);
+    }
+  }
+
+  #processContainerFor(process: RuntimeProcessKeeper): Set<RuntimeProcessKeeper> {
+    if (process.descriptor.completionMode === "structural") {
+      return this.#structuralProcesses;
+    }
+    return this.#detachedProcesses;
+  }
+
+  #triggerCleanup(process: RuntimeProcessKeeper): void {
+    const spawn: CleanupSpawner = (prepare) => {
+      this.spawn(prepare, { completionMode: "structural" });
+    };
+
+    for (const cleanup of process.takeCleanups()) {
+      cleanup(spawn);
+    }
+  }
+
+  #enterFailingByChild(child: RuntimeScope): void {
+    using _ = this.#reconcile();
+    if (this.#state.status === "failing") {
+      this.#enterFailing(this.#state.draft, io.Do, {
+        propagateFailure: this.#propagatesFailure,
+      });
+    } else {
+      this.#enterFailing(
+        new ScopeFailureDraft(
+          { kind: "scope", scope: child },
+          () => child.#stateAs("failed").failure,
+        ),
+        io.Do,
+        { propagateFailure: this.#propagatesFailure },
+      );
+    }
+  }
+
+  #removeChild(child: RuntimeScope): void {
+    if (
+      this.#state.status === "failing" &&
+      child.status === "failed" &&
+      child.descriptor.failureMode === "propagate"
+    ) {
+      this.#state.draft.collect(child.#stateAs(child.status).failure);
+    }
+
+    this.#children.delete(child);
   }
 
   #stateAs<Status extends RuntimeScopeStatus>(status: Status): RuntimeScopeStateOf<Status> {
     // oxlint-disable-next-line no-void
     void status;
     return this.#state as RuntimeScopeStateOf<Status>;
+  }
+
+  #reconcile(): Disposable {
+    const wasReconciling = this.#isReconciling;
+    this.#isReconciling = true;
+    return {
+      [Symbol.dispose]: () => {
+        this.#isReconciling = wasReconciling;
+      },
+    };
+  }
+
+  #notReconciledFor(isExpectedStatus: (status: RuntimeScopeStatus) => boolean): boolean {
+    return !this.#isReconciling || !isExpectedStatus(this.status);
   }
 
   get #isQuiet(): boolean {
@@ -484,6 +496,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #zone: ScopeZone;
 
   #state: RuntimeScopeState = { status: "running" };
+  #isReconciling = false;
   readonly #children = new Set<RuntimeScope>();
   readonly #mailbox = new RuntimeMailbox<RuntimeProcessKeeper>();
 
@@ -496,10 +509,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 }
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
-
-export interface ReportPolicy {
-  readonly syncReport: boolean;
-}
 
 type RuntimeScopeState = TaggedUnion<
   "status",
@@ -519,7 +528,18 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   { readonly status: Status }
 >;
 
-interface FailingPolicy {
+interface FailingControl {
   readonly propagateFailure: boolean;
-  readonly syncReport: boolean;
+}
+
+function isFailing(status: RuntimeScopeStatus): boolean {
+  return status === "failing";
+}
+
+function isAnyStatus(_status: RuntimeScopeStatus): boolean {
+  return true;
+}
+
+function isCancelingOrFailing(status: RuntimeScopeStatus): boolean {
+  return status === "canceling" || status === "failing";
 }

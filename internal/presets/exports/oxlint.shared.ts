@@ -14,6 +14,7 @@ export default defineConfig({
   rules: {
     "eslint/default-case": "off",
     "eslint/func-style": ["error", "declaration"],
+    "eslint/id-length": ["error", { exceptions: ["_"] }],
     "eslint/max-params": ["error", { max: 4 }],
     "eslint/no-duplicate-imports": [
       "error",
