@@ -5,7 +5,7 @@ import type { Scheduler } from "#/executor/autonomy";
 
 export class SchedulerDomain extends Domain<SchedulerDomain> {
   public static root(scheduler: Scheduler): SchedulerDomain {
-    return new SchedulerDomain(SchedulerDomain.sentinel<SchedulerDomain>(), scheduler);
+    return new SchedulerDomain(SchedulerDomain.sentinel(), scheduler);
   }
 
   public nest(scheduler: Scheduler): SchedulerDomain {

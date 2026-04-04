@@ -1,14 +1,13 @@
-// oxlint-disable id-length
-export abstract class Domain<T extends Domain<T>> {
-  protected static sentinel<T extends Domain<any>>(): T {
-    return Domain.#sentinel as T;
+export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
+  protected static sentinel<This extends { prototype: unknown }>(this: This): This["prototype"] {
+    return Domain.#sentinel;
   }
 
-  protected constructor(parent: T) {
+  protected constructor(parent: DerivedDomain) {
     this.parent = parent;
   }
 
-  protected attachChild(child: T): void {
+  protected attachChild(child: DerivedDomain): void {
     this.children.add(child);
   }
 
@@ -18,6 +17,6 @@ export abstract class Domain<T extends Domain<T>> {
 
   static readonly #sentinel = null as unknown as Domain<any>;
 
-  protected readonly parent: T;
-  protected readonly children = new Set<T>();
+  protected readonly parent: DerivedDomain;
+  protected readonly children = new Set<DerivedDomain>();
 }
