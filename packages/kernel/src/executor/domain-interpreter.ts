@@ -8,7 +8,6 @@ import type { ProcessorTaskStatus } from "./processor";
 import type { ScopeDescriptor } from "#/sigils";
 import type { ScopeZone } from "#/interpreter";
 import { autonomyOf } from "./autonomy";
-import { io } from "fp-ts";
 
 export class DomainInterpreter extends Interpreter {
   public constructor(entry: Ritual<void>, autonomy: SchedulerOption & ReaperOption) {
@@ -22,7 +21,9 @@ export class DomainInterpreter extends Interpreter {
       trackProcess: (process) => {
         schedulerDomainRoot.trackProcess(process, this.processState(process));
       },
-      trackScope: io.Do,
+      trackScope: (scope) => {
+        reaperDomainRoot.trackScope(scope, this.scopeState(scope));
+      },
     };
 
     super(entry, zoneRoot);
@@ -132,11 +133,18 @@ export class DomainInterpreter extends Interpreter {
             schedulerDomain.trackProcess(trackedProcess, this.processState(trackedProcess));
           }
         : domainZone.trackProcess;
+    const trackScope =
+      "reaper" in autonomy
+        ? (scope: ScopeRef<unknown>) => {
+            reaperDomain.trackScope(scope, this.scopeState(scope));
+          }
+        : domainZone.trackScope;
+
     return {
       reaperDomain,
       schedulerDomain,
       trackProcess,
-      trackScope: domainZone.trackScope,
+      trackScope,
     };
   }
 

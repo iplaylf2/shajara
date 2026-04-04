@@ -26,6 +26,23 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     this.#leafScopes.delete(scope);
   }
 
+  public trackScope(scope: ScopeRef<unknown>, state: ScopeState): void {
+    const isClosing = state.status === "closing";
+    const wasClosing = this.#closingScopes.has(scope);
+    if (isClosing === wasClosing) {
+      return;
+    }
+
+    if (isClosing) {
+      this.#closingScopes.add(scope);
+      this.#closingCount += 1;
+      return;
+    }
+
+    this.#closingScopes.delete(scope);
+    this.#closingCount -= 1;
+  }
+
   public *domains(): Iterable<ReaperDomain> {
     yield this;
 
@@ -37,6 +54,10 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   public *frontiers(
     scopeState: (scope: ScopeRef<unknown>) => ScopeState,
   ): Iterable<ScopeRef<unknown>> {
+    if (this.#closingCount === NO_CLOSING_SCOPES) {
+      return;
+    }
+
     for (const scope of this.#leafScopes) {
       if (scopeState(scope).status === "closing") {
         yield scope;
@@ -56,6 +77,10 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     this.#reaper = reaper;
   }
 
+  #closingCount = NO_CLOSING_SCOPES;
+  readonly #closingScopes = new Set<ScopeRef<unknown>>();
   readonly #leafScopes = new Set<ScopeRef<unknown>>();
   readonly #reaper: Reaper;
 }
+
+const NO_CLOSING_SCOPES = 0;
