@@ -9,11 +9,13 @@ import { autonomyOf } from "./autonomy";
 
 export class DomainInterpreter extends Interpreter {
   public constructor(entry: Ritual<void>, autonomy: SchedulerOption & ReaperOption) {
-    const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler);
+    const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
+      this.#schedulerTask(process),
+    );
     const zoneRoot: DomainZone = {
       schedulerDomain: schedulerDomainRoot,
       trackProcess: (process) => {
-        schedulerDomainRoot.assign(process).drive(this.#schedulerTask(process));
+        schedulerDomainRoot.trackProcess(process);
       },
       trackScope: () => {
         // Should use by reaper domain
@@ -36,16 +38,17 @@ export class DomainInterpreter extends Interpreter {
   }
 
   #createZone(zone: DomainZone, autonomy: AutonomyOptions): DomainZone {
-    const { schedulerDomain } = zone;
     if (!("scheduler" in autonomy)) {
       return zone;
     }
 
-    const schedulerDomainChild = schedulerDomain.nest(autonomy.scheduler);
+    const schedulerDomain = zone.schedulerDomain.nest(autonomy.scheduler, (process) =>
+      this.#schedulerTask(process),
+    );
     return {
-      schedulerDomain: schedulerDomainChild,
+      schedulerDomain,
       trackProcess: (process) => {
-        schedulerDomainChild.assign(process).drive(this.#schedulerTask(process));
+        schedulerDomain.trackProcess(process);
       },
       trackScope: (scope) => {
         zone.trackScope(scope);
