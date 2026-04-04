@@ -1,8 +1,7 @@
-// oxlint-disable sort-imports
+import { Domain } from "./domain";
+import type { Reaper } from "#/executor/autonomy";
 import type { ScopeRef } from "#/contracts";
 import type { ScopeState } from "#/interpreter";
-import type { Reaper } from "#/executor/autonomy";
-import { Domain } from "./domain";
 
 export class ReaperDomain extends Domain<ReaperDomain> {
   public static root(reaper: Reaper): ReaperDomain {
@@ -15,55 +14,41 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     return child;
   }
 
-  public trackScope(scope: ScopeRef<unknown>, state: ScopeState): void {
-    if (!this.#scope) {
-      this.#scope = scope;
-    }
-
-    if (this.#scope === scope && state.status === "closed") {
-      this.close();
-    }
-  }
-
   public get reaper(): Reaper {
     return this.#reaper;
   }
 
-  public *frontiers(
-    rootScope: ScopeRef<unknown>,
-    scopeState: (scope: ScopeRef<unknown>) => ScopeState,
-    resolveDomain: (scope: ScopeRef<unknown>) => ReaperDomain,
-  ): Iterable<ScopeRef<unknown>> {
+  public addLeafScope(scope: ScopeRef<unknown>): void {
+    this.#leafScopes.add(scope);
+  }
+
+  public removeLeafScope(scope: ScopeRef<unknown>): void {
+    this.#leafScopes.delete(scope);
+  }
+
+  public *domains(): Iterable<ReaperDomain> {
+    yield this;
+
     for (const child of this.children) {
-      yield* child.frontiers(rootScope, scopeState, resolveDomain);
+      yield* child.domains();
     }
+  }
 
-    const scope = this.isRoot ? rootScope : this.#scope;
-    if (!scope) {
-      return;
+  public *frontiers(
+    scopeState: (scope: ScopeRef<unknown>) => ScopeState,
+  ): Iterable<ScopeRef<unknown>> {
+    for (const scope of this.#leafScopes) {
+      if (scopeState(scope).status === "closing") {
+        yield scope;
+      }
     }
-
-    yield* this.#frontiersOf(scope, scopeState, resolveDomain);
   }
 
   public isFrontier(
-    candidate: ScopeRef<unknown>,
-    rootScope: ScopeRef<unknown>,
+    scope: ScopeRef<unknown>,
     scopeState: (scope: ScopeRef<unknown>) => ScopeState,
-    resolveDomain: (scope: ScopeRef<unknown>) => ReaperDomain,
   ): boolean {
-    const scope = this.isRoot ? rootScope : this.#scope;
-    if (!scope) {
-      return false;
-    }
-
-    for (const frontier of this.#frontiersOf(scope, scopeState, resolveDomain)) {
-      if (frontier === candidate) {
-        return true;
-      }
-    }
-
-    return false;
+    return this.#leafScopes.has(scope) && scopeState(scope).status === "closing";
   }
 
   private constructor(parent: ReaperDomain, reaper: Reaper) {
@@ -71,30 +56,6 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     this.#reaper = reaper;
   }
 
-  *#frontiersOf(
-    scope: ScopeRef<unknown>,
-    scopeState: (scope: ScopeRef<unknown>) => ScopeState,
-    resolveDomain: (scope: ScopeRef<unknown>) => ReaperDomain,
-  ): Iterable<ScopeRef<unknown>> {
-    const state = scopeState(scope);
-    let hasChildFrontier = false;
-
-    for (const child of state.children) {
-      if (resolveDomain(child) !== this) {
-        continue;
-      }
-
-      for (const frontier of this.#frontiersOf(child, scopeState, resolveDomain)) {
-        hasChildFrontier = true;
-        yield frontier;
-      }
-    }
-
-    if (!hasChildFrontier && state.status === "closing") {
-      yield scope;
-    }
-  }
-
+  readonly #leafScopes = new Set<ScopeRef<unknown>>();
   readonly #reaper: Reaper;
-  #scope: ScopeRef<unknown> | null = null;
 }
