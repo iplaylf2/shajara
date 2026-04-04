@@ -1,5 +1,6 @@
 import { Domain } from "./domain";
 import type { ProcessRef } from "#/contracts";
+import type { ProcessState } from "#/interpreter";
 import type { ProcessorTask } from "#/executor/processor";
 import type { Scheduler } from "#/executor/autonomy";
 
@@ -14,8 +15,10 @@ export class SchedulerDomain extends Domain<SchedulerDomain> {
     return child;
   }
 
-  public trackProcess(process: ProcessRef<unknown>): void {
-    this.#scheduler.assign(process).drive(this.#createTask(process));
+  public trackProcess(process: ProcessRef<unknown>, state: ProcessState): void {
+    if (state.status === "open" && state.activity === "running") {
+      this.#scheduler.assign(process).drive(this.#createTask(process));
+    }
   }
 
   private constructor(
