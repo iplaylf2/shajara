@@ -11,6 +11,14 @@ export function withAutonomy(options: AutonomyOptions): AutonomyScopeDescriptor 
   };
 }
 
+export function autonomyOf(descriptor: ScopeDescriptor): AutonomyOptions | null {
+  if (!isAutonomyScopeDescriptor(descriptor)) {
+    return null;
+  }
+
+  return descriptor.autonomy;
+}
+
 export interface AutonomyScopeDescriptor extends ScopeDescriptor {
   readonly autonomy: AutonomyOptions;
 }
@@ -31,4 +39,10 @@ export interface Scheduler {
 
 export interface Reaper {
   reap(closingScope: ScopeRef<unknown>): Wisp<Option<Failure>>;
+}
+
+function isAutonomyScopeDescriptor(
+  descriptor: ScopeDescriptor,
+): descriptor is AutonomyScopeDescriptor {
+  return "autonomy" in descriptor;
 }

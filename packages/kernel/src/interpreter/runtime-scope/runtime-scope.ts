@@ -25,7 +25,7 @@ import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils";
 
 export class RuntimeScope implements ScopeRef<unknown> {
-  public static create(
+  public static root(
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: ScopeZone,
@@ -146,7 +146,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       return option.some(this.#bindings.get(contextKey) as Value);
     }
 
-    if (!this.#hasParent) {
+    if (this.#isRoot) {
       return option.none;
     }
 
@@ -197,7 +197,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public get parent(): RuntimeScope | null {
-    return this.#hasParent ? this.#parent : null;
+    return this.#isRoot ? null : this.#parent;
   }
 
   public get children(): readonly RuntimeScope[] {
@@ -302,7 +302,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
       this.#transitionTo({ result, status: "completed" });
-      if (this.#hasParent && this.#parent.#notReconciledFor(isAnyStatus)) {
+      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
         this.#parent.#advanceClosing();
       }
     }
@@ -311,7 +311,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #tryCanceled(): void {
     if (this.#isIdle) {
       this.#transitionTo({ status: "canceled" });
-      if (this.#hasParent && this.#parent.#notReconciledFor(isAnyStatus)) {
+      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
         this.#parent.#advanceClosing();
       }
     }
@@ -323,7 +323,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
         failure: draft.build(),
         status: "failed",
       });
-      if (this.#hasParent && this.#parent.#notReconciledFor(isAnyStatus)) {
+      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
         this.#parent.#advanceClosing();
       }
     }
@@ -390,7 +390,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #settleClosed(result: FutureResult<unknown>): void {
-    if (this.#hasParent) {
+    if (!this.#isRoot) {
       this.#parent.#removeChild(this);
     }
 
@@ -488,11 +488,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   get #propagatesFailure(): boolean {
-    return this.#descriptor.failureMode === "propagate" && this.#hasParent;
+    return this.#descriptor.failureMode === "propagate";
   }
 
-  get #hasParent(): boolean {
-    return this.#parent !== RuntimeScope.#sentinel;
+  get #isRoot(): boolean {
+    return this.#parent === RuntimeScope.#sentinel;
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;

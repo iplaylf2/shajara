@@ -69,14 +69,6 @@ export class Interpreter {
     }
   }
 
-  public observeRootZone(observer: ScopeZone): Disposer {
-    this.#rootZoneObservers.add(observer);
-
-    return () => {
-      this.#rootZoneObservers.delete(observer);
-    };
-  }
-
   public spawn<Relic>(scope: ScopeRef<unknown>, worker: Ritual<Relic>): ProcessRef<Relic> {
     return this.#resolve(scope).spawn(this.#provideProcess(worker), {
       completionMode: "structural",
@@ -135,37 +127,26 @@ export class Interpreter {
     }
   }
 
-  public constructor(entry: Ritual<void>) {
-    this.#rootScope = RuntimeScope.create(
+  public constructor(entry: Ritual<void>, zoneRoot: ScopeZone) {
+    this.#scopeRoot = RuntimeScope.root(
       this.#provideProcess(entry),
       { failureMode: "contain" },
-      {
-        trackProcess: (process) => {
-          for (const observer of this.#rootZoneObservers) {
-            observer.trackProcess(process);
-          }
-        },
-        trackScope: (scope) => {
-          for (const observer of this.#rootZoneObservers) {
-            observer.trackScope(scope);
-          }
-        },
-      },
+      zoneRoot,
     );
 
-    this.#touch(this.#rootScope);
+    this.#touch(this.#scopeRoot);
   }
 
   public get scopeRoot(): ScopeRef<void> {
-    return this.#rootScope as ScopeRef<void>;
+    return this.#scopeRoot as ScopeRef<void>;
   }
 
   public get processRoot(): ProcessRef<void> {
-    return this.#rootScope.entryProcess as ProcessRef<void>;
+    return this.#scopeRoot.entryProcess as ProcessRef<void>;
   }
 
   public get isClosed(): boolean {
-    return this.#rootScope.isClosed;
+    return this.#scopeRoot.isClosed;
   }
 
   protected scopeBranch(
@@ -302,8 +283,7 @@ export class Interpreter {
     return token;
   }
 
-  readonly #rootScope: RuntimeScope;
-  readonly #rootZoneObservers = new Set<ScopeZone>();
+  readonly #scopeRoot: RuntimeScope;
 }
 
 export type ScopeState = TaggedUnion<
