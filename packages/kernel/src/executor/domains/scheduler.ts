@@ -10,7 +10,7 @@ export class SchedulerDomain extends Domain<SchedulerDomain> {
 
   public nest(scheduler: Scheduler, createTask: SchedulerTaskFactory): SchedulerDomain {
     const child = new SchedulerDomain(this, scheduler, createTask);
-    super.attachChild(child);
+    super.addChild(child);
     return child;
   }
 

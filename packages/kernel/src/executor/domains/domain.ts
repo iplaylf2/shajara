@@ -7,8 +7,16 @@ export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
     this.parent = parent;
   }
 
-  protected attachChild(child: DerivedDomain): void {
+  public close(): void {
+    this.parent.removeChild(this as unknown as DerivedDomain);
+  }
+
+  protected addChild(child: DerivedDomain): void {
     this.children.add(child);
+  }
+
+  protected removeChild(child: DerivedDomain): void {
+    this.children.delete(child);
   }
 
   protected get isRoot(): boolean {

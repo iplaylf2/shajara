@@ -1,5 +1,5 @@
-import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy";
 import type { ProcessRef, Ritual, ScopeRef } from "#/contracts";
+import type { ReaperOption, SchedulerOption } from "./autonomy";
 import { Interpreter } from "#/interpreter";
 import type { ProcessorTaskStatus } from "./processor";
 import { SchedulerDomain } from "./domains";
@@ -33,27 +33,29 @@ export class DomainInterpreter extends Interpreter {
   ): ScopeRef<unknown> {
     const domainZone = resolveDomainZone(zone);
     const autonomy = autonomyOf(descriptor);
-    const childScopeZone = autonomy ? this.#createZone(domainZone, autonomy) : domainZone;
-    return super.scopeBranch(scope, entry, descriptor, childScopeZone);
-  }
-
-  #createZone(zone: DomainZone, autonomy: AutonomyOptions): DomainZone {
-    if (!("scheduler" in autonomy)) {
-      return zone;
+    if (!autonomy || !("scheduler" in autonomy)) {
+      return super.scopeBranch(scope, entry, descriptor, domainZone);
     }
 
-    const schedulerDomain = zone.schedulerDomain.nest(autonomy.scheduler, (process) =>
+    const schedulerDomain = domainZone.schedulerDomain.nest(autonomy.scheduler, (process) =>
       this.#schedulerTask(process),
     );
-    return {
+    const childScopeZone: DomainZone = {
       schedulerDomain,
       trackProcess: (process) => {
         schedulerDomain.trackProcess(process);
       },
-      trackScope: (scope) => {
-        zone.trackScope(scope);
+      trackScope: (trackedScope) => {
+        domainZone.trackScope(trackedScope);
       },
     };
+    const childScope = super.scopeBranch(scope, entry, descriptor, childScopeZone);
+
+    this.wait(childScope.exitFuture, () => {
+      schedulerDomain.close();
+    });
+
+    return childScope;
   }
 
   #schedulerTask(process: ProcessRef<unknown>) {
