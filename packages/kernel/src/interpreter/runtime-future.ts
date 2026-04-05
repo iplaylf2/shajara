@@ -5,8 +5,9 @@ import type {
   FutureSettleKey,
   KEY_TOKEN,
 } from "#/contracts";
-import { io, option } from "fp-ts";
 import type { Disposer } from "#/utils";
+import { noop } from "#/utils";
+import { option } from "fp-ts";
 
 export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): option.Option<FutureResult<Result>> {
@@ -20,7 +21,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
   public wait(onSettled: FutureSettler<Result>): Disposer {
     if (this.#result) {
       onSettled(this.#result);
-      return io.Do;
+      return noop;
     }
 
     this.#waiters.add(onSettled);

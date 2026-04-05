@@ -41,10 +41,8 @@ export class RuntimeProcess<Relic>
   }
 
   public stateAs<Status extends RuntimeProcessStatus>(
-    status: Status,
+    _status: Status,
   ): RuntimeProcessStateOf<Relic, Status> {
-    // oxlint-disable-next-line no-void
-    void status;
     return this.#state as RuntimeProcessStateOf<Relic, Status>;
   }
 

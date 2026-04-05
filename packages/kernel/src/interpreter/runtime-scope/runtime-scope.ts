@@ -14,7 +14,8 @@ import type {
   ScopeRef,
 } from "#/contracts";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
-import { either, io, option, readonlySet } from "fp-ts";
+import { either, option, readonlySet } from "fp-ts";
+import { noop, unreachable } from "#/utils";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
@@ -22,7 +23,6 @@ import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { canceledFailure } from "#/failures";
-import { unreachable } from "#/utils";
 
 export class RuntimeScope implements ScopeRef<unknown> {
   public static root(
@@ -66,7 +66,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   public cancel(): void {
     if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, io.Do, { propagateFailure: false });
+      this.#enterFailing(this.#state.draft, noop, { propagateFailure: false });
     } else {
       this.#enterCanceling();
     }
@@ -164,13 +164,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public forceFailed(failure: Failure): void {
     if (this.#state.status === "failing") {
       this.#state.draft.collect(failure);
-      this.#enterFailing(this.#state.draft, io.Do, {
+      this.#enterFailing(this.#state.draft, noop, {
         propagateFailure: this.#propagatesFailure,
       });
     } else {
       this.#enterFailing(
         new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure),
-        io.Do,
+        noop,
         {
           propagateFailure: this.#propagatesFailure,
         },
@@ -178,7 +178,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
 
     if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, io.Do, {
+      this.#enterFailing(this.#state.draft, noop, {
         propagateFailure: this.#propagatesFailure,
       });
     }
@@ -432,7 +432,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #enterFailingByChild(child: RuntimeScope): void {
     using _ = this.#reconcile();
     if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, io.Do, {
+      this.#enterFailing(this.#state.draft, noop, {
         propagateFailure: this.#propagatesFailure,
       });
     } else {
@@ -441,7 +441,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
           { kind: "scope", scope: child },
           () => child.#stateAs("failed").failure,
         ),
-        io.Do,
+        noop,
         { propagateFailure: this.#propagatesFailure },
       );
     }
@@ -459,9 +459,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#children.delete(child);
   }
 
-  #stateAs<Status extends RuntimeScopeStatus>(status: Status): RuntimeScopeStateOf<Status> {
-    // oxlint-disable-next-line no-void
-    void status;
+  #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
     return this.#state as RuntimeScopeStateOf<Status>;
   }
 
