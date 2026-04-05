@@ -8,6 +8,7 @@ import type { ProcessorTaskStatus } from "./processor";
 import type { ScopeDescriptor } from "#/sigils";
 import type { ScopeZone } from "#/interpreter";
 import { autonomyOf } from "./autonomy";
+import { readonlyArray } from "fp-ts";
 
 export class DomainInterpreter extends Interpreter {
   public constructor(entry: Ritual<void>, autonomy: SchedulerOption & ReaperOption) {
@@ -27,22 +28,21 @@ export class DomainInterpreter extends Interpreter {
     };
 
     super(entry, zoneRoot);
-    reaperDomainRoot.addLeafScope(this.scopeRoot);
+    reaperDomainRoot.setScopeRoot(this.scopeRoot);
     this.#reaperDomainRoot = reaperDomainRoot;
   }
 
   public *reaperTasks(): Iterable<ReaperTask> {
-    for (const reaperDomain of this.#reaperDomainRoot.domains()) {
-      for (const scope of reaperDomain.frontiers((trackedScope) => this.scopeState(trackedScope))) {
-        yield {
-          spawn: () => {
-            if (!reaperDomain.isFrontier(scope, (trackedScope) => this.scopeState(trackedScope))) {
-              return null;
-            }
+    for (const reaperDomain of ReaperDomain.domains(this.#reaperDomainRoot)) {
+      if (!reaperDomain.hasClosingScope) {
+        continue;
+      }
 
-            return this.spawn(this.scopeRoot, () => reaperDomain.reaper.reap(scope));
-          },
-        };
+      for (const task of reaperDomain.createTasks(
+        (scope) => this.scopeState(scope),
+        (scope, worker) => this.spawn(scope, worker),
+      )) {
+        yield task;
       }
     }
   }
@@ -55,57 +55,58 @@ export class DomainInterpreter extends Interpreter {
   ): ScopeRef<unknown> {
     const domainZone = resolveDomainZone(zone);
     const autonomy = autonomyOf(descriptor);
-    if (autonomy) {
-      return this.#scopeBranchAutonomy(scope, domainZone, autonomy, (childScopeZone) =>
-        super.scopeBranch(scope, entry, descriptor, childScopeZone),
-      );
-    }
-
-    return super.scopeBranch(scope, entry, descriptor, domainZone);
-  }
-
-  #scopeBranchAutonomy(
-    scope: ScopeRef<unknown>,
-    zone: DomainZone,
-    autonomy: AutonomyOptions,
-    scopeBranch: (zone: DomainZone) => ScopeRef<unknown>,
-  ): ScopeRef<unknown> {
-    const childScopeZone = this.#createZone(zone, autonomy);
-    const childScope = scopeBranch(childScopeZone);
-    this.#branchReaperScope(scope, childScope, zone.reaperDomain, childScopeZone.reaperDomain);
-    this.#closeSchedulerDomain(childScope, zone.schedulerDomain, childScopeZone.schedulerDomain);
+    const childScopeZone = autonomy ? this.#createZone(domainZone, autonomy) : domainZone;
+    const childScope = super.scopeBranch(scope, entry, descriptor, childScopeZone);
+    this.#registerReaperLeaf(
+      domainZone.reaperDomain,
+      childScopeZone.reaperDomain,
+      scope,
+      childScope,
+    );
+    this.#registerSchedulerDomainClose(
+      domainZone.schedulerDomain,
+      childScopeZone.schedulerDomain,
+      childScope,
+    );
 
     return childScope;
   }
 
-  #branchReaperScope(
-    scope: ScopeRef<unknown>,
-    childScope: ScopeRef<unknown>,
+  #registerReaperLeaf(
     reaperDomain: ReaperDomain,
     childReaperDomain: ReaperDomain,
+    scope: ScopeRef<unknown>,
+    childScope: ScopeRef<unknown>,
   ): void {
     if (childReaperDomain === reaperDomain) {
-      childReaperDomain.removeLeafScope(scope);
-      childReaperDomain.addLeafScope(childScope);
-      this.wait(childScope.exitFuture, () => {
-        childReaperDomain.removeLeafScope(childScope);
-        this.#restoreReaperLeaf(scope, reaperDomain);
-      });
+      this.#moveReaperLeaf(reaperDomain, scope, childScope);
       return;
     }
 
-    childReaperDomain.addLeafScope(childScope);
+    childReaperDomain.setScopeRoot(childScope);
     this.wait(childScope.exitFuture, () => {
-      childReaperDomain.removeLeafScope(childScope);
       childReaperDomain.close();
-      this.#restoreReaperLeaf(scope, reaperDomain);
+      this.#tryRestoreReaperLeaf(reaperDomain, scope);
     });
   }
 
-  #closeSchedulerDomain(
+  #moveReaperLeaf(
+    reaperDomain: ReaperDomain,
+    scope: ScopeRef<unknown>,
     childScope: ScopeRef<unknown>,
+  ): void {
+    reaperDomain.removeLeafScope(scope);
+    reaperDomain.addLeafScope(childScope);
+    this.wait(childScope.exitFuture, () => {
+      reaperDomain.removeLeafScope(childScope);
+      this.#tryRestoreReaperLeaf(reaperDomain, scope);
+    });
+  }
+
+  #registerSchedulerDomainClose(
     schedulerDomain: SchedulerDomain,
     childSchedulerDomain: SchedulerDomain,
+    childScope: ScopeRef<unknown>,
   ): void {
     if (childSchedulerDomain === schedulerDomain) {
       return;
@@ -167,20 +168,10 @@ export class DomainInterpreter extends Interpreter {
     };
   }
 
-  #reaperDomain(scope: ScopeRef<unknown>): ReaperDomain {
-    return resolveDomainZone(this.scopeState(scope).zone).reaperDomain;
-  }
-
-  #restoreReaperLeaf(scope: ScopeRef<unknown>, reaperDomain: ReaperDomain): void {
+  #tryRestoreReaperLeaf(reaperDomain: ReaperDomain, scope: ScopeRef<unknown>): void {
     const state = this.scopeState(scope);
-    if (state.status === "closed") {
+    if (state.status === "closed" || readonlyArray.isNonEmpty(state.children)) {
       return;
-    }
-
-    for (const child of state.children) {
-      if (this.#reaperDomain(child) === reaperDomain) {
-        return;
-      }
     }
 
     reaperDomain.addLeafScope(scope);
@@ -189,9 +180,7 @@ export class DomainInterpreter extends Interpreter {
   readonly #reaperDomainRoot: ReaperDomain;
 }
 
-export interface ReaperTask {
-  spawn(): ProcessRef<Option<Failure>> | null;
-}
+export type ReaperTask = () => ProcessRef<Option<Failure>>;
 
 function resolveDomainZone(zone: ScopeZone): DomainZone {
   return zone as DomainZone;
