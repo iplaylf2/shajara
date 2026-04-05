@@ -1,10 +1,10 @@
-// oxlint-disable no-magic-numbers
 import type { ProcessRef, Ritual, ScopeRef } from "#/contracts";
 import { Domain } from "./domain";
 import type { Failure } from "#/failures";
 import type { Option } from "#/utils";
 import type { Reaper } from "#/executor/autonomy";
 import type { ScopeState } from "#/interpreter";
+import { readonlySet } from "fp-ts";
 
 export class ReaperDomain extends Domain<ReaperDomain> {
   public static root(reaper: Reaper): ReaperDomain {
@@ -31,20 +31,11 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   }
 
   public trackScope(scope: ScopeRef<unknown>, state: ScopeState): void {
-    const isClosing = state.status === "closing";
-    const wasClosing = this.#closingScopes.has(scope);
-    if (isClosing === wasClosing) {
-      return;
-    }
-
-    if (isClosing) {
+    if (state.status === "closing") {
       this.#closingScopes.add(scope);
-      this.#closingCount += 1;
-      return;
+    } else if (!readonlySet.isEmpty(this.#closingScopes)) {
+      this.#closingScopes.delete(scope);
     }
-
-    this.#closingScopes.delete(scope);
-    this.#closingCount -= 1;
   }
 
   public *createTasks(
@@ -68,7 +59,7 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   }
 
   public get hasClosingScope(): boolean {
-    return this.#closingCount > 0;
+    return !readonlySet.isEmpty(this.#closingScopes);
   }
 
   public get scopeRoot(): ScopeRef<unknown> {
@@ -81,7 +72,6 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   }
 
   #scopeRoot!: ScopeRef<unknown>;
-  #closingCount = 0;
   readonly #closingScopes = new Set<ScopeRef<unknown>>();
   readonly #leafScopes = new Set<ScopeRef<unknown>>();
   readonly #reaper: Reaper;
