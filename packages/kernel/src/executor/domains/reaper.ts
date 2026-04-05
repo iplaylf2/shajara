@@ -48,7 +48,7 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     for (const scope of this.#leafScopes) {
       if (scopeState(scope).status === "closing") {
         yield {
-          check: () => spawn(this.#scopeRoot, () => this.#reaper.reap(scope)),
+          adjudicate: () => spawn(this.#scopeRoot, () => this.#reaper.adjudicate(scope)),
           scope,
         };
       }
@@ -81,6 +81,6 @@ export class ReaperDomain extends Domain<ReaperDomain> {
 }
 
 export interface ReaperTask {
-  check(): ProcessRef<Option<Failure>>;
+  adjudicate(): ProcessRef<Option<Failure>>;
   scope: ScopeRef<unknown>;
 }

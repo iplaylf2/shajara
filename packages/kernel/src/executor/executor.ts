@@ -36,7 +36,7 @@ class RuntimeExecutor implements Executor {
       () => this.#startReaperRound(),
     );
     this.#interpreter = new DomainInterpreter(park, {
-      reaper: { reap: () => wisp.of(option.none) },
+      reaper: { adjudicate: () => wisp.of(option.none) },
       scheduler: { assign: () => this.#driver.processor },
     });
     this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot);
@@ -95,8 +95,8 @@ class RuntimeExecutor implements Executor {
   }
 
   #startReaperRound(): void {
-    for (const { check, scope } of this.#interpreter.reaperTasks()) {
-      const process = check();
+    for (const { adjudicate, scope } of this.#interpreter.reaperTasks()) {
+      const process = adjudicate();
 
       this.#interpreter.wait(process.exitFuture, (result) => {
         if (this.#interpreter.scopeState(scope).status === "closed") {
