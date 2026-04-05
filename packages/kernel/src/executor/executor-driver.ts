@@ -2,6 +2,7 @@ import type { Processor, ProcessorTask } from "./processor";
 import type { Pacer } from "./pacer";
 import type { ProcessRef } from "#/contracts";
 import type { ProcessStep } from "#/interpreter";
+import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {
   public static create(
@@ -65,20 +66,20 @@ export class ExecutorDriver {
     const slice = this.#pacer.beginSlice();
     this.#beginTurn();
 
-    while (this.#hasReadyTask && !slice.shouldYield()) {
-      this.#driveReadyTask();
+    while (this.#hasTask && !slice.shouldYield()) {
+      this.#driveTask();
     }
   }
 
-  #driveReadyTask(): void {
-    const task = this.#ready.shift() as ProcessorTask;
+  #driveTask(): void {
+    const task = this.#tasks.shift() as ProcessorTask;
     while (true) {
       const status = task.step();
       switch (status) {
         case "ready":
           continue;
         case "cede":
-          this.#ready.push(task);
+          this.#tasks.push(task);
           return;
         case "waiting":
         case "exited":
@@ -87,21 +88,18 @@ export class ExecutorDriver {
     }
   }
 
-  get #hasReadyTask(): boolean {
-    return this.#ready.length > EMPTY_QUEUE;
+  get #hasTask(): boolean {
+    return readonlyArray.isNonEmpty(this.#tasks);
   }
 
   #isStopped = false;
-
   readonly #pacer: Pacer;
   readonly #stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>;
   readonly #beginTurn: () => void;
-  readonly #ready: ProcessorTask[] = [];
+  readonly #tasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
     drive: (task) => {
-      this.#ready.push(task);
+      this.#tasks.push(task);
     },
   };
 }
-
-const EMPTY_QUEUE = 0;

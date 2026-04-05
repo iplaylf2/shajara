@@ -94,6 +94,12 @@ class RuntimeExecutor implements Executor {
     return this.#rootScope;
   }
 
+  #startReaperRound(): void {
+    for (const task of this.#interpreter.reaperTasks()) {
+      task();
+    }
+  }
+
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
     return this.#isRegisteredScope(scope) && this.#scopeStatus(scope) === "open";
   }
@@ -113,12 +119,6 @@ class RuntimeExecutor implements Executor {
 
   #pollFuture<Result>(futureSettle: FutureSettleKey<Result>): Option<FutureResult<Result>> {
     return this.#interpreter.poll(futureSettle);
-  }
-
-  #startReaperRound(): void {
-    for (const task of this.#interpreter.reaperTasks()) {
-      task();
-    }
   }
 
   readonly #driver: ExecutorDriver;

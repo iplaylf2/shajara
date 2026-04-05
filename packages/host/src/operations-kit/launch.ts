@@ -7,7 +7,9 @@ import type {
 } from "@shajara/kernel";
 import { decodeRitual, fromFailure } from "#/boundary";
 import { CanceledError } from "#/errors";
+import type { Option } from "@shajara/kernel/utils";
 import type { RiteRoutine } from "#/contracts";
+import { isNone } from "@shajara/kernel/utils";
 
 export function launch<Result>(
   executor: Executor,
@@ -40,7 +42,7 @@ export function launch<Result>(
     }
   }
 
-  const execution = executor.launch(scope, decodeRitual(guardedRitual));
+  const execution = unwrap(executor.launch(scope, decodeRitual(guardedRitual)));
   const settled = asSettledPromise(execution);
 
   return {
@@ -60,6 +62,14 @@ export interface RunOptions {
 
 export interface StatefulPromise<Return> extends PromiseLike<Return> {
   status: LaunchStatus;
+}
+
+function unwrap<Return>(execution: Option<LaunchHandle<Return>>): LaunchHandle<Return> {
+  if (isNone(execution)) {
+    throw new Error("Cannot launch ritual with an illegal scope.");
+  }
+
+  return execution.value;
 }
 
 function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Return> {
