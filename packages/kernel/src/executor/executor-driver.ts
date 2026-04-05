@@ -72,17 +72,19 @@ export class ExecutorDriver {
   }
 
   #driveTask(): void {
-    const task = this.#tasks.shift() as ProcessorTask;
+    const [task] = this.#tasks;
     while (true) {
-      const status = task.step();
+      const status = task!.step();
       switch (status) {
         case "ready":
           continue;
         case "cede":
-          this.#tasks.push(task);
+          this.#tasks.shift();
+          this.#tasks.push(task!);
           return;
         case "waiting":
         case "exited":
+          this.#tasks.shift();
           return;
       }
     }
