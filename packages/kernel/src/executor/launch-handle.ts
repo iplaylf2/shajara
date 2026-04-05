@@ -8,25 +8,25 @@ import { either } from "fp-ts";
 
 export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   public onSettled(listener: (result: LaunchResult<Result>) => void): Disposer {
-    return this.onScopeSettled(this.executionScope.exitFuture, (result) => {
-      if (either.isLeft(result)) {
-        if (result.left === canceledFailure) {
-          listener({ kind: "canceled" });
-        } else {
-          listener({ failure: result.left as Failure, kind: "failure" });
-        }
-      } else {
-        listener({ kind: "success", result: result.right });
-      }
-    });
+    const subscription = this.#subscribe(listener);
+    const settledDispose = this.onScopeSettled(
+      this.executionScope.exitFuture,
+      subscription.onSettled,
+    );
+
+    return () => {
+      subscription.dispose();
+      settledDispose();
+    };
   }
 
   public constructor(
     private readonly executionScope: ExecutionScopeRef<Result>,
-    private readonly onScopeSettled: <Result>(
-      future: FutureKey<Result>,
-      onSettled: (result: FutureResult<Result>) => void,
+    private readonly onScopeSettled: <Settled>(
+      future: FutureKey<Settled>,
+      onSettled: (result: FutureResult<Settled>) => void,
     ) => Disposer,
+    private readonly notify: (notification: () => void) => void,
     private readonly scopeStatus: (scope: ExecutionScopeRef<unknown>) => LaunchStatus,
   ) {}
 
@@ -36,6 +36,23 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
 
   public get status(): LaunchStatus {
     return this.scopeStatus(this.executionScope);
+  }
+
+  #subscribe(listener: (result: LaunchResult<Result>) => void): DeferredSubscription<Result> {
+    let isActive = true;
+
+    return {
+      dispose: () => {
+        isActive = false;
+      },
+      onSettled: (result) => {
+        this.notify(() => {
+          if (isActive) {
+            listener(toLaunchResult(result));
+          }
+        });
+      },
+    };
   }
 }
 
@@ -56,3 +73,19 @@ export type LaunchResult<Result> = TaggedUnion<
 >;
 
 export type LaunchStatus = "open" | "closing" | "closed";
+
+interface DeferredSubscription<Result> {
+  dispose(): void;
+  onSettled(result: FutureResult<Result>): void;
+}
+
+function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Result> {
+  if (either.isLeft(result)) {
+    if (result.left === canceledFailure) {
+      return { kind: "canceled" };
+    }
+
+    return { failure: result.left as Failure, kind: "failure" };
+  }
+  return { kind: "success", result: result.right };
+}
