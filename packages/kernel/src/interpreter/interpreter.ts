@@ -82,11 +82,16 @@ export class Interpreter {
     return this.#resolve(scope).lookup(contextKey);
   }
 
-  public poll<Result>(future: FutureKey<Result>): option.Option<FutureResult<Result>> {
+  public poll<Result>(
+    future: FutureKey<Result> | FutureSettleKey<Result>,
+  ): option.Option<FutureResult<Result>> {
     return this.#resolve(future).poll();
   }
 
-  public wait<Result>(future: FutureKey<Result>, onSettled: FutureSettler<Result>): Disposer {
+  public wait<Result>(
+    future: FutureKey<Result> | FutureSettleKey<Result>,
+    onSettled: FutureSettler<Result>,
+  ): Disposer {
     return this.#resolve(future).wait(onSettled);
   }
 
@@ -276,8 +281,7 @@ export class Interpreter {
 
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
   #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcessHandle<Relic>;
-  #resolve<Result>(futureKey: FutureKey<Result>): RuntimeFuture<Result>;
-  #resolve<Result>(futureSettleKey: FutureSettleKey<Result>): RuntimeFuture<Result>;
+  #resolve<Result>(futureKey: FutureKey<Result> | FutureSettleKey<Result>): RuntimeFuture<Result>;
   // oxlint-disable-next-line class-methods-use-this
   #resolve(token: unknown): unknown {
     return token;
