@@ -1,14 +1,14 @@
+import type { FutureKey, FutureResult } from "#/contracts";
 import type { Disposer } from "#/utils";
 import type { ExecutionScopeRef } from "./execution-scope";
 import type { Failure } from "#/failures";
-import type { Interpreter } from "#/interpreter";
 import type { TaggedUnion } from "type-fest";
 import { canceledFailure } from "#/failures";
 import { either } from "fp-ts";
 
 export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   public onSettled(listener: (result: LaunchResult<Result>) => void): Disposer {
-    return this.interpreter.wait(this.executionScope.exitFuture, (result) => {
+    return this.onScopeSettled(this.executionScope.exitFuture, (result) => {
       if (either.isLeft(result)) {
         if (result.left === canceledFailure) {
           listener({ kind: "canceled" });
@@ -22,15 +22,20 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   }
 
   public constructor(
-    private readonly interpreter: Interpreter,
     private readonly executionScope: ExecutionScopeRef<Result>,
+    private readonly onScopeSettled: <Result>(
+      future: FutureKey<Result>,
+      onSettled: (result: FutureResult<Result>) => void,
+    ) => Disposer,
+    private readonly scopeStatus: (scope: ExecutionScopeRef<unknown>) => LaunchStatus,
   ) {}
 
   public get scope(): ExecutionScopeRef<Result> {
     return this.executionScope;
   }
+
   public get status(): LaunchStatus {
-    return this.interpreter.scopeState(this.executionScope).status;
+    return this.scopeStatus(this.executionScope);
   }
 }
 
