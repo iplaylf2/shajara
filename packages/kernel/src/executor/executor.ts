@@ -1,16 +1,16 @@
-import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
+import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import { cancel, park, settle } from "#/primitives";
+import { either, io, option } from "fp-ts";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
+import type { Failure } from "#/failures";
 import type { LaunchHandle } from "./launch-handle";
 import type { Option } from "#/utils";
 import type { Pacer } from "./pacer";
 import type { ProcessStepOf } from "#/interpreter";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { branch } from "#/sigils";
-import type { either } from "fp-ts";
-import { option } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -95,8 +95,28 @@ class RuntimeExecutor implements Executor {
   }
 
   #startReaperRound(): void {
-    for (const task of this.#interpreter.reaperTasks()) {
-      task();
+    for (const { check, scope } of this.#interpreter.reaperTasks()) {
+      const process = check();
+
+      this.#interpreter.wait(process.exitFuture, (result) => {
+        if (this.#interpreter.scopeState(scope).status === "closed") {
+          return;
+        }
+
+        pipe(
+          result,
+          either.chain(
+            option.match(
+              () => either.right(io.Do),
+              (id: FailureShape) => either.left(id),
+            ),
+          ),
+          either.getOrElse(
+            (failure) => () => this.#interpreter.forceFailed(scope, failure as Failure),
+          ),
+          (run) => run(),
+        );
+      });
     }
   }
 

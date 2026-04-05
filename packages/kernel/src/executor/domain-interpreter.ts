@@ -1,10 +1,9 @@
 import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy";
 import type { ProcessRef, Ritual, ScopeRef } from "#/contracts";
 import { ReaperDomain, SchedulerDomain } from "./domains";
-import type { Failure } from "#/failures";
 import { Interpreter } from "#/interpreter";
-import type { Option } from "#/utils";
 import type { ProcessorTaskStatus } from "./processor";
+import type { ReaperTask } from "./domains";
 import type { ScopeDescriptor } from "#/sigils";
 import type { ScopeZone } from "#/interpreter";
 import { autonomyOf } from "./autonomy";
@@ -180,7 +179,7 @@ export class DomainInterpreter extends Interpreter {
   readonly #reaperDomainRoot: ReaperDomain;
 }
 
-export type ReaperTask = () => ProcessRef<Option<Failure>>;
+export type { ReaperTask } from "./domains";
 
 function resolveDomainZone(zone: ScopeZone): DomainZone {
   return zone as DomainZone;

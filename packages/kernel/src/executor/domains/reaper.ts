@@ -44,10 +44,13 @@ export class ReaperDomain extends Domain<ReaperDomain> {
       scope: ScopeRef<unknown>,
       worker: Ritual<Option<Failure>>,
     ) => ProcessRef<Option<Failure>>,
-  ): Iterable<() => ProcessRef<Option<Failure>>> {
+  ): Iterable<ReaperTask> {
     for (const scope of this.#leafScopes) {
       if (scopeState(scope).status === "closing") {
-        yield () => spawn(this.#scopeRoot, () => this.#reaper.reap(scope));
+        yield {
+          check: () => spawn(this.#scopeRoot, () => this.#reaper.reap(scope)),
+          scope,
+        };
       }
     }
   }
@@ -75,4 +78,9 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   readonly #closingScopes = new Set<ScopeRef<unknown>>();
   readonly #leafScopes = new Set<ScopeRef<unknown>>();
   readonly #reaper: Reaper;
+}
+
+export interface ReaperTask {
+  check(): ProcessRef<Option<Failure>>;
+  scope: ScopeRef<unknown>;
 }
