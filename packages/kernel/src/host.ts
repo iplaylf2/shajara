@@ -1,9 +1,6 @@
 import { readonlyArray } from "fp-ts";
 
-export function flushCallbacks(
-  callbacks: Iterable<() => void>,
-  message: string,
-): void {
+export function flushCallbacks(callbacks: Iterable<() => void>, message: string): void {
   const errors: unknown[] = [];
 
   for (const callback of callbacks) {

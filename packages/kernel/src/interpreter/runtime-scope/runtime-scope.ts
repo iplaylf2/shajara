@@ -170,26 +170,20 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public forceFailed(failure: Failure): void {
+    using _ = this.#reconcile();
+    const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
     if (this.#state.status === "failing") {
-      this.#state.draft.collect(failure);
-      this.#enterFailing(this.#state.draft, noop, {
-        propagateFailure: this.#propagatesFailure,
-      });
-    } else {
-      this.#enterFailing(
-        new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure),
-        noop,
-        {
-          propagateFailure: this.#propagatesFailure,
-        },
-      );
+      draft.collect(this.#state.draft.build());
     }
 
-    if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, noop, {
-        propagateFailure: this.#propagatesFailure,
-      });
+    const notifications = [...this.#cancelManaged(), ...this.#cancelManaged()];
+    flushCallbacks(notifications, "Scope failed notifications failed");
+
+    if (this.#propagatesFailure && this.#parent.#notReconciledFor(isFailing)) {
+      this.#parent.#enterFailingByChild(this);
     }
+
+    this.#tryFailed(draft);
   }
 
   public get descriptor(): ScopeDescriptor {
@@ -284,7 +278,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #enterClosing(): void {
     using _ = this.#reconcile();
     try {
-      this.#transitionTo({ status: "closing" });
+      const notifications = this.#transitionTo({ status: "closing" });
+      flushCallbacks(notifications, "Scope closing notifications failed");
       this.#tryCompleted();
     } catch (cause) {
       this.#interrupt(cause);
@@ -294,7 +289,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #enterCanceling(): void {
     using _ = this.#reconcile();
     try {
-      this.#transitionTo({ status: "canceling" });
+      const notifications = this.#transitionTo({ status: "canceling" });
+      flushCallbacks(notifications, "Scope canceling notifications failed");
       this.#tryCanceled();
     } catch (cause) {
       this.#interrupt(cause);
@@ -304,11 +300,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void, control: FailingControl): void {
     using _ = this.#reconcile();
     try {
-      this.#transitionTo({
+      const notifications = this.#transitionTo({
         draft,
         status: "failing",
       });
       failingDefer();
+      flushCallbacks(notifications, "Scope failing notifications failed");
       if (control.propagateFailure && this.#parent.#notReconciledFor(isFailing)) {
         this.#parent.#enterFailingByChild(this);
       }
@@ -321,64 +318,67 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #tryCompleted(): void {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
-      this.#transitionTo({ result, status: "completed" });
+      const notifications = this.#transitionTo({ result, status: "completed" });
       if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
         this.#parent.#advanceClosing();
       }
+      flushCallbacks(notifications, "Scope completed notifications failed");
     }
   }
 
   #tryCanceled(): void {
     if (this.#isIdle) {
-      this.#transitionTo({ status: "canceled" });
+      const notifications = this.#transitionTo({ status: "canceled" });
       if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
         this.#parent.#advanceClosing();
       }
+      flushCallbacks(notifications, "Scope canceled notifications failed");
     }
   }
 
   #tryFailed(draft: ScopeFailureDraft): void {
     if (this.#isIdle) {
-      this.#transitionTo({
+      const notifications = this.#transitionTo({
         failure: draft.build(),
         status: "failed",
       });
       if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
         this.#parent.#advanceClosing();
       }
+      flushCallbacks(notifications, "Scope failed notifications failed");
     }
   }
 
-  #transitionTo(state: RuntimeScopeState): void {
+  #transitionTo(state: RuntimeScopeState): Array<() => void> {
     this.#state = state;
+    const notifications: Array<() => void> = [];
     switch (state.status) {
       case "running":
         return unreachable();
       case "closing":
-        this.#cancelDetached();
+        notifications.push(...this.#cancelDetached());
         break;
       case "canceling":
-        this.#cancelManaged();
-        break;
       case "failing":
-        this.#cancelManaged();
+        notifications.push(...this.#cancelManaged());
         break;
       case "canceled":
-        this.#settleClosed(either.left(canceledFailure));
+        notifications.push(...this.#settleClosed(either.left(canceledFailure)));
         break;
       case "completed":
-        this.#settleClosed(either.right(state.result));
+        notifications.push(...this.#settleClosed(either.right(state.result)));
         break;
       case "failed":
-        this.#settleClosed(either.left(state.failure));
+        notifications.push(...this.#settleClosed(either.left(state.failure)));
         break;
     }
 
-    this.#zone.trackScope(this);
+    notifications.push(() => this.#zone.trackScope(this));
+    return notifications;
   }
 
   // oxlint-disable-next-line max-statements
-  #cancelManaged(): void {
+  #cancelManaged(): Array<() => void> {
     const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];
 
@@ -399,10 +399,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
       }
     }
 
-    flushCallbacks(notifications, "Process cancellation notifications failed");
+    return notifications;
   }
 
-  #cancelDetached(): void {
+  #cancelDetached(): Array<() => void> {
     const processes = [...this.#detachedProcesses];
     const notifications: Array<() => void> = [];
     this.#detachedProcesses.clear();
@@ -414,10 +414,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
       notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
     }
 
-    flushCallbacks(notifications, "Process cancellation notifications failed");
+    return notifications;
   }
 
-  #settleClosed(result: FutureResult<unknown>): void {
+  #settleClosed(result: FutureResult<unknown>): Array<() => void> {
     if (!this.#isRoot) {
       this.#parent.#removeChild(this);
     }
@@ -425,14 +425,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#mailbox.clear();
 
     const canceled = either.left(canceledFailure);
-    flushCallbacks(
-      [
-        // oxlint-disable-next-line no-magic-numbers
-        ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)).flat(1),
-        ...this.#exitFuture.settle(result),
-      ],
-      "Scope closure notifications failed",
-    );
+    return [
+      // oxlint-disable-next-line no-magic-numbers
+      ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)).flat(1),
+      ...this.#exitFuture.settle(result),
+    ];
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -495,15 +492,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       throw cause;
     }
 
-    const interruptedDraft = new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
-      interruptedFailure(cause),
-    );
-
-    if (this.#state.status === "failing") {
-      interruptedDraft.collect(this.#state.draft.build());
-    }
-
-    this.#enterFailing(interruptedDraft, noop, { propagateFailure: this.#propagatesFailure });
+    this.forceFailed(interruptedFailure(cause));
   }
 
   #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
