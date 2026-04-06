@@ -1,6 +1,7 @@
 // oxlint-disable max-lines
 import type {
   CleanupSpawner,
+  CleanupTask,
   ProvideRuntimeProcess,
   RuntimeProcessKeeper,
 } from "#/interpreter/runtime-process";
@@ -23,6 +24,7 @@ import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { canceledFailure } from "#/failures";
+import { flushCallbacks } from "#/host";
 
 export class RuntimeScope implements ScopeRef<unknown> {
   public static root(
@@ -36,20 +38,20 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public complete(process: RuntimeProcessKeeper, result: unknown): void {
-    process.transitionTo({ result, status: "completed" });
+    const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
-    this.#zone.trackProcess(process);
-    this.#triggerCleanup(process);
+    this.#triggerCleanup(closure.cleanups);
     this.#advanceClosing();
+    this.#zone.trackProcess(process);
+    flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
   }
 
   public halt(process: RuntimeProcessKeeper, failure: Failure): void {
     const failed = "failed";
-    process.transitionTo({ failure, status: failed });
+    const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
-    this.#zone.trackProcess(process);
 
-    const cleanupTrigger = () => this.#triggerCleanup(process);
+    const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
     if (this.#state.status === "failing") {
       this.#state.draft.collect(process.stateAs(failed).failure);
       this.#enterFailing(this.#state.draft, cleanupTrigger, {
@@ -62,6 +64,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
         { propagateFailure: this.#propagatesFailure },
       );
     }
+
+    this.#zone.trackProcess(process);
+    flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
   }
 
   public cancel(): void {
@@ -112,11 +117,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   public wait(process: RuntimeProcessKeeper, future: RuntimeFuture<unknown>): void {
     const unsubscribe = future.wait((result) => {
-      process.transitionTo({ input: result, status: "running" });
+      process.resume(result);
       this.#zone.trackProcess(process);
     });
 
-    process.transitionTo({ dispose: unsubscribe, status: "waiting" });
+    process.wait(unsubscribe);
     this.#zone.trackProcess(process);
   }
 
@@ -128,11 +133,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public receive(process: RuntimeProcessKeeper, messageKey: MessageKey<unknown>): void {
     this.#mailbox.enqueueReceiver(process, messageKey);
 
-    process.transitionTo({
-      dispose: () => {
-        this.#mailbox.cancelReceiver(process);
-      },
-      status: "waiting",
+    process.wait(() => {
+      this.#mailbox.cancelReceiver(process);
     });
     this.#zone.trackProcess(process);
   }
@@ -366,9 +368,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#detachedProcesses.clear();
 
     for (const process of processes) {
-      process.transitionTo({ status: "canceled" });
+      const closure = process.cancel();
+      this.#triggerCleanup(closure.cleanups);
       this.#zone.trackProcess(process);
-      this.#triggerCleanup(process);
+      flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
     }
 
     for (const child of children) {
@@ -383,9 +386,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#detachedProcesses.clear();
 
     for (const process of processes) {
-      process.transitionTo({ status: "canceled" });
+      const closure = process.cancel();
+      this.#triggerCleanup(closure.cleanups);
       this.#zone.trackProcess(process);
-      this.#triggerCleanup(process);
+      flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
     }
   }
 
@@ -394,20 +398,24 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.#parent.#removeChild(this);
     }
 
-    const canceled = either.left(canceledFailure);
-    for (const future of this.#derivedFutures) {
-      future.settle(canceled);
-    }
-
     this.#mailbox.clear();
-    this.#exitFuture.settle(result);
+
+    const canceled = either.left(canceledFailure);
+    flushCallbacks(
+      [
+        // oxlint-disable-next-line no-magic-numbers
+        ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)).flat(1),
+        ...this.#exitFuture.settle(result),
+      ],
+      "Scope closure callbacks failed",
+    );
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
     const process = this.#mailbox.send(messageKey, value);
 
     if (process) {
-      process.transitionTo({ input: value, status: "running" });
+      process.resume(value);
       this.#zone.trackProcess(process);
     }
   }
@@ -419,12 +427,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#detachedProcesses;
   }
 
-  #triggerCleanup(process: RuntimeProcessKeeper): void {
+  #triggerCleanup(cleanups: readonly CleanupTask[]): void {
     const spawn: CleanupSpawner = (prepare) => {
       this.spawn(prepare, { completionMode: "structural" });
     };
 
-    for (const cleanup of process.takeCleanups()) {
+    for (const cleanup of cleanups) {
       cleanup(spawn);
     }
   }

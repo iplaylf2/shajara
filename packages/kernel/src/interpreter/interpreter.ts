@@ -36,6 +36,7 @@ import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { canceledFailure } from "#/failures";
+import { flushCallbacks } from "#/host";
 
 export class Interpreter {
   public step<Relic>(process: ProcessRef<Relic>): ProcessStep<Relic> {
@@ -350,7 +351,7 @@ function halt(scope: RuntimeScope, process: RuntimeProcessKeeper, failure: Failu
 }
 
 function settle<Result>(future: RuntimeFuture<Result>, result: FutureResult<Result>): void {
-  future.settle(result);
+  flushCallbacks(future.settle(result), "Future settlement callbacks failed");
 }
 
 function spawn<Relic>(

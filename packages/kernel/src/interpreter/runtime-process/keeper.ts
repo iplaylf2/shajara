@@ -7,8 +7,11 @@ export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
   stateAs<Status extends RuntimeProcessKeeperStatus>(
     status: Status,
   ): RuntimeProcessKeeperStateOf<Status>;
-  transitionTo(transition: RuntimeProcessKeeperTransition): void;
-  takeCleanups(): CleanupTask[];
+  resume(input: unknown): void;
+  wait(dispose: () => void): void;
+  complete(result: unknown): ProcessClosure;
+  fail(failure: Failure): ProcessClosure;
+  cancel(): ProcessClosure;
   readonly descriptor: ProcessDescriptor;
   readonly isClosed: boolean;
   readonly status: RuntimeProcessKeeperStatus;
@@ -19,7 +22,10 @@ export type RuntimeProcessKeeperStateOf<Status extends RuntimeProcessKeeperStatu
   { readonly status: Status }
 >;
 
-export type CleanupTask = (spawn: CleanupSpawner) => void;
+export interface ProcessClosure {
+  readonly exitCallbacks: Array<() => void>;
+  readonly cleanups: CleanupTask[];
+}
 
 export type RuntimeProcessKeeperState = TaggedUnion<
   "status",
@@ -32,18 +38,9 @@ export type RuntimeProcessKeeperState = TaggedUnion<
   }
 >;
 
-export type RuntimeProcessKeeperTransition = TaggedUnion<
-  "status",
-  {
-    canceled: {};
-    completed: { readonly result: unknown };
-    failed: { readonly failure: Failure };
-    running: { input: unknown };
-    waiting: { dispose(): void };
-  }
->;
-
 export type RuntimeProcessKeeperStatus = RuntimeProcessKeeperState["status"];
+
+export type CleanupTask = (spawn: CleanupSpawner) => void;
 
 export type CleanupSpawner = (provideProcess: ProvideRuntimeProcess) => void;
 

@@ -1,5 +1,5 @@
-import type { CleanupTask, RuntimeProcessKeeper, RuntimeProcessKeeperTransition } from "./keeper";
-import type { FutureKey, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
+import type { CleanupTask, ProcessClosure, RuntimeProcessKeeper } from "./keeper";
+import type { FutureKey, FutureResult, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
 import type { ProcessDescriptor, SelfHandle, Sigil } from "#/sigils";
 import type {
   RuntimeProcessNextEcho,
@@ -46,57 +46,53 @@ export class RuntimeProcess<Relic>
     return this.#state as RuntimeProcessStateOf<Relic, Status>;
   }
 
-  public transitionTo(transition: RuntimeProcessKeeperTransition): void {
-    switch (transition.status) {
-      case "running": {
-        const current = this.stateAs("waiting");
-        const runner = current.stepper.current() as RuntimeProcessNextEcho<Sigil>;
-        runner.accept(transition.input);
-        this.#state = createRunningState(current.stepper);
-        return;
-      }
-      case "waiting": {
-        const current = this.stateAs("running");
-        this.#state = {
-          dispose: transition.dispose,
-          status: "waiting",
-          stepper: current.stepper,
-        };
-        return;
-      }
-      case "completed":
-        this.#disposeWhileWaiting();
-        this.#state = {
-          result: transition.result as Relic,
-          status: "completed",
-        };
-        this.#exitFuture.settle(either.right(transition.result as Relic));
-        return;
-      case "failed":
-        this.#disposeWhileWaiting();
-        this.#state = {
-          failure: transition.failure,
-          status: "failed",
-        };
-        this.#exitFuture.settle(either.left(transition.failure));
-        return;
-      case "canceled":
-        this.#disposeWhileWaiting();
-        this.#state = {
-          status: "canceled",
-        };
-        this.#exitFuture.settle(either.left(canceledFailure));
-    }
+  public resume(input: unknown): void {
+    const current = this.stateAs("waiting");
+    const runner = current.stepper.current() as RuntimeProcessNextEcho<Sigil>;
+    runner.accept(input);
+    this.#state = createRunningState(current.stepper);
+  }
+
+  public wait(dispose: () => void): void {
+    const current = this.stateAs("running");
+    this.#state = {
+      dispose,
+      status: "waiting",
+      stepper: current.stepper,
+    };
+  }
+
+  public complete(result: unknown): ProcessClosure {
+    this.#disposeWhileWaiting();
+    this.#state = {
+      result: result as Relic,
+      status: "completed",
+    };
+
+    return this.#settleClosed(either.right(result as Relic));
+  }
+
+  public fail(failure: Failure): ProcessClosure {
+    this.#disposeWhileWaiting();
+    this.#state = {
+      failure,
+      status: "failed",
+    };
+
+    return this.#settleClosed(either.left(failure));
+  }
+
+  public cancel(): ProcessClosure {
+    this.#disposeWhileWaiting();
+    this.#state = {
+      status: "canceled",
+    };
+
+    return this.#settleClosed(either.left(canceledFailure));
   }
 
   public defer(cleanup: CleanupTask): void {
     this.#cleanups.push(cleanup);
-  }
-
-  public takeCleanups(): CleanupTask[] {
-    const cleanups = this.#cleanups;
-    this.#cleanups = [];
-    return cleanups;
   }
 
   public get exitFuture(): FutureKey<Relic> {
@@ -135,6 +131,16 @@ export class RuntimeProcess<Relic>
     this.scopeRef = scopeRef;
     this.#descriptor = descriptor;
     this.#state = createRunningState(new Stepper(worker));
+  }
+
+  #settleClosed(result: FutureResult<Relic>): ProcessClosure {
+    const cleanups = this.#cleanups;
+    this.#cleanups = [];
+
+    return {
+      cleanups,
+      exitCallbacks: this.#exitFuture.settle(result),
+    };
   }
 
   #disposeWhileWaiting(): void {

@@ -6,7 +6,6 @@ import type {
   KEY_TOKEN,
 } from "#/contracts";
 import type { Disposer } from "#/utils";
-import { flushCallbacks } from "#/host";
 import { noop } from "#/utils";
 import { option } from "fp-ts";
 
@@ -32,23 +31,18 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
     };
   }
 
-  public settle(result: FutureResult<Result>): void {
+  public settle(result: FutureResult<Result>): Array<() => void> {
     if (this.#result) {
-      return;
+      return [];
     }
 
     this.#result = result;
+    const waiters = this.#waiters;
+    this.#waiters = new Set();
 
-    try {
-      flushCallbacks(
-        Array.from(this.#waiters, (waiter) => () => {
-          waiter(result);
-        }),
-        "Future settlement callbacks failed",
-      );
-    } finally {
-      this.#waiters.clear();
-    }
+    return Array.from(waiters, (waiter) => () => {
+      waiter(result);
+    });
   }
 
   public handle(): FutureHandle<Result> {
@@ -58,7 +52,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: FutureKey<Result>[typeof KEY_TOKEN] &
     FutureSettleKey<Result>[typeof KEY_TOKEN];
-  readonly #waiters = new Set<FutureSettler<Result>>();
+  #waiters = new Set<FutureSettler<Result>>();
   #result: FutureResult<Result> | null = null;
 }
 
