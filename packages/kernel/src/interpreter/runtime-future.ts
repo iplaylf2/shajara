@@ -6,6 +6,7 @@ import type {
   KEY_TOKEN,
 } from "#/contracts";
 import type { Disposer } from "#/utils";
+import { flushCallbacks } from "#/host";
 import { noop } from "#/utils";
 import { option } from "fp-ts";
 
@@ -38,11 +39,16 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
 
     this.#result = result;
 
-    for (const waiter of this.#waiters) {
-      waiter(result);
+    try {
+      flushCallbacks(
+        Array.from(this.#waiters, (waiter) => () => {
+          waiter(result);
+        }),
+        "Future settlement callbacks failed",
+      );
+    } finally {
+      this.#waiters.clear();
     }
-
-    this.#waiters.clear();
   }
 
   public handle(): FutureHandle<Result> {
