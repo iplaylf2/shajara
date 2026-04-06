@@ -62,7 +62,6 @@ class RuntimeExecutor implements Executor {
       new RuntimeLaunchHandle(
         executionScope,
         (future, onSettled) => this.#interpreter.wait(future, onSettled),
-        (notification) => this.#driver.notify(notification),
         (scopeRef) => this.#scopeStatus(scopeRef),
       ),
     );

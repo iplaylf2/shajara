@@ -22,7 +22,6 @@ export class ExecutorDriver {
   public driveSync<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
     while (true) {
       const step = this.#stepProcess(process);
-      this.#flushNotifications();
       switch (step.disposition) {
         case "interpreted":
         case "resonated":
@@ -37,10 +36,6 @@ export class ExecutorDriver {
 
   public get processor(): Processor {
     return this.#processor;
-  }
-
-  public notify(notification: () => void): void {
-    this.#notifications.push(notification);
   }
 
   private constructor(
@@ -80,7 +75,6 @@ export class ExecutorDriver {
     const [task] = this.#tasks;
     while (true) {
       const status = task!.step();
-      this.#flushNotifications();
       switch (status) {
         case "ready":
           continue;
@@ -100,19 +94,11 @@ export class ExecutorDriver {
     return readonlyArray.isNonEmpty(this.#tasks);
   }
 
-  #flushNotifications(): void {
-    while (readonlyArray.isNonEmpty(this.#notifications)) {
-      const notification = this.#notifications.shift()!;
-      notification();
-    }
-  }
-
   #isStopped = false;
   readonly #pacer: Pacer;
   readonly #stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>;
   readonly #beginTurn: () => void;
   readonly #tasks: ProcessorTask[] = [];
-  readonly #notifications: Array<() => void> = [];
   readonly #processor: Processor = {
     drive: (task) => {
       this.#tasks.push(task);

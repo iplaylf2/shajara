@@ -8,16 +8,9 @@ import { either } from "fp-ts";
 
 export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   public onSettled(listener: (result: LaunchResult<Result>) => void): Disposer {
-    const subscription = this.#subscribe(listener);
-    const settledDispose = this.onScopeSettled(
-      this.executionScope.exitFuture,
-      subscription.onSettled,
-    );
-
-    return () => {
-      subscription.dispose();
-      settledDispose();
-    };
+    return this.onScopeSettled(this.executionScope.exitFuture, (result) => {
+      listener(toLaunchResult(result));
+    });
   }
 
   public constructor(
@@ -26,7 +19,6 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
       future: FutureKey<Settled>,
       onSettled: (result: FutureResult<Settled>) => void,
     ) => Disposer,
-    private readonly notify: (notification: () => void) => void,
     private readonly scopeStatus: (scope: ExecutionScopeRef<unknown>) => LaunchStatus,
   ) {}
 
@@ -36,23 +28,6 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
 
   public get status(): LaunchStatus {
     return this.scopeStatus(this.executionScope);
-  }
-
-  #subscribe(listener: (result: LaunchResult<Result>) => void): DeferredSubscription<Result> {
-    let isActive = true;
-
-    return {
-      dispose: () => {
-        isActive = false;
-      },
-      onSettled: (result) => {
-        this.notify(() => {
-          if (isActive) {
-            listener(toLaunchResult(result));
-          }
-        });
-      },
-    };
   }
 }
 
@@ -73,11 +48,6 @@ export type LaunchResult<Result> = TaggedUnion<
 >;
 
 export type LaunchStatus = "open" | "closing" | "closed";
-
-interface DeferredSubscription<Result> {
-  dispose(): void;
-  onSettled(result: FutureResult<Result>): void;
-}
 
 function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Result> {
   if (either.isLeft(result)) {
