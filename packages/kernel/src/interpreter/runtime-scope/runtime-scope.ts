@@ -15,6 +15,7 @@ import type {
   ScopeRef,
 } from "#/contracts";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
+import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import { noop, unreachable } from "#/utils";
 import type { Failure } from "#/failures";
@@ -23,7 +24,6 @@ import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
-import { canceledFailure } from "#/failures";
 import { flushCallbacks } from "#/host";
 
 export class RuntimeScope implements ScopeRef<unknown> {
@@ -283,27 +283,39 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #enterClosing(): void {
     using _ = this.#reconcile();
-    this.#transitionTo({ status: "closing" });
-    this.#tryCompleted();
+    try {
+      this.#transitionTo({ status: "closing" });
+      this.#tryCompleted();
+    } catch (cause) {
+      this.#interrupt(cause);
+    }
   }
 
   #enterCanceling(): void {
     using _ = this.#reconcile();
-    this.#transitionTo({ status: "canceling" });
-    this.#tryCanceled();
+    try {
+      this.#transitionTo({ status: "canceling" });
+      this.#tryCanceled();
+    } catch (cause) {
+      this.#interrupt(cause);
+    }
   }
 
   #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void, control: FailingControl): void {
     using _ = this.#reconcile();
-    this.#transitionTo({
-      draft,
-      status: "failing",
-    });
-    failingDefer();
-    if (control.propagateFailure && this.#parent.#notReconciledFor(isFailing)) {
-      this.#parent.#enterFailingByChild(this);
+    try {
+      this.#transitionTo({
+        draft,
+        status: "failing",
+      });
+      failingDefer();
+      if (control.propagateFailure && this.#parent.#notReconciledFor(isFailing)) {
+        this.#parent.#enterFailingByChild(this);
+      }
+      this.#tryFailed(draft);
+    } catch (cause) {
+      this.#interrupt(cause);
     }
-    this.#tryFailed(draft);
   }
 
   #tryCompleted(): void {
@@ -450,7 +462,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #enterFailingByChild(child: RuntimeScope): void {
-    using _ = this.#reconcile();
     if (this.#state.status === "failing") {
       this.#enterFailing(this.#state.draft, noop, {
         propagateFailure: this.#propagatesFailure,
@@ -477,6 +488,22 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
 
     this.#children.delete(child);
+  }
+
+  #interrupt(cause: unknown): void {
+    if (this.isClosed) {
+      throw cause;
+    }
+
+    const interruptedDraft = new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
+      interruptedFailure(cause),
+    );
+
+    if (this.#state.status === "failing") {
+      interruptedDraft.collect(this.#state.draft.build());
+    }
+
+    this.#enterFailing(interruptedDraft, noop, { propagateFailure: this.#propagatesFailure });
   }
 
   #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
