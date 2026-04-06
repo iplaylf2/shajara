@@ -42,8 +42,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#processContainerFor(process).delete(process);
     this.#triggerCleanup(closure.cleanups);
     this.#advanceClosing();
-    this.#zone.trackProcess(process);
-    flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
+    flushCallbacks(
+      [() => this.#zone.trackProcess(process), ...closure.exitCallbacks],
+      "Process completion notifications failed",
+    );
   }
 
   public halt(process: RuntimeProcessKeeper, failure: Failure): void {
@@ -65,8 +67,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
       );
     }
 
-    this.#zone.trackProcess(process);
-    flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
+    flushCallbacks(
+      [() => this.#zone.trackProcess(process), ...closure.exitCallbacks],
+      "Process failure notifications failed",
+    );
   }
 
   public cancel(): void {
@@ -85,8 +89,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const child = new RuntimeScope(entry, descriptor, this, zone);
     this.#children.add(child);
 
-    zone.trackProcess(child.entryProcess);
-    zone.trackScope(child);
+    flushCallbacks(
+      [() => zone.trackProcess(child.entryProcess), () => zone.trackScope(child)],
+      "Scope branch notifications failed",
+    );
 
     return child;
   }
@@ -367,11 +373,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#structuralProcesses.clear();
     this.#detachedProcesses.clear();
 
+    const notifications: Array<() => void> = [];
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
-      this.#zone.trackProcess(process);
-      flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
+
+      notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
     }
 
     for (const child of children) {
@@ -379,18 +386,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
         child.cancel();
       }
     }
+
+    flushCallbacks(notifications, "Process cancellation notifications failed");
   }
 
   #cancelDetached(): void {
     const processes = [...this.#detachedProcesses];
+    const notifications: Array<() => void> = [];
     this.#detachedProcesses.clear();
 
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
-      this.#zone.trackProcess(process);
-      flushCallbacks(closure.exitCallbacks, "Process exit callbacks failed");
+
+      notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
     }
+
+    flushCallbacks(notifications, "Process cancellation notifications failed");
   }
 
   #settleClosed(result: FutureResult<unknown>): void {
@@ -407,7 +419,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
         ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)).flat(1),
         ...this.#exitFuture.settle(result),
       ],
-      "Scope closure callbacks failed",
+      "Scope closure notifications failed",
     );
   }
 
