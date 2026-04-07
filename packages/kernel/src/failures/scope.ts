@@ -2,7 +2,7 @@ import type { FailureShape, ProcessRef, ScopeRef } from "#/contracts";
 
 export function scopeFailure(
   cause: ScopeFailureCause,
-  suppressedFailures: readonly FailureShape[],
+  suppressed: readonly FailureShape[],
 ): ScopeFailure {
   return {
     cause,
@@ -10,13 +10,13 @@ export function scopeFailure(
     get message(): string {
       return "Scope failed during closing";
     },
-    suppressedFailures,
+    suppressed: suppressed,
   };
 }
 
 export interface ScopeFailure extends FailureShape {
   readonly cause: ScopeFailureCause;
-  readonly suppressedFailures: readonly FailureShape[];
+  readonly suppressed: readonly FailureShape[];
   readonly kind: "scope";
 }
 

@@ -59,7 +59,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const state = this.#state;
     if (state.status === "failing") {
       iife(() => {
-        state.draft.collect(process.stateAs(failed).failure);
+        state.draft.capture(process.stateAs(failed).failure);
         this.#enterFailing(
           state.draft,
           cleanupTrigger,
@@ -83,10 +83,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public cancel(suppressor: Suppressor): void {
     if (this.#state.status === "failing") {
       this.#enterFailing(this.#state.draft, noop, [], { propagateFailure: false }, suppressor);
-      return;
+    } else {
+      this.#enterCanceling(suppressor);
     }
-
-    this.#enterCanceling(suppressor);
   }
 
   public branch(
@@ -190,19 +189,16 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public forceFailed(failure: Failure, suppressor: Suppressor): void {
-    using _ = this.#reconcile();
     const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
     if (this.#state.status === "failing") {
-      draft.collect(this.#state.draft.build());
+      draft.capture(this.#state.draft.build());
     }
 
-    const firstCancel = this.#cancelManaged(suppressor);
-    const secondCancel = this.#cancelManaged(suppressor);
+    this.#enterFailing(draft, noop, [], { propagateFailure: this.#propagatesFailure }, suppressor);
 
-    if (this.#propagatesFailure && this.#parent.#notReconciledFor(isFailing)) {
-      this.#parent.#enterFailingByChild(this, suppressor);
+    while (this.#state.status === "failing") {
+      this.#enterFailing(this.#state.draft, noop, [], { propagateFailure: false }, suppressor);
     }
-    this.#tryFailed(draft, [...firstCancel, ...secondCancel], suppressor);
   }
 
   public get descriptor(): ScopeDescriptor {
@@ -517,7 +513,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       child.status === "failed" &&
       child.descriptor.failureMode === "propagate"
     ) {
-      this.#state.draft.collect(child.#stateAs(child.status).failure);
+      this.#state.draft.capture(child.#stateAs(child.status).failure);
     }
 
     this.#children.delete(child);

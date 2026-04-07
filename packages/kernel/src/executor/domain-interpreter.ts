@@ -143,6 +143,7 @@ export class DomainInterpreter extends Interpreter {
       "reaper" in autonomy
         ? domainZone.reaperDomain.nest(autonomy.reaper)
         : domainZone.reaperDomain;
+
     const trackProcess =
       "scheduler" in autonomy
         ? (process: ProcessRef<unknown>, suppressor: Suppressor) => {

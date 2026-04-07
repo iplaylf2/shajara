@@ -7,8 +7,8 @@ export class ScopeFailureDraft {
     private readonly resolveFailure: () => Failure,
   ) {}
 
-  public collect(failure: Failure): void {
-    this.#suppressedFailures.push(failure);
+  public capture(failure: Failure): void {
+    this.#suppressed.push(failure);
   }
 
   public build(): ScopeFailure {
@@ -17,11 +17,11 @@ export class ScopeFailureDraft {
         ...this.cause,
         failure: this.resolveFailure(),
       },
-      this.#suppressedFailures,
+      this.#suppressed,
     );
   }
 
-  readonly #suppressedFailures: Failure[] = [];
+  readonly #suppressed: Failure[] = [];
 }
 
 type FailureCause = Omit<ProcessCause, "failure"> | Omit<ScopeCause, "failure">;
