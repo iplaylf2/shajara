@@ -1,4 +1,4 @@
-import type { ProcessRef, Ritual, ScopeRef } from "#/contracts";
+import type { Ritual, ScopeRef } from "#/contracts";
 import { Domain } from "./domain";
 import type { Failure } from "#/failures";
 import type { Option } from "#/utils";
@@ -38,18 +38,14 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     }
   }
 
-  public *createTasks(
+  public *createWorkers(
     scopeState: (scope: ScopeRef<unknown>) => ScopeState,
-    spawn: (
-      scope: ScopeRef<unknown>,
-      worker: Ritual<Option<Failure>>,
-    ) => ProcessRef<Option<Failure>>,
-  ): Iterable<ReaperTask> {
+  ): Iterable<ReaperWorker> {
     for (const scope of this.#leafScopes) {
       if (scopeState(scope).status === "closing") {
         yield {
-          adjudicate: () => spawn(this.#scopeRoot, () => this.#reaper.adjudicate(scope)),
           scope,
+          worker: () => this.#reaper.adjudicate(scope),
         };
       }
     }
@@ -80,7 +76,7 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   readonly #reaper: Reaper;
 }
 
-export interface ReaperTask {
-  adjudicate(): ProcessRef<Option<Failure>>;
+export interface ReaperWorker {
+  worker: Ritual<Option<Failure>>;
   scope: ScopeRef<unknown>;
 }

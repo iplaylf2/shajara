@@ -1,13 +1,15 @@
 import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy";
 import type { ProcessRef, Ritual, ScopeRef, Suppressor } from "#/contracts";
 import { ReaperDomain, SchedulerDomain } from "./domains";
+import { option, readonlyArray } from "fp-ts";
+import type { Failure } from "#/failures";
+import { FaultSink } from "./fault-sink";
 import { Interpreter } from "#/interpreter";
 import type { ProcessorTaskStatus } from "./processor";
-import type { ReaperTask } from "./domains";
 import type { ScopeDescriptor } from "#/sigils";
 import type { ScopeZone } from "#/interpreter";
 import { autonomyOf } from "./autonomy";
-import { readonlyArray } from "fp-ts";
+import { interruptedFailure } from "#/failures";
 
 export class DomainInterpreter extends Interpreter {
   public constructor(entry: Ritual<void>, autonomy: SchedulerOption & ReaperOption) {
@@ -18,19 +20,11 @@ export class DomainInterpreter extends Interpreter {
     const zoneRoot: DomainZone = {
       reaperDomain: reaperDomainRoot,
       schedulerDomain: schedulerDomainRoot,
-      trackProcess: (process, suppressor) => {
-        try {
-          schedulerDomainRoot.trackProcess(process, this.processState(process));
-        } catch (error) {
-          suppressor.capture(error);
-        }
+      trackProcess: (process) => {
+        schedulerDomainRoot.trackProcess(process, this.processState(process));
       },
-      trackScope: (scope, suppressor) => {
-        try {
-          reaperDomainRoot.trackScope(scope, this.scopeState(scope));
-        } catch (error) {
-          suppressor.capture(error);
-        }
+      trackScope: (scope) => {
+        reaperDomainRoot.trackScope(scope, this.scopeState(scope));
       },
     };
 
@@ -39,17 +33,29 @@ export class DomainInterpreter extends Interpreter {
     this.#reaperDomainRoot = reaperDomainRoot;
   }
 
-  public *reaperTasks(suppressor: Suppressor): Iterable<ReaperTask> {
+  // oxlint-disable-next-line max-statements
+  public *startReaperTasks(
+    suppressor: Suppressor,
+  ): Iterable<readonly [ScopeRef<unknown>, ProcessRef<option.Option<Failure>>]> {
     for (const reaperDomain of ReaperDomain.domains(this.#reaperDomainRoot)) {
       if (!reaperDomain.hasClosingScope) {
         continue;
       }
 
-      for (const task of reaperDomain.createTasks(
-        (scope) => this.scopeState(scope),
-        (scope, worker) => this.spawn(scope, worker, suppressor),
-      )) {
-        yield task;
+      for (const { scope, worker } of reaperDomain.createWorkers((id) => this.scopeState(id))) {
+        const faultSink = new FaultSink();
+        const process = this.spawn(reaperDomain.scopeRoot, worker, faultSink);
+        const cause = faultSink.drain(
+          "Out-of-band failures occurred while spawning a reaper adjudication process",
+        );
+
+        if (option.isSome(cause)) {
+          this.forceFailed(scope, interruptedFailure(cause.value), suppressor);
+
+          continue;
+        }
+
+        yield [scope, process];
       }
     }
   }
@@ -196,8 +202,6 @@ export class DomainInterpreter extends Interpreter {
 
   readonly #reaperDomainRoot: ReaperDomain;
 }
-
-export type { ReaperTask } from "./domains";
 
 function resolveDomainZone(zone: ScopeZone): DomainZone {
   return zone as DomainZone;
