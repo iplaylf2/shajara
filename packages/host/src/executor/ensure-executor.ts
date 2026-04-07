@@ -7,4 +7,5 @@ export function ensureExecutor(): Executor {
   return executorSingleton;
 }
 
+// oxlint-disable-next-line no-useless-assignment
 let executorSingleton: Executor | null = null;

@@ -12,7 +12,7 @@
     "typecheck": "yarn workspaces foreach -Ap run typecheck"
   },
   "devDependencies": {
-    "oxfmt": "^0.43.0",
+    "oxfmt": "^0.44.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },

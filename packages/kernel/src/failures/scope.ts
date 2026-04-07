@@ -10,7 +10,7 @@ export function scopeFailure(
     get message(): string {
       return "Scope failed during closing";
     },
-    suppressed: suppressed,
+    suppressed,
   };
 }
 
