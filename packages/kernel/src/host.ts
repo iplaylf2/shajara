@@ -2,7 +2,7 @@
 import { option, readonlyArray } from "fp-ts";
 
 export function flushCallbacks(message: string, callbacks: Iterable<() => void>): void {
-  releaseSuppressed(message, [suppressCallbacks(message, callbacks)]);
+  releaseSuppressed(suppressCallbacks(message, callbacks));
 }
 
 export function suppressCallbacks(
@@ -26,13 +26,9 @@ export function suppressCallbacks(
   return option.none;
 }
 
-export function releaseSuppressed(
-  message: string,
-  suppressed: readonly option.Option<unknown>[],
-): void {
-  const collapsed = collapseSuppressed(message, suppressed);
-  if (option.isSome(collapsed)) {
-    throw collapsed.value;
+export function releaseSuppressed(suppressed: option.Option<unknown>): void {
+  if (option.isSome(suppressed)) {
+    throw suppressed.value;
   }
 }
 
