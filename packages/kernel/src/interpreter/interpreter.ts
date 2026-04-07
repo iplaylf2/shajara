@@ -351,7 +351,8 @@ function halt(scope: RuntimeScope, process: RuntimeProcessKeeper, failure: Failu
 }
 
 function settle<Result>(future: RuntimeFuture<Result>, result: FutureResult<Result>): void {
-  flushCallbacks(future.settle(result), "Future settlement notifications failed");
+  const notifications = future.settle(result);
+  flushCallbacks("Future settlement notifications failed", notifications);
 }
 
 function spawn<Relic>(

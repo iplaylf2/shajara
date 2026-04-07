@@ -15,16 +15,16 @@ import type {
   ScopeRef,
 } from "#/contracts";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
-import { canceledFailure, interruptedFailure } from "#/failures";
+import { collapseSuppressed, flushCallbacks, releaseSuppressed, suppressCallbacks } from "#/host";
 import { either, option, readonlySet } from "fp-ts";
-import { noop, unreachable } from "#/utils";
+import { iife, noop, unreachable } from "#/utils";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
-import { flushCallbacks } from "#/host";
+import { canceledFailure } from "#/failures";
 
 export class RuntimeScope implements ScopeRef<unknown> {
   public static root(
@@ -41,44 +41,58 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
     this.#triggerCleanup(closure.cleanups);
-    this.#advanceClosing();
-    flushCallbacks(
-      [() => this.#zone.trackProcess(process), ...closure.exitCallbacks],
-      "Process completion notifications failed",
-    );
+    const processCompletion = suppressCallbacks("Process completion notifications failed", [
+      () => this.#zone.trackProcess(process),
+      ...closure.exitCallbacks,
+    ]);
+
+    const closing = this.#advanceClosing();
+
+    releaseSuppressed("Out-of-band failures occurred while handling process completion", [
+      processCompletion,
+      closing,
+    ]);
   }
 
   public halt(process: RuntimeProcessKeeper, failure: Failure): void {
     const failed = "failed";
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
-
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
-    if (this.#state.status === "failing") {
-      this.#state.draft.collect(process.stateAs(failed).failure);
-      this.#enterFailing(this.#state.draft, cleanupTrigger, {
-        propagateFailure: this.#propagatesFailure,
-      });
-    } else {
-      this.#enterFailing(
-        new ScopeFailureDraft({ kind: "process", process }, () => process.stateAs(failed).failure),
-        cleanupTrigger,
-        { propagateFailure: this.#propagatesFailure },
-      );
-    }
+    const processFailure = suppressCallbacks("Process failure notifications failed", [
+      () => this.#zone.trackProcess(process),
+      ...closure.exitCallbacks,
+    ]);
 
-    flushCallbacks(
-      [() => this.#zone.trackProcess(process), ...closure.exitCallbacks],
-      "Process failure notifications failed",
-    );
+    const state = this.#state;
+    const failing =
+      state.status === "failing"
+        ? iife(() => {
+            state.draft.collect(process.stateAs(failed).failure);
+            return this.#enterFailing(state.draft, cleanupTrigger, {
+              propagateFailure: this.#propagatesFailure,
+            });
+          })
+        : this.#enterFailing(
+            new ScopeFailureDraft(
+              { kind: "process", process },
+              () => process.stateAs(failed).failure,
+            ),
+            cleanupTrigger,
+            { propagateFailure: this.#propagatesFailure },
+          );
+
+    releaseSuppressed("Out-of-band failures occurred while handling process failure", [
+      processFailure,
+      failing,
+    ]);
   }
 
   public cancel(): void {
-    if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, noop, { propagateFailure: false });
-    } else {
-      this.#enterCanceling();
-    }
+    const canceled = this.#cancel();
+    releaseSuppressed("Out-of-band failures occurred while handling scope cancellation", [
+      canceled,
+    ]);
   }
 
   public branch(
@@ -89,10 +103,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const child = new RuntimeScope(entry, descriptor, this, zone);
     this.#children.add(child);
 
-    flushCallbacks(
-      [() => zone.trackProcess(child.entryProcess), () => zone.trackScope(child)],
-      "Scope branch notifications failed",
-    );
+    flushCallbacks("Scope branch notifications failed", [
+      () => zone.trackProcess(child.entryProcess),
+      () => zone.trackScope(child),
+    ]);
 
     return child;
   }
@@ -176,14 +190,20 @@ export class RuntimeScope implements ScopeRef<unknown> {
       draft.collect(this.#state.draft.build());
     }
 
-    const notifications = [...this.#cancelManaged(), ...this.#cancelManaged()];
-    flushCallbacks(notifications, "Scope failed notifications failed");
+    const firstCancel = this.#cancelManaged();
+    const secondCancel = this.#cancelManaged();
+    const propagated =
+      this.#propagatesFailure && this.#parent.#notReconciledFor(isFailing)
+        ? this.#parent.#enterFailingByChild(this)
+        : option.none;
+    const failed = this.#tryFailed(draft);
 
-    if (this.#propagatesFailure && this.#parent.#notReconciledFor(isFailing)) {
-      this.#parent.#enterFailingByChild(this);
-    }
-
-    this.#tryFailed(draft);
+    releaseSuppressed("Out-of-band failures occurred while forcing scope failure", [
+      firstCancel,
+      secondCancel,
+      propagated,
+      failed,
+    ]);
   }
 
   public get descriptor(): ScopeDescriptor {
@@ -248,20 +268,16 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#parent = parent;
   }
 
-  #advanceClosing(): void {
+  #advanceClosing(): option.Option<unknown> {
     switch (this.#state.status) {
       case "running":
-        this.#tryClosing();
-        return;
+        return this.#tryClosing();
       case "closing":
-        this.#tryCompleted();
-        return;
+        return this.#tryCompleted();
       case "canceling":
-        this.#tryCanceled();
-        return;
+        return this.#tryCanceled();
       case "failing":
-        this.#tryFailed(this.#state.draft);
-        return;
+        return this.#tryFailed(this.#state.draft);
       case "canceled":
       case "completed":
       case "failed":
@@ -269,155 +285,206 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #tryClosing(): void {
+  #cancel(): option.Option<unknown> {
+    return this.#state.status === "failing"
+      ? this.#enterFailing(this.#state.draft, noop, { propagateFailure: false })
+      : this.#enterCanceling();
+  }
+
+  #tryClosing(): option.Option<unknown> {
     if (this.#isQuiet) {
-      this.#enterClosing();
+      return this.#enterClosing();
     }
+
+    return option.none;
   }
 
-  #enterClosing(): void {
+  #enterClosing(): option.Option<unknown> {
     using _ = this.#reconcile();
-    try {
-      const notifications = this.#transitionTo({ status: "closing" });
-      flushCallbacks(notifications, "Scope closing notifications failed");
-      this.#tryCompleted();
-    } catch (cause) {
-      this.#interrupt(cause);
-    }
+    const transition = this.#transitionTo({ status: "closing" });
+    const completed = this.#tryCompleted();
+    return collapseSuppressed("Out-of-band failures occurred while handling scope closing", [
+      transition,
+      completed,
+    ]);
   }
 
-  #enterCanceling(): void {
+  #enterCanceling(): option.Option<unknown> {
     using _ = this.#reconcile();
-    try {
-      const notifications = this.#transitionTo({ status: "canceling" });
-      flushCallbacks(notifications, "Scope canceling notifications failed");
-      this.#tryCanceled();
-    } catch (cause) {
-      this.#interrupt(cause);
-    }
+    const transition = this.#transitionTo({ status: "canceling" });
+    const canceled = this.#tryCanceled();
+    return collapseSuppressed("Out-of-band failures occurred while handling scope cancellation", [
+      transition,
+      canceled,
+    ]);
   }
 
-  #enterFailing(draft: ScopeFailureDraft, failingDefer: () => void, control: FailingControl): void {
+  #enterFailing(
+    draft: ScopeFailureDraft,
+    failingDefer: () => void,
+    control: FailingControl,
+  ): option.Option<unknown> {
     using _ = this.#reconcile();
-    try {
-      const notifications = this.#transitionTo({
-        draft,
-        status: "failing",
-      });
-      failingDefer();
-      flushCallbacks(notifications, "Scope failing notifications failed");
-      if (control.propagateFailure && this.#parent.#notReconciledFor(isFailing)) {
-        this.#parent.#enterFailingByChild(this);
-      }
-      this.#tryFailed(draft);
-    } catch (cause) {
-      this.#interrupt(cause);
-    }
+    const transition = this.#transitionTo({
+      draft,
+      status: "failing",
+    });
+    failingDefer();
+    const propagated =
+      control.propagateFailure && this.#parent.#notReconciledFor(isFailing)
+        ? this.#parent.#enterFailingByChild(this)
+        : option.none;
+    const failed = this.#tryFailed(draft);
+    return collapseSuppressed("Out-of-band failures occurred while handling scope failure", [
+      transition,
+      propagated,
+      failed,
+    ]);
   }
 
-  #tryCompleted(): void {
+  #tryCompleted(): option.Option<unknown> {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
-      const notifications = this.#transitionTo({ result, status: "completed" });
-      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
-        this.#parent.#advanceClosing();
-      }
-      flushCallbacks(notifications, "Scope completed notifications failed");
+      const transition = this.#transitionTo({ result, status: "completed" });
+      const advanced =
+        !this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)
+          ? this.#parent.#advanceClosing()
+          : option.none;
+      return collapseSuppressed("Out-of-band failures occurred while handling scope completion", [
+        transition,
+        advanced,
+      ]);
     }
+
+    return option.none;
   }
 
-  #tryCanceled(): void {
+  #tryCanceled(): option.Option<unknown> {
     if (this.#isIdle) {
-      const notifications = this.#transitionTo({ status: "canceled" });
-      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
-        this.#parent.#advanceClosing();
-      }
-      flushCallbacks(notifications, "Scope canceled notifications failed");
+      const transition = this.#transitionTo({ status: "canceled" });
+      const advanced =
+        !this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)
+          ? this.#parent.#advanceClosing()
+          : option.none;
+      return collapseSuppressed("Out-of-band failures occurred while handling scope cancellation", [
+        transition,
+        advanced,
+      ]);
     }
+
+    return option.none;
   }
 
-  #tryFailed(draft: ScopeFailureDraft): void {
+  #tryFailed(draft: ScopeFailureDraft): option.Option<unknown> {
     if (this.#isIdle) {
-      const notifications = this.#transitionTo({
+      const transition = this.#transitionTo({
         failure: draft.build(),
         status: "failed",
       });
-      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
-        this.#parent.#advanceClosing();
-      }
-      flushCallbacks(notifications, "Scope failed notifications failed");
+      const advanced =
+        !this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)
+          ? this.#parent.#advanceClosing()
+          : option.none;
+      return collapseSuppressed("Out-of-band failures occurred while completing scope failure", [
+        transition,
+        advanced,
+      ]);
     }
+
+    return option.none;
   }
 
-  #transitionTo(state: RuntimeScopeState): Array<() => void> {
+  #transitionTo(state: RuntimeScopeState): option.Option<unknown> {
     this.#state = state;
-    const notifications: Array<() => void> = [];
+    const suppressed: option.Option<unknown>[] = [];
     switch (state.status) {
       case "running":
         return unreachable();
       case "closing":
-        notifications.push(...this.#cancelDetached());
+        suppressed.push(this.#cancelDetached());
         break;
       case "canceling":
       case "failing":
-        notifications.push(...this.#cancelManaged());
+        suppressed.push(this.#cancelManaged());
         break;
       case "canceled":
-        notifications.push(...this.#settleClosed(either.left(canceledFailure)));
+        suppressed.push(this.#settleClosed(either.left(canceledFailure)));
         break;
       case "completed":
-        notifications.push(...this.#settleClosed(either.right(state.result)));
+        suppressed.push(this.#settleClosed(either.right(state.result)));
         break;
       case "failed":
-        notifications.push(...this.#settleClosed(either.left(state.failure)));
+        suppressed.push(this.#settleClosed(either.left(state.failure)));
         break;
     }
 
-    notifications.push(() => this.#zone.trackScope(this));
-    return notifications;
+    suppressed.push(
+      suppressCallbacks(`Scope ${state.status} notifications failed`, [
+        () => this.#zone.trackScope(this),
+      ]),
+    );
+
+    return collapseSuppressed(
+      "Out-of-band failures occurred while handling scope transition",
+      suppressed,
+    );
   }
 
   // oxlint-disable-next-line max-statements
-  #cancelManaged(): Array<() => void> {
+  #cancelManaged(): option.Option<unknown> {
     const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];
 
     this.#structuralProcesses.clear();
     this.#detachedProcesses.clear();
 
-    const notifications: Array<() => void> = [];
+    const suppressed: option.Option<unknown>[] = [];
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
-
-      notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
+      suppressed.push(
+        suppressCallbacks("Process cancellation notifications failed", [
+          () => this.#zone.trackProcess(process),
+          ...closure.exitCallbacks,
+        ]),
+      );
     }
 
     for (const child of children) {
       if (child.#notReconciledFor(isCancelingOrFailing)) {
-        child.cancel();
+        suppressed.push(child.#cancel());
       }
     }
 
-    return notifications;
+    return collapseSuppressed(
+      "Out-of-band failures occurred while handling child scope cancellation",
+      suppressed,
+    );
   }
 
-  #cancelDetached(): Array<() => void> {
+  #cancelDetached(): option.Option<unknown> {
     const processes = [...this.#detachedProcesses];
-    const notifications: Array<() => void> = [];
     this.#detachedProcesses.clear();
+    const suppressed: option.Option<unknown>[] = [];
 
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
-
-      notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
+      suppressed.push(
+        suppressCallbacks("Process cancellation notifications failed", [
+          () => this.#zone.trackProcess(process),
+          ...closure.exitCallbacks,
+        ]),
+      );
     }
 
-    return notifications;
+    return collapseSuppressed(
+      "Out-of-band failures occurred while handling detached process cancellation",
+      suppressed,
+    );
   }
 
-  #settleClosed(result: FutureResult<unknown>): Array<() => void> {
+  #settleClosed(result: FutureResult<unknown>): option.Option<unknown> {
     if (!this.#isRoot) {
       this.#parent.#removeChild(this);
     }
@@ -425,11 +492,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#mailbox.clear();
 
     const canceled = either.left(canceledFailure);
-    return [
+    return suppressCallbacks("Scope closure notifications failed", [
       // oxlint-disable-next-line no-magic-numbers
       ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)).flat(1),
       ...this.#exitFuture.settle(result),
-    ];
+    ]);
   }
 
   #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): void {
@@ -458,21 +525,21 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #enterFailingByChild(child: RuntimeScope): void {
+  #enterFailingByChild(child: RuntimeScope): option.Option<unknown> {
     if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, noop, {
+      return this.#enterFailing(this.#state.draft, noop, {
         propagateFailure: this.#propagatesFailure,
       });
-    } else {
-      this.#enterFailing(
-        new ScopeFailureDraft(
-          { kind: "scope", scope: child },
-          () => child.#stateAs("failed").failure,
-        ),
-        noop,
-        { propagateFailure: this.#propagatesFailure },
-      );
     }
+
+    return this.#enterFailing(
+      new ScopeFailureDraft(
+        { kind: "scope", scope: child },
+        () => child.#stateAs("failed").failure,
+      ),
+      noop,
+      { propagateFailure: this.#propagatesFailure },
+    );
   }
 
   #removeChild(child: RuntimeScope): void {
@@ -485,14 +552,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
 
     this.#children.delete(child);
-  }
-
-  #interrupt(cause: unknown): void {
-    if (this.isClosed) {
-      throw cause;
-    }
-
-    this.forceFailed(interruptedFailure(cause));
   }
 
   #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {

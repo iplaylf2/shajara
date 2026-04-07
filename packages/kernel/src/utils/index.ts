@@ -1,4 +1,5 @@
 export * from "./either";
+export * from "./iife";
 export * from "./narrow";
 export * from "./noop";
 export * from "./option";
