@@ -5,6 +5,15 @@ export function flushCallbacks(message: string, callbacks: Iterable<() => void>)
   releaseSuppressed(suppressCallbacks(message, callbacks));
 }
 
+export function suppressCallback(callback: () => void): option.Option<unknown> {
+  try {
+    callback();
+    return option.none;
+  } catch (error) {
+    return option.some(error);
+  }
+}
+
 export function suppressCallbacks(
   message: string,
   callbacks: Iterable<() => void>,

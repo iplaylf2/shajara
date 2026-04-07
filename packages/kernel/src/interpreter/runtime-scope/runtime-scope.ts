@@ -15,7 +15,13 @@ import type {
   ScopeRef,
 } from "#/contracts";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
-import { collapseSuppressed, flushCallbacks, releaseSuppressed, suppressCallbacks } from "#/host";
+import {
+  collapseSuppressed,
+  flushCallbacks,
+  releaseSuppressed,
+  suppressCallback,
+  suppressCallbacks,
+} from "#/host";
 import { either, option, readonlySet } from "fp-ts";
 import { iife, noop, unreachable } from "#/utils";
 import type { Failure } from "#/failures";
@@ -41,9 +47,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
     this.#triggerCleanup(closure.cleanups);
-    const processTrack = suppressCallbacks("Process tracking notifications failed", [
-      () => this.#zone.trackProcess(process),
-    ]);
+    const processTrack = suppressCallback(() => {
+      this.#zone.trackProcess(process);
+    });
     const closing = this.#advanceClosing(closure.exitCallbacks);
 
     releaseSuppressed(
@@ -59,9 +65,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
-    const processTrack = suppressCallbacks("Process tracking notifications failed", [
-      () => this.#zone.trackProcess(process),
-    ]);
+    const processTrack = suppressCallback(() => {
+      this.#zone.trackProcess(process);
+    });
 
     const notifications = closure.exitCallbacks;
     const state = this.#state;
@@ -456,7 +462,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     );
 
     suppressed.push(
-      suppressCallbacks("Scope tracking notifications failed", [() => this.#zone.trackScope(this)]),
+      suppressCallback(() => {
+        this.#zone.trackScope(this);
+      }),
     );
 
     return collapseSuppressed(
@@ -479,9 +487,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
       suppressed.push(
-        suppressCallbacks("Process tracking notifications failed", [
-          () => this.#zone.trackProcess(process),
-        ]),
+        suppressCallback(() => {
+          this.#zone.trackProcess(process);
+        }),
       );
 
       notifications.push(...closure.exitCallbacks);
@@ -512,9 +520,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
       suppressed.push(
-        suppressCallbacks("Process tracking notifications failed", [
-          () => this.#zone.trackProcess(process),
-        ]),
+        suppressCallback(() => {
+          this.#zone.trackProcess(process);
+        }),
       );
 
       notifications.push(...closure.exitCallbacks);
