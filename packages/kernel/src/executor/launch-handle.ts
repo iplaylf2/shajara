@@ -1,4 +1,4 @@
-import type { FutureKey, FutureResult, Suppressor } from "#/contracts";
+import type { FutureResult, Suppressor } from "#/contracts";
 import type { Disposer } from "#/utils";
 import type { ExecutionScopeRef } from "./execution-scope";
 import type { Failure } from "#/failures";
@@ -8,7 +8,7 @@ import { either } from "fp-ts";
 
 export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   public onSettled(listener: (result: LaunchResult<Result>) => void): Disposer {
-    return this.onScopeSettled(this.executionScope.exitFuture, (result, suppressor) => {
+    return this.lifecycle.onSettled((result, suppressor) => {
       try {
         listener(toLaunchResult(result));
       } catch (error) {
@@ -19,11 +19,7 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
 
   public constructor(
     private readonly executionScope: ExecutionScopeRef<Result>,
-    private readonly onScopeSettled: <Settled>(
-      future: FutureKey<Settled>,
-      onSettled: (result: FutureResult<Settled>, suppressor: Suppressor) => void,
-    ) => Disposer,
-    private readonly scopeStatus: (scope: ExecutionScopeRef<unknown>) => LaunchStatus,
+    private readonly lifecycle: LaunchLifecycle<Result>,
   ) {}
 
   public get scope(): ExecutionScopeRef<Result> {
@@ -31,7 +27,7 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   }
 
   public get status(): LaunchStatus {
-    return this.scopeStatus(this.executionScope);
+    return this.lifecycle.status();
   }
 }
 
@@ -52,6 +48,11 @@ export type LaunchResult<Result> = TaggedUnion<
 >;
 
 export type LaunchStatus = "open" | "closing" | "closed";
+
+export interface LaunchLifecycle<Result> {
+  status(): LaunchStatus;
+  onSettled(onSettled: (result: FutureResult<Result>, suppressor: Suppressor) => void): Disposer;
+}
 
 function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Result> {
   if (either.isLeft(result)) {

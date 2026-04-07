@@ -6,12 +6,8 @@ import type { ProcessStep } from "#/interpreter";
 import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {
-  public static create(
-    pacer: Pacer,
-    stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
-    beginTurn: () => void,
-  ): ExecutorDriver {
-    const driver = new ExecutorDriver(pacer, stepProcess, beginTurn);
+  public static create(pacer: Pacer, loop: ExecutorDriverLoop): ExecutorDriver {
+    const driver = new ExecutorDriver(pacer, loop);
     driver.#armTurn();
     return driver;
   }
@@ -39,14 +35,9 @@ export class ExecutorDriver {
     return this.#processor;
   }
 
-  private constructor(
-    pacer: Pacer,
-    stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
-    beginTurn: () => void,
-  ) {
+  private constructor(pacer: Pacer, loop: ExecutorDriverLoop) {
     this.#pacer = pacer;
-    this.#stepProcess = stepProcess;
-    this.#beginTurn = beginTurn;
+    this.#loop = loop;
   }
 
   #armTurn(): void {
@@ -65,7 +56,7 @@ export class ExecutorDriver {
 
   #runCurrentTurn(): void {
     const slice = this.#pacer.beginSlice();
-    this.#beginTurn();
+    this.#loop.beginTurn();
 
     while (this.#hasTask && !slice.shouldYield()) {
       this.#driveTask();
@@ -100,12 +91,20 @@ export class ExecutorDriver {
 
   #isStopped = false;
   readonly #pacer: Pacer;
-  readonly #stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>;
-  readonly #beginTurn: () => void;
+  readonly #loop: ExecutorDriverLoop;
   readonly #tasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
     drive: (task) => {
       this.#tasks.push(task);
     },
   };
+
+  #stepProcess<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
+    return this.#loop.stepProcess(process);
+  }
+}
+
+export interface ExecutorDriverLoop {
+  beginTurn(): void;
+  stepProcess<Result>(process: ProcessRef<Result>): ProcessStep<Result>;
 }

@@ -1,4 +1,11 @@
-import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
+import type {
+  FailureShape,
+  FutureResult,
+  FutureSettleKey,
+  Ritual,
+  ScopeRef,
+  Suppressor,
+} from "#/contracts";
 import { cancel, park, settle } from "#/primitives";
 import { either, io, option } from "fp-ts";
 import { DomainInterpreter } from "./domain-interpreter";
@@ -32,11 +39,10 @@ export interface Executor {
 
 class RuntimeExecutor implements Executor {
   public constructor(pacer: Pacer) {
-    this.#driver = ExecutorDriver.create(
-      pacer,
-      (process) => this.#interpreter.step(process, { capture: unreachable }),
-      () => this.#startReaperRound(),
-    );
+    this.#driver = ExecutorDriver.create(pacer, {
+      beginTurn: () => this.#startReaperRound(),
+      stepProcess: (process) => this.#interpreter.step(process, { capture: unreachable }),
+    });
     this.#interpreter = new DomainInterpreter(park, {
       reaper: { adjudicate: () => wisp.of(option.none) },
       scheduler: { assign: () => this.#driver.processor },
@@ -66,11 +72,10 @@ class RuntimeExecutor implements Executor {
     const executionScope = this.#registerScope(launchedScope);
 
     return option.some(
-      new RuntimeLaunchHandle(
-        executionScope,
-        (future, onSettled) => this.#interpreter.wait(future, onSettled),
-        (scopeRef) => this.#scopeStatus(scopeRef),
-      ),
+      new RuntimeLaunchHandle(executionScope, {
+        onSettled: (onSettled) => this.#onScopeSettled(executionScope, onSettled),
+        status: () => this.#scopeStatus(executionScope),
+      }),
     );
   }
 
@@ -131,6 +136,13 @@ class RuntimeExecutor implements Executor {
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
     return this.#isRegisteredScope(scope) && this.#scopeStatus(scope) === "open";
+  }
+
+  #onScopeSettled<Result>(
+    scope: ExecutionScopeRef<Result>,
+    onSettled: (result: FutureResult<Result>, suppressor: Suppressor) => void,
+  ) {
+    return this.#interpreter.wait(scope.exitFuture, onSettled);
   }
 
   #scopeStatus(scope: ExecutionScopeRef<unknown>) {
