@@ -41,12 +41,17 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
     this.#triggerCleanup(closure.cleanups);
-    const closing = this.#advanceClosing([
+    const processTrack = suppressCallbacks("Process tracking notifications failed", [
       () => this.#zone.trackProcess(process),
-      ...closure.exitCallbacks,
     ]);
+    const closing = this.#advanceClosing(closure.exitCallbacks);
 
-    releaseSuppressed(closing);
+    releaseSuppressed(
+      collapseSuppressed("Out-of-band failures occurred while handling process completion", [
+        processTrack,
+        closing,
+      ]),
+    );
   }
 
   public halt(process: RuntimeProcessKeeper, failure: Failure): void {
@@ -54,8 +59,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
-    const notifications = [() => this.#zone.trackProcess(process), ...closure.exitCallbacks];
+    const processTrack = suppressCallbacks("Process tracking notifications failed", [
+      () => this.#zone.trackProcess(process),
+    ]);
 
+    const notifications = closure.exitCallbacks;
     const state = this.#state;
     const failing =
       state.status === "failing"
@@ -75,7 +83,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
             { propagateFailure: this.#propagatesFailure },
           );
 
-    releaseSuppressed(failing);
+    releaseSuppressed(
+      collapseSuppressed("Out-of-band failures occurred while handling process failure", [
+        processTrack,
+        failing,
+      ]),
+    );
   }
 
   public cancel(): void {
@@ -412,8 +425,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
       case "running":
         return unreachable();
       case "closing": {
-        const detachedNotifications = this.#cancelDetached();
-        notifications.push(...detachedNotifications);
+        const detached = this.#cancelDetached();
+        notifications.push(...detached.notifications);
+        suppressed.push(detached.suppressed);
         break;
       }
       case "canceling":
@@ -434,13 +448,15 @@ export class RuntimeScope implements ScopeRef<unknown> {
         break;
     }
 
-    notifications.push(() => this.#zone.trackScope(this));
-
     suppressed.push(
       suppressCallbacks(
         "Out-of-band failures occurred while handling scope transition",
         notifications,
       ),
+    );
+
+    suppressed.push(
+      suppressCallbacks("Scope tracking notifications failed", [() => this.#zone.trackScope(this)]),
     );
 
     return collapseSuppressed(
@@ -462,7 +478,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
-      notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
+      suppressed.push(
+        suppressCallbacks("Process tracking notifications failed", [
+          () => this.#zone.trackProcess(process),
+        ]),
+      );
+
+      notifications.push(...closure.exitCallbacks);
     }
 
     for (const child of children) {
@@ -484,14 +506,27 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const processes = [...this.#detachedProcesses];
     this.#detachedProcesses.clear();
     const notifications: Notifications = [];
+    const suppressed: option.Option<unknown>[] = [];
 
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups);
-      notifications.push(() => this.#zone.trackProcess(process), ...closure.exitCallbacks);
+      suppressed.push(
+        suppressCallbacks("Process tracking notifications failed", [
+          () => this.#zone.trackProcess(process),
+        ]),
+      );
+
+      notifications.push(...closure.exitCallbacks);
     }
 
-    return notifications;
+    return {
+      notifications,
+      suppressed: collapseSuppressed(
+        "Out-of-band failures occurred while handling detached process cancellation",
+        suppressed,
+      ),
+    };
   }
 
   #settleClosed(result: FutureResult<unknown>): Notifications {
