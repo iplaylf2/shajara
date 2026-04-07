@@ -142,6 +142,10 @@ export class Interpreter {
     }
   }
 
+  public scope(process: ProcessRef<unknown>): ScopeRef<unknown> {
+    return this.#resolve(process).scopeRef;
+  }
+
   public constructor(entry: Ritual<void>, zoneRoot: ScopeZone) {
     this.#scopeRoot = RuntimeScope.root(
       this.#provideProcess(entry),

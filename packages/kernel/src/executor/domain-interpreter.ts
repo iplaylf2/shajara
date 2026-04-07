@@ -14,14 +14,14 @@ import { interruptedFailure } from "#/failures";
 export class DomainInterpreter extends Interpreter {
   public constructor(entry: Ritual<void>, autonomy: SchedulerOption & ReaperOption) {
     const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
-      this.#schedulerTask(process),
+      this.#createProcessorTask(process),
     );
     const reaperDomainRoot = ReaperDomain.root(autonomy.reaper);
     const zoneRoot: DomainZone = {
       reaperDomain: reaperDomainRoot,
       schedulerDomain: schedulerDomainRoot,
       trackProcess: (process) => {
-        schedulerDomainRoot.trackProcess(process, this.processState(process));
+        schedulerDomainRoot.admitProcess(process, this.processState(process));
       },
       trackScope: (scope) => {
         reaperDomainRoot.trackScope(scope, this.scopeState(scope));
@@ -136,7 +136,7 @@ export class DomainInterpreter extends Interpreter {
     const schedulerDomain =
       "scheduler" in autonomy
         ? domainZone.schedulerDomain.nest(autonomy.scheduler, (process) =>
-            this.#schedulerTask(process),
+            this.#createProcessorTask(process),
           )
         : domainZone.schedulerDomain;
     const reaperDomain =
@@ -145,22 +145,18 @@ export class DomainInterpreter extends Interpreter {
         : domainZone.reaperDomain;
     const trackProcess =
       "scheduler" in autonomy
-        ? (trackedProcess: ProcessRef<unknown>, suppressor: Suppressor) => {
+        ? (process: ProcessRef<unknown>, suppressor: Suppressor) => {
             try {
-              schedulerDomain.trackProcess(trackedProcess, this.processState(trackedProcess));
+              schedulerDomain.admitProcess(process, this.processState(process));
             } catch (error) {
-              suppressor.capture(error);
+              this.forceFailed(this.scope(process), interruptedFailure(error), suppressor);
             }
           }
         : domainZone.trackProcess;
     const trackScope =
       "reaper" in autonomy
-        ? (scope: ScopeRef<unknown>, suppressor: Suppressor) => {
-            try {
-              reaperDomain.trackScope(scope, this.scopeState(scope));
-            } catch (error) {
-              suppressor.capture(error);
-            }
+        ? (scope: ScopeRef<unknown>) => {
+            reaperDomain.trackScope(scope, this.scopeState(scope));
           }
         : domainZone.trackScope;
 
@@ -172,7 +168,7 @@ export class DomainInterpreter extends Interpreter {
     };
   }
 
-  #schedulerTask(process: ProcessRef<unknown>) {
+  #createProcessorTask(process: ProcessRef<unknown>) {
     return {
       step: (suppressor: Suppressor): ProcessorTaskStatus => {
         const step = this.step(process, suppressor);
