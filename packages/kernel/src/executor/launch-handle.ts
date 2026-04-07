@@ -1,4 +1,4 @@
-import type { FutureKey, FutureResult } from "#/contracts";
+import type { FutureKey, FutureResult, Suppressor } from "#/contracts";
 import type { Disposer } from "#/utils";
 import type { ExecutionScopeRef } from "./execution-scope";
 import type { Failure } from "#/failures";
@@ -8,8 +8,12 @@ import { either } from "fp-ts";
 
 export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
   public onSettled(listener: (result: LaunchResult<Result>) => void): Disposer {
-    return this.onScopeSettled(this.executionScope.exitFuture, (result) => {
-      listener(toLaunchResult(result));
+    return this.onScopeSettled(this.executionScope.exitFuture, (result, suppressor) => {
+      try {
+        listener(toLaunchResult(result));
+      } catch (error) {
+        suppressor.capture(error);
+      }
     });
   }
 
@@ -17,7 +21,7 @@ export class RuntimeLaunchHandle<Result> implements LaunchHandle<Result> {
     private readonly executionScope: ExecutionScopeRef<Result>,
     private readonly onScopeSettled: <Settled>(
       future: FutureKey<Settled>,
-      onSettled: (result: FutureResult<Settled>) => void,
+      onSettled: (result: FutureResult<Settled>, suppressor: Suppressor) => void,
     ) => Disposer,
     private readonly scopeStatus: (scope: ExecutionScopeRef<unknown>) => LaunchStatus,
   ) {}

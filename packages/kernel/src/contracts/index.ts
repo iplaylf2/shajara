@@ -5,5 +5,6 @@ export * from "./scope";
 export * from "./message-key";
 export * from "./context-key";
 export * from "./future-key";
+export * from "./suppressor";
 export * from "./sigil";
 export * from "./token";

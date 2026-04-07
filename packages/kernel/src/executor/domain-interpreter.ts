@@ -1,5 +1,5 @@
 import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy";
-import type { ProcessRef, Ritual, ScopeRef } from "#/contracts";
+import type { ProcessRef, Ritual, ScopeRef, Suppressor } from "#/contracts";
 import { ReaperDomain, SchedulerDomain } from "./domains";
 import { Interpreter } from "#/interpreter";
 import type { ProcessorTaskStatus } from "./processor";
@@ -18,11 +18,19 @@ export class DomainInterpreter extends Interpreter {
     const zoneRoot: DomainZone = {
       reaperDomain: reaperDomainRoot,
       schedulerDomain: schedulerDomainRoot,
-      trackProcess: (process) => {
-        schedulerDomainRoot.trackProcess(process, this.processState(process));
+      trackProcess: (process, suppressor) => {
+        try {
+          schedulerDomainRoot.trackProcess(process, this.processState(process));
+        } catch (error) {
+          suppressor.capture(error);
+        }
       },
-      trackScope: (scope) => {
-        reaperDomainRoot.trackScope(scope, this.scopeState(scope));
+      trackScope: (scope, suppressor) => {
+        try {
+          reaperDomainRoot.trackScope(scope, this.scopeState(scope));
+        } catch (error) {
+          suppressor.capture(error);
+        }
       },
     };
 
@@ -31,7 +39,7 @@ export class DomainInterpreter extends Interpreter {
     this.#reaperDomainRoot = reaperDomainRoot;
   }
 
-  public *reaperTasks(): Iterable<ReaperTask> {
+  public *reaperTasks(suppressor: Suppressor): Iterable<ReaperTask> {
     for (const reaperDomain of ReaperDomain.domains(this.#reaperDomainRoot)) {
       if (!reaperDomain.hasClosingScope) {
         continue;
@@ -39,23 +47,25 @@ export class DomainInterpreter extends Interpreter {
 
       for (const task of reaperDomain.createTasks(
         (scope) => this.scopeState(scope),
-        (scope, worker) => this.spawn(scope, worker),
+        (scope, worker) => this.spawn(scope, worker, suppressor),
       )) {
         yield task;
       }
     }
   }
 
+  // oxlint-disable-next-line max-params
   protected override scopeBranch(
     scope: ScopeRef<unknown>,
     entry: Ritual<unknown>,
     descriptor: ScopeDescriptor,
     zone: ScopeZone,
+    suppressor: Suppressor,
   ): ScopeRef<unknown> {
     const domainZone = resolveDomainZone(zone);
     const autonomy = autonomyOf(descriptor);
     const childScopeZone = autonomy ? this.#createZone(domainZone, autonomy) : domainZone;
-    const childScope = super.scopeBranch(scope, entry, descriptor, childScopeZone);
+    const childScope = super.scopeBranch(scope, entry, descriptor, childScopeZone, suppressor);
     this.#registerReaperLeaf(
       domainZone.reaperDomain,
       childScopeZone.reaperDomain,
@@ -129,14 +139,22 @@ export class DomainInterpreter extends Interpreter {
         : domainZone.reaperDomain;
     const trackProcess =
       "scheduler" in autonomy
-        ? (trackedProcess: ProcessRef<unknown>) => {
-            schedulerDomain.trackProcess(trackedProcess, this.processState(trackedProcess));
+        ? (trackedProcess: ProcessRef<unknown>, suppressor: Suppressor) => {
+            try {
+              schedulerDomain.trackProcess(trackedProcess, this.processState(trackedProcess));
+            } catch (error) {
+              suppressor.capture(error);
+            }
           }
         : domainZone.trackProcess;
     const trackScope =
       "reaper" in autonomy
-        ? (scope: ScopeRef<unknown>) => {
-            reaperDomain.trackScope(scope, this.scopeState(scope));
+        ? (scope: ScopeRef<unknown>, suppressor: Suppressor) => {
+            try {
+              reaperDomain.trackScope(scope, this.scopeState(scope));
+            } catch (error) {
+              suppressor.capture(error);
+            }
           }
         : domainZone.trackScope;
 
@@ -150,8 +168,8 @@ export class DomainInterpreter extends Interpreter {
 
   #schedulerTask(process: ProcessRef<unknown>) {
     return {
-      step: (): ProcessorTaskStatus => {
-        const step = this.step(process);
+      step: (suppressor: Suppressor): ProcessorTaskStatus => {
+        const step = this.step(process, suppressor);
         switch (step.disposition) {
           case "waiting":
             return "waiting";

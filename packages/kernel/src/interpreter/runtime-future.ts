@@ -4,9 +4,10 @@ import type {
   FutureResult,
   FutureSettleKey,
   KEY_TOKEN,
+  Suppressor,
 } from "#/contracts";
+import { noop, unreachable } from "#/utils";
 import type { Disposer } from "#/utils";
-import { noop } from "#/utils";
 import { option } from "fp-ts";
 
 export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
@@ -20,7 +21,6 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
 
   public wait(onSettled: FutureSettler<Result>): Disposer {
     if (this.#result) {
-      onSettled(this.#result);
       return noop;
     }
 
@@ -31,18 +31,20 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
     };
   }
 
-  public settle(result: FutureResult<Result>): Array<() => void> {
+  public settle(result: FutureResult<Result>): FutureNotification {
     if (this.#result) {
-      return [];
+      return unreachable();
     }
 
     this.#result = result;
     const waiters = this.#waiters;
     this.#waiters = new Set();
 
-    return Array.from(waiters, (waiter) => () => {
-      waiter(result);
-    });
+    return (suppressor) => {
+      for (const waiter of waiters) {
+        waiter(result, suppressor);
+      }
+    };
   }
 
   public handle(): FutureHandle<Result> {
@@ -56,4 +58,9 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
   #result: FutureResult<Result> | null = null;
 }
 
-export type FutureSettler<out Result> = (result: FutureResult<Result>) => void;
+export type FutureSettler<out Result> = (
+  result: FutureResult<Result>,
+  suppressor: Suppressor,
+) => void;
+
+export type FutureNotification = (suppressor: Suppressor) => void;

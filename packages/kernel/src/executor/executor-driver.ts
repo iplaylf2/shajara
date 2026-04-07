@@ -1,4 +1,5 @@
 import type { Processor, ProcessorTask } from "./processor";
+import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import type { ProcessRef } from "#/contracts";
 import type { ProcessStep } from "#/interpreter";
@@ -19,7 +20,7 @@ export class ExecutorDriver {
     this.#isStopped = true;
   }
 
-  public driveSync<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
+  public driveSyncUnsafely<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
     while (true) {
       const step = this.#stepProcess(process);
       switch (step.disposition) {
@@ -74,7 +75,10 @@ export class ExecutorDriver {
   #driveTask(): void {
     const [task] = this.#tasks;
     while (true) {
-      const status = task!.step();
+      const faultSink = new FaultSink();
+      const status = task!.step(faultSink);
+      faultSink.throwIfAny("Out-of-band failures occurred while driving executor work");
+
       switch (status) {
         case "ready":
           continue;

@@ -1,5 +1,6 @@
 import type { ProcessRef, ScopeRef } from "#/contracts";
 import type { Failure } from "#/failures";
+import type { FutureNotification } from "#/interpreter/runtime-future";
 import type { ProcessDescriptor } from "#/sigils";
 import type { TaggedUnion } from "type-fest";
 
@@ -23,7 +24,7 @@ export type RuntimeProcessKeeperStateOf<Status extends RuntimeProcessKeeperStatu
 >;
 
 export interface ProcessClosure {
-  readonly exitCallbacks: Array<() => void>;
+  readonly notification: FutureNotification;
   readonly cleanups: CleanupTask[];
 }
 

@@ -5,6 +5,7 @@ import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
 import type { Failure } from "#/failures";
+import { FaultSink } from "./fault-sink";
 import type { LaunchHandle } from "./launch-handle";
 import type { Option } from "#/utils";
 import type { Pacer } from "./pacer";
@@ -12,6 +13,7 @@ import type { ProcessStepOf } from "#/interpreter";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { branch } from "#/sigils";
 import { pipe } from "fp-ts/function";
+import { unreachable } from "#/utils";
 import { wisp } from "#/internal/fp";
 
 export function createExecutor(pacer: Pacer): Executor {
@@ -32,7 +34,7 @@ class RuntimeExecutor implements Executor {
   public constructor(pacer: Pacer) {
     this.#driver = ExecutorDriver.create(
       pacer,
-      (process) => this.#interpreter.step(process),
+      (process) => this.#interpreter.step(process, { capture: unreachable }),
       () => this.#startReaperRound(),
     );
     this.#interpreter = new DomainInterpreter(park, {
@@ -53,8 +55,13 @@ class RuntimeExecutor implements Executor {
       return option.none;
     }
 
-    const process = this.#interpreter.spawn(scope, createLaunchWorker(ritual));
-    const launchStep = this.#driver.driveSync(process) as ProcessStepOf<ScopeRef<Result>, "exited">;
+    const process = this.#interpreter.spawn(scope, createLaunchWorker(ritual), {
+      capture: unreachable,
+    });
+    const launchStep = this.#driver.driveSyncUnsafely(process) as ProcessStepOf<
+      ScopeRef<Result>,
+      "exited"
+    >;
     const launchedScope = (launchStep.result as either.Right<ScopeRef<Result>>).right;
     const executionScope = this.#registerScope(launchedScope);
 
@@ -75,8 +82,10 @@ class RuntimeExecutor implements Executor {
       return false;
     }
 
-    const process = this.#interpreter.spawn(this.rootScope, () => settle(futureSettle, result));
-    this.#driver.driveSync(process);
+    const process = this.#interpreter.spawn(this.rootScope, () => settle(futureSettle, result), {
+      capture: unreachable,
+    });
+    this.#driver.driveSyncUnsafely(process);
     return true;
   }
 
@@ -85,8 +94,8 @@ class RuntimeExecutor implements Executor {
       return false;
     }
 
-    const process = this.#interpreter.spawn(scope, cancel);
-    this.#driver.driveSync(process);
+    const process = this.#interpreter.spawn(scope, cancel, { capture: unreachable });
+    this.#driver.driveSyncUnsafely(process);
     return true;
   }
 
@@ -95,7 +104,8 @@ class RuntimeExecutor implements Executor {
   }
 
   #startReaperRound(): void {
-    for (const { adjudicate, scope } of this.#interpreter.reaperTasks()) {
+    const faultSink = new FaultSink();
+    for (const { adjudicate, scope } of this.#interpreter.reaperTasks({ capture: unreachable })) {
       const process = adjudicate();
 
       this.#interpreter.wait(process.exitFuture, (result) => {
@@ -111,12 +121,14 @@ class RuntimeExecutor implements Executor {
               (id: FailureShape) => either.left(id),
             ),
           ),
-          either.getOrElse(
-            (failure) => () => this.#interpreter.forceFailed(scope, failure as Failure),
-          ),
+          either.getOrElse((failure) => () => {
+            this.#interpreter.forceFailed(scope, failure as Failure, faultSink);
+          }),
           (run) => run(),
         );
       });
+
+      faultSink.throwIfAny("Out-of-band failures occurred while starting a reaper round");
     }
   }
 
