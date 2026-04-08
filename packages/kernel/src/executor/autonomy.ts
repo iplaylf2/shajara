@@ -38,7 +38,7 @@ export interface Scheduler {
 }
 
 export interface Reaper {
-  adjudicate(closingScope: ScopeRef<unknown>): Wisp<Option<Failure>>;
+  adjudicate(scope: ScopeRef<unknown>): Wisp<Option<Failure>>;
 }
 
 function isAutonomyScopeDescriptor(

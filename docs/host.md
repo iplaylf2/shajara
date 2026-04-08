@@ -62,6 +62,8 @@ host 以 `launch` 为统一收敛锚点：
 
 `Scope`、并发与结果收敛在 host 公开 API 中分别落在 `createScope`、`spawn` 与 future 相关原语上。
 
+`autonomy` 也落在这一层适配责任中：host 直接复用 kernel 提供的 autonomy primitive，并对 `options.reaper` 做宿主侧转译，使其保持“正常返回表示继续等待、抛异常表示强制失败”的 host 风格失败通道。
+
 ## 6. Scope 引用类型
 
 host 与 kernel 的契约中，`Scope` 及其相关引用类型承载运行边界。
