@@ -432,7 +432,7 @@ function poll<Result>(future: RuntimeFuture<Result>): option.Option<FutureResult
   return future.poll();
 }
 
-function self(process: RuntimeProcessRunner<unknown>): SelfHandle<ScopeRef<unknown>> {
+function self(process: RuntimeProcessRunner<unknown>): SelfHandle {
   return process.selfHandle();
 }
 

@@ -25,7 +25,7 @@ export class RuntimeProcess<Relic>
     return new RuntimeProcess(scopeRef, worker, descriptor);
   }
 
-  public selfHandle(): SelfHandle<ScopeRef<unknown>> {
+  public selfHandle(): SelfHandle {
     return {
       process: this,
       scope: this.scopeRef,

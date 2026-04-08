@@ -1,17 +1,17 @@
 import type { ECHO_TOKEN, ProcessRef, ScopeRef, SigilShape } from "#/contracts";
 
-export function self<Scope extends ScopeRef<unknown>>(): SelfSigil<Scope> {
+export function self(): SelfSigil {
   return {
     kind: "self",
   };
 }
 
-export interface SelfSigil<Scope extends ScopeRef<unknown>> extends SigilShape {
+export interface SelfSigil extends SigilShape {
   readonly kind: "self";
-  readonly [ECHO_TOKEN]?: readonly [SelfHandle<Scope>];
+  readonly [ECHO_TOKEN]?: readonly [SelfHandle];
 }
 
-export interface SelfHandle<Scope extends ScopeRef<unknown>> {
-  readonly scope: Scope;
+export interface SelfHandle {
+  readonly scope: ScopeRef<unknown>;
   readonly process: ProcessRef<unknown>;
 }

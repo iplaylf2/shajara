@@ -1,4 +1,4 @@
-import type { Echo, ProcessRef, ScopeRef } from "#/contracts";
+import type { Echo, ProcessRef } from "#/contracts";
 import type { SelfHandle, Sigil } from "#/sigils";
 import type { CleanupTask } from "./keeper";
 import type { Failure } from "#/failures";
@@ -6,7 +6,7 @@ import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {
   defer(cleanup: CleanupTask): void;
-  selfHandle(): SelfHandle<ScopeRef<unknown>>;
+  selfHandle(): SelfHandle;
   stateAs<Status extends RuntimeProcessRunnerStatus>(
     status: Status,
   ): RuntimeProcessRunnerStateOf<Relic, Status>;

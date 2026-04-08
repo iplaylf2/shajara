@@ -8,7 +8,6 @@ import type { HaltSigil } from "./halt";
 import type { LookupSigil } from "./lookup";
 import type { PollSigil } from "./poll";
 import type { ReceiveSigil } from "./receive";
-import type { ScopeRef } from "#/contracts";
 import type { SelfSigil } from "./self";
 import type { SendSigil } from "./send";
 import type { SettleSigil } from "./settle";
@@ -44,7 +43,7 @@ export type Sigil =
   | LookupSigil<unknown>
   | PollSigil<unknown>
   | ReceiveSigil<unknown>
-  | SelfSigil<ScopeRef<unknown>>
+  | SelfSigil
   | SendSigil<unknown>
   | SettleSigil<unknown>
   | SpawnSigil<unknown>
