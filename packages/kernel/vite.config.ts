@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import dts from "vite-plugin-dts";
 
 export default defineConfig({
@@ -22,4 +22,8 @@ export default defineConfig({
       tsconfigPath: "./tsconfig.json",
     }),
   ],
+  test: {
+    environment: "node",
+    include: ["test/**/*.test.ts"],
+  },
 });

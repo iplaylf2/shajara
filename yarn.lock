@@ -708,6 +708,7 @@ __metadata:
     typescript: "catalog:"
     vite: "catalog:"
     vite-plugin-dts: "catalog:"
+    vitest: "catalog:"
   languageName: unknown
   linkType: soft
 
