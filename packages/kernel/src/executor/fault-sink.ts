@@ -2,12 +2,14 @@
 import type { Suppressor } from "#/contracts";
 import { option } from "fp-ts";
 
-export class FaultSink implements Suppressor {
+export class FaultSink implements Disposable, Suppressor {
+  public constructor(private readonly message: string) {}
+
   public capture(error: unknown): void {
     this.#errors.push(error);
   }
 
-  public drain(message: string): option.Option<unknown> {
+  public drain(): option.Option<unknown> {
     const errors = this.#errors;
     this.#errors = [];
 
@@ -17,15 +19,19 @@ export class FaultSink implements Suppressor {
       case 1:
         return option.some(errors[0]);
       default:
-        return option.some(new AggregateError(errors, message));
+        return option.some(new AggregateError(errors, this.message));
     }
   }
 
-  public throwIfAny(message: string): void {
-    const cause = this.drain(message);
+  public throwIfAny(): void {
+    const cause = this.drain();
     if (option.isSome(cause)) {
       throw cause.value;
     }
+  }
+
+  public [Symbol.dispose](): void {
+    this.throwIfAny();
   }
 
   #errors: unknown[] = [];

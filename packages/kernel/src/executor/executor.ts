@@ -57,9 +57,9 @@ class RuntimeExecutor implements Executor {
       return option.none;
     }
 
-    const fault = new FaultSink();
+    using fault = new FaultSink("Out-of-band failures occurred while spawning a launched scope");
     const process = this.#interpreter.spawn(scope, createLaunchWorker(ritual), fault);
-    const cause = fault.drain("Out-of-band failures occurred while spawning a launched scope");
+    const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);
 
@@ -102,11 +102,11 @@ class RuntimeExecutor implements Executor {
       return false;
     }
 
-    const fault = new FaultSink();
-    const process = this.#interpreter.spawn(scope, cancel, fault);
-    const cause = fault.drain(
+    using fault = new FaultSink(
       "Out-of-band failures occurred while spawning a cancellation process",
     );
+    const process = this.#interpreter.spawn(scope, cancel, fault);
+    const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);
 
@@ -123,7 +123,7 @@ class RuntimeExecutor implements Executor {
   }
 
   #startReaperRound(): void {
-    const faultSink = new FaultSink();
+    using faultSink = new FaultSink("Out-of-band failures occurred while starting a reaper round");
     for (const [scope, process] of this.#interpreter.startReaperTasks(faultSink)) {
       this.#interpreter.wait(process.exitFuture, (result, suppressor) => {
         if (this.#interpreter.scopeState(scope).status === "closed") {
@@ -145,7 +145,6 @@ class RuntimeExecutor implements Executor {
         );
       });
     }
-    faultSink.throwIfAny("Out-of-band failures occurred while starting a reaper round");
   }
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
@@ -153,9 +152,8 @@ class RuntimeExecutor implements Executor {
   }
 
   #interruptScope(scope: ExecutionScopeRef<unknown>, cause: unknown): void {
-    const faultSink = new FaultSink();
+    using faultSink = new FaultSink("Out-of-band failures occurred while force failing a scope");
     this.#interpreter.forceFailed(scope, interruptedFailure(cause), faultSink);
-    faultSink.throwIfAny("Out-of-band failures occurred while force failing a scope");
   }
 
   #registerScope<Result>(scope: ScopeRef<Result>): ExecutionScopeRef<Result> {

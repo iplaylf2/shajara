@@ -46,10 +46,12 @@ export class ExecutorDriver {
         return;
       }
 
-      this.#runCurrentTurn();
-
-      if (!this.#isStopped) {
-        this.#armTurn();
+      try {
+        this.#runCurrentTurn();
+      } finally {
+        if (!this.#isStopped) {
+          this.#armTurn();
+        }
       }
     });
   }
@@ -66,9 +68,8 @@ export class ExecutorDriver {
   #driveTask(): void {
     const [task] = this.#tasks;
     while (true) {
-      const faultSink = new FaultSink();
+      using faultSink = new FaultSink("Out-of-band failures occurred while driving executor work");
       const status = task!.step(faultSink);
-      faultSink.throwIfAny("Out-of-band failures occurred while driving executor work");
 
       switch (status) {
         case "ready":

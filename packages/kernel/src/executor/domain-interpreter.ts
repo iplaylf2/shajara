@@ -43,12 +43,11 @@ export class DomainInterpreter extends Interpreter {
       }
 
       for (const { scope, worker } of reaperDomain.createWorkers((id) => this.scopeState(id))) {
-        const faultSink = new FaultSink();
-        const process = this.spawn(reaperDomain.scopeRoot, worker, faultSink);
-        const cause = faultSink.drain(
+        using faultSink = new FaultSink(
           "Out-of-band failures occurred while spawning a reaper adjudication process",
         );
-
+        const process = this.spawn(reaperDomain.scopeRoot, worker, faultSink);
+        const cause = faultSink.drain();
         if (option.isSome(cause)) {
           this.forceFailed(scope, interruptedFailure(cause.value), suppressor);
 
