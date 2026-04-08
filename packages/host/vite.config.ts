@@ -11,6 +11,9 @@ export default defineConfig({
       fileName: (format, entryName) => (format === "es" ? `${entryName}.js` : `${entryName}.cjs`),
       formats: ["es", "cjs"],
     },
+    rollupOptions: {
+      external: (id) => id.startsWith("@shajara/"),
+    },
     target: "esnext",
   },
   plugins: [
