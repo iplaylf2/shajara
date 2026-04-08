@@ -22,6 +22,11 @@ export default defineConfig({
       tsconfigPath: "./tsconfig.json",
     }),
   ],
+  resolve: {
+    alias: {
+      "#test": new globalThis.URL("./test", import.meta.url).pathname,
+    },
+  },
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
