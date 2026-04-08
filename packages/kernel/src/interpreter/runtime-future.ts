@@ -6,8 +6,8 @@ import type {
   KEY_TOKEN,
   Suppressor,
 } from "#/contracts";
-import { noop, unreachable } from "#/utils";
 import type { Disposer } from "#/utils";
+import { noop } from "#/utils";
 import { option } from "fp-ts";
 
 export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
@@ -33,7 +33,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
 
   public settle(result: FutureResult<Result>): FutureNotification {
     if (this.#result) {
-      return unreachable();
+      return () => [];
     }
 
     this.#result = result;

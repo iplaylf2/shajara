@@ -1,190 +1,148 @@
-import {
-  DEFAULT_MAX_STEPS,
-  DEFAULT_MAX_TURNS,
-  EMPTY_QUEUE_LENGTH,
-  NO_ENTRY_RESULT,
-  createEntryCapture,
-  createInterpreterRunState,
-  ensureStepBudget,
-  pollFutureResult,
-  stepNextProcess,
-  waitForResult,
-} from "./runtime";
-import type { EntryCapture, InterpreterRunState, SteppedProcess } from "./runtime";
-import type { FutureKey, FutureResult, Interpreter, ProcessRef, Ritual, ScopeRef } from "#/index";
+import type { ProcessRef, Ritual, Suppressor } from "#/contracts";
+import { Interpreter } from "#/interpreter";
+import type { ProcessStep } from "#/interpreter";
+import { restingWisp } from "#/contracts";
 
-export interface InterpreterRun {
-  readonly interpreter: Interpreter;
-  readonly steps: readonly SteppedProcess[];
-  readonly suppressorErrors: readonly unknown[];
-  readonly trackedScopes: readonly ScopeRef<unknown>[];
+export function interpretRitual<Relic>(ritual: Ritual<Relic>, maxSteps = DEFAULT_MAX_STEPS) {
+  return new RitualInterpreter(ritual, maxSteps);
 }
 
-export interface EntryExecution<Relic> extends InterpreterRun {
-  readonly entryResult: Relic | null;
-  readonly hasEntryResult: boolean;
-  readonly status: "exhausted" | "pending";
-  flush(): EntryExecution<Relic>;
-  expectExhausted(): ExhaustedEntryExecution<Relic>;
-  waitForExhausted(options?: ExecutionWaitOptions): Promise<ExhaustedEntryExecution<Relic>>;
-  futureResult<Result>(future: FutureKey<Result>): FutureResult<Result> | null;
-  processResult<Result>(process: ProcessRef<Result>): FutureResult<Result> | null;
-  scopeResult<Result>(scope: ScopeRef<Result>): FutureResult<Result> | null;
-  waitForFuture<Result>(
-    future: FutureKey<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>>;
-  waitForProcess<Result>(
-    process: ProcessRef<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>>;
-  waitForScope<Result>(
-    scope: ScopeRef<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>>;
-}
-
-export interface ExhaustedEntryExecution<Relic> extends InterpreterRun {
-  readonly entryResult: Relic;
-  readonly status: "exhausted";
-  flush(): ExhaustedEntryExecution<Relic>;
-  futureResult<Result>(future: FutureKey<Result>): FutureResult<Result>;
-  processResult<Result>(process: ProcessRef<Result>): FutureResult<Result>;
-  scopeResult<Result>(scope: ScopeRef<Result>): FutureResult<Result>;
-  waitForExhausted(options?: ExecutionWaitOptions): Promise<ExhaustedEntryExecution<Relic>>;
-  waitForFuture<Result>(
-    future: FutureKey<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>>;
-  waitForProcess<Result>(
-    process: ProcessRef<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>>;
-  waitForScope<Result>(
-    scope: ScopeRef<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>>;
-}
-
-export interface ExecutionWaitOptions {
-  readonly maxTurns?: number;
-}
-
-export function executeEntry<Relic>(
-  entry: Ritual<Relic>,
-  maxSteps = DEFAULT_MAX_STEPS,
-): EntryExecution<Relic> {
-  return new HarnessExecution(entry, maxSteps);
-}
-
-class HarnessExecution<Relic> implements EntryExecution<Relic> {
-  readonly #capture: EntryCapture<Relic>;
+class RitualInterpreter<Relic> {
+  readonly #entryProcess: ProcessRef<Relic>;
+  readonly #interpreter: Interpreter;
   readonly #maxSteps: number;
-  readonly #run: InterpreterRunState;
+  readonly #queue: ProcessRef<unknown>[] = [];
+  readonly #suppressorErrors: unknown[] = [];
+  #stepCount = STEP_COUNT_START;
+  #stepLast: ProcessStep<Relic> | null = null;
 
-  public constructor(entry: Ritual<Relic>, maxSteps: number) {
-    this.#capture = createEntryCapture(entry);
+  public constructor(ritual: Ritual<Relic>, maxSteps: number) {
     this.#maxSteps = maxSteps;
-    this.#run = createInterpreterRunState(this.#capture.ritual);
-    this.flush();
-  }
-
-  public get entryResult(): Relic | null {
-    return this.#capture.result === NO_ENTRY_RESULT ? null : this.#capture.result;
-  }
-
-  public get hasEntryResult(): boolean {
-    return this.#capture.result !== NO_ENTRY_RESULT;
-  }
-
-  public get interpreter(): Interpreter {
-    return this.#run.interpreter;
-  }
-
-  public get status(): "exhausted" | "pending" {
-    return this.#run.interpreter.isClosed ? "exhausted" : "pending";
-  }
-
-  public get steps(): readonly SteppedProcess[] {
-    return this.#run.steps;
+    this.#interpreter = new Interpreter(() => restingWisp(VOID_RESULT), {
+      trackProcess: (process: ProcessRef<unknown>) => {
+        this.#queue.push(process);
+      },
+      trackScope() {
+        // Harness only needs runnable processes for primitive tests.
+      },
+    });
+    this.#entryProcess = this.#interpreter.spawn(
+      this.#interpreter.scopeRoot,
+      ritual,
+      this.#createSuppressor(),
+    );
   }
 
   public get suppressorErrors(): readonly unknown[] {
-    return this.#run.suppressorErrors;
+    return this.#suppressorErrors;
   }
 
-  public get trackedScopes(): readonly ScopeRef<unknown>[] {
-    return this.#run.trackedScopes;
-  }
+  public driveSync(): ProcessStep<Relic> {
+    while (this.#queue.length > QUEUE_EMPTY_LENGTH) {
+      const process = this.#queue.shift() ?? failStalledInterpreter();
+      const step = this.#driveProcessSync(process);
 
-  public flush(): EntryExecution<Relic> {
-    while (this.#run.queue.length > EMPTY_QUEUE_LENGTH) {
-      stepNextProcess(this.#run);
-      ensureStepBudget(this.#run.steps, this.#maxSteps);
+      if (process === this.#entryProcess) {
+        this.#stepLast = step as ProcessStep<Relic>;
+      }
+
+      this.#requeueRunningProcess(process);
     }
 
-    return this;
+    return this.#stepLast ?? failEntryNeverStepped();
   }
 
-  public expectExhausted(): ExhaustedEntryExecution<Relic> {
-    this.flush();
+  public waitForExit(options?: WaitForExitOptions): Promise<ProcessStep<Relic>> {
+    return this.#waitForExit(options?.maxTurns ?? DEFAULT_MAX_TURNS);
+  }
 
-    if (this.status !== "exhausted") {
-      throw new Error("Expected entry to exhaust synchronously");
+  #createSuppressor(): Suppressor {
+    return {
+      capture: (error) => {
+        this.#suppressorErrors.push(error);
+      },
+    };
+  }
+
+  #driveProcessSync(process: ProcessRef<unknown>): ProcessStep<Relic> {
+    while (true) {
+      if (this.#interpreter.processState(process).status === "closed") {
+        return this.#interpreter.step(process, this.#createSuppressor()) as ProcessStep<Relic>;
+      }
+
+      const step = this.#interpreter.step(process, this.#createSuppressor());
+      this.#stepCount += STEP_INCREMENT;
+
+      if (this.#stepCount > this.#maxSteps) {
+        throw new Error(`Interpreter exceeded ${this.#maxSteps} steps`);
+      }
+
+      switch (step.disposition) {
+        case "interpreted":
+        case "resonated":
+          continue;
+        case "ceded":
+        case "waiting":
+        case "exited":
+          return step as ProcessStep<Relic>;
+      }
     }
+  }
 
-    if (!this.hasEntryResult) {
-      throw new Error("Expected exhausted entry to produce a result");
+  #requeueRunningProcess(process: ProcessRef<unknown>): void {
+    const state = this.#interpreter.processState(process);
+
+    if (state.status === "open" && state.activity === "running") {
+      this.#queue.push(process);
     }
-
-    return this as ExhaustedEntryExecution<Relic>;
   }
 
-  public waitForExhausted(options?: ExecutionWaitOptions): Promise<ExhaustedEntryExecution<Relic>> {
-    return waitForResult(
-      () => (this.flush().status === "exhausted" ? this.expectExhausted() : null),
-      () => false,
-      "Expected entry to exhaust",
-      options?.maxTurns ?? DEFAULT_MAX_TURNS,
-    );
-  }
+  #waitForExit(maxTurns: number): Promise<ProcessStep<Relic>> {
+    const driver = this;
 
-  public futureResult<Result>(future: FutureKey<Result>): FutureResult<Result> | null {
-    this.flush();
-    return pollFutureResult(this.#run.interpreter, future);
-  }
+    return waitForTurn(TURN_START);
 
-  public processResult<Result>(process: ProcessRef<Result>): FutureResult<Result> | null {
-    return this.futureResult(process.exitFuture);
-  }
+    async function waitForTurn(turn: number): Promise<ProcessStep<Relic>> {
+      const step = driver.driveSync();
 
-  public scopeResult<Result>(scope: ScopeRef<Result>): FutureResult<Result> | null {
-    return this.futureResult(scope.exitFuture);
-  }
+      if (step.disposition === "exited") {
+        return step;
+      }
 
-  public waitForFuture<Result>(
-    future: FutureKey<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>> {
-    return waitForResult(
-      () => this.futureResult(future),
-      () => this.status === "exhausted",
-      "Expected future to settle before execution exhausted",
-      options?.maxTurns ?? DEFAULT_MAX_TURNS,
-    );
-  }
+      if (turn >= maxTurns) {
+        throw new Error(`Timed out after ${maxTurns} turns`);
+      }
 
-  public waitForProcess<Result>(
-    process: ProcessRef<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>> {
-    return this.waitForFuture(process.exitFuture, options);
-  }
+      await new Promise<void>((resolve) => {
+        globalThis.setTimeout(resolve, PAUSE_DELAY_MS);
+      });
 
-  public waitForScope<Result>(
-    scope: ScopeRef<Result>,
-    options?: ExecutionWaitOptions,
-  ): Promise<FutureResult<Result>> {
-    return this.waitForFuture(scope.exitFuture, options);
+      return waitForTurn(turn + STEP_INCREMENT);
+    }
   }
 }
+
+interface WaitForExitOptions {
+  readonly maxTurns?: number;
+}
+
+function failEntryNeverStepped(): never {
+  throw new Error("Expected entry process to be stepped");
+}
+
+function failStalledInterpreter(): never {
+  throw new Error("Interpreter stalled without a runnable process");
+}
+
+function voidResult(): void {
+  // Intentionally empty to produce a void value without spelling `undefined`.
+}
+
+const DEFAULT_MAX_STEPS = 100;
+const DEFAULT_MAX_TURNS = 10;
+const PAUSE_DELAY_MS = 0;
+const QUEUE_EMPTY_LENGTH = 0;
+const STEP_COUNT_START = 0;
+const STEP_INCREMENT = 1;
+const TURN_START = 0;
+const VOID_RESULT = voidResult();

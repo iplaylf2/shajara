@@ -1,18 +1,21 @@
 import { describe, expect, it } from "vitest";
-import type { FutureKey } from "#/index";
-import { either } from "fp-ts";
-import { executeEntry } from "#test/harness";
-import { spawn } from "#/index";
+import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { spawn, wait } from "#/index";
+import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
 const CHILD_RESULT = "child-done";
 
 describe("@shajara/kernel . spawn", () => {
   it("returns a child exit future from a single primitive call", () => {
-    const execution = executeEntry(() => spawn(() => wisp.of(CHILD_RESULT))).expectExhausted();
-    const futureKey = execution.entryResult as FutureKey<string>;
+    const step = interpretRitual(() =>
+      pipe(
+        spawn(() => wisp.of(CHILD_RESULT)),
+        wisp.chain(wait),
+      ),
+    ).driveSync();
+    const result = unwrapRight(unwrapRight(unwrapExited(step)));
 
-    expect(execution.futureResult(futureKey)).toEqual(either.right(CHILD_RESULT));
-    expect(execution.suppressorErrors).toEqual([]);
+    expect(result).toBe(CHILD_RESULT);
   });
 });

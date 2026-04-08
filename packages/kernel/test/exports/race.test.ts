@@ -1,8 +1,6 @@
-import { cede, race } from "#/index";
+import { cede, race, wait } from "#/index";
 import { describe, expect, it } from "vitest";
-import type { FutureKey } from "#/index";
-import { either } from "fp-ts";
-import { executeEntry } from "#test/harness";
+import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -11,7 +9,7 @@ const SLOW_RESULT = "slow";
 
 describe("@shajara/kernel . race", () => {
   it("returns a future key settled by the first branch to complete", () => {
-    const execution = executeEntry(() =>
+    const step = interpretRitual(() =>
       pipe(
         race([
           () =>
@@ -21,11 +19,11 @@ describe("@shajara/kernel . race", () => {
             ),
           () => wisp.of(FAST_RESULT),
         ]),
+        wisp.chain(wait),
       ),
-    ).expectExhausted();
-    const futureKey = execution.entryResult as FutureKey<string>;
+    ).driveSync();
+    const result = unwrapRight(unwrapRight(unwrapExited(step)));
 
-    expect(execution.futureResult(futureKey)).toEqual(either.right(FAST_RESULT));
-    expect(execution.suppressorErrors).toEqual([]);
+    expect(result).toBe(FAST_RESULT);
   });
 });

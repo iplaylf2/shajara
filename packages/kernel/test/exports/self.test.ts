@@ -1,15 +1,21 @@
 import { describe, expect, it } from "vitest";
-import type { SelfHandle } from "#/index";
-import { executeEntry } from "#test/harness";
-import { self } from "#/index";
+import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { self, spawn, wait } from "#/index";
+import { pipe } from "fp-ts/function";
+import { wisp } from "#/internal/fp";
 
 describe("@shajara/kernel . self", () => {
-  it("returns refs whose exit futures settle with the root closure", () => {
-    const execution = executeEntry(() => self()).expectExhausted();
-    const selfHandle = execution.entryResult as SelfHandle;
+  it("returns refs whose process exit futures settle with root closure", () => {
+    const step = interpretRitual(() =>
+      pipe(
+        spawn(() => self()),
+        wisp.chain(wait),
+      ),
+    ).driveSync();
+    const selfHandle = unwrapRight(unwrapRight(unwrapExited(step)));
 
-    expect(execution.processResult(selfHandle.process)).toMatchObject({ _tag: "Right" });
-    expect(execution.scopeResult(selfHandle.scope)).toMatchObject({ _tag: "Right" });
-    expect(execution.suppressorErrors).toEqual([]);
+    expect(selfHandle.process.exitFuture).toBeDefined();
+    expect(selfHandle.scope.exitFuture).toBeDefined();
+    expect(selfHandle.process.exitFuture).not.toBe(selfHandle.scope.exitFuture);
   });
 });

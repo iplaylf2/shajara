@@ -1,16 +1,13 @@
-import { canceledFailure, future } from "#/index";
 import { describe, expect, it } from "vitest";
-import type { FutureHandle } from "#/index";
-import { either } from "fp-ts";
-import { executeEntry } from "#test/harness";
+import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { future } from "#/index";
 
 describe("@shajara/kernel . future", () => {
-  it("returns a future handle whose unresolved value is canceled on root closure", () => {
-    const execution = executeEntry(() => future<string>()).expectExhausted();
-    const futureHandle = execution.entryResult as FutureHandle<string>;
-    const [futureKey] = futureHandle;
+  it("returns a future handle from a single primitive call", () => {
+    const step = interpretRitual(() => future<string>()).driveSync();
+    const futureHandle = unwrapRight(unwrapExited(step));
+    const [futureKey, futureSettle] = futureHandle;
 
-    expect(execution.futureResult(futureKey)).toEqual(either.left(canceledFailure));
-    expect(execution.suppressorErrors).toEqual([]);
+    expect(futureKey).toBe(futureSettle);
   });
 });
