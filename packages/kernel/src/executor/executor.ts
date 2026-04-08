@@ -11,6 +11,7 @@ import type { LaunchHandle } from "./launch-handle";
 import type { Option } from "#/utils";
 import type { Pacer } from "./pacer";
 import type { ProcessStepOf } from "#/interpreter";
+import { RoundLimitReaper } from "./round-limit-reaper";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { branch } from "#/sigils";
 import { interruptedFailure } from "#/failures";
@@ -39,7 +40,7 @@ class RuntimeExecutor implements Executor {
       stepProcess: (process) => this.#interpreter.step(process, { capture: unreachable }),
     });
     this.#interpreter = new DomainInterpreter(park, {
-      reaper: { adjudicate: () => wisp.of(option.none) },
+      reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
       scheduler: { assign: () => this.#driver.processor },
     });
     this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot);
@@ -181,3 +182,5 @@ function createLaunchWorker<Result>(ritual: Ritual<Result>): Ritual<ScopeRef<Res
       wisp.map(({ scope }) => scope),
     );
 }
+
+const DEFAULT_REAPER_ROUND_LIMIT = 2;
