@@ -6,6 +6,7 @@ import type {
   RuntimeProcessKeeper,
   RuntimeProcessNextEcho,
   RuntimeProcessRunner,
+  RuntimeProcessRunnerNext,
 } from "./runtime-process";
 import type {
   ContextKey,
@@ -21,6 +22,7 @@ import type {
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
 import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils";
+import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option } from "fp-ts";
 import {
   processCededStep,
@@ -36,13 +38,13 @@ import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
-import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils";
 
 export class Interpreter {
+  // oxlint-disable-next-line max-statements
   public step<Relic>(process: ProcessRef<Relic>, suppressor: Suppressor): ProcessStep<Relic> {
-    const processHandle = this.#resolve(process);
-    const runner = processHandle.runner();
+    const handle = this.#resolve(process);
+    const runner = handle.runner();
 
     switch (runner.status) {
       case "waiting":
@@ -54,16 +56,30 @@ export class Interpreter {
       case "failed":
         return processExitedStep(either.left(runner.stateAs(runner.status).failure));
       case "running": {
-        const next = runner.stateAs(runner.status).next();
+        // oxlint-disable-next-line init-declarations
+        let next: RuntimeProcessRunnerNext<Relic, Sigil>;
+
+        try {
+          next = runner.stateAs(runner.status).next();
+        } catch (error) {
+          halt(
+            this.#resolve(handle.scopeRef),
+            handle.keeper(),
+            interruptedFailure(error),
+            suppressor,
+          );
+
+          return processExitedStep(either.left(runner.stateAs("failed").failure));
+        }
 
         switch (next.kind) {
           case "echo":
-            return this.#interpret(processHandle, next, suppressor);
+            return this.#interpret(handle, next, suppressor);
           case "resonate":
             return processResonatedStep();
           case "relic": {
-            const scope = this.#resolve(processHandle.scopeRef);
-            scope.complete(processHandle.keeper(), next.relic, suppressor);
+            const scope = this.#resolve(handle.scopeRef);
+            scope.complete(handle.keeper(), next.relic, suppressor);
             return processExitedStep(either.right(next.relic));
           }
         }

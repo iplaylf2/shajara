@@ -1,11 +1,5 @@
-import type {
-  FailureShape,
-  FutureResult,
-  FutureSettleKey,
-  Ritual,
-  ScopeRef,
-  Suppressor,
-} from "#/contracts";
+// oxlint-disable import/max-dependencies
+import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import { cancel, park, settle } from "#/primitives";
 import { either, io, option } from "fp-ts";
 import { DomainInterpreter } from "./domain-interpreter";
@@ -19,6 +13,7 @@ import type { Pacer } from "./pacer";
 import type { ProcessStepOf } from "#/interpreter";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { branch } from "#/sigils";
+import { interruptedFailure } from "#/failures";
 import { pipe } from "fp-ts/function";
 import { unreachable } from "#/utils";
 import { wisp } from "#/internal/fp";
@@ -53,6 +48,7 @@ class RuntimeExecutor implements Executor {
     });
   }
 
+  // oxlint-disable-next-line max-statements
   public launch<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
@@ -61,9 +57,15 @@ class RuntimeExecutor implements Executor {
       return option.none;
     }
 
-    const process = this.#interpreter.spawn(scope, createLaunchWorker(ritual), {
-      capture: unreachable,
-    });
+    const fault = new FaultSink();
+    const process = this.#interpreter.spawn(scope, createLaunchWorker(ritual), fault);
+    const cause = fault.drain("Out-of-band failures occurred while spawning a launched scope");
+    if (option.isSome(cause)) {
+      this.#interruptScope(scope, cause.value);
+
+      return option.none;
+    }
+
     const launchStep = this.#driver.driveSyncUnsafely(process) as ProcessStepOf<
       ScopeRef<Result>,
       "exited"
@@ -73,8 +75,8 @@ class RuntimeExecutor implements Executor {
 
     return option.some(
       new RuntimeLaunchHandle(executionScope, {
-        onSettled: (onSettled) => this.#onScopeSettled(executionScope, onSettled),
-        status: () => this.#scopeStatus(executionScope),
+        onSettled: (onSettled) => this.#interpreter.wait(executionScope.exitFuture, onSettled),
+        status: () => this.#interpreter.scopeState(executionScope).status,
       }),
     );
   }
@@ -83,7 +85,7 @@ class RuntimeExecutor implements Executor {
     futureSettle: FutureSettleKey<Result>,
     result: FutureResult<Result>,
   ): boolean {
-    if (option.isSome(this.#pollFuture(futureSettle))) {
+    if (option.isSome(this.#interpreter.poll(futureSettle))) {
       return false;
     }
 
@@ -91,6 +93,7 @@ class RuntimeExecutor implements Executor {
       capture: unreachable,
     });
     this.#driver.driveSyncUnsafely(process);
+
     return true;
   }
 
@@ -99,8 +102,19 @@ class RuntimeExecutor implements Executor {
       return false;
     }
 
-    const process = this.#interpreter.spawn(scope, cancel, { capture: unreachable });
+    const fault = new FaultSink();
+    const process = this.#interpreter.spawn(scope, cancel, fault);
+    const cause = fault.drain(
+      "Out-of-band failures occurred while spawning a cancellation process",
+    );
+    if (option.isSome(cause)) {
+      this.#interruptScope(scope, cause.value);
+
+      return false;
+    }
+
     this.#driver.driveSyncUnsafely(process);
+
     return true;
   }
 
@@ -135,18 +149,13 @@ class RuntimeExecutor implements Executor {
   }
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
-    return this.#isRegisteredScope(scope) && this.#scopeStatus(scope) === "open";
+    return this.#isRegisteredScope(scope) && this.#interpreter.scopeState(scope).status === "open";
   }
 
-  #onScopeSettled<Result>(
-    scope: ExecutionScopeRef<Result>,
-    onSettled: (result: FutureResult<Result>, suppressor: Suppressor) => void,
-  ) {
-    return this.#interpreter.wait(scope.exitFuture, onSettled);
-  }
-
-  #scopeStatus(scope: ExecutionScopeRef<unknown>) {
-    return this.#interpreter.scopeState(scope).status;
+  #interruptScope(scope: ExecutionScopeRef<unknown>, cause: unknown): void {
+    const faultSink = new FaultSink();
+    this.#interpreter.forceFailed(scope, interruptedFailure(cause), faultSink);
+    faultSink.throwIfAny("Out-of-band failures occurred while force failing a scope");
   }
 
   #registerScope<Result>(scope: ScopeRef<Result>): ExecutionScopeRef<Result> {
@@ -156,10 +165,6 @@ class RuntimeExecutor implements Executor {
 
   #isRegisteredScope(scope: ScopeRef<unknown>): boolean {
     return this.#scopeRegistry.has(scope);
-  }
-
-  #pollFuture<Result>(futureSettle: FutureSettleKey<Result>): Option<FutureResult<Result>> {
-    return this.#interpreter.poll(futureSettle);
   }
 
   readonly #driver: ExecutorDriver;
