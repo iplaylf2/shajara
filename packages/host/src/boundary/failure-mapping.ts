@@ -1,4 +1,4 @@
-import { CanceledError, ExternalError, ScopeError } from "#/errors";
+import { CanceledError, ExternalError, InterruptedError, ScopeError } from "#/errors";
 import type { Failure } from "#/contracts";
 import { ShajaraError } from "#/contracts";
 import { externalFailure } from "@shajara/kernel";
@@ -27,6 +27,8 @@ export function fromFailure(failure: Failure): Error {
       return new ScopeError(failure);
     case "canceled":
       return new CanceledError();
+    case "interrupted":
+      return new InterruptedError(failure);
     case "external": {
       if (failure.raw instanceof Error) {
         return failure.raw;

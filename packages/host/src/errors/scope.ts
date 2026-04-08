@@ -5,11 +5,11 @@ export class ScopeError extends ShajaraError implements ScopeFailure {
   override readonly name = "ScopeError";
   readonly kind = "scope" as const;
   override readonly cause: ScopeFailureCause;
-  readonly suppressedFailures: readonly FailureShape[];
+  readonly suppressed: readonly FailureShape[];
 
   constructor(failure: ScopeFailure) {
     super(failure.message);
     this.cause = failure.cause;
-    this.suppressedFailures = failure.suppressedFailures;
+    this.suppressed = failure.suppressed;
   }
 }
