@@ -38,7 +38,9 @@
     "build": "vite build",
     "lint": "oxlint",
     "prepack": "yarn build",
-    "typecheck": "yarn run -T tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "yarn run -T tsc --noEmit && yarn run -T tsc -p tsconfig.vitest.json --noEmit"
   },
   "dependencies": {
     "@shajara/kernel": "workspace:^"
@@ -49,6 +51,7 @@
     "type-fest": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:"
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
   }
 }

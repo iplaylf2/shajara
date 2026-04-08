@@ -4,3 +4,4 @@ oxlint
 oxlintrc
 pipeable
 vite
+vitest
