@@ -708,7 +708,6 @@ __metadata:
     typescript: "catalog:"
     vite: "catalog:"
     vite-plugin-dts: "catalog:"
-    vite-plugin-license: "catalog:"
   languageName: unknown
   linkType: soft
 
@@ -1038,13 +1037,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"array-find-index@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "array-find-index@npm:1.0.2"
-  checksum: 10c0/86b9485c74ddd324feab807e10a6de3f9c1683856267236fac4bb4d4667ada6463e106db3f6c540ae6b720e0442b590ec701d13676df4c6af30ebf4da09b4f57
-  languageName: node
-  linkType: hard
-
 "assertion-error@npm:^2.0.1":
   version: 2.0.1
   resolution: "assertion-error@npm:2.0.1"
@@ -1116,13 +1108,6 @@ __metadata:
   version: 3.0.0
   resolution: "chownr@npm:3.0.0"
   checksum: 10c0/43925b87700f7e3893296c8e9c56cc58f926411cce3a6e5898136daaf08f08b9a8eb76d37d3267e707d0dcc17aed2e2ebdf5848c0c3ce95cf910a919935c1b10
-  languageName: node
-  linkType: hard
-
-"commenting@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "commenting@npm:1.1.0"
-  checksum: 10c0/23f9ecb680b561bdd3dba6c9aada0636e42e8804073b623175e6e58bea77d12fcacc6979b009ac5c5a7c8b82590c64d87296827641bf5ac31dd900617b1b84e7
   languageName: node
   linkType: hard
 
@@ -1275,7 +1260,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fdir@npm:^6.4.3, fdir@npm:^6.5.0":
+"fdir@npm:^6.5.0":
   version: 6.5.0
   resolution: "fdir@npm:6.5.0"
   peerDependencies:
@@ -1630,13 +1615,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.21":
-  version: 4.18.1
-  resolution: "lodash@npm:4.18.1"
-  checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27
-  languageName: node
-  linkType: hard
-
 "lodash@npm:~4.17.23":
   version: 4.17.23
   resolution: "lodash@npm:4.17.23"
@@ -1660,7 +1638,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"magic-string@npm:^0.30.0, magic-string@npm:^0.30.17, magic-string@npm:^0.30.21":
+"magic-string@npm:^0.30.17, magic-string@npm:^0.30.21":
   version: 0.30.21
   resolution: "magic-string@npm:0.30.21"
   dependencies:
@@ -1800,13 +1778,6 @@ __metadata:
     pkg-types: "npm:^1.3.1"
     ufo: "npm:^1.6.1"
   checksum: 10c0/f174b844ae066c71e9b128046677868e2e28694f0bbeeffbe760b2a9d8ff24de0748d0fde6fabe706700c1d2e11d3c0d7a53071b5ea99671592fac03364604ab
-  languageName: node
-  linkType: hard
-
-"moment@npm:^2.30.1":
-  version: 2.30.1
-  resolution: "moment@npm:2.30.1"
-  checksum: 10c0/865e4279418c6de666fca7786607705fd0189d8a7b7624e2e56be99290ac846f90878a6f602e34b4e0455c549b85385b1baf9966845962b313699e7cb847543a
   languageName: node
   linkType: hard
 
@@ -2027,13 +1998,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"package-name-regex@npm:^2.0.6":
-  version: 2.0.6
-  resolution: "package-name-regex@npm:2.0.6"
-  checksum: 10c0/f0d2446983d9e4fcd21e983a38b30d5d4728f7e3613392c455ba00e3b6ddfbde12b91955c8f4e15a7f72851bd619af4832313eae4b52aedb88cf84024a5224a3
-  languageName: node
-  linkType: hard
-
 "path-browserify@npm:^1.0.1":
   version: 1.0.1
   resolution: "path-browserify@npm:1.0.1"
@@ -2248,24 +2212,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rollup-plugin-license@npm:^3.6.0":
-  version: 3.7.0
-  resolution: "rollup-plugin-license@npm:3.7.0"
-  dependencies:
-    commenting: "npm:^1.1.0"
-    fdir: "npm:^6.4.3"
-    lodash: "npm:^4.17.21"
-    magic-string: "npm:^0.30.0"
-    moment: "npm:^2.30.1"
-    package-name-regex: "npm:^2.0.6"
-    spdx-expression-validate: "npm:^2.0.0"
-    spdx-satisfies: "npm:^5.0.1"
-  peerDependencies:
-    rollup: ^1.0.0 || ^2.0.0 || ^3.0.0 || ^4.0.0
-  checksum: 10c0/4cbc14cb545184ab40547a6f4bad474f9d87cd2b67cea4fbdd0a50bd55ecc745734ca9a4284d9de787d22fee475ed2199605d9b3374c6bb1692751a69202d9d3
-  languageName: node
-  linkType: hard
-
 "safer-buffer@npm:>= 2.1.2 < 3.0.0":
   version: 2.1.2
   resolution: "safer-buffer@npm:2.1.2"
@@ -2356,68 +2302,6 @@ __metadata:
   version: 0.6.1
   resolution: "source-map@npm:0.6.1"
   checksum: 10c0/ab55398007c5e5532957cb0beee2368529618ac0ab372d789806f5718123cc4367d57de3904b4e6a4170eb5a0b0f41373066d02ca0735a0c4d75c7d328d3e011
-  languageName: node
-  linkType: hard
-
-"spdx-compare@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "spdx-compare@npm:1.0.0"
-  dependencies:
-    array-find-index: "npm:^1.0.2"
-    spdx-expression-parse: "npm:^3.0.0"
-    spdx-ranges: "npm:^2.0.0"
-  checksum: 10c0/39d584129b00eaf0bb314984e5d662e511980c1fc6c4eb1d80677044a7b2b9cc3f84f6838695cf988807bf81ea0fce7438e33b0ee54fa87d302635bd143b7fc7
-  languageName: node
-  linkType: hard
-
-"spdx-exceptions@npm:^2.1.0":
-  version: 2.5.0
-  resolution: "spdx-exceptions@npm:2.5.0"
-  checksum: 10c0/37217b7762ee0ea0d8b7d0c29fd48b7e4dfb94096b109d6255b589c561f57da93bf4e328c0290046115961b9209a8051ad9f525e48d433082fc79f496a4ea940
-  languageName: node
-  linkType: hard
-
-"spdx-expression-parse@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "spdx-expression-parse@npm:3.0.1"
-  dependencies:
-    spdx-exceptions: "npm:^2.1.0"
-    spdx-license-ids: "npm:^3.0.0"
-  checksum: 10c0/6f8a41c87759fa184a58713b86c6a8b028250f158159f1d03ed9d1b6ee4d9eefdc74181c8ddc581a341aa971c3e7b79e30b59c23b05d2436d5de1c30bdef7171
-  languageName: node
-  linkType: hard
-
-"spdx-expression-validate@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "spdx-expression-validate@npm:2.0.0"
-  dependencies:
-    spdx-expression-parse: "npm:^3.0.0"
-  checksum: 10c0/fd1e8555e034be72c3a52bd306d04e6035e5d257bea6d39a77d391d236700d32a4647bd1391fc1eaa50c22a67aba6d1004a7569af02e499c8a3afda0bcdb6144
-  languageName: node
-  linkType: hard
-
-"spdx-license-ids@npm:^3.0.0":
-  version: 3.0.23
-  resolution: "spdx-license-ids@npm:3.0.23"
-  checksum: 10c0/8495620f6f2a237749cce922ea2d593a66f7885c301b1a0f5542183e7041182f27f616a8f13345cefdea0c9b3e0899328e0aa8cec100cf4f3fac4bb3bd975515
-  languageName: node
-  linkType: hard
-
-"spdx-ranges@npm:^2.0.0":
-  version: 2.1.1
-  resolution: "spdx-ranges@npm:2.1.1"
-  checksum: 10c0/2d6bf9ec8e0f509c1a119361ff784f0bfa8ebbd8cfbc8e10f79579def54af060bb5058b36372f19770e659051082c451145c1284d2980419a720675accdb4a3d
-  languageName: node
-  linkType: hard
-
-"spdx-satisfies@npm:^5.0.1":
-  version: 5.0.1
-  resolution: "spdx-satisfies@npm:5.0.1"
-  dependencies:
-    spdx-compare: "npm:^1.0.0"
-    spdx-expression-parse: "npm:^3.0.0"
-    spdx-ranges: "npm:^2.0.0"
-  checksum: 10c0/47bf163108e64fe4c179a5e2f8dc5fd4ece1665739fc61eae3157a9d4b9b2eb389df7f645223192557659155dda9071ceaa3dfd06ecab65cc3862032c20f2e61
   languageName: node
   linkType: hard
 
@@ -2656,17 +2540,6 @@ __metadata:
     vite:
       optional: true
   checksum: 10c0/5fcb7f3739d115f36195a692c0e9f9fca4e504bbbbabe29e71ee06630dd05ea2920169371e80e548eb4779d2eca14107277497838d7df588d53e1fadf84be861
-  languageName: node
-  linkType: hard
-
-"vite-plugin-license@npm:^0.0.2":
-  version: 0.0.2
-  resolution: "vite-plugin-license@npm:0.0.2"
-  dependencies:
-    rollup-plugin-license: "npm:^3.6.0"
-  peerDependencies:
-    vite: ^7.1.12
-  checksum: 10c0/763e4bbf7ec1736cb73ddae8e43b3c827587758ea59b839edc118182452c0b9c81a3671845726313eaee687ea264c1bacf5408d09e8f89e429d4f7c7ca1bf811
   languageName: node
   linkType: hard
 

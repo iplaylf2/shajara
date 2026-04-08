@@ -52,7 +52,6 @@
     "type-fest": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "vite-plugin-license": "catalog:"
+    "vite-plugin-dts": "catalog:"
   }
 }

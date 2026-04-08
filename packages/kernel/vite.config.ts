@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
-import license from "vite-plugin-license";
 
 export default defineConfig({
   build: {
@@ -13,14 +12,10 @@ export default defineConfig({
       fileName: (format, entryName) => (format === "es" ? `${entryName}.js` : `${entryName}.cjs`),
       formats: ["es", "cjs"],
     },
+    license: true,
     target: "esnext",
   },
   plugins: [
-    license({
-      thirdParty: {
-        output: "dist/THIRD_PARTY_LICENSES.txt",
-      },
-    }),
     dts({
       entryRoot: "src",
       outDir: "dist",
