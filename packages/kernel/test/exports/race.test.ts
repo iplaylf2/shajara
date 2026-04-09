@@ -7,23 +7,28 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: race", () => {
   test.for([
     {
-      expect: "fast",
-      input: [
-        () =>
-          pipe(
-            cede(),
-            wisp.chain(() => wisp.of("slow")),
-          ),
-        () => wisp.of("fast"),
-      ] as const,
+      given: ["fast", "slow"] as const,
+      outcome: "fast",
     },
   ])(
     "returns a future key settled by the first branch to complete",
-    ({ input, expect: expected }) => {
-      const step = interpretRitual(() => pipe(race(input), wisp.chain(wait))).driveSync();
+    ({ given: [fast, slow], outcome }) => {
+      const step = interpretRitual(() =>
+        pipe(
+          race([
+            () =>
+              pipe(
+                cede(),
+                wisp.chain(() => wisp.of(slow)),
+              ),
+            () => wisp.of(fast),
+          ] as const),
+          wisp.chain(wait),
+        ),
+      ).driveSync();
       const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
-      expect(actual).toBe(expected);
+      expect(actual).toBe(outcome);
     },
   );
 });

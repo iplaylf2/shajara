@@ -8,11 +8,16 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: defer", () => {
   test.for([
     {
-      expect: {
+      given: ["body", "cleanup"] as const,
+      outcome: {
         cleanup: right(["body", "cleanup"]),
         scopeExit: right(["body"]),
       },
-      input: () =>
+    },
+  ])(
+    "runs cleanup after the enclosed process exits",
+    ({ given: [bodyEntry, cleanupEntry], outcome }) => {
+      const step = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("events", () => wisp.of<string[]>([])),
@@ -22,11 +27,11 @@ describe("/ primitives: defer", () => {
               pipe(
                 defer(() =>
                   pipe(
-                    record(events, "cleanup"),
+                    record(events, cleanupEntry),
                     wisp.chain((snapshot) => settle(cleanupSettle, right(snapshot))),
                   ),
                 ),
-                wisp.chain(() => record(events, "body")),
+                wisp.chain(() => record(events, bodyEntry)),
               ),
             ),
           ),
@@ -36,13 +41,12 @@ describe("/ primitives: defer", () => {
             scopeExit,
           })),
         ),
-    },
-  ])("runs cleanup after the enclosed process exits", ({ input, expect: expected }) => {
-    const step = interpretRitual(input).driveSync();
-    const actual = unwrapRight(unwrapExited(step));
+      ).driveSync();
+      const actual = unwrapRight(unwrapExited(step));
 
-    expect(actual).toEqual(expected);
-  });
+      expect(actual).toEqual(outcome);
+    },
+  );
 });
 
 function record(events: string[], entry: string) {

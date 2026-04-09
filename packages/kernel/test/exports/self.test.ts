@@ -8,20 +8,26 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: self", () => {
   test.for([
     {
-      expect: (selfHandle: SelfHandle) => {
-        expect(selfHandle.process.exitFuture).toBeDefined();
-        expect(selfHandle.scope.exitFuture).toBeDefined();
-        expect(selfHandle.process.exitFuture).not.toBe(selfHandle.scope.exitFuture);
+      given: [] as const,
+      outcome: {
+        hasProcessExitFuture: true,
+        hasScopeExitFuture: true,
+        sharesExitFuture: false,
       },
-      input: () => self(),
     },
-  ])(
-    "returns refs whose process exit futures settle with root closure",
-    ({ input, expect: assertExpectation }) => {
-      const step = interpretRitual(() => pipe(spawn(input), wisp.chain(wait))).driveSync();
-      const actual: SelfHandle = unwrapRight(unwrapRight(unwrapExited(step)));
+  ])("returns refs whose process exit futures settle with root closure", ({ outcome }) => {
+    const step = interpretRitual(() =>
+      pipe(
+        spawn(() => self()),
+        wisp.chain(wait),
+      ),
+    ).driveSync();
+    const actual: SelfHandle = unwrapRight(unwrapRight(unwrapExited(step)));
 
-      assertExpectation(actual);
-    },
-  );
+    expect({
+      hasProcessExitFuture: actual.process.exitFuture !== undefined,
+      hasScopeExitFuture: actual.scope.exitFuture !== undefined,
+      sharesExitFuture: actual.process.exitFuture === actual.scope.exitFuture,
+    }).toEqual(outcome);
+  });
 });

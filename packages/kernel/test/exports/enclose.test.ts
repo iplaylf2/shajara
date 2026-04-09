@@ -7,41 +7,45 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: enclose", () => {
   test.for([
     {
-      expect: right("enclosed"),
-      input: () => enclose(() => wisp.of("enclosed")),
+      given: ["enclosed"] as const,
+      outcome: right("enclosed"),
     },
   ])(
     "enclose returns the child result when the enclosed scope completes",
-    ({ input, expect: expected }) => {
-      const step = interpretRitual(input).driveSync();
+    ({ given: [enclosed], outcome }) => {
+      const step = interpretRitual(() => enclose(() => wisp.of(enclosed))).driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
-      expect(actual).toEqual(expected);
+      expect(actual).toEqual(outcome);
     },
-  );
-
-  const haltedFailure = {
-    kind: "halted",
-    message: "halted for test",
-  } as const;
-
-  const containedHaltFailure = left(
-    expect.objectContaining({
-      cause: expect.objectContaining({
-        failure: haltedFailure,
-      }),
-    }),
   );
 
   test.for([
     {
-      expect: containedHaltFailure,
-      input: () => enclose(() => halt(haltedFailure)),
+      given: [
+        {
+          kind: "halted",
+          message: "halted for test",
+        },
+      ] as const,
+      outcome: left(
+        expect.objectContaining({
+          cause: expect.objectContaining({
+            failure: {
+              kind: "halted",
+              message: "halted for test",
+            },
+          }),
+        }),
+      ),
     },
-  ])("enclose contains halt failures inside its result channel", ({ input, expect: expected }) => {
-    const step = interpretRitual(input).driveSync();
-    const actual = unwrapRight(unwrapExited(step));
+  ])(
+    "enclose contains halt failures inside its result channel",
+    ({ given: [failure], outcome }) => {
+      const step = interpretRitual(() => enclose(() => halt(failure))).driveSync();
+      const actual = unwrapRight(unwrapExited(step));
 
-    expect(actual).toEqual(expected);
-  });
+      expect(actual).toEqual(outcome);
+    },
+  );
 });

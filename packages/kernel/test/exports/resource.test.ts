@@ -18,27 +18,36 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: resource", () => {
   test.for([
     {
-      expect: right("resource-ready"),
-      input: () =>
+      given: ["resource-ready"] as const,
+      outcome: right("resource-ready"),
+    },
+  ])(
+    "settles its future when the provider exposes a value",
+    ({ given: [resourceValue], outcome }) => {
+      const step = interpretRitual(() =>
         pipe(
-          resource<string>((provide) => provide("resource-ready")),
+          resource<string>((provide) => provide(resourceValue)),
           wisp.chain(wait),
         ),
-    },
-  ])("settles its future when the provider exposes a value", ({ input, expect: expected }) => {
-    const step = interpretRitual(input).driveSync();
-    const actual = unwrapRight(unwrapExited(step));
+      ).driveSync();
+      const actual = unwrapRight(unwrapExited(step));
 
-    expect(actual).toEqual(expected);
-  });
+      expect(actual).toEqual(outcome);
+    },
+  );
 
   test.for([
     {
-      expect: {
+      given: ["provided", "cleanup", "resource-ready"] as const,
+      outcome: {
         lifecycleTrace: right(["provided", "cleanup"]),
         scopeExit: left(canceledFailure),
       },
-      input: () =>
+    },
+  ])(
+    "remains attached to the scope until cancellation triggers deferred cleanup",
+    ({ given: [providedEntry, cleanupEntry, resourceValue], outcome }) => {
+      const step = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("events", () => wisp.of<string[]>([])),
@@ -50,12 +59,12 @@ describe("/ primitives: resource", () => {
                   pipe(
                     defer(() =>
                       pipe(
-                        record(events, "cleanup"),
+                        record(events, cleanupEntry),
                         wisp.chain((snapshot) => settle(lifecycleSettle, right(snapshot))),
                       ),
                     ),
-                    wisp.chain(() => record(events, "provided")),
-                    wisp.chain(() => provide("resource-ready")),
+                    wisp.chain(() => record(events, providedEntry)),
+                    wisp.chain(() => provide(resourceValue)),
                   ),
                 ),
                 wisp.chainFirst((resourceFuture) =>
@@ -78,14 +87,10 @@ describe("/ primitives: resource", () => {
             scopeExit,
           })),
         ),
-    },
-  ])(
-    "remains attached to the scope until cancellation triggers deferred cleanup",
-    ({ input, expect: expected }) => {
-      const step = interpretRitual(input).driveSync();
+      ).driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
-      expect(actual).toEqual(expected);
+      expect(actual).toEqual(outcome);
     },
   );
 });

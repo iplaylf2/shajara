@@ -3,62 +3,70 @@ import { iife, narrowArrayAs, narrowAs, noop, unreachable } from "#/utils";
 
 describe("/utils helpers", () => {
   describe("iife, noop", () => {
-    const EXPECTED_CALLS = 1;
-    const EXPECTED_RESULT = 42;
-
     test.for([
       {
-        expect: {
-          iifeResult: EXPECTED_RESULT,
+        given: [42] as const,
+        outcome: {
+          iifeResult: 42,
           noopResult: undefined,
-          runCalls: EXPECTED_CALLS,
-        },
-        input: () => {
-          const run = vi.fn(() => EXPECTED_RESULT);
-
-          return {
-            iifeResult: iife(run),
-            noopResult: noop(),
-            runCalls: run.mock.calls.length,
-          };
+          runCalls: 1,
         },
       },
-    ])("noop and iife stay as direct execution helpers", ({ input, expect: expected }) => {
-      expect(input()).toEqual(expected);
+    ])("noop and iife stay as direct execution helpers", ({ given: [result], outcome }) => {
+      const run = vi.fn(() => result);
+
+      expect({
+        iifeResult: iife(run),
+        noopResult: noop(),
+        runCalls: run.mock.calls.length,
+      }).toEqual(outcome);
     });
   });
 
   describe("narrowArrayAs, narrowAs", () => {
-    const objectValue = { kind: "test" } as const;
-    const tupleValue = ["alpha", "beta"] as const;
-
     test.for([
       {
-        expect: objectValue,
-        input: objectValue,
+        given: [{ kind: "test" }] as const,
+        outcome: {
+          sameReference: true,
+          value: { kind: "test" },
+        },
       },
-    ])("keeps narrowAs as a runtime pass-through", ({ input, expect: expected }) => {
-      expect(narrowAs<typeof input>()(input)).toBe(expected);
+    ])("keeps narrowAs as a runtime pass-through", ({ given: [value], outcome }) => {
+      const actual = narrowAs<typeof value>()(value);
+
+      expect({
+        sameReference: actual === value,
+        value: actual,
+      }).toEqual(outcome);
     });
 
     test.for([
       {
-        expect: tupleValue,
-        input: tupleValue,
+        given: [["alpha", "beta"] as const] as const,
+        outcome: {
+          sameReference: true,
+          value: ["alpha", "beta"],
+        },
       },
-    ])("keeps narrowArrayAs as a runtime pass-through", ({ input, expect: expected }) => {
-      expect(narrowArrayAs<typeof input>()(input)).toBe(expected);
+    ])("keeps narrowArrayAs as a runtime pass-through", ({ given: [value], outcome }) => {
+      const actual = narrowArrayAs<typeof value>()(value);
+
+      expect({
+        sameReference: actual === value,
+        value: actual,
+      }).toEqual(outcome);
     });
   });
 
   describe("unreachable", () => {
     test.for([
       {
-        expect: "Unreachable code path",
-        input: unreachable,
+        given: [] as const,
+        outcome: "Unreachable code path",
       },
-    ])("unreachable throws on impossible paths", ({ input, expect: expected }) => {
-      expect(input).toThrow(expected);
+    ])("unreachable throws on impossible paths", ({ outcome }) => {
+      expect(() => unreachable()).toThrow(outcome);
     });
   });
 });

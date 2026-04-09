@@ -7,16 +7,21 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: spawn", () => {
   test.for([
     {
-      expect: "spawned-done",
-      input: () => wisp.of("spawned-done"),
+      given: ["spawned-done"] as const,
+      outcome: "spawned-done",
     },
   ])(
     "returns the spawned process exit future from a single primitive call",
-    ({ input, expect: expected }) => {
-      const step = interpretRitual(() => pipe(spawn(input), wisp.chain(wait))).driveSync();
+    ({ given: [spawned], outcome }) => {
+      const step = interpretRitual(() =>
+        pipe(
+          spawn(() => wisp.of(spawned)),
+          wisp.chain(wait),
+        ),
+      ).driveSync();
       const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
-      expect(actual).toBe(expected);
+      expect(actual).toBe(outcome);
     },
   );
 });
