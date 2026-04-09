@@ -51,6 +51,7 @@
   "devDependencies": {
     "@shajara/presets": "workspace:^",
     "@vitest/coverage-v8": "catalog:",
+    "core-js": "catalog:",
     "fp-ts": "^2.16.11",
     "oxlint": "catalog:",
     "type-fest": "catalog:",

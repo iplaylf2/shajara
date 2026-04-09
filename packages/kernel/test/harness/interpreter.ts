@@ -1,6 +1,7 @@
 import type { ProcessRef, Ritual, Suppressor } from "#/contracts";
 import { Interpreter } from "#/interpreter";
 import type { ProcessStep } from "#/interpreter";
+import { iife } from "#/utils";
 import { restingWisp } from "#/contracts";
 
 export function interpretRitual<Relic>(ritual: Ritual<Relic>, maxSteps = DEFAULT_MAX_STEPS) {
@@ -18,7 +19,7 @@ class RitualInterpreter<Relic> {
 
   public constructor(ritual: Ritual<Relic>, maxSteps: number) {
     this.#maxSteps = maxSteps;
-    this.#interpreter = new Interpreter(() => restingWisp(VOID_RESULT), {
+    this.#interpreter = new Interpreter(() => restingWisp(VOID), {
       trackProcess: (process: ProcessRef<unknown>) => {
         this.#queue.push(process);
       },
@@ -134,10 +135,6 @@ function failStalledInterpreter(): never {
   throw new Error("Interpreter stalled without a runnable process");
 }
 
-function voidResult(): void {
-  // Intentionally empty to produce a void value without spelling `undefined`.
-}
-
 const DEFAULT_MAX_STEPS = 100;
 const DEFAULT_MAX_TURNS = 10;
 const PAUSE_DELAY_MS = 0;
@@ -145,4 +142,6 @@ const QUEUE_EMPTY_LENGTH = 0;
 const STEP_COUNT_START = 0;
 const STEP_INCREMENT = 1;
 const TURN_START = 0;
-const VOID_RESULT = voidResult();
+const VOID = iife(() => {
+  // Produce a void value
+});

@@ -24,6 +24,7 @@ import type { FutureSettler, RuntimeFuture } from "./runtime-future";
 import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option } from "fp-ts";
+import { iife, unreachable } from "#/utils";
 import {
   processCededStep,
   processExitedStep,
@@ -38,7 +39,6 @@ import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
-import { unreachable } from "#/utils";
 
 export class Interpreter {
   // oxlint-disable-next-line max-statements
@@ -493,4 +493,6 @@ type RunningNext<SigilItem extends Sigil> = SigilItem extends Sigil
   ? [SigilItem["kind"], SigilItem, (echo: Echo<SigilItem>) => void]
   : never;
 
-const VOID: void = null as unknown as void;
+const VOID: void = iife(() => {
+  // Produce a void value
+});
