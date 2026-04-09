@@ -33,10 +33,6 @@ class RitualInterpreter<Relic> {
     );
   }
 
-  public get suppressorErrors(): readonly unknown[] {
-    return this.#suppressorErrors;
-  }
-
   public driveSync(): ProcessStep<Relic> {
     while (this.#queue.length > QUEUE_EMPTY_LENGTH) {
       const process = this.#queue.shift() ?? failStalledInterpreter();
@@ -54,6 +50,10 @@ class RitualInterpreter<Relic> {
 
   public waitForExit(options?: WaitForExitOptions): Promise<ProcessStep<Relic>> {
     return this.#waitForExit(options?.maxTurns ?? DEFAULT_MAX_TURNS);
+  }
+
+  public get suppressorErrors(): readonly unknown[] {
+    return this.#suppressorErrors;
   }
 
   #createSuppressor(): Suppressor {

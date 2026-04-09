@@ -1,21 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
 import { spawn, wait } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-const CHILD_RESULT = "child-done";
-
 describe("@shajara/kernel . spawn", () => {
-  it("returns a child exit future from a single primitive call", () => {
-    const step = interpretRitual(() =>
-      pipe(
-        spawn(() => wisp.of(CHILD_RESULT)),
-        wisp.chain(wait),
-      ),
-    ).driveSync();
-    const result = unwrapRight(unwrapRight(unwrapExited(step)));
+  test.for([
+    {
+      expect: "spawned-done",
+      input: () => wisp.of("spawned-done"),
+    },
+  ])(
+    "returns the spawned process exit future from a single primitive call",
+    ({ input, expect: expected }) => {
+      const step = interpretRitual(() => pipe(spawn(input), wisp.chain(wait))).driveSync();
+      const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
-    expect(result).toBe(CHILD_RESULT);
-  });
+      expect(actual).toBe(expected);
+    },
+  );
 });

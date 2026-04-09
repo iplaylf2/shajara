@@ -44,11 +44,13 @@
     "lint": "oxlint",
     "prepack": "yarn build",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "yarn run -T tsc --noEmit && yarn run -T tsc -p test/tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@shajara/presets": "workspace:^",
+    "@vitest/coverage-v8": "catalog:",
     "fp-ts": "^2.16.11",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
