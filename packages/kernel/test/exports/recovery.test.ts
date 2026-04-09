@@ -1,12 +1,47 @@
+import type { FutureKey, ScopeFailure } from "#/index";
 import { describe, expect, test } from "vitest";
-import { future, guard, halt, resumable, settle, wait } from "#/index";
+import { enclose, future, guard, halt, resumable, settle, wait } from "#/index";
 import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
-import type { ScopeFailure } from "#/failures";
+import { left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
-import { right } from "#/utils";
 import { wisp } from "#/internal/fp";
 
 describe("/ primitives: guard, resumable", () => {
+  test.for([
+    {
+      given: [
+        {
+          kind: "halted",
+          message: "halted without guard",
+        },
+      ] as const,
+      outcome: left(
+        expect.objectContaining({
+          cause: expect.objectContaining({
+            failure: {
+              kind: "halted",
+              message: "halted without guard",
+            },
+          }),
+          kind: "scope",
+        }),
+      ),
+    },
+  ])(
+    "resumable returns its scope failure when no guard recovery boundary is present",
+    ({ given: [failure], outcome }) => {
+      const step = interpretRitual(() =>
+        pipe(
+          resumable(() => halt(failure)),
+          wisp.chain(wait),
+        ),
+      ).driveSync();
+      const actual = unwrapRight(unwrapExited(step));
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
   test.for([
     {
       given: ["ready", "unexpected-recovery"] as const,
@@ -58,7 +93,7 @@ describe("/ primitives: guard, resumable", () => {
           kind: "halted",
           message: "halted for test",
         },
-        "recovered:halted",
+        right("recovered:halted"),
       ] as const,
       outcome: {
         caughtFailure: right(
@@ -76,42 +111,89 @@ describe("/ primitives: guard, resumable", () => {
         resumableResult: right("recovered:halted"),
       },
     },
+    {
+      given: [
+        {
+          kind: "halted",
+          message: "halted for rejected recovery",
+        },
+        left({
+          kind: "halted",
+          message: "recovery refused",
+        }),
+      ] as const,
+      outcome: {
+        caughtFailure: right(
+          expect.objectContaining({
+            cause: expect.objectContaining({
+              failure: {
+                kind: "halted",
+                message: "halted for rejected recovery",
+              },
+            }),
+            kind: "scope",
+          }),
+        ),
+        guardExit: left(
+          expect.objectContaining({
+            cause: expect.objectContaining({
+              failure: {
+                kind: "halted",
+                message: "recovery refused",
+              },
+            }),
+            kind: "scope",
+          }),
+        ),
+        resumableResult: left({
+          kind: "halted",
+          message: "recovery refused",
+        }),
+      },
+    },
   ])(
-    "guard receives resumable failures as scope failures and can recover from their cause",
-    ({ given: [failure, recovered], outcome }) => {
+    "guard receives resumable failures as scope failures and applies the recovery result",
+    ({ given: [entryFailure, recoveryResult], outcome }) => {
       const step = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("caughtFailureHandle", () => future<ScopeFailure>()),
-          wisp.bind("resumableHandle", () => future<string>()),
-          wisp.bind(
-            "guardExit",
+          wisp.bind("guardHandle", () => future<FutureKey<void>>()),
+          wisp.bind("resumableHandle", () => future<FutureKey<string>>()),
+          wisp.chainFirst(
             ({
               caughtFailureHandle: [, caughtFailureSettle],
-              resumableHandle: [, resumableSettle],
+              guardHandle: [, guardHandleSettle],
+              resumableHandle: [, resumableHandleSettle],
             }) =>
-              pipe(
-                guard(
-                  () =>
-                    pipe(
-                      resumable(() => halt(failure)),
-                      wisp.chain(wait),
-                      wisp.chain((resumableResult) => settle(resumableSettle, resumableResult)),
-                    ),
-                  (caught) =>
-                    pipe(
-                      settle(caughtFailureSettle, right(caught)),
-                      wisp.chain(() => wisp.of(right(recovered))),
-                    ),
+              enclose(() =>
+                pipe(
+                  guard(
+                    () =>
+                      pipe(
+                        resumable(() => halt(entryFailure)),
+                        wisp.chain((resumableFuture) =>
+                          settle(resumableHandleSettle, right(resumableFuture)),
+                        ),
+                      ),
+                    (caught) =>
+                      pipe(
+                        settle(caughtFailureSettle, right(caught)),
+                        wisp.chain(() => wisp.of(recoveryResult)),
+                      ),
+                  ),
+                  wisp.chain((guardFuture) => settle(guardHandleSettle, right(guardFuture))),
                 ),
-                wisp.chain(wait),
               ),
           ),
           wisp.bind("caughtFailure", ({ caughtFailureHandle: [caughtFailureFuture] }) =>
             wait(caughtFailureFuture),
           ),
-          wisp.bind("resumableResult", ({ resumableHandle: [resumableFuture] }) =>
-            wait(resumableFuture),
+          wisp.bind("guardExit", ({ guardHandle: [guardHandleFuture] }) =>
+            waitCapturedFuture(guardHandleFuture),
+          ),
+          wisp.bind("resumableResult", ({ resumableHandle: [resumableHandleFuture] }) =>
+            waitCapturedFuture(resumableHandleFuture),
           ),
           wisp.map(({ caughtFailure, guardExit, resumableResult }) => ({
             caughtFailure,
@@ -126,3 +208,7 @@ describe("/ primitives: guard, resumable", () => {
     },
   );
 });
+
+function waitCapturedFuture<Result>(futureKey: FutureKey<FutureKey<Result>>) {
+  return pipe(wait(futureKey), wisp.map(unwrapRight), wisp.chain(wait));
+}
