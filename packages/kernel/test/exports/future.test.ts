@@ -17,8 +17,8 @@ describe("/ primitives: future, poll, wait", () => {
     },
   ])(
     "returns the visible future state for the current settlement state",
-    ({ given: [settled], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [settled], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           future<string>(),
           wisp.chain(([futureKey, futureSettle]) =>
@@ -28,7 +28,8 @@ describe("/ primitives: future, poll, wait", () => {
             ),
           ),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);
@@ -40,25 +41,29 @@ describe("/ primitives: future, poll, wait", () => {
       given: [right("ready")] as const,
       outcome: right("ready"),
     },
-  ])("returns the result produced by a spawned settlement", ({ given: [settled], outcome }) => {
-    const step = interpretRitual(() =>
-      pipe(
-        future<string>(),
-        wisp.chain(([futureKey, futureSettle]) =>
-          pipe(
-            spawn(() =>
-              pipe(
-                cede(),
-                wisp.chain(() => settle(futureSettle, settled)),
+  ])(
+    "returns the result produced by a spawned settlement",
+    async ({ given: [settled], outcome }) => {
+      await using ritual = interpretRitual(() =>
+        pipe(
+          future<string>(),
+          wisp.chain(([futureKey, futureSettle]) =>
+            pipe(
+              spawn(() =>
+                pipe(
+                  cede(),
+                  wisp.chain(() => settle(futureSettle, settled)),
+                ),
               ),
+              wisp.chain(() => wait(futureKey)),
             ),
-            wisp.chain(() => wait(futureKey)),
           ),
         ),
-      ),
-    ).driveSync();
-    const actual = unwrapRight(unwrapExited(step));
+      );
+      const step = await ritual.waitForClosed();
+      const actual = unwrapRight(unwrapExited(step));
 
-    expect(actual).toEqual(outcome);
-  });
+      expect(actual).toEqual(outcome);
+    },
+  );
 });

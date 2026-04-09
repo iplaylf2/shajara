@@ -10,12 +10,16 @@ describe("/ primitives: all", () => {
       given: ["alpha", "beta"] as const,
       outcome: ["alpha", "beta"],
     },
-  ])("returns a future key whose result preserves branch order", ({ given: branches, outcome }) => {
-    const step = interpretRitual(() =>
-      pipe(all(branches.map((branch) => () => wisp.of(branch))), wisp.chain(wait)),
-    ).driveSync();
-    const actual = unwrapRight(unwrapRight(unwrapExited(step)));
+  ])(
+    "returns a future key whose result preserves branch order",
+    async ({ given: branches, outcome }) => {
+      await using ritual = interpretRitual(() =>
+        pipe(all(branches.map((branch) => () => wisp.of(branch))), wisp.chain(wait)),
+      );
+      const step = ritual.driveSync();
+      const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
-    expect(actual).toEqual(outcome);
-  });
+      expect(actual).toEqual(outcome);
+    },
+  );
 });

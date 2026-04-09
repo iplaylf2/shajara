@@ -12,8 +12,9 @@ describe("/ primitives: enclose", () => {
     },
   ])(
     "enclose returns the child result when the enclosed scope completes",
-    ({ given: [enclosed], outcome }) => {
-      const step = interpretRitual(() => enclose(() => wisp.of(enclosed))).driveSync();
+    async ({ given: [enclosed], outcome }) => {
+      await using ritual = interpretRitual(() => enclose(() => wisp.of(enclosed)));
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);
@@ -41,8 +42,9 @@ describe("/ primitives: enclose", () => {
     },
   ])(
     "enclose contains halt failures inside its result channel",
-    ({ given: [failure], outcome }) => {
-      const step = interpretRitual(() => enclose(() => halt(failure))).driveSync();
+    async ({ given: [failure], outcome }) => {
+      await using ritual = interpretRitual(() => enclose(() => halt(failure)));
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);

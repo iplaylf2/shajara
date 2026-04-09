@@ -12,8 +12,8 @@ describe("/ primitives: race", () => {
     },
   ])(
     "returns a future key settled by the first branch to complete",
-    ({ given: [fast, slow], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [fast, slow], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           race([
             () =>
@@ -25,7 +25,8 @@ describe("/ primitives: race", () => {
           ] as const),
           wisp.chain(wait),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
       expect(actual).toBe(outcome);

@@ -37,13 +37,12 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
     }
 
     this.#result = result;
-    const waiters = this.#waiters;
-    this.#waiters = new Set();
 
     return (suppressor) => {
-      for (const waiter of waiters) {
+      for (const waiter of this.#waiters) {
         waiter(result, suppressor);
       }
+      this.#waiters.clear();
     };
   }
 

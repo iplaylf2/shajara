@@ -11,8 +11,9 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       given: [] as const,
       outcome: none,
     },
-  ])("lookup returns none when a binding is absent", ({ outcome }) => {
-    const step = interpretRitual(() => lookup(contextKey<string>())).driveSync();
+  ])("lookup returns none when a binding is absent", async ({ outcome }) => {
+    await using ritual = interpretRitual(() => lookup(contextKey<string>()));
+    const step = ritual.driveSync();
     const actual = unwrapRight(unwrapExited(step));
 
     expect(actual).toEqual(outcome);
@@ -23,8 +24,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       given: ["root"] as const,
       outcome: some("root"),
     },
-  ])("bind makes the value visible in the current scope", ({ given: [binding], outcome }) => {
-    const step = interpretRitual(() =>
+  ])("bind makes the value visible in the current scope", async ({ given: [binding], outcome }) => {
+    await using ritual = interpretRitual(() =>
       pipe(
         wisp.of(contextKey<string>()),
         wisp.chain((key) =>
@@ -34,7 +35,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
           ),
         ),
       ),
-    ).driveSync();
+    );
+    const step = ritual.driveSync();
     const actual = unwrapRight(unwrapExited(step));
 
     expect(actual).toEqual(outcome);
@@ -45,8 +47,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       given: ["root"] as const,
       outcome: some("root"),
     },
-  ])("enclosed lookup inherits the parent binding", ({ given: [binding], outcome }) => {
-    const step = interpretRitual(() =>
+  ])("enclosed lookup inherits the parent binding", async ({ given: [binding], outcome }) => {
+    await using ritual = interpretRitual(() =>
       pipe(
         wisp.of(contextKey<string>()),
         wisp.chain((key) =>
@@ -56,7 +58,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
           ),
         ),
       ),
-    ).driveSync();
+    );
+    const step = ritual.driveSync();
     const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
     expect(actual).toEqual(outcome);
@@ -69,8 +72,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
     },
   ])(
     "enclosed bind shadows the parent binding",
-    ({ given: [parentBinding, childBinding], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [parentBinding, childBinding], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           wisp.of(contextKey<string>()),
           wisp.chain((key) =>
@@ -87,7 +90,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
             ),
           ),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
       expect(actual).toEqual(outcome);
@@ -101,8 +105,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
     },
   ])(
     "enclosed unbind falls back to the parent binding",
-    ({ given: [parentBinding, childBinding], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [parentBinding, childBinding], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           wisp.of(contextKey<string>()),
           wisp.chain((key) =>
@@ -120,7 +124,8 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
             ),
           ),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
       expect(actual).toEqual(outcome);

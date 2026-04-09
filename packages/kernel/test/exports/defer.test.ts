@@ -16,8 +16,8 @@ describe("/ primitives: defer", () => {
     },
   ])(
     "runs cleanup after the enclosed process exits",
-    ({ given: [bodyEntry, cleanupEntry], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [bodyEntry, cleanupEntry], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("events", () => wisp.of<string[]>([])),
@@ -41,7 +41,8 @@ describe("/ primitives: defer", () => {
             scopeExit,
           })),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);

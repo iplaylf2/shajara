@@ -23,14 +23,16 @@ describe("/ primitives: resource", () => {
     },
   ])(
     "settles its future when the provider exposes a value",
-    ({ given: [resourceValue], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [resourceValue], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           resource<string>((provide) => provide(resourceValue)),
-          wisp.chain(wait),
+          wisp.chainFirst(() => spawn(cancel)),
         ),
-      ).driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      );
+      const step = ritual.driveSync();
+      const resourceFuture = unwrapRight(unwrapExited(step));
+      const actual = await ritual.waitForFuture(resourceFuture);
 
       expect(actual).toEqual(outcome);
     },
@@ -46,8 +48,8 @@ describe("/ primitives: resource", () => {
     },
   ])(
     "remains attached to the scope until cancellation triggers deferred cleanup",
-    ({ given: [providedEntry, cleanupEntry, resourceValue], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [providedEntry, cleanupEntry, resourceValue], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("events", () => wisp.of<string[]>([])),
@@ -87,7 +89,8 @@ describe("/ primitives: resource", () => {
             scopeExit,
           })),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);

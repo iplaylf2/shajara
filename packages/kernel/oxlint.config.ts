@@ -8,8 +8,10 @@ export default defineConfig({
       files: ["test/**/*.ts"],
       rules: {
         "eslint/max-lines-per-function": "off",
+        "eslint/max-statements": "off",
         "eslint/no-magic-numbers": "off",
         "eslint/no-undefined": "off",
+        "eslint/require-await": "off",
       },
     },
   ],

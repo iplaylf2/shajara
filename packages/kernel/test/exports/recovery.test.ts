@@ -29,14 +29,11 @@ describe("/ primitives: guard, resumable", () => {
     },
   ])(
     "resumable returns its scope failure when no guard recovery boundary is present",
-    ({ given: [failure], outcome }) => {
-      const step = interpretRitual(() =>
-        pipe(
-          resumable(() => halt(failure)),
-          wisp.chain(wait),
-        ),
-      ).driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+    async ({ given: [failure], outcome }) => {
+      await using ritual = interpretRitual(() => resumable(() => halt(failure)));
+      const step = ritual.driveSync();
+      const exitFuture = unwrapRight(unwrapExited(step));
+      const actual = await ritual.waitForFuture(exitFuture);
 
       expect(actual).toEqual(outcome);
     },
@@ -52,8 +49,8 @@ describe("/ primitives: guard, resumable", () => {
     },
   ])(
     "resumable returns its entry result when it runs inside the guarded entry scope",
-    ({ given: [ready, unexpected], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [ready, unexpected], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("resumableHandle", () => future<string>()),
@@ -79,7 +76,8 @@ describe("/ primitives: guard, resumable", () => {
             resumableResult,
           })),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);
@@ -153,8 +151,8 @@ describe("/ primitives: guard, resumable", () => {
     },
   ])(
     "guard receives resumable failures as scope failures and applies the recovery result",
-    ({ given: [entryFailure, recoveryResult], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [entryFailure, recoveryResult], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           wisp.Do,
           wisp.bind("caughtFailureHandle", () => future<ScopeFailure>()),
@@ -201,7 +199,8 @@ describe("/ primitives: guard, resumable", () => {
             resumableResult,
           })),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExited(step));
 
       expect(actual).toEqual(outcome);

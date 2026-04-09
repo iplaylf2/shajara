@@ -15,13 +15,14 @@ describe("/ primitives: self", () => {
         sharesExitFuture: false,
       },
     },
-  ])("returns refs whose process exit futures settle with root closure", ({ outcome }) => {
-    const step = interpretRitual(() =>
+  ])("returns refs whose process exit futures settle with root closure", async ({ outcome }) => {
+    await using ritual = interpretRitual(() =>
       pipe(
         spawn(() => self()),
         wisp.chain(wait),
       ),
-    ).driveSync();
+    );
+    const step = ritual.driveSync();
     const actual: SelfHandle = unwrapRight(unwrapRight(unwrapExited(step)));
 
     expect({

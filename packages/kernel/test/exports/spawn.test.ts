@@ -12,13 +12,14 @@ describe("/ primitives: spawn", () => {
     },
   ])(
     "returns the spawned process exit future from a single primitive call",
-    ({ given: [spawned], outcome }) => {
-      const step = interpretRitual(() =>
+    async ({ given: [spawned], outcome }) => {
+      await using ritual = interpretRitual(() =>
         pipe(
           spawn(() => wisp.of(spawned)),
           wisp.chain(wait),
         ),
-      ).driveSync();
+      );
+      const step = ritual.driveSync();
       const actual = unwrapRight(unwrapRight(unwrapExited(step)));
 
       expect(actual).toBe(outcome);
