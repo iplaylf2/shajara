@@ -1,4 +1,4 @@
-import { defer, enclose, future, settle, wait } from "#/index";
+import { defer, enclose } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
 import { pipe } from "fp-ts/function";
@@ -17,33 +17,26 @@ describe("/ primitives: defer", () => {
   ])(
     "runs cleanup after the enclosed process exits",
     async ({ given: [bodyEntry, cleanupEntry], outcome }) => {
+      const events: string[] = [];
+
       await using ritual = interpretRitual(() =>
-        pipe(
-          wisp.Do,
-          wisp.bind("events", () => wisp.of<string[]>([])),
-          wisp.bind("cleanupHandle", () => future<readonly string[]>()),
-          wisp.bind("scopeExit", ({ cleanupHandle: [, cleanupSettle], events }) =>
-            enclose(() =>
+        enclose(() =>
+          pipe(
+            defer(() =>
               pipe(
-                defer(() =>
-                  pipe(
-                    record(events, cleanupEntry),
-                    wisp.chain((snapshot) => settle(cleanupSettle, right(snapshot))),
-                  ),
-                ),
-                wisp.chain(() => record(events, bodyEntry)),
+                record(events, cleanupEntry),
+                wisp.map(() => undefined),
               ),
             ),
+            wisp.chain(() => record(events, bodyEntry)),
           ),
-          wisp.bind("cleanup", ({ cleanupHandle: [cleanupFuture] }) => wait(cleanupFuture)),
-          wisp.map(({ cleanup, scopeExit }) => ({
-            cleanup,
-            scopeExit,
-          })),
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      const actual = {
+        cleanup: right([...events] as readonly string[]),
+        scopeExit: unwrapRight(unwrapExited(step)),
+      };
 
       expect(actual).toEqual(outcome);
     },

@@ -1,6 +1,6 @@
 import type { FutureKey, ScopeFailure } from "#/index";
 import { describe, expect, test } from "vitest";
-import { enclose, future, guard, halt, resumable, settle, wait } from "#/index";
+import { guard, halt, resumable } from "#/index";
 import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
 import { left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
@@ -50,35 +50,29 @@ describe("/ primitives: guard, resumable", () => {
   ])(
     "resumable returns its entry result when it runs inside the guarded entry scope",
     async ({ given: [ready, unexpected], outcome }) => {
+      let resumableFuture: FutureKey<string> | null = null;
+
       await using ritual = interpretRitual(() =>
-        pipe(
-          wisp.Do,
-          wisp.bind("resumableHandle", () => future<string>()),
-          wisp.bind("guardExit", ({ resumableHandle: [, resumableSettle] }) =>
+        guard(
+          () =>
             pipe(
-              guard(
-                () =>
-                  pipe(
-                    resumable(() => wisp.of(ready)),
-                    wisp.chain(wait),
-                    wisp.chain((resumableResult) => settle(resumableSettle, resumableResult)),
-                  ),
-                () => wisp.of(right(unexpected)),
+              resumable(() => wisp.of(ready)),
+              wisp.chain((capturedFuture) =>
+                wisp.fromIO(() => {
+                  resumableFuture = capturedFuture;
+                }),
               ),
-              wisp.chain(wait),
             ),
-          ),
-          wisp.bind("resumableResult", ({ resumableHandle: [resumableFuture] }) =>
-            wait(resumableFuture),
-          ),
-          wisp.map(({ guardExit, resumableResult }) => ({
-            guardExit,
-            resumableResult,
-          })),
+          () => wisp.of(right(unexpected)),
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      const guardFuture = unwrapRight(unwrapExited(step));
+      assertCaptured(resumableFuture);
+      const actual = {
+        guardExit: await ritual.waitForFuture(guardFuture),
+        resumableResult: await ritual.waitForFuture(resumableFuture),
+      };
 
       expect(actual).toEqual(outcome);
     },
@@ -152,62 +146,46 @@ describe("/ primitives: guard, resumable", () => {
   ])(
     "guard receives resumable failures as scope failures and applies the recovery result",
     async ({ given: [entryFailure, recoveryResult], outcome }) => {
+      let caughtFailure: ScopeFailure | null = null;
+      let resumableFuture: FutureKey<string> | null = null;
+
       await using ritual = interpretRitual(() =>
-        pipe(
-          wisp.Do,
-          wisp.bind("caughtFailureHandle", () => future<ScopeFailure>()),
-          wisp.bind("guardHandle", () => future<FutureKey<void>>()),
-          wisp.bind("resumableHandle", () => future<FutureKey<string>>()),
-          wisp.chainFirst(
-            ({
-              caughtFailureHandle: [, caughtFailureSettle],
-              guardHandle: [, guardHandleSettle],
-              resumableHandle: [, resumableHandleSettle],
-            }) =>
-              enclose(() =>
-                pipe(
-                  guard(
-                    () =>
-                      pipe(
-                        resumable(() => halt(entryFailure)),
-                        wisp.chain((resumableFuture) =>
-                          settle(resumableHandleSettle, right(resumableFuture)),
-                        ),
-                      ),
-                    (caught) =>
-                      pipe(
-                        settle(caughtFailureSettle, right(caught)),
-                        wisp.chain(() => wisp.of(recoveryResult)),
-                      ),
-                  ),
-                  wisp.chain((guardFuture) => settle(guardHandleSettle, right(guardFuture))),
-                ),
+        guard(
+          () =>
+            pipe(
+              resumable(() => halt(entryFailure)),
+              wisp.chain((capturedFuture) =>
+                wisp.fromIO(() => {
+                  resumableFuture = capturedFuture;
+                }),
               ),
-          ),
-          wisp.bind("caughtFailure", ({ caughtFailureHandle: [caughtFailureFuture] }) =>
-            wait(caughtFailureFuture),
-          ),
-          wisp.bind("guardExit", ({ guardHandle: [guardHandleFuture] }) =>
-            waitCapturedFuture(guardHandleFuture),
-          ),
-          wisp.bind("resumableResult", ({ resumableHandle: [resumableHandleFuture] }) =>
-            waitCapturedFuture(resumableHandleFuture),
-          ),
-          wisp.map(({ caughtFailure, guardExit, resumableResult }) => ({
-            caughtFailure,
-            guardExit,
-            resumableResult,
-          })),
+            ),
+          (caught) =>
+            pipe(
+              wisp.fromIO(() => {
+                caughtFailure = caught;
+              }),
+              wisp.chain(() => wisp.of(recoveryResult)),
+            ),
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      const guardFuture = unwrapRight(unwrapExited(step));
+      assertCaptured(caughtFailure);
+      assertCaptured(resumableFuture);
+      const actual = {
+        caughtFailure: right(caughtFailure),
+        guardExit: await ritual.waitForFuture(guardFuture),
+        resumableResult: await ritual.waitForFuture(resumableFuture),
+      };
 
       expect(actual).toEqual(outcome);
     },
   );
 });
 
-function waitCapturedFuture<Result>(futureKey: FutureKey<FutureKey<Result>>) {
-  return pipe(wait(futureKey), wisp.map(unwrapRight), wisp.chain(wait));
+function assertCaptured<Captured>(value: Captured | null): asserts value is NonNullable<Captured> {
+  if (value === null) {
+    throw new Error("Expected test ritual to capture a value");
+  }
 }
