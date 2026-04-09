@@ -28,7 +28,7 @@ export class RoundLimitReaper implements Reaper {
         kind: "reaper-closing-timeout",
         roundLimit: this.roundLimit,
       },
-      () => "Scope did not finish closing within the executor reaper round limit",
+      "Scope did not finish closing within the executor reaper round limit",
     );
   }
 

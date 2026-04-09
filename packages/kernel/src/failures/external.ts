@@ -1,11 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
-export function externalFailure(raw: unknown, message: () => string): ExternalFailure {
+export function externalFailure(raw: unknown, message: string): ExternalFailure {
   return {
     kind: "external",
-    get message(): string {
-      return message();
-    },
+    message,
     raw,
   };
 }
