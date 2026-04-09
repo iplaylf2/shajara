@@ -6,7 +6,7 @@ import { pipe } from "fp-ts/function";
 import { right } from "#/utils";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . recovery", () => {
+describe("/ primitives: guard, resumable", () => {
   const haltedFailure = {
     kind: "halted",
     message: "halted for test",

@@ -4,7 +4,7 @@ import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
 import { left, right } from "#/utils";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . enclose", () => {
+describe("/ primitives: enclose", () => {
   test.for([
     {
       expect: right("enclosed"),

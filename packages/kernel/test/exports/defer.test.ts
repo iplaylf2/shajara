@@ -5,7 +5,7 @@ import { pipe } from "fp-ts/function";
 import { right } from "#/utils";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . defer", () => {
+describe("/ primitives: defer", () => {
   test.for([
     {
       expect: {

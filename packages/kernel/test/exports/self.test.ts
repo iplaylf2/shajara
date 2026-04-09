@@ -5,7 +5,7 @@ import type { SelfHandle } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . self", () => {
+describe("/ primitives: self", () => {
   test.for([
     {
       expect: (selfHandle: SelfHandle) => {

@@ -4,7 +4,7 @@ import { spawn, wait } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . spawn", () => {
+describe("/ primitives: spawn", () => {
   test.for([
     {
       expect: "spawned-done",

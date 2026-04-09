@@ -4,7 +4,7 @@ import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . all", () => {
+describe("/ primitives: all", () => {
   test.for([
     {
       expect: ["alpha", "beta"],

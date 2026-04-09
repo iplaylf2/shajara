@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
 import { iife, narrowArrayAs, narrowAs, noop, unreachable } from "#/utils";
 
-describe("@shajara/kernel/utils helpers", () => {
-  describe("execution helpers", () => {
+describe("/utils helpers", () => {
+  describe("iife, noop", () => {
     const EXPECTED_CALLS = 1;
     const EXPECTED_RESULT = 42;
 
@@ -28,7 +28,7 @@ describe("@shajara/kernel/utils helpers", () => {
     });
   });
 
-  describe("narrowing helpers", () => {
+  describe("narrowArrayAs, narrowAs", () => {
     const objectValue = { kind: "test" } as const;
     const tupleValue = ["alpha", "beta"] as const;
 
@@ -51,7 +51,7 @@ describe("@shajara/kernel/utils helpers", () => {
     });
   });
 
-  describe("control flow helpers", () => {
+  describe("unreachable", () => {
     test.for([
       {
         expect: "Unreachable code path",

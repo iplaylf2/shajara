@@ -15,7 +15,7 @@ import { left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . resource", () => {
+describe("/ primitives: resource", () => {
   test.for([
     {
       expect: right("resource-ready"),

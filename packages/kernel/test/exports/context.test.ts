@@ -6,7 +6,7 @@ import type { ContextKey } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-describe("@shajara/kernel . context primitives", () => {
+describe("/ primitives: bind, contextKey, lookup, unbind", () => {
   test.for([
     {
       expect: none,
