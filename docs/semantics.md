@@ -397,9 +397,9 @@ primitive 不等于 sigil：
 声明可恢复计算，并返回 entry result 对应的 future。`resumable` 会为其 traced subtree 建立新的 Scope；它把 entry process 的结果与其所在 traced scope 的后续失败拆开处理：
 
 - entry process 成功：结果 future 立即收敛为 `Right(value)`。
-- entry process 失败：查找 `resumableDelegateKey`。
-  - 未命中：结果 future 收敛为 `Left(failure)`。
-  - 命中：把 `failure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待 recovery future 收敛；其结果作为 entry result future 的最终结果。
+- traced scope 失败：查找 `resumableDelegateKey`。
+  - 未命中：结果 future 收敛为 `Left(scopeFailure)`。
+  - 命中：把 `scopeFailure + FutureSettleKey` 作为一次 recovery request 发送给委派点，并等待 recovery future 收敛；其结果作为 entry result future 的最终结果。`scopeFailure.cause.failure` 保留底层根因。
 - entry process 成功后的 traced scope 后续失败：不回写 entry result future，而是按默认失败传播语义使调用方 Scope 失败。
 
 ### 7.4 future、等待与控制 primitives
@@ -422,7 +422,7 @@ primitive 不等于 sigil：
 
 #### guard(entry, recover) → Wisp\<FutureKey\<void\>\>
 
-创建传播型子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 failure 由 `recover` 处理；调用返回该子树入口 Scope 的 `FutureKey<void>`。
+创建传播型子 Scope，并在该子 Scope 内建立供 `resumable` 使用的恢复边界。`entry` 定义该子树范围；子树内 `resumable` 上送的 `ScopeFailure` 由 `recover` 处理，`cause.failure` 暴露底层根因；调用返回该子树入口 Scope 的 `FutureKey<void>`。
 
 #### halt(failure) → Wisp\<never\>
 

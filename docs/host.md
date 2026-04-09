@@ -39,7 +39,7 @@ kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保�
 
 `Failure`（kernel 共享失败契约）不向用户侧暴露；结构性 failure 在 host 侧映射为 `ShajaraError`（继承 `Error`）子类，`canceled` 映射为 `CanceledError`；外部 failure 若携带原始 `Error`，则直接复用该实例。
 
-因此 `run` / `wait` 与 `guard(entry, recover)` 的恢复回调在 external failure 上都保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；结构性 failure 映射为 `ShajaraError` 子类。
+因此 `run` / `wait` 在 external failure 上保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；结构性 failure 映射为 `ShajaraError` 子类。`guard(entry, recover)` 的恢复回调则固定接收 `ScopeError`，其 `cause.failure` 保留底层 failure；若根因为 external failure，原始 `Error` 仍位于 `cause.failure.raw`。
 
 ## 4. 执行入口
 

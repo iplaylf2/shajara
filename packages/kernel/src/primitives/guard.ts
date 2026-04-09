@@ -3,6 +3,7 @@ import { bind, branch, receive, self, settle, spawn } from "#/sigils";
 import { resumableDelegateKey, resumableFailureKey } from "#/primitives-kit";
 import type { Either } from "#/utils";
 import type { ResumableRecoveryRequest } from "#/primitives-kit";
+import type { ScopeFailure } from "#/failures";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -14,7 +15,7 @@ export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<Futur
   );
 }
 
-export type RecoveryHandler = (failure: FailureShape) => Wisp<Either<FailureShape, unknown>>;
+export type RecoveryHandler = (failure: ScopeFailure) => Wisp<Either<FailureShape, unknown>>;
 
 function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
   return () =>

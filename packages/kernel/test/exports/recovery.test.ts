@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { future, guard, halt, resumable, settle, wait } from "#/index";
 import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
-import type { FailureShape } from "#/index";
+import type { FailureShape } from "#/contracts";
+import type { ScopeFailure } from "#/failures";
 import { pipe } from "fp-ts/function";
 import { right } from "#/utils";
 import { wisp } from "#/internal/fp";
@@ -84,7 +85,7 @@ describe("/ primitives: guard, resumable", () => {
       }) =>
         pipe(
           wisp.Do,
-          wisp.bind("caughtFailureHandle", () => future<FailureShape>()),
+          wisp.bind("caughtFailureHandle", () => future<ScopeFailure>()),
           wisp.bind("resumableHandle", () => future<string>()),
           wisp.bind(
             "guardExit",

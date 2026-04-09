@@ -105,7 +105,7 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 | `spawn`     | `spawn(worker) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                                                                                |
 | `enclose`   | `enclose(ritual) → T`                        | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                                                                          |
 | `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                                                                                    |
-| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败交给 `recover(error)` 处理。                                                                                               |
+| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败会以 `ScopeError` 交给 `recover(scopeError)` 处理，底层根因位于 `scopeError.cause.failure`。                               |
 | `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                                                                                           |
 | `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速 `Scope` 的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。                                                          |
 | `resource`  | `resource(body) → RiteFuture<T>`             | 声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并让该资源的存在期附着于所属 `Scope`。                                                                             |
