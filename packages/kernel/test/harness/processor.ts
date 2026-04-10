@@ -47,15 +47,11 @@ class ManagedQueuedProcessor implements AsyncDisposable {
 
   #runCurrentTurn(): void {
     while (this.#tasks.length > 0) {
-      const [task] = this.#tasks;
-      const status = consumeTask(task!, this.#taskStatuses);
+      const task = this.#tasks.shift()!;
+      const status = consumeTask(task, this.#taskStatuses);
       if (status === "cede") {
-        this.#tasks.shift();
-        this.#tasks.push(task!);
-        continue;
+        this.#tasks.push(task);
       }
-
-      this.#tasks.shift();
     }
 
     if (this.#tasks.length > 0) {

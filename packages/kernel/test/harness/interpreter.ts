@@ -1,9 +1,7 @@
 import type { FutureKey, FutureResult, ProcessRef, Ritual, Suppressor } from "#/contracts";
 import { Interpreter } from "#/interpreter";
 import type { ProcessStep } from "#/interpreter";
-import { iife } from "#/utils";
 import { option } from "fp-ts";
-import { restingWisp } from "#/contracts";
 
 export function interpretRitual<Relic>(ritual: Ritual<Relic>) {
   return new RitualInterpreter(ritual);
@@ -11,7 +9,7 @@ export function interpretRitual<Relic>(ritual: Ritual<Relic>) {
 
 class RitualInterpreter<Relic> implements AsyncDisposable {
   public constructor(ritual: Ritual<Relic>) {
-    this.#interpreter = Interpreter.create(() => restingWisp(VOID), {
+    this.#interpreter = Interpreter.create(ritual, {
       trackProcess: (process: ProcessRef<unknown>) => {
         this.#queueNext.delete(process);
         this.#queueCurrent.add(process);
@@ -20,18 +18,16 @@ class RitualInterpreter<Relic> implements AsyncDisposable {
         // Harness only needs runnable processes for primitive tests.
       },
     });
-    this.#entryProcess = this.#interpreter.spawn(
-      this.#interpreter.scopeRoot,
-      ritual,
-      this.#suppressor,
-    );
+    this.#entryProcess = this.#interpreter.processRoot as ProcessRef<Relic>;
   }
 
   public driveSync(): ProcessStep<Relic> {
     this.#beginTurn();
 
     while (this.#queueCurrent.size > 0) {
-      const process = this.#takeCurrentProcess() ?? failStalledInterpreter();
+      const current = this.#queueCurrent.values().next();
+      const process = current.value!;
+      this.#queueCurrent.delete(process);
       const state = this.#interpreter.processState(process);
 
       if (state.status === "closed") {
@@ -59,37 +55,26 @@ class RitualInterpreter<Relic> implements AsyncDisposable {
     return this.#stepLast ?? failEntryNeverStepped();
   }
 
-  public waitForClosed(options?: WaitOptions): Promise<ProcessStep<Relic>> {
-    return this.#waitFor(() => {
-      if (!this.#interpreter.isClosed) {
-        return null;
-      }
+  public async waitForClosed(options?: WaitOptions): Promise<ProcessStep<Relic>> {
+    await this.#waitForFutureSettlement(
+      this.#interpreter.scopeRoot.exitFuture,
+      options?.maxTurns ?? DEFAULT_MAX_TURNS,
+    );
 
-      const step = this.#stepLast;
-      if (!step || step.disposition !== "exited") {
-        throw new Error("Expected entry process to exit before interpreter closed");
-      }
+    const step = this.#interpreter.step(this.#entryProcess, this.#suppressor) as ProcessStep<Relic>;
+    this.#stepLast = step;
+    if (step.disposition !== "exited") {
+      throw new Error("Expected entry process to exit before interpreter closed");
+    }
 
-      return step;
-    }, options?.maxTurns ?? DEFAULT_MAX_TURNS);
+    return step;
   }
 
   public waitForFuture<Result>(
     futureKey: FutureKey<Result>,
     options?: WaitOptions,
   ): Promise<FutureResult<Result>> {
-    return this.#waitFor(() => {
-      const polled = this.#interpreter.poll(futureKey);
-      if (option.isSome(polled)) {
-        return polled.value as FutureResult<Result>;
-      }
-
-      if (this.#interpreter.isClosed) {
-        throw new Error("Expected future to settle before interpreter closed");
-      }
-
-      return null;
-    }, options?.maxTurns ?? DEFAULT_MAX_TURNS);
+    return this.#waitForFutureSettlement(futureKey, options?.maxTurns ?? DEFAULT_MAX_TURNS);
   }
 
   public async [Symbol.asyncDispose](): Promise<void> {
@@ -110,10 +95,6 @@ class RitualInterpreter<Relic> implements AsyncDisposable {
 
   #driveProcessSync(process: ProcessRef<unknown>): ProcessStep<Relic> {
     while (true) {
-      if (this.#interpreter.processState(process).status === "closed") {
-        return this.#interpreter.step(process, this.#suppressor) as ProcessStep<Relic>;
-      }
-
       const step = this.#interpreter.step(process, this.#suppressor);
 
       switch (step.disposition) {
@@ -128,22 +109,33 @@ class RitualInterpreter<Relic> implements AsyncDisposable {
     }
   }
 
-  #takeCurrentProcess(): ProcessRef<unknown> | undefined {
-    const current = this.#queueCurrent.values().next();
-    if (current.done) {
-      return undefined;
-    }
-
-    this.#queueCurrent.delete(current.value);
-    return current.value;
-  }
-
   #beginTurn(): void {
     if (this.#queueCurrent.size === 0 && this.#queueNext.size > 0) {
       const current = this.#queueCurrent;
       this.#queueCurrent = this.#queueNext;
       this.#queueNext = current;
       this.#queueNext.clear();
+    }
+  }
+
+  async #waitForFutureSettlement<Result>(
+    futureKey: FutureKey<Result>,
+    maxTurns: number,
+  ): Promise<FutureResult<Result>> {
+    const settled = this.#interpreter.poll(futureKey);
+    if (option.isSome(settled)) {
+      return settled.value as FutureResult<Result>;
+    }
+
+    let result: FutureResult<Result> | null = null;
+    const dispose = this.#interpreter.wait(futureKey, (nextResult) => {
+      result = nextResult as FutureResult<Result>;
+    });
+
+    try {
+      return await this.#waitFor(() => result, maxTurns);
+    } finally {
+      dispose();
     }
   }
 
@@ -208,13 +200,6 @@ function failEntryNeverStepped(): never {
   throw new Error("Expected entry process to be stepped");
 }
 
-function failStalledInterpreter(): never {
-  throw new Error("Interpreter stalled without a runnable process");
-}
-
 const DEFAULT_MAX_TURNS = 10;
 const DEFAULT_DISPOSE_MAX_TURNS = 10;
 const PAUSE_DELAY_MS = 0;
-const VOID = iife(() => {
-  // Produce a void value
-});

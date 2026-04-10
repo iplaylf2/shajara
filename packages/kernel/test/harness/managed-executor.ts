@@ -1,6 +1,7 @@
 import type { Executor } from "#/index";
 import { NextTurnPacer } from "./next-turn-pacer";
 import { createExecutor } from "#/index";
+import { waitForSettled } from "./settlement";
 
 export function createManagedExecutor() {
   return new ManagedExecutor();
@@ -34,7 +35,12 @@ class ManagedExecutor implements AsyncDisposable {
 
   async #dispose(): Promise<void> {
     this.#executor.cancel(this.#executor.scope);
-    await waitForCanceled(this.#executor);
+    const settled = await waitForSettled(this.#executor);
+    if (settled.kind !== "canceled") {
+      throw new Error("Expected executor shutdown to settle as canceled", {
+        cause: settled,
+      });
+    }
     await this.#pacer.waitForQuiescence();
     this.#pacer.shutdown();
   }
@@ -42,21 +48,4 @@ class ManagedExecutor implements AsyncDisposable {
   #disposePromise: Promise<void> | null = null;
   readonly #executor: Executor;
   readonly #pacer = new NextTurnPacer();
-}
-
-function waitForCanceled(handle: Executor): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    handle.onSettled((result) => {
-      if (result.kind !== "canceled") {
-        reject(
-          new Error("Expected executor shutdown to settle as canceled", {
-            cause: result,
-          }),
-        );
-        return;
-      }
-
-      resolve();
-    });
-  });
 }
