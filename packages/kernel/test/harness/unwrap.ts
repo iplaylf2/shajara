@@ -1,6 +1,8 @@
 import type { FutureResult } from "#/contracts";
+import type { Option } from "#/utils";
 import type { ProcessStep } from "#/interpreter";
 import { either } from "fp-ts";
+import { isSome } from "#/utils";
 
 export function unwrapExited<Result>(step: ProcessStep<Result>): FutureResult<Result> {
   if (step.disposition !== "exited") {
@@ -16,6 +18,14 @@ export function unwrapRight<Right>(value: either.Either<unknown, Right>): Right 
   }
 
   return value.right;
+}
+
+export function unwrapSome<Value>(value: Option<Value>): Value {
+  if (!isSome(value)) {
+    throw withCause(new Error("Expected Option to be Some"), value);
+  }
+
+  return value.value;
 }
 
 function withCause<Failure extends Error>(error: Failure, cause: unknown): Failure {

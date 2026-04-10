@@ -9,7 +9,7 @@ export function interpretRitual<Relic>(ritual: Ritual<Relic>) {
   return new RitualInterpreter(ritual);
 }
 
-class RitualInterpreter<Relic> {
+class RitualInterpreter<Relic> implements AsyncDisposable {
   public constructor(ritual: Ritual<Relic>) {
     this.#interpreter = new Interpreter(() => restingWisp(VOID), {
       trackProcess: (process: ProcessRef<unknown>) => {

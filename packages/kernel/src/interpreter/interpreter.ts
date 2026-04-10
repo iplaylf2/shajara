@@ -162,7 +162,7 @@ export class Interpreter {
     return this.#resolve(process).scopeRef;
   }
 
-  public constructor(entry: Ritual<void>, zoneRoot: ScopeZone) {
+  public constructor(entry: Ritual<unknown>, zoneRoot: ScopeZone) {
     this.#scopeRoot = RuntimeScope.root(
       this.#provideProcess(entry),
       { failureMode: "contain" },

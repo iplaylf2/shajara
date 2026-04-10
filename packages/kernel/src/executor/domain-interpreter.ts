@@ -12,7 +12,7 @@ import { autonomyOf } from "./autonomy";
 import { interruptedFailure } from "#/failures";
 
 export class DomainInterpreter extends Interpreter {
-  public constructor(entry: Ritual<void>, autonomy: SchedulerOption & ReaperOption) {
+  public constructor(entry: Ritual<unknown>, autonomy: SchedulerOption & ReaperOption) {
     const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
       this.#createProcessorTask(process),
     );

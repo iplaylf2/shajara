@@ -1,20 +1,20 @@
 // oxlint-disable import/max-dependencies
+import type { Disposer, Option } from "#/utils";
 import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
+import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
 import { cancel, park, settle } from "#/primitives";
+import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, io, option } from "fp-ts";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
 import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
-import type { LaunchHandle } from "./launch-handle";
-import type { Option } from "#/utils";
 import type { Pacer } from "./pacer";
 import type { ProcessStepOf } from "#/interpreter";
 import { RoundLimitReaper } from "./round-limit-reaper";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { branch } from "#/sigils";
-import { interruptedFailure } from "#/failures";
 import { pipe } from "fp-ts/function";
 import { unreachable } from "#/utils";
 import { wisp } from "#/internal/fp";
@@ -23,8 +23,7 @@ export function createExecutor(pacer: Pacer): Executor {
   return new RuntimeExecutor(pacer);
 }
 
-export interface Executor {
-  readonly rootScope: ExecutionScopeRef<unknown>;
+export interface Executor extends LaunchHandle<never> {
   launch<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
@@ -43,7 +42,7 @@ class RuntimeExecutor implements Executor {
       reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
       scheduler: { assign: () => this.#driver.processor },
     });
-    this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot);
+    this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot as never);
     this.#interpreter.wait(this.#rootScope.exitFuture, () => {
       this.#driver.stop();
     });
@@ -76,8 +75,8 @@ class RuntimeExecutor implements Executor {
 
     return option.some(
       new RuntimeLaunchHandle(executionScope, {
-        onSettled: (onSettled) => this.#interpreter.wait(executionScope.exitFuture, onSettled),
-        status: () => this.#interpreter.scopeState(executionScope).status,
+        onSettled: (id, onSettled) => this.#onSettled(id, onSettled),
+        status: (id) => this.#status(id),
       }),
     );
   }
@@ -90,7 +89,7 @@ class RuntimeExecutor implements Executor {
       return false;
     }
 
-    const process = this.#interpreter.spawn(this.rootScope, () => settle(futureSettle, result), {
+    const process = this.#interpreter.spawn(this.scope, () => settle(futureSettle, result), {
       capture: unreachable,
     });
     this.#driver.driveSyncUnsafely(process);
@@ -119,8 +118,16 @@ class RuntimeExecutor implements Executor {
     return true;
   }
 
-  public get rootScope(): ExecutionScopeRef<unknown> {
+  public onSettled(listener: (result: LaunchResult<never>) => void): Disposer {
+    return this.#onSettled(this.#rootScope, listener);
+  }
+
+  public get scope(): ExecutionScopeRef<never> {
     return this.#rootScope;
+  }
+
+  public get status(): LaunchStatus {
+    return this.#status(this.#rootScope);
   }
 
   #startReaperRound(): void {
@@ -157,6 +164,23 @@ class RuntimeExecutor implements Executor {
     this.#interpreter.forceFailed(scope, interruptedFailure(cause), faultSink);
   }
 
+  #onSettled<Result>(
+    scope: ScopeRef<Result>,
+    listener: (result: LaunchResult<Result>) => void,
+  ): Disposer {
+    return this.#interpreter.wait(scope.exitFuture, (result, suppressor) => {
+      try {
+        listener(toLaunchResult(result));
+      } catch (error) {
+        suppressor.capture(error);
+      }
+    });
+  }
+
+  #status(scope: ScopeRef<unknown>) {
+    return this.#interpreter.scopeState(scope).status;
+  }
+
   #registerScope<Result>(scope: ScopeRef<Result>): ExecutionScopeRef<Result> {
     this.#scopeRegistry.add(scope);
     return scope as ExecutionScopeRef<Result>;
@@ -168,7 +192,7 @@ class RuntimeExecutor implements Executor {
 
   readonly #driver: ExecutorDriver;
   readonly #interpreter: DomainInterpreter;
-  readonly #rootScope: ExecutionScopeRef<unknown>;
+  readonly #rootScope: ExecutionScopeRef<never>;
   readonly #scopeRegistry = new WeakSet<ScopeRef<unknown>>();
 }
 
@@ -181,6 +205,17 @@ function createLaunchWorker<Result>(ritual: Ritual<Result>): Ritual<ScopeRef<Res
       wisp.liftF,
       wisp.map(({ scope }) => scope),
     );
+}
+
+function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Result> {
+  if (either.isLeft(result)) {
+    if (result.left === canceledFailure) {
+      return { kind: "canceled" };
+    }
+
+    return { failure: result.left as Failure, kind: "failure" };
+  }
+  return { kind: "success", result: result.right };
 }
 
 const DEFAULT_REAPER_ROUND_LIMIT = 2;
