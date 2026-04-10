@@ -13,7 +13,8 @@
     "directory": "packages/kernel"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "type": "module",
   "imports": {
@@ -42,7 +43,8 @@
   "scripts": {
     "build": "vite build",
     "lint": "oxlint",
-    "prepack": "yarn build",
+    "postpack": "yarn run -T pack:license clean",
+    "prepack": "yarn build && yarn run -T pack:license stage",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",

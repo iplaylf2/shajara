@@ -9,6 +9,7 @@
     "build": "yarn workspaces foreach -At --topological run build",
     "format": "yarn run oxfmt --write .",
     "lint": "yarn workspaces foreach -Ap run lint",
+    "pack:license": "node ./scripts/pack-license.mjs",
     "typecheck": "yarn workspaces foreach -Ap run typecheck"
   },
   "devDependencies": {
