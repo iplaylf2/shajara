@@ -1,6 +1,7 @@
 import type {
   Executor,
   FutureSettleKey,
+  LaunchHandle,
   ProcessRef,
   Processor,
   ProcessorTaskStatus,
@@ -16,26 +17,14 @@ import {
   waitForSettled,
 } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { iife, right, some } from "#/utils";
+import { right, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
 describe("/ primitives: autonomy", () => {
   test.for([
     {
-      given: ["inline", "suspended", "autonomy-ready"] as const,
-      outcome: {
-        assignmentCount: 2,
-        settled: {
-          kind: "success",
-          result: right(right("autonomy-ready")),
-        },
-        settledStatus: "closed",
-        taskStatuses: ["ready", "ready", "ready", "waiting", "exited"],
-      },
-    },
-    {
-      given: ["inline", "synchronous", "autonomy-ready"] as const,
+      given: ["autonomy-ready"] as const,
       outcome: {
         assignmentCount: 0,
         settled: {
@@ -46,8 +35,39 @@ describe("/ primitives: autonomy", () => {
         taskStatuses: ["exited"],
       },
     },
+  ])(
+    "runs autonomy inline when the autonomous ritual settles synchronously",
+    async ({ given: [entryResult], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const processor = createInlineProcessor(taskStatuses);
+      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(() => wisp.of(entryResult), { scheduler }),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+
+      const actual = {
+        assignmentCount: assignedProcesses.length,
+        settled: await waitForSettled(handle),
+        settledStatus: handle.status,
+        taskStatuses,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
     {
-      given: ["queued", "suspended", "autonomy-ready"] as const,
+      given: ["autonomy-ready"] as const,
       outcome: {
         assignmentCount: 2,
         settled: {
@@ -59,37 +79,108 @@ describe("/ primitives: autonomy", () => {
       },
     },
   ])(
-    "routes autonomous scope processes through the provided scheduler",
-    async ({ given: [processorKind, settlement, entryResult], outcome }) => {
+    "routes suspended autonomy through the provided inline scheduler",
+    async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
       const assignedProcesses: ProcessRef<unknown>[] = [];
-      const actual = await iife(async () => {
-        switch (processorKind) {
-          case "inline": {
-            await using managed = createManagedExecutor();
-            return await runSchedulerCase({
-              assignedProcesses,
-              entryResult,
-              executor: managed.executor,
-              processor: createInlineProcessor(taskStatuses),
-              settlement,
-              taskStatuses,
-            });
-          }
-          case "queued": {
-            await using queued = createManagedQueuedProcessor(taskStatuses);
-            await using managed = createManagedExecutor();
-            return await runSchedulerCase({
-              assignedProcesses,
-              entryResult,
-              executor: managed.executor,
-              processor: queued.processor,
-              settlement,
-              taskStatuses,
-            });
-          }
-        }
-      });
+      const processor = createInlineProcessor(taskStatuses);
+      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(
+              () =>
+                pipe(
+                  future<string>(),
+                  wisp.chain(([futureKey, nextFutureSettle]) =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        futureSettle.resolve(nextFutureSettle);
+                        return futureKey;
+                      }),
+                      wisp.chain(wait),
+                    ),
+                  ),
+                ),
+              { scheduler },
+            ),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+      const actual = await settleSuspendedAutonomy(
+        executor,
+        futureSettle,
+        handle,
+        entryResult,
+        assignedProcesses,
+        taskStatuses,
+      );
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: ["autonomy-ready"] as const,
+      outcome: {
+        assignmentCount: 2,
+        settled: {
+          kind: "success",
+          result: right(right("autonomy-ready")),
+        },
+        settledStatus: "closed",
+        taskStatuses: ["ready", "ready", "ready", "waiting", "exited"],
+      },
+    },
+  ])(
+    "routes suspended autonomy through the provided queued scheduler",
+    async ({ given: [entryResult], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assignedProcesses: ProcessRef<unknown>[] = [];
+
+      await using queued = createManagedQueuedProcessor(taskStatuses);
+      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(
+              () =>
+                pipe(
+                  future<string>(),
+                  wisp.chain(([futureKey, nextFutureSettle]) =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        futureSettle.resolve(nextFutureSettle);
+                        return futureKey;
+                      }),
+                      wisp.chain(wait),
+                    ),
+                  ),
+                ),
+              { scheduler },
+            ),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+      const actual = await settleSuspendedAutonomy(
+        executor,
+        futureSettle,
+        handle,
+        entryResult,
+        assignedProcesses,
+        taskStatuses,
+      );
 
       expect(actual).toEqual(outcome);
     },
@@ -164,75 +255,27 @@ describe("/ primitives: autonomy", () => {
   );
 });
 
-async function runSchedulerCase({
-  executor,
-  processor,
-  settlement,
-  entryResult,
-  assignedProcesses,
-  taskStatuses,
-}: {
-  executor: Executor;
-  processor: Processor;
-  settlement: SettlementMode;
-  entryResult: string;
-  assignedProcesses: ProcessRef<unknown>[];
-  taskStatuses: ProcessorTaskStatus[];
-}) {
-  const scheduler: Scheduler = {
+function createTrackingScheduler(
+  assignedProcesses: ProcessRef<unknown>[],
+  processor: Processor,
+): Scheduler {
+  return {
     assign: (process) => {
       assignedProcesses.push(process);
       return processor;
     },
   };
-  const futureSettle =
-    settlement === "suspended" ? Promise.withResolvers<FutureSettleKey<string>>() : null;
-  if (futureSettle === null) {
-    const handle = unwrapSome(
-      executor.launch(executor.scope, () =>
-        pipe(
-          autonomy(() => wisp.of(entryResult), { scheduler }),
-          wisp.chain(wait),
-        ),
-      ),
-    );
+}
 
-    return {
-      assignmentCount: assignedProcesses.length,
-      settled: await waitForSettled(handle),
-      settledStatus: handle.status,
-      taskStatuses,
-    };
-  }
-
-  const handle = unwrapSome(
-    executor.launch(executor.scope, () =>
-      pipe(
-        autonomy(
-          () =>
-            pipe(
-              future<string>(),
-              wisp.chain(([futureKey, nextFutureSettle]) =>
-                pipe(
-                  wisp.fromIO(() => {
-                    futureSettle.resolve(nextFutureSettle);
-                    return futureKey;
-                  }),
-                  wisp.chain(wait),
-                ),
-              ),
-            ),
-          { scheduler },
-        ),
-        wisp.chain(wait),
-      ),
-    ),
-  );
-
-  {
-    const capturedFutureSettle = await futureSettle.promise;
-    executor.settle(capturedFutureSettle, right(entryResult));
-  }
+async function settleSuspendedAutonomy(
+  executor: Executor,
+  futureSettle: PromiseWithResolvers<FutureSettleKey<string>>,
+  handle: LaunchHandle<unknown>,
+  entryResult: string,
+  assignedProcesses: ProcessRef<unknown>[],
+  taskStatuses: ProcessorTaskStatus[],
+) {
+  executor.settle(await futureSettle.promise, right(entryResult));
 
   return {
     assignmentCount: assignedProcesses.length,
@@ -241,5 +284,3 @@ async function runSchedulerCase({
     taskStatuses,
   };
 }
-
-type SettlementMode = "suspended" | "synchronous";

@@ -44,9 +44,9 @@ describe("/ helpers: createExecutor", () => {
     await using managed = createManagedExecutor();
     const { executor } = managed;
 
-    const settled = waitForSettled(executor);
+    const settledPromise = waitForSettled(executor);
     executor.cancel(executor.scope);
-    await settled;
+    const settled = await settledPromise;
 
     let callbackSettled = null;
     executor.onSettled((result) => {
@@ -55,7 +55,7 @@ describe("/ helpers: createExecutor", () => {
 
     const actual = {
       callbackSettled,
-      settled: await settled,
+      settled,
       statusAfterSettle: executor.status,
     };
 
@@ -214,7 +214,6 @@ describe("/ interfaces: Executor", () => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
         const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
-
         const handle = unwrapSome(
           executor.launch(executor.scope, () =>
             pipe(
@@ -270,7 +269,6 @@ describe("/ interfaces: Executor", () => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
         const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
-
         const handle = unwrapSome(
           executor.launch(executor.scope, () =>
             pipe(
@@ -317,7 +315,6 @@ describe("/ interfaces: Executor", () => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
         const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
-
         const handle = unwrapSome(
           executor.launch(executor.scope, () =>
             pipe(
