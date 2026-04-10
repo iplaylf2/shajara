@@ -1,4 +1,3 @@
-// oxlint-disable no-magic-numbers
 import type { ScopeRef, Wisp } from "#/contracts";
 import type { Failure } from "#/failures";
 import type { Option } from "#/utils";
