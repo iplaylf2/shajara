@@ -70,7 +70,7 @@ export class DomainInterpreter extends Interpreter {
     this.#reaperDomainRoot = reaperDomainRoot;
   }
 
-  // oxlint-disable-next-line max-params
+  // oxlint-disable-next-line max-params, max-statements
   protected override scopeBranch(
     scope: ScopeRef<unknown>,
     entry: Ritual<unknown>,
@@ -80,15 +80,27 @@ export class DomainInterpreter extends Interpreter {
   ): ScopeRef<unknown> {
     const domainZone = resolveDomainZone(zone);
     const autonomy = autonomyOf(descriptor);
-    const childScopeZone = autonomy ? this.#createZone(domainZone, autonomy) : domainZone;
+    const preparedZone = autonomy
+      ? this.#createZone(domainZone, autonomy)
+      : noOpPreparedZone(domainZone);
+    const childScopeZone = preparedZone.zone;
     const childScope = super.scopeBranch(scope, entry, descriptor, childScopeZone, suppressor);
-    this.#registerReaperLeaf(
+    if (childScopeZone === domainZone) {
+      return childScope;
+    }
+
+    if (this.#isClosedScope(childScope)) {
+      preparedZone.rollback();
+      return childScope;
+    }
+
+    this.#attachReaperDomains(
       domainZone.reaperDomain,
       childScopeZone.reaperDomain,
       scope,
       childScope,
     );
-    this.#registerSchedulerDomainClose(
+    this.#attachSchedulerDomains(
       domainZone.schedulerDomain,
       childScopeZone.schedulerDomain,
       childScope,
@@ -97,7 +109,7 @@ export class DomainInterpreter extends Interpreter {
     return childScope;
   }
 
-  #registerReaperLeaf(
+  #attachReaperDomains(
     reaperDomain: ReaperDomain,
     childReaperDomain: ReaperDomain,
     scope: ScopeRef<unknown>,
@@ -128,7 +140,7 @@ export class DomainInterpreter extends Interpreter {
     });
   }
 
-  #registerSchedulerDomainClose(
+  #attachSchedulerDomains(
     schedulerDomain: SchedulerDomain,
     childSchedulerDomain: SchedulerDomain,
     childScope: ScopeRef<unknown>,
@@ -142,7 +154,8 @@ export class DomainInterpreter extends Interpreter {
     });
   }
 
-  #createZone(domainZone: DomainZone, autonomy: AutonomyOptions): DomainZone {
+  // oxlint-disable-next-line max-lines-per-function
+  #createZone(domainZone: DomainZone, autonomy: AutonomyOptions): PreparedZone {
     const schedulerDomain =
       "scheduler" in autonomy
         ? domainZone.schedulerDomain.nest(autonomy.scheduler, (process) =>
@@ -171,12 +184,29 @@ export class DomainInterpreter extends Interpreter {
           }
         : domainZone.trackScope;
 
+    function rollback() {
+      if (schedulerDomain !== domainZone.schedulerDomain) {
+        schedulerDomain.close();
+      }
+
+      if (reaperDomain !== domainZone.reaperDomain) {
+        reaperDomain.close();
+      }
+    }
+
     return {
-      reaperDomain,
-      schedulerDomain,
-      trackProcess,
-      trackScope,
+      rollback,
+      zone: {
+        reaperDomain,
+        schedulerDomain,
+        trackProcess,
+        trackScope,
+      },
     };
+  }
+
+  #isClosedScope(scope: ScopeRef<unknown>): boolean {
+    return this.scopeState(scope).status === "closed";
   }
 
   #createProcessorTask(process: ProcessRef<unknown>) {
@@ -214,7 +244,21 @@ function resolveDomainZone(zone: ScopeZone): DomainZone {
   return zone as DomainZone;
 }
 
+function noOpPreparedZone(zone: DomainZone): PreparedZone {
+  return {
+    rollback: () => {
+      // No child domains were created.
+    },
+    zone,
+  };
+}
+
 interface DomainZone extends ScopeZone {
   readonly reaperDomain: ReaperDomain;
   readonly schedulerDomain: SchedulerDomain;
+}
+
+interface PreparedZone {
+  readonly rollback: () => void;
+  readonly zone: DomainZone;
 }
