@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { enclose, halt } from "#/index";
-import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
 import { left, right } from "#/utils";
 import { wisp } from "#/internal/fp";
 
@@ -15,7 +15,7 @@ describe("/ primitives: enclose", () => {
     async ({ given: [enclosed], outcome }) => {
       await using ritual = interpretRitual(() => enclose(() => wisp.of(enclosed)));
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      const actual = unwrapExitedSucceeded(step);
 
       expect(actual).toEqual(outcome);
     },
@@ -45,7 +45,7 @@ describe("/ primitives: enclose", () => {
     async ({ given: [failure], outcome }) => {
       await using ritual = interpretRitual(() => enclose(() => halt(failure)));
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      const actual = unwrapExitedSucceeded(step);
 
       expect(actual).toEqual(outcome);
     },

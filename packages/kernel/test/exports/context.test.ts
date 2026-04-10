@@ -1,6 +1,6 @@
 import { bind, contextKey, enclose, lookup, unbind } from "#/index";
 import { describe, expect, test } from "vitest";
-import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { interpretRitual, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { none, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -14,7 +14,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
   ])("lookup returns none when a binding is absent", async ({ outcome }) => {
     await using ritual = interpretRitual(() => lookup(contextKey<string>()));
     const step = ritual.driveSync();
-    const actual = unwrapRight(unwrapExited(step));
+    const actual = unwrapExitedSucceeded(step);
 
     expect(actual).toEqual(outcome);
   });
@@ -37,7 +37,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       ),
     );
     const step = ritual.driveSync();
-    const actual = unwrapRight(unwrapExited(step));
+    const actual = unwrapExitedSucceeded(step);
 
     expect(actual).toEqual(outcome);
   });
@@ -60,7 +60,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       ),
     );
     const step = ritual.driveSync();
-    const actual = unwrapRight(unwrapRight(unwrapExited(step)));
+    const actual = unwrapRight(unwrapExitedSucceeded(step));
 
     expect(actual).toEqual(outcome);
   });
@@ -92,7 +92,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapRight(unwrapExited(step)));
+      const actual = unwrapRight(unwrapExitedSucceeded(step));
 
       expect(actual).toEqual(outcome);
     },
@@ -126,7 +126,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapRight(unwrapExited(step)));
+      const actual = unwrapRight(unwrapExitedSucceeded(step));
 
       expect(actual).toEqual(outcome);
     },

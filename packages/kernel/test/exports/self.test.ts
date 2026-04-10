@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { interpretRitual, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { self, spawn, wait } from "#/index";
 import type { SelfHandle } from "#/index";
 import { pipe } from "fp-ts/function";
@@ -23,7 +23,7 @@ describe("/ primitives: self", () => {
       ),
     );
     const step = ritual.driveSync();
-    const actual: SelfHandle = unwrapRight(unwrapRight(unwrapExited(step)));
+    const actual: SelfHandle = unwrapRight(unwrapExitedSucceeded(step));
 
     expect({
       hasProcessExitFuture: actual.process.exitFuture !== undefined,

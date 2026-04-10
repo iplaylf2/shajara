@@ -1,6 +1,6 @@
 import { cancel, canceledFailure, defer, enclose, resource, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
-import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
 import { left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -21,7 +21,7 @@ describe("/ primitives: resource", () => {
         ),
       );
       const step = ritual.driveSync();
-      const resourceFuture = unwrapRight(unwrapExited(step));
+      const resourceFuture = unwrapExitedSucceeded(step);
       const actual = await ritual.waitForFuture(resourceFuture);
 
       expect(actual).toEqual(outcome);
@@ -48,11 +48,11 @@ describe("/ primitives: resource", () => {
               pipe(
                 defer(() =>
                   pipe(
-                    record(events, cleanupEntry),
+                    recordTrace(events, cleanupEntry),
                     wisp.map(() => undefined),
                   ),
                 ),
-                wisp.chain(() => record(events, providedEntry)),
+                wisp.chain(() => recordTrace(events, providedEntry)),
                 wisp.chain(() => provide(resourceValue)),
               ),
             ),
@@ -71,17 +71,10 @@ describe("/ primitives: resource", () => {
       const step = await ritual.waitForClosed();
       const actual = {
         lifecycleTrace: right([...events] as readonly string[]),
-        scopeExit: unwrapRight(unwrapExited(step)),
+        scopeExit: unwrapExitedSucceeded(step),
       };
 
       expect(actual).toEqual(outcome);
     },
   );
 });
-
-function record(events: string[], entry: string) {
-  return wisp.fromIO(() => {
-    events.push(entry);
-    return [...events] as readonly string[];
-  });
-}

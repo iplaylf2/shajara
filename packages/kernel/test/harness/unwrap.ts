@@ -20,6 +20,14 @@ export function unwrapRight<Right>(value: either.Either<unknown, Right>): Right 
   return value.right;
 }
 
+export function unwrapSucceeded<Result>(value: FutureResult<Result>): Result {
+  return unwrapRight(value);
+}
+
+export function unwrapExitedSucceeded<Result>(step: ProcessStep<Result>): Result {
+  return unwrapSucceeded(unwrapExited(step));
+}
+
 export function unwrapSome<Value>(value: Option<Value>): Value {
   if (!isSome(value)) {
     throw withCause(new Error("Expected Option to be Some"), value);

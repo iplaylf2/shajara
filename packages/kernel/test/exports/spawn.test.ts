@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { interpretRitual, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { spawn, wait } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -20,7 +20,7 @@ describe("/ primitives: spawn", () => {
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapRight(unwrapExited(step)));
+      const actual = unwrapRight(unwrapExitedSucceeded(step));
 
       expect(actual).toBe(outcome);
     },

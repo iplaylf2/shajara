@@ -1,6 +1,6 @@
 import { cede, future, poll, settle, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
-import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
+import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
 import { isSome, none, right, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -30,7 +30,7 @@ describe("/ primitives: future, poll, wait", () => {
         ),
       );
       const step = ritual.driveSync();
-      const actual = unwrapRight(unwrapExited(step));
+      const actual = unwrapExitedSucceeded(step);
 
       expect(actual).toEqual(outcome);
     },
@@ -61,7 +61,7 @@ describe("/ primitives: future, poll, wait", () => {
         ),
       );
       const step = await ritual.waitForClosed();
-      const actual = unwrapRight(unwrapExited(step));
+      const actual = unwrapExitedSucceeded(step);
 
       expect(actual).toEqual(outcome);
     },
