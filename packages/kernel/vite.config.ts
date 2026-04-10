@@ -28,6 +28,7 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: { exclude: ["test/**"] },
     environment: "node",
     include: ["test/**/*.test.ts"],
     setupFiles: ["./test/setup/polyfills.ts"],
