@@ -5,6 +5,7 @@ import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
 import { cancel, park, settle } from "#/primitives";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, io, option } from "fp-ts";
+import { noop, unreachable } from "#/utils";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
@@ -16,7 +17,6 @@ import { RoundLimitReaper } from "./round-limit-reaper";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { branch } from "#/sigils";
 import { pipe } from "fp-ts/function";
-import { unreachable } from "#/utils";
 import { wisp } from "#/internal/fp";
 
 export function createExecutor(pacer: Pacer): Executor {
@@ -168,6 +168,13 @@ class RuntimeExecutor implements Executor {
     scope: ScopeRef<Result>,
     listener: (result: LaunchResult<Result>) => void,
   ): Disposer {
+    const settled = this.#interpreter.poll(scope.exitFuture);
+    if (option.isSome(settled)) {
+      listener(toLaunchResult(settled.value));
+
+      return noop;
+    }
+
     return this.#interpreter.wait(scope.exitFuture, (result, suppressor) => {
       try {
         listener(toLaunchResult(result));

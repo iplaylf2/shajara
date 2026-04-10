@@ -7,8 +7,8 @@ import type {
   Suppressor,
 } from "#/contracts";
 import type { Disposer } from "#/utils";
-import { noop } from "#/utils";
 import { option } from "fp-ts";
+import { unreachable } from "#/utils";
 
 export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): option.Option<FutureResult<Result>> {
@@ -21,7 +21,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
 
   public wait(onSettled: FutureSettler<Result>): Disposer {
     if (this.#result) {
-      return noop;
+      return unreachable();
     }
 
     this.#waiters.add(onSettled);

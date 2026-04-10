@@ -46,8 +46,7 @@ class ManagedExecutor implements AsyncDisposable {
 
 function waitForCanceled(handle: Executor): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const unsubscribe = handle.onSettled((result) => {
-      unsubscribe();
+    handle.onSettled((result) => {
       if (result.kind !== "canceled") {
         reject(
           new Error("Expected executor shutdown to settle as canceled", {
