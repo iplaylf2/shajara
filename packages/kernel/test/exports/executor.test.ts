@@ -164,6 +164,44 @@ describe("/ interfaces: Executor", () => {
         expect(actual).toEqual(outcome);
       },
     );
+
+    test.for([
+      {
+        given: ["listener-threw", "throws", "records"] as const,
+        outcome: {
+          listenerCalls: ["throws", "records"],
+          settled: {
+            kind: "canceled",
+          },
+          settledStatus: "closed",
+        },
+      },
+    ])(
+      "suppresses onSettled listener exceptions without blocking settlement delivery",
+      async ({ given: [causeMessage, throwingEntry, recordingEntry], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+
+        const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+        const listenerCalls: string[] = [];
+        handle.onSettled(() => {
+          listenerCalls.push(throwingEntry);
+          throw new Error(causeMessage);
+        });
+        handle.onSettled(() => {
+          listenerCalls.push(recordingEntry);
+        });
+
+        executor.cancel(handle.scope);
+        const actual = {
+          listenerCalls,
+          settled: await waitForSettled(handle),
+          settledStatus: handle.status,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
   });
 
   describe("/: launch, settle, cancel", () => {

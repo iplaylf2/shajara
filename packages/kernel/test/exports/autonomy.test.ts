@@ -67,6 +67,51 @@ describe("/ primitives: autonomy", () => {
 
   test.for([
     {
+      given: [new Error("scheduler assignment failed"), "scheduler-entry"] as const,
+      outcome: {
+        interruptedCauseMessage: "scheduler assignment failed",
+        settledKind: "failure",
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "interrupts the autonomous scope when scheduler assignment throws out-of-band",
+    async ({ given: [cause, entryResult], outcome }) => {
+      const scheduler: Scheduler = {
+        assign: () => {
+          throw cause;
+        },
+      };
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(() => wisp.of(entryResult), { scheduler }),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+
+      const actual = {
+        settled: await waitForSettled(handle),
+        settledStatus: handle.status,
+      };
+
+      expect({
+        settledKind: actual.settled.kind,
+        settledStatus: actual.settledStatus,
+      }).toEqual({
+        settledKind: outcome.settledKind,
+        settledStatus: outcome.settledStatus,
+      });
+      expectInterruptedScopeFailure(actual.settled, outcome.interruptedCauseMessage);
+    },
+  );
+
+  test.for([
+    {
       given: ["autonomy-ready"] as const,
       outcome: {
         assignmentCount: 2,
@@ -253,6 +298,59 @@ describe("/ primitives: autonomy", () => {
       expect(actual).toEqual(outcome);
     },
   );
+
+  test.for([
+    {
+      given: [new Error("reaper adjudication failed")] as const,
+      outcome: {
+        interruptedCauseMessage: "reaper adjudication failed",
+        settledKind: "failure",
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "interrupts the autonomous scope when reaper adjudication throws",
+    async ({ given: [cause], outcome }) => {
+      const reaper: Reaper = {
+        adjudicate: () => {
+          throw cause;
+        },
+      };
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(
+              () =>
+                pipe(
+                  defer(() => park()),
+                  wisp.chain(() => spawn(cancel)),
+                  wisp.chain(() => park()),
+                ),
+              { reaper },
+            ),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+
+      const actual = {
+        settled: await waitForSettled(handle),
+        settledStatus: handle.status,
+      };
+
+      expect({
+        settledKind: actual.settled.kind,
+        settledStatus: actual.settledStatus,
+      }).toEqual({
+        settledKind: outcome.settledKind,
+        settledStatus: outcome.settledStatus,
+      });
+      expectInterruptedScopeFailure(actual.settled, outcome.interruptedCauseMessage);
+    },
+  );
 });
 
 function createTrackingScheduler(
@@ -283,4 +381,55 @@ async function settleSuspendedAutonomy(
     settledStatus: handle.status,
     taskStatuses,
   };
+}
+
+function expectInterruptedScopeFailure(
+  settled: Awaited<ReturnType<typeof waitForSettled>>,
+  causeMessage: string,
+): void {
+  if (settled.kind !== "failure") {
+    throw new Error("Expected autonomy settlement to fail");
+  }
+
+  expect(findInterruptedFailure(settled.failure)).toEqual(
+    expect.objectContaining({
+      cause: expect.objectContaining({
+        message: causeMessage,
+      }),
+      kind: "interrupted",
+      message: "Scope progression was interrupted by an out-of-band failure",
+    }),
+  );
+}
+
+function findInterruptedFailure(value: unknown): unknown {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const failure = value as {
+    cause?: { failure?: unknown };
+    kind?: string;
+    suppressed?: readonly unknown[];
+  };
+  if (failure.kind === "interrupted") {
+    return failure;
+  }
+
+  const nested = failure.cause?.failure;
+  if (nested) {
+    const foundNested = findInterruptedFailure(nested);
+    if (foundNested !== null) {
+      return foundNested;
+    }
+  }
+
+  for (const suppressed of failure.suppressed ?? []) {
+    const foundSuppressed = findInterruptedFailure(suppressed);
+    if (foundSuppressed !== null) {
+      return foundSuppressed;
+    }
+  }
+
+  return null;
 }
