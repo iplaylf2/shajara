@@ -37,18 +37,10 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["inline", "synchronous", "autonomy-ready"] as const,
       outcome: {
-        assignmentCount: 1,
+        assignmentCount: 0,
         settled: {
-          failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: expect.any(Error),
-                kind: "interrupted",
-              }),
-            }),
-            kind: "scope",
-          }),
-          kind: "failure",
+          kind: "success",
+          result: right("autonomy-ready"),
         },
         settledStatus: "closed",
         taskStatuses: ["exited"],
