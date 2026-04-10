@@ -16,7 +16,7 @@ import {
   waitForSettled,
 } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { right, some } from "#/utils";
+import { iife, right, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -63,14 +63,32 @@ describe("/ primitives: autonomy", () => {
     async ({ given: [processorKind, settlement, entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
       const assignedProcesses: ProcessRef<unknown>[] = [];
-      await using managed = createManagedExecutor();
-      const actual = await runSchedulerCase({
-        assignedProcesses,
-        entryResult,
-        executor: managed.executor,
-        processorKind,
-        settlement,
-        taskStatuses,
+      const actual = await iife(async () => {
+        switch (processorKind) {
+          case "inline": {
+            await using managed = createManagedExecutor();
+            return await runSchedulerCase({
+              assignedProcesses,
+              entryResult,
+              executor: managed.executor,
+              processor: createInlineProcessor(taskStatuses),
+              settlement,
+              taskStatuses,
+            });
+          }
+          case "queued": {
+            await using queued = createManagedQueuedProcessor(taskStatuses);
+            await using managed = createManagedExecutor();
+            return await runSchedulerCase({
+              assignedProcesses,
+              entryResult,
+              executor: managed.executor,
+              processor: queued.processor,
+              settlement,
+              taskStatuses,
+            });
+          }
+        }
       });
 
       expect(actual).toEqual(outcome);
@@ -148,83 +166,36 @@ describe("/ primitives: autonomy", () => {
 
 async function runSchedulerCase({
   executor,
-  processorKind,
+  processor,
   settlement,
   entryResult,
   assignedProcesses,
   taskStatuses,
 }: {
   executor: Executor;
-  processorKind: ProcessorKind;
+  processor: Processor;
   settlement: SettlementMode;
   entryResult: string;
   assignedProcesses: ProcessRef<unknown>[];
   taskStatuses: ProcessorTaskStatus[];
 }) {
-  switch (processorKind) {
-    case "inline":
-      return launch(createInlineProcessor(taskStatuses));
-    case "queued": {
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      return launch(queued.processor);
-    }
-  }
-
-  async function launch(processor: Processor) {
-    const scheduler: Scheduler = {
-      assign: (process) => {
-        assignedProcesses.push(process);
-        return processor;
-      },
-    };
-    const futureSettle =
-      settlement === "suspended" ? Promise.withResolvers<FutureSettleKey<string>>() : null;
-    if (futureSettle === null) {
-      const handle = unwrapSome(
-        executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(() => wisp.of(entryResult), { scheduler }),
-            wisp.chain(wait),
-          ),
-        ),
-      );
-
-      return {
-        assignmentCount: assignedProcesses.length,
-        settled: await waitForSettled(handle),
-        settledStatus: handle.status,
-        taskStatuses,
-      };
-    }
-
+  const scheduler: Scheduler = {
+    assign: (process) => {
+      assignedProcesses.push(process);
+      return processor;
+    },
+  };
+  const futureSettle =
+    settlement === "suspended" ? Promise.withResolvers<FutureSettleKey<string>>() : null;
+  if (futureSettle === null) {
     const handle = unwrapSome(
       executor.launch(executor.scope, () =>
         pipe(
-          autonomy(
-            () =>
-              pipe(
-                future<string>(),
-                wisp.chain(([futureKey, nextFutureSettle]) =>
-                  pipe(
-                    wisp.fromIO(() => {
-                      futureSettle.resolve(nextFutureSettle);
-                      return futureKey;
-                    }),
-                    wisp.chain(wait),
-                  ),
-                ),
-              ),
-            { scheduler },
-          ),
+          autonomy(() => wisp.of(entryResult), { scheduler }),
           wisp.chain(wait),
         ),
       ),
     );
-
-    {
-      const capturedFutureSettle = await futureSettle.promise;
-      executor.settle(capturedFutureSettle, right(entryResult));
-    }
 
     return {
       assignmentCount: assignedProcesses.length,
@@ -233,7 +204,42 @@ async function runSchedulerCase({
       taskStatuses,
     };
   }
+
+  const handle = unwrapSome(
+    executor.launch(executor.scope, () =>
+      pipe(
+        autonomy(
+          () =>
+            pipe(
+              future<string>(),
+              wisp.chain(([futureKey, nextFutureSettle]) =>
+                pipe(
+                  wisp.fromIO(() => {
+                    futureSettle.resolve(nextFutureSettle);
+                    return futureKey;
+                  }),
+                  wisp.chain(wait),
+                ),
+              ),
+            ),
+          { scheduler },
+        ),
+        wisp.chain(wait),
+      ),
+    ),
+  );
+
+  {
+    const capturedFutureSettle = await futureSettle.promise;
+    executor.settle(capturedFutureSettle, right(entryResult));
+  }
+
+  return {
+    assignmentCount: assignedProcesses.length,
+    settled: await waitForSettled(handle),
+    settledStatus: handle.status,
+    taskStatuses,
+  };
 }
 
-type ProcessorKind = "inline" | "queued";
 type SettlementMode = "suspended" | "synchronous";
