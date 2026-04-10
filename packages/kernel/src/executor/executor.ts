@@ -38,7 +38,7 @@ class RuntimeExecutor implements Executor {
       beginTurn: () => this.#startReaperRound(),
       stepProcess: (process) => this.#interpreter.step(process, { capture: unreachable }),
     });
-    this.#interpreter = new DomainInterpreter(park, {
+    this.#interpreter = DomainInterpreter.createByAutonomy(park, {
       reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
       scheduler: { assign: () => this.#driver.processor },
     });

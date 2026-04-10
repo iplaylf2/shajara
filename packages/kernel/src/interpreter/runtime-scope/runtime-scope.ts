@@ -36,6 +36,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): RuntimeScope {
     const scope = new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
     zone.trackProcess(scope.entryProcess, suppressor);
+    zone.trackScope(scope, suppressor);
     return scope;
   }
 

@@ -11,7 +11,7 @@ export function interpretRitual<Relic>(ritual: Ritual<Relic>) {
 
 class RitualInterpreter<Relic> implements AsyncDisposable {
   public constructor(ritual: Ritual<Relic>) {
-    this.#interpreter = new Interpreter(() => restingWisp(VOID), {
+    this.#interpreter = Interpreter.create(() => restingWisp(VOID), {
       trackProcess: (process: ProcessRef<unknown>) => {
         this.#queueNext.delete(process);
         this.#queueCurrent.add(process);

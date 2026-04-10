@@ -2,7 +2,7 @@ import type { AbstractClass, ConditionalExcept } from "type-fest";
 
 export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
   public static *domains<Instance extends Domain<Instance>>(
-    this: StaticDomain<Instance>,
+    this: DomainClass<Instance>,
     root: Instance,
   ): Iterable<Instance> {
     yield root;
@@ -13,7 +13,7 @@ export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
   }
 
   protected static sentinel<Instance extends Domain<Instance>>(
-    this: StaticDomain<Instance>,
+    this: DomainClass<Instance>,
   ): Instance {
     return Domain.#sentinel as Instance;
   }
@@ -44,7 +44,7 @@ export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
   readonly #children = new Set<DerivedDomain>();
 }
 
-export type StaticDomain<DerivedDomain extends Domain<DerivedDomain>> = ConditionalExcept<
+export type DomainClass<DerivedDomain extends Domain<DerivedDomain>> = ConditionalExcept<
   typeof Domain<DerivedDomain>,
   AbstractClass<typeof Domain<DerivedDomain>>
 >;

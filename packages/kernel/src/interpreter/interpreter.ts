@@ -41,6 +41,12 @@ import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
 
 export class Interpreter {
+  public static create(entry: Ritual<unknown>, zone: ScopeZone): Interpreter {
+    const interpreter = new Interpreter(entry, zone);
+    interpreter.initialize();
+    return interpreter;
+  }
+
   // oxlint-disable-next-line max-statements
   public step<Relic>(process: ProcessRef<Relic>, suppressor: Suppressor): ProcessStep<Relic> {
     const handle = this.#resolve(process);
@@ -162,17 +168,6 @@ export class Interpreter {
     return this.#resolve(process).scopeRef;
   }
 
-  public constructor(entry: Ritual<unknown>, zoneRoot: ScopeZone) {
-    this.#scopeRoot = RuntimeScope.root(
-      this.#provideProcess(entry),
-      { failureMode: "contain" },
-      zoneRoot,
-      { capture: unreachable },
-    );
-
-    this.#touch(this.#scopeRoot);
-  }
-
   public get scopeRoot(): ScopeRef<void> {
     return this.#scopeRoot as ScopeRef<void>;
   }
@@ -184,6 +179,11 @@ export class Interpreter {
   public get isClosed(): boolean {
     return this.#scopeRoot.isClosed;
   }
+
+  protected constructor(
+    private readonly entry: Ritual<unknown>,
+    private readonly zoneRoot: ScopeZone,
+  ) {}
 
   // oxlint-disable-next-line max-params
   protected scopeBranch(
@@ -202,6 +202,17 @@ export class Interpreter {
     );
     this.#touch(childScope);
     return childScope;
+  }
+
+  protected initialize() {
+    (this as any).#scopeRoot = RuntimeScope.root(
+      this.#provideProcess(this.entry),
+      { failureMode: "contain" },
+      this.zoneRoot,
+      { capture: unreachable },
+    );
+
+    this.#touch(this.#scopeRoot);
   }
 
   // oxlint-disable-next-line max-lines-per-function, max-statements
@@ -338,7 +349,7 @@ export class Interpreter {
     return token;
   }
 
-  readonly #scopeRoot: RuntimeScope;
+  readonly #scopeRoot!: RuntimeScope;
 }
 
 export type ScopeState = TaggedUnion<

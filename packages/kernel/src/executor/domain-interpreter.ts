@@ -12,25 +12,13 @@ import { autonomyOf } from "./autonomy";
 import { interruptedFailure } from "#/failures";
 
 export class DomainInterpreter extends Interpreter {
-  public constructor(entry: Ritual<unknown>, autonomy: SchedulerOption & ReaperOption) {
-    const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
-      this.#createProcessorTask(process),
-    );
-    const reaperDomainRoot = ReaperDomain.root(autonomy.reaper);
-    const zoneRoot: DomainZone = {
-      reaperDomain: reaperDomainRoot,
-      schedulerDomain: schedulerDomainRoot,
-      trackProcess: (process) => {
-        schedulerDomainRoot.admitProcess(process, this.processState(process));
-      },
-      trackScope: (scope) => {
-        reaperDomainRoot.trackScope(scope, this.scopeState(scope));
-      },
-    };
-
-    super(entry, zoneRoot);
-    reaperDomainRoot.setScopeRoot(this.scopeRoot);
-    this.#reaperDomainRoot = reaperDomainRoot;
+  public static createByAutonomy(
+    entry: Ritual<unknown>,
+    autonomy: SchedulerOption & ReaperOption,
+  ): DomainInterpreter {
+    const interpreter = new DomainInterpreter(entry, autonomy);
+    interpreter.initialize();
+    return interpreter;
   }
 
   // oxlint-disable-next-line max-statements
@@ -57,6 +45,29 @@ export class DomainInterpreter extends Interpreter {
         yield [scope, process];
       }
     }
+  }
+
+  protected constructor(entry: Ritual<unknown>, autonomy: SchedulerOption & ReaperOption) {
+    const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
+      this.#createProcessorTask(process),
+    );
+    const reaperDomainRoot = ReaperDomain.root(autonomy.reaper);
+
+    const zoneRoot: DomainZone = {
+      reaperDomain: reaperDomainRoot,
+      schedulerDomain: schedulerDomainRoot,
+      trackProcess: (process) => {
+        schedulerDomainRoot.admitProcess(process, this.processState(process));
+      },
+      trackScope: (scope) => {
+        reaperDomainRoot.trackScope(scope, this.scopeState(scope));
+      },
+    };
+
+    super(entry, zoneRoot);
+
+    reaperDomainRoot.setScopeRoot(this.scopeRoot);
+    this.#reaperDomainRoot = reaperDomainRoot;
   }
 
   // oxlint-disable-next-line max-params
