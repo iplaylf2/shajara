@@ -1,7 +1,7 @@
 import type { ExecutionScopeRef, FutureSettleKey } from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { future, halt, park, wait } from "#/index";
+import { future, halt, park, settle, wait } from "#/index";
 import { isSome, left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -31,7 +31,13 @@ describe("/ helpers: createExecutor", () => {
     {
       given: [] as const,
       outcome: {
-        kind: "canceled",
+        callbackSettled: {
+          kind: "canceled",
+        },
+        settled: {
+          kind: "canceled",
+        },
+        statusAfterSettle: "closed",
       },
     },
   ])("exposes root settlement through the executor handle itself", async ({ outcome }) => {
@@ -40,8 +46,20 @@ describe("/ helpers: createExecutor", () => {
 
     const settled = waitForSettled(executor);
     executor.cancel(executor.scope);
+    await settled;
 
-    expect(await settled).toEqual(outcome);
+    let callbackSettled = null;
+    executor.onSettled((result) => {
+      callbackSettled = result;
+    });
+
+    const actual = {
+      callbackSettled,
+      settled: await settled,
+      statusAfterSettle: executor.status,
+    };
+
+    expect(actual).toEqual(outcome);
   });
 
   test.for([
@@ -82,6 +100,10 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["entry-done"] as const,
         outcome: {
+          callbackSettled: {
+            kind: "success",
+            result: "entry-done",
+          },
           scopeCreated: true,
           statusAfterSettle: "closed",
         },
@@ -95,7 +117,13 @@ describe("/ interfaces: Executor", () => {
         const handle = unwrapSome(executor.launch(executor.scope, () => wisp.of(entryResult)));
         await waitForSettled(handle);
 
+        let callbackSettled = null;
+        handle.onSettled((result) => {
+          callbackSettled = result;
+        });
+
         const actual = {
+          callbackSettled,
           scopeCreated: handle.scope !== executor.scope,
           statusAfterSettle: handle.status,
         };
@@ -132,40 +160,6 @@ describe("/ interfaces: Executor", () => {
 
         const handle = unwrapSome(executor.launch(executor.scope, () => halt(failure)));
         const actual = await waitForSettled(handle);
-
-        expect(actual).toEqual(outcome);
-      },
-    );
-
-    test.for([
-      {
-        given: ["entry-done"] as const,
-        outcome: {
-          callbackSettled: {
-            kind: "success",
-            result: "entry-done",
-          },
-          statusAtSubscription: "closed",
-        },
-      },
-    ])(
-      "invokes onSettled immediately when subscribed after the handle has already closed",
-      async ({ given: [entryResult], outcome }) => {
-        await using managed = createManagedExecutor();
-        const { executor } = managed;
-
-        const handle = unwrapSome(executor.launch(executor.scope, () => wisp.of(entryResult)));
-        await waitForSettled(handle);
-
-        let callbackSettled = null;
-        handle.onSettled((result) => {
-          callbackSettled = result;
-        });
-
-        const actual = {
-          callbackSettled,
-          statusAtSubscription: handle.status,
-        };
 
         expect(actual).toEqual(outcome);
       },
@@ -298,6 +292,54 @@ describe("/ interfaces: Executor", () => {
         const actual = {
           injected: executor.settle(capturedFutureSettle, left(failure)),
           settled: await waitForSettled(handle),
+          settledStatus: handle.status,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
+
+    test.for([
+      {
+        given: ["future-ready", "too-late"] as const,
+        outcome: {
+          lateSettleAccepted: false,
+          settled: {
+            kind: "success",
+            result: right("future-ready"),
+          },
+          settledStatus: "closed",
+        },
+      },
+    ])(
+      "settle returns false once the target future has already been completed",
+      async ({ given: [value, lateValue], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+        const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
+
+        const handle = unwrapSome(
+          executor.launch(executor.scope, () =>
+            pipe(
+              future<string>(),
+              wisp.chain(([futureKey, nextFutureSettle]) =>
+                pipe(
+                  wisp.fromIO(() => {
+                    futureSettle.resolve(nextFutureSettle);
+                  }),
+                  wisp.chain(() => settle(nextFutureSettle, right(value))),
+                  wisp.chain(() => wait(futureKey)),
+                ),
+              ),
+            ),
+          ),
+        );
+        const capturedFutureSettle = await futureSettle.promise;
+        const settled = await waitForSettled(handle);
+
+        const actual = {
+          lateSettleAccepted: executor.settle(capturedFutureSettle, right(lateValue)),
+          settled,
           settledStatus: handle.status,
         };
 
