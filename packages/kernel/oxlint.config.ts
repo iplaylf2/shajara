@@ -7,6 +7,7 @@ export default defineConfig({
     {
       files: ["test/**/*.ts"],
       rules: {
+        "eslint/max-lines": "off",
         "eslint/max-lines-per-function": "off",
         "eslint/max-statements": "off",
         "eslint/no-magic-numbers": "off",
