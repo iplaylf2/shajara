@@ -7,12 +7,16 @@ import { wisp } from "#/internal/fp";
 describe("/ primitives: all", () => {
   test.for([
     {
-      given: ["alpha", "beta"] as const,
+      given: [["alpha", "beta"] as const] as const,
       outcome: ["alpha", "beta"],
     },
+    {
+      given: [[] as const] as const,
+      outcome: [] as const,
+    },
   ])(
-    "returns a future key whose result preserves branch order",
-    async ({ given: branches, outcome }) => {
+    "returns a settled future whose result preserves branch order",
+    async ({ given: [branches], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(all(branches.map((branch) => () => wisp.of(branch))), wisp.chain(wait)),
       );

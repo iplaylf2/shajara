@@ -1,7 +1,7 @@
 import { cede, future, poll, settle, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
-import { isSome, none, right, some } from "#/utils";
+import { isSome, left, none, right, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -40,6 +40,18 @@ describe("/ primitives: future, poll, wait", () => {
     {
       given: [right("ready")] as const,
       outcome: right("ready"),
+    },
+    {
+      given: [
+        left({
+          kind: "halted",
+          message: "future-failed",
+        }),
+      ] as const,
+      outcome: left({
+        kind: "halted",
+        message: "future-failed",
+      }),
     },
   ])(
     "returns the result produced by a spawned settlement",
