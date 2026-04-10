@@ -17,7 +17,7 @@ export class SchedulerDomain extends Domain<SchedulerDomain> {
 
   public admitProcess(process: ProcessRef<unknown>, state: ProcessState): void {
     if (state.status === "open" && state.activity === "running") {
-      this.#scheduler.assign(process).drive(this.#createTask(process));
+      this.#scheduler.assign(process).admit(this.#createTask(process));
     }
   }
 

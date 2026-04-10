@@ -61,14 +61,16 @@ export class ExecutorDriver {
     this.#loop.beginTurn();
 
     while (this.#hasTask && !slice.shouldYield()) {
-      this.#driveTask();
+      this.#consumeTask();
     }
   }
 
-  #driveTask(): void {
+  #consumeTask(): void {
     const [task] = this.#tasks;
     while (true) {
-      using faultSink = new FaultSink("Out-of-band failures occurred while driving executor work");
+      using faultSink = new FaultSink(
+        "Out-of-band failures occurred while processing executor work",
+      );
       const status = task!.step(faultSink);
 
       switch (status) {
@@ -95,7 +97,7 @@ export class ExecutorDriver {
   readonly #loop: ExecutorDriverLoop;
   readonly #tasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
-    drive: (task) => {
+    admit: (task) => {
       this.#tasks.push(task);
     },
   };

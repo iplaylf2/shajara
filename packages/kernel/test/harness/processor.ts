@@ -2,8 +2,8 @@ import type { Processor, ProcessorTask, ProcessorTaskStatus, Suppressor } from "
 
 export function createInlineProcessor(taskStatuses: ProcessorTaskStatus[] = []): Processor {
   return {
-    drive: (task) => {
-      driveTask(task, taskStatuses);
+    admit: (task) => {
+      consumeTask(task, taskStatuses);
     },
   };
 }
@@ -48,7 +48,7 @@ class ManagedQueuedProcessor implements AsyncDisposable {
   #runCurrentTurn(): void {
     while (this.#tasks.length > 0) {
       const [task] = this.#tasks;
-      const status = driveTask(task!, this.#taskStatuses);
+      const status = consumeTask(task!, this.#taskStatuses);
       if (status === "cede") {
         this.#tasks.shift();
         this.#tasks.push(task!);
@@ -84,14 +84,17 @@ class ManagedQueuedProcessor implements AsyncDisposable {
   readonly #tasks: ProcessorTask[] = [];
   #turnScheduled = false;
   readonly #processor: Processor = {
-    drive: (task) => {
+    admit: (task) => {
       this.#tasks.push(task);
       this.#armTurn();
     },
   };
 }
 
-function driveTask(task: ProcessorTask, taskStatuses: ProcessorTaskStatus[]): ProcessorTaskStatus {
+function consumeTask(
+  task: ProcessorTask,
+  taskStatuses: ProcessorTaskStatus[],
+): ProcessorTaskStatus {
   while (true) {
     const status = task.step(throwingSuppressor);
     taskStatuses.push(status);

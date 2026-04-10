@@ -1,7 +1,7 @@
 import type { Suppressor } from "#/contracts";
 
 export interface Processor {
-  drive(task: ProcessorTask): void;
+  admit(task: ProcessorTask): void;
 }
 
 export interface ProcessorTask {

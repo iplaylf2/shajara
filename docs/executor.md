@@ -114,7 +114,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 - `scheduler`
 - `reaper`
 
-- **scheduler**：当自治 Scope 下某个 Process 刚转为 runnable 时，executor 调用 `scheduler.assign(processRef)`，由其返回一个 `Processor`。`ProcessRef` 只在这一步暴露给 scheduler，用于路由或分配；随后 executor 会把目标 Process 包装成匿名 `ProcessorTask` 并交给 `Processor.drive(task)`。`Processor` 不直接接触 `ProcessRef`，只通过 `task.step()` 反复推进；每次 `step()` 只执行最小一步，如何切片与何时继续由 processor 自主决定。
+- **scheduler**：当自治 Scope 下某个 Process 刚转为 runnable 时，executor 调用 `scheduler.assign(processRef)`，由其返回一个 `Processor`。`ProcessRef` 只在这一步暴露给 scheduler，用于路由或分配；随后 executor 会把目标 Process 包装成匿名 `ProcessorTask` 并交给 `Processor.admit(task)`。`Processor` 不直接接触 `ProcessRef`，只通过 `task.step()` 反复推进；每次 `step()` 只执行最小一步，如何切片与何时继续由 processor 自主决定。
 - **reaper**：executor 不会在 Scope 一进入 Closing 时立刻触发 reaper。它会在每个自治治理域内部识别当前的 closing frontier，并在准备让出执行权时安排一个 `continueLater(...)` 后触发的仲裁任务；只有到下一次 slice 开始时仍然停留在 frontier 的 closing scope，才会被送入 `reaper.reap(closingScope)`。这里的 frontier 是 executor 内部使用的定位语义：它表示当前治理域里最深的一批、且尚未被更深层同域 closing scope 阻塞的关闭前沿。reaper 返回 `Wisp<Option<Failure>>`：`none` 表示继续等待自然收敛，`some(failure)` 表示现在就调用 `Interpreter.forceFailure(scopeRef, failure)` 执行强制失败。
 
 这类能力属于 `executor` 的环境治理问题，与 `ScopeDescriptor` 的稳定语义字段分层承接；其承载形态当前待定。
@@ -123,7 +123,7 @@ execution scope 视图建立在底层 `Scope` 既有身份之上。`Scope` 的 d
 
 ### 5.1 调度扩展
 
-若执行环境需要更复杂的 ready 处理，`executor` 应接入 `Interpreter` 暴露的 runnable 接线承接位。对声明了 `autonomy(..., { scheduler })` 的 Scope，executor 在 Process 刚转为 runnable 时调用 scheduler，并将该 Process 的最小步进驱动封装为 `ProcessorTask` 交给返回的 `Processor`。
+若执行环境需要更复杂的 ready 处理，`executor` 应接入 `Interpreter` 暴露的 runnable 接线承接位。对声明了 `autonomy(..., { scheduler })` 的 Scope，executor 在 Process 刚转为 runnable 时调用 scheduler，并将该 Process 封装为匿名 `ProcessorTask`，交给返回的 `Processor` 接纳与后续处理。
 
 ### 5.2 结构性回收
 
