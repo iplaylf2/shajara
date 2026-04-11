@@ -66,8 +66,13 @@ export class DomainInterpreter extends Interpreter {
 
     super(entry, zoneRoot);
 
-    reaperDomainRoot.setScopeRoot(this.scopeRoot);
     this.#reaperDomainRoot = reaperDomainRoot;
+  }
+
+  protected override initialize(): void {
+    super.initialize();
+
+    this.#reaperDomainRoot.setScopeRoot(this.scopeRoot);
   }
 
   // oxlint-disable-next-line max-params, max-statements
@@ -85,9 +90,6 @@ export class DomainInterpreter extends Interpreter {
       : noOpPreparedZone(domainZone);
     const childScopeZone = preparedZone.zone;
     const childScope = super.scopeBranch(scope, entry, descriptor, childScopeZone, suppressor);
-    if (childScopeZone === domainZone) {
-      return childScope;
-    }
 
     if (this.#isClosedScope(childScope)) {
       preparedZone.rollback();

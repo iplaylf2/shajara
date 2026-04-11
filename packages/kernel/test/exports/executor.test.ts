@@ -1,7 +1,7 @@
-import type { ExecutionScopeRef, FutureSettleKey } from "#/index";
+import type { ExecutionScopeRef, Executor, FutureSettleKey, LaunchHandle } from "#/index";
+import { cancel, defer, future, halt, park, settle, spawn, wait } from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { future, halt, park, settle, wait } from "#/index";
 import { iife, isSome, left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -476,5 +476,152 @@ describe("/ interfaces: Executor", () => {
         expect(actual).toEqual(outcome);
       },
     );
+
+    test.for([
+      {
+        given: ["root"] as const,
+        outcome: {
+          settled: expect.objectContaining({
+            failure: expect.objectContaining({
+              cause: expect.objectContaining({
+                failure: expect.objectContaining({
+                  kind: "external",
+                  message: "Scope did not finish closing within the executor reaper round limit",
+                  raw: {
+                    round: 2,
+                    roundLimit: 2,
+                  },
+                }),
+              }),
+              kind: "scope",
+            }),
+            kind: "failure",
+          }),
+          settledStatus: "closed",
+          turnFaults: [],
+        },
+      },
+      {
+        given: ["nested"] as const,
+        outcome: {
+          settled: expect.objectContaining({
+            failure: expect.objectContaining({
+              cause: expect.objectContaining({
+                failure: expect.objectContaining({
+                  kind: "external",
+                  message: "Scope did not finish closing within the executor reaper round limit",
+                  raw: {
+                    round: 2,
+                    roundLimit: 2,
+                  },
+                }),
+              }),
+              kind: "scope",
+            }),
+            kind: "failure",
+          }),
+          settledStatus: "closed",
+          turnFaults: [],
+        },
+      },
+    ])(
+      "applies the default round-limit reaper when a launched scope remains stuck while closing",
+      async ({ given: [path], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+        const handle = launchStuckClosingHandle(executor, path);
+
+        const actual = {
+          settled: await waitForSettled(handle),
+          settledStatus: handle.status,
+          turnFaults: managed.turnFaults,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
+
+    test.for([
+      {
+        given: ["root", "root"] as const,
+        outcome: {
+          firstSettled: expect.objectContaining({
+            failure: expect.objectContaining({
+              cause: expect.objectContaining({
+                failure: expect.objectContaining({
+                  kind: "external",
+                  message: "Scope did not finish closing within the executor reaper round limit",
+                  raw: {
+                    round: 2,
+                    roundLimit: 2,
+                  },
+                }),
+              }),
+              kind: "scope",
+            }),
+            kind: "failure",
+          }),
+          firstSettledStatus: "closed",
+          secondSettled: expect.objectContaining({
+            failure: expect.objectContaining({
+              cause: expect.objectContaining({
+                failure: expect.objectContaining({
+                  kind: "external",
+                  message: "Scope did not finish closing within the executor reaper round limit",
+                  raw: {
+                    round: 2,
+                    roundLimit: 2,
+                  },
+                }),
+              }),
+              kind: "scope",
+            }),
+            kind: "failure",
+          }),
+          secondSettledStatus: "closed",
+        },
+      },
+    ])(
+      "starts a fresh default round-limit budget for each stuck launched scope",
+      async ({ given: [firstPath, secondPath], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+        const first = launchStuckClosingHandle(executor, firstPath);
+        const second = launchStuckClosingHandle(executor, secondPath);
+
+        const actual = {
+          firstSettled: await waitForSettled(first),
+          firstSettledStatus: first.status,
+          secondSettled: await waitForSettled(second),
+          secondSettledStatus: second.status,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
   });
 });
+
+function createStuckClosingRitual() {
+  return pipe(
+    defer(() => park()),
+    wisp.chain(() => spawn(cancel)),
+    wisp.chain(() => park()),
+  );
+}
+
+function launchStuckClosingHandle(
+  executor: Executor,
+  path: "root" | "nested",
+): LaunchHandle<unknown> {
+  if (path === "root") {
+    return unwrapSome(executor.launch(executor.scope, createStuckClosingRitual));
+  }
+
+  return unwrapSome(
+    executor.launch(
+      unwrapSome(executor.launch(executor.scope, () => park())).scope,
+      createStuckClosingRitual,
+    ),
+  );
+}
