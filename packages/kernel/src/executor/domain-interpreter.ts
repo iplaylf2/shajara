@@ -21,7 +21,6 @@ export class DomainInterpreter extends Interpreter {
     return interpreter;
   }
 
-  // oxlint-disable-next-line max-statements
   public *startReaperTasks(
     suppressor: Suppressor,
   ): Iterable<readonly [ScopeRef<unknown>, ProcessRef<option.Option<Failure>>]> {
@@ -75,7 +74,7 @@ export class DomainInterpreter extends Interpreter {
     this.#reaperDomainRoot.setScopeRoot(this.scopeRoot);
   }
 
-  // oxlint-disable-next-line max-params, max-statements
+  // oxlint-disable-next-line max-params
   protected override scopeBranch(
     scope: ScopeRef<unknown>,
     entry: Ritual<unknown>,
@@ -156,7 +155,6 @@ export class DomainInterpreter extends Interpreter {
     });
   }
 
-  // oxlint-disable-next-line max-lines-per-function
   #createZone(domainZone: DomainZone, autonomy: AutonomyOptions): PreparedZone {
     const schedulerDomain =
       "scheduler" in autonomy

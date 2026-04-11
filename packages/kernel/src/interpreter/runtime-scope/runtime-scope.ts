@@ -48,7 +48,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#advanceClosing([closure.notification], suppressor);
   }
 
-  // oxlint-disable-next-line max-statements
   public halt(process: RuntimeProcessKeeper, failure: Failure, suppressor: Suppressor): void {
     const failed = "failed";
     const closure = process.fail(failure);
@@ -374,7 +373,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     flushNotifications(notifications, suppressor);
   }
 
-  // oxlint-disable-next-line max-statements
   #transitionTo(
     state: RuntimeScopeState,
     notifications: FutureNotification[],
@@ -413,7 +411,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#zone.trackScope(this, suppressor);
   }
 
-  // oxlint-disable-next-line max-statements
   #cancelManaged(suppressor: Suppressor): FutureNotification[] {
     const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];

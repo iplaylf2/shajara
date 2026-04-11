@@ -47,7 +47,6 @@ export class Interpreter {
     return interpreter;
   }
 
-  // oxlint-disable-next-line max-statements
   public step<Relic>(process: ProcessRef<Relic>, suppressor: Suppressor): ProcessStep<Relic> {
     const handle = this.#resolve(process);
     const runner = handle.runner();

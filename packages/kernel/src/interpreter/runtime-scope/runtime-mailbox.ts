@@ -34,7 +34,6 @@ export class RuntimeMailbox<Receiver> {
     queues.push(receiver);
   }
 
-  // oxlint-disable-next-line max-statements
   public send<Value>(messageKey: MessageKey<Value>, value: Value): Receiver | null {
     const queues = this.#receiverQueues.get(messageKey);
 

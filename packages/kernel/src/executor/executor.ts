@@ -48,7 +48,6 @@ class RuntimeExecutor implements Executor {
     });
   }
 
-  // oxlint-disable-next-line max-statements
   public launch<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,

@@ -24,6 +24,8 @@ export default defineConfig({
     "eslint/no-continue": "off",
     "eslint/no-ternary": "off",
     "eslint/no-use-before-define": "off",
+    "eslint/max-lines-per-function": ["error", { skipBlankLines: true, skipComments: true }],
+    "eslint/max-statements": ["error", { max: 20 }],
     "import/exports-last": "off",
     "import/group-exports": "off",
     "import/max-dependencies": ["error", { ignoreTypeImports: true }],
