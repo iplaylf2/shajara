@@ -63,7 +63,3 @@
 | `host/src/errors/`                    | 错误类型                                                                                 |
 
 - kernel 对外导出采用根入口分组导出；不要再保留 `@shajara/kernel/scopes` 这类为历史 taxonomy 服务的子路径。
-
-## 5. 示例约束
-
-- example 以 generator 形态演示 host 用户侧写法，仅依赖 host 公共入口与 primitives，不触达 host 内部桥接或 kernel 细节。

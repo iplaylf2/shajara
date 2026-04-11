@@ -1277,18 +1277,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@shajara/example@workspace:apps/example":
-  version: 0.0.0-use.local
-  resolution: "@shajara/example@workspace:apps/example"
-  dependencies:
-    "@shajara/host": "workspace:^"
-    "@shajara/presets": "workspace:^"
-    oxlint: "catalog:"
-    vite: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@shajara/host@workspace:^, @shajara/host@workspace:packages/host":
+"@shajara/host@workspace:packages/host":
   version: 0.0.0-use.local
   resolution: "@shajara/host@workspace:packages/host"
   dependencies:

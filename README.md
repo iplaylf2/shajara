@@ -8,7 +8,3 @@ shajara 是一个结构化并发语义内核。`wisp / sigil / echo / resonance 
 
 - 文档索引：`docs/README.md`
 - 当前迭代快照：`docs/execution.md`
-
-## 示例
-
-- `apps/example`：`@shajara/host` 的最小调用示例工程

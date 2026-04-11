@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "module": "esnext",
-    "moduleResolution": "bundler"
-  },
-  "extends": "@shajara/presets/tsconfig.shared.json",
-  "include": ["src/**/*.ts"]
-}
