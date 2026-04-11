@@ -374,6 +374,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     flushNotifications(notifications, suppressor);
   }
 
+  // oxlint-disable-next-line max-statements
   #transitionTo(
     state: RuntimeScopeState,
     notifications: FutureNotification[],

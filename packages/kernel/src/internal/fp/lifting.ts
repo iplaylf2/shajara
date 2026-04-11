@@ -3,6 +3,7 @@ import type { Kind, Kind2, URIS, URIS2 } from "fp-ts/HKT";
 import { chain, pipeable } from "fp-ts";
 import { flow } from "fp-ts/function";
 
+// oxlint-disable-next-line typescript-eslint/no-namespace
 export namespace lifting {
   export interface Lifting<M extends URIS, F extends URIS, C> extends chain.Chain1<M> {
     readonly liftF: <A extends C>(fa: A) => Kind<M, Kind<F, A>>;
@@ -17,7 +18,7 @@ export namespace lifting {
   export function chainF<M extends URIS2, F extends URIS, C>(
     M: Lifting2<M, F, C>,
   ): <E, A, B extends C>(f: (a: A) => B) => (ma: Kind2<M, E, A>) => Kind2<M, E, Kind<F, B>>;
-  // oxlint-disable-next-line typescript-eslint/explicit-module-boundary-types
+  // oxlint-disable-next-line typescript-eslint/explicit-module-boundary-types, typescript-eslint/no-explicit-any
   export function chainF(M: Lifting<any, any, any>) {
     const chainM = pipeable.chain(M);
 
@@ -30,7 +31,7 @@ export namespace lifting {
   export function chainFirstF<M extends URIS2, _ extends URIS, C>(
     M: Lifting2<M, _, C>,
   ): <E, A, _ extends C>(f: (a: A) => _) => (ma: Kind2<M, E, A>) => Kind2<M, E, A>;
-  // oxlint-disable-next-line typescript-eslint/explicit-module-boundary-types
+  // oxlint-disable-next-line typescript-eslint/explicit-module-boundary-types, typescript-eslint/no-explicit-any
   export function chainFirstF(M: Lifting<any, any, any>) {
     const chainFirst = chain.chainFirst(M);
 
@@ -53,7 +54,7 @@ export namespace lifting {
   ) => (
     ma: Kind2<M, E, A>,
   ) => Kind2<M, E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Kind<F, B> }>;
-  // oxlint-disable-next-line typescript-eslint/explicit-module-boundary-types
+  // oxlint-disable-next-line typescript-eslint/explicit-module-boundary-types, typescript-eslint/no-explicit-any
   export function bindF(M: Lifting<any, any, any>) {
     const bind = chain.bind(M);
 

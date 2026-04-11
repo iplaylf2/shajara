@@ -67,6 +67,7 @@ export class ExecutorDriver {
     }
   }
 
+  // oxlint-disable-next-line max-statements
   #consumeTask(): void {
     const [task] = this.#tasks;
     while (true) {

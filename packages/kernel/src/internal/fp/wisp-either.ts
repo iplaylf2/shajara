@@ -13,6 +13,7 @@ declare module "fp-ts/HKT" {
   }
 }
 
+// oxlint-disable-next-line typescript-eslint/no-namespace
 export namespace wispEither {
   export const URI = "WispEither";
   export type URI = typeof URI;

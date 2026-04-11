@@ -38,6 +38,7 @@ export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
     return this.#parent === Domain.#sentinel;
   }
 
+  // oxlint-disable-next-line no-explicit-any
   static readonly #sentinel = null as unknown as Domain<any>;
 
   readonly #parent: DerivedDomain;

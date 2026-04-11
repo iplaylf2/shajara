@@ -12,6 +12,7 @@ declare module "fp-ts/HKT" {
   }
 }
 
+// oxlint-disable-next-line typescript-eslint/no-namespace
 export namespace wisp {
   export const URI = "Wisp";
   export type URI = typeof URI;
@@ -33,7 +34,8 @@ export namespace wisp {
     URI,
     ap: (fab, fa) =>
       fab.bearing === "resting"
-        ? Functor.map(fa, fab.relic)
+        ? // oxlint-disable-next-line no-array-method-this-argument
+          Functor.map(fa, fab.relic)
         : stirringWisp(fab.sigil, (x) => Apply.ap(fab.resonate(x), fa)),
     map: Functor.map,
   };
@@ -69,7 +71,7 @@ export namespace wisp {
     URI,
     ap: Apply.ap,
     chain: Chain.chain,
-    liftF: evoke as any,
+    liftF: evoke as lifting.Lifting<URI, sigil.URI, SigilShape>["liftF"],
     map: Functor.map,
   };
 

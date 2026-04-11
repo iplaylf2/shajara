@@ -7,6 +7,7 @@ declare module "fp-ts/HKT" {
   }
 }
 
+// oxlint-disable-next-line typescript-eslint/no-namespace
 export namespace sigil {
   export const URI = "Sigil";
   export type URI = typeof URI;

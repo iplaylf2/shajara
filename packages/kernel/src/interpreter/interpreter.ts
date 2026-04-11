@@ -219,6 +219,7 @@ export class Interpreter {
   }
 
   protected initialize(): void {
+    // oxlint-disable-next-line typescript-eslint/no-explicit-any
     (this as any).#scopeRoot = RuntimeScope.root(
       this.#provideProcess(this.entry),
       { failureMode: "contain" },
