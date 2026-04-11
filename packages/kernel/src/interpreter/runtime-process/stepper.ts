@@ -17,13 +17,15 @@ export class Stepper<Relic> {
           sigil: this.#state.wisp.sigil,
         };
       }
-      case "relic":
+      case "relic": {
         return {
           kind: "relic",
           relic: this.#state.relic,
         };
-      case "resonate":
+      }
+      case "resonate": {
         return unreachable();
+      }
     }
   }
 
@@ -39,11 +41,12 @@ export class Stepper<Relic> {
           sigil: this.#state.wisp.sigil,
         };
       }
-      case "relic":
+      case "relic": {
         return {
           kind: "relic",
           relic: this.#state.relic,
         };
+      }
       case "resonate": {
         const wisp = this.#state.resonate();
 

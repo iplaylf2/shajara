@@ -99,12 +99,14 @@ class RitualInterpreter<Relic> implements AsyncDisposable {
 
       switch (step.disposition) {
         case "interpreted":
-        case "resonated":
+        case "resonated": {
           continue;
+        }
         case "ceded":
         case "waiting":
-        case "exited":
+        case "exited": {
           return step as ProcessStep<Relic>;
+        }
       }
     }
   }

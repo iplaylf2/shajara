@@ -14,12 +14,15 @@ export class FaultSink implements Disposable, Suppressor {
     this.#errors = [];
 
     switch (errors.length) {
-      case 0:
+      case 0: {
         return option.none;
-      case 1:
+      }
+      case 1: {
         return option.some(errors[0]);
-      default:
+      }
+      default: {
         return option.some(new AggregateError(errors, this.message));
+      }
     }
   }
 

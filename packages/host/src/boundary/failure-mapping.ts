@@ -23,12 +23,15 @@ export function fromFailure(failure: Failure): Error {
   }
 
   switch (failure.kind) {
-    case "scope":
+    case "scope": {
       return new ScopeError(failure);
-    case "canceled":
+    }
+    case "canceled": {
       return new CanceledError();
-    case "interrupted":
+    }
+    case "interrupted": {
       return new InterruptedError(failure);
+    }
     case "external": {
       if (failure.raw instanceof Error) {
         return failure.raw;

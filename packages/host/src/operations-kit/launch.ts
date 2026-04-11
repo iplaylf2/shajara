@@ -76,15 +76,18 @@ function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Retu
   return new Promise<Return>((resolve, reject) => {
     execution.onSettled((result: LaunchResult<Return>) => {
       switch (result.kind) {
-        case "success":
+        case "success": {
           resolve(result.result);
           break;
-        case "failure":
+        }
+        case "failure": {
           reject(fromFailure(result.failure));
           break;
-        case "canceled":
+        }
+        case "canceled": {
           reject(new CanceledError());
           break;
+        }
       }
     });
   });

@@ -216,15 +216,19 @@ export class DomainInterpreter extends Interpreter {
       step: (suppressor: Suppressor): ProcessorTaskStatus => {
         const step = this.step(process, suppressor);
         switch (step.disposition) {
-          case "waiting":
+          case "waiting": {
             return "waiting";
-          case "exited":
+          }
+          case "exited": {
             return "exited";
-          case "ceded":
+          }
+          case "ceded": {
             return "cede";
+          }
           case "interpreted":
-          case "resonated":
+          case "resonated": {
             return "ready";
+          }
         }
       },
     };

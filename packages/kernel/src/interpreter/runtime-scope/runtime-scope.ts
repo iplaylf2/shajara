@@ -235,12 +235,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
       case "running":
       case "closing":
       case "canceling":
-      case "failing":
+      case "failing": {
         return false;
+      }
       case "completed":
       case "canceled":
-      case "failed":
+      case "failed": {
         return true;
+      }
     }
   }
 
@@ -266,22 +268,27 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #advanceClosing(notifications: FutureNotification[], suppressor: Suppressor): void {
     switch (this.#state.status) {
-      case "running":
+      case "running": {
         this.#tryClosing(notifications, suppressor);
         return;
-      case "closing":
+      }
+      case "closing": {
         this.#tryCompleted(notifications, suppressor);
         return;
-      case "canceling":
+      }
+      case "canceling": {
         this.#tryCanceled(notifications, suppressor);
         return;
-      case "failing":
+      }
+      case "failing": {
         this.#tryFailed(this.#state.draft, notifications, suppressor);
         return;
+      }
       case "canceled":
       case "completed":
-      case "failed":
+      case "failed": {
         return unreachable();
+      }
     }
   }
 
@@ -374,8 +381,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): void {
     this.#state = state;
     switch (state.status) {
-      case "running":
+      case "running": {
         return unreachable();
+      }
       case "closing": {
         notifications.push(...this.#cancelDetached(suppressor));
         break;
@@ -385,15 +393,18 @@ export class RuntimeScope implements ScopeRef<unknown> {
         notifications.push(...this.#cancelManaged(suppressor));
         break;
       }
-      case "canceled":
+      case "canceled": {
         notifications.push(...this.#settleClosed(either.left(canceledFailure)));
         break;
-      case "completed":
+      }
+      case "completed": {
         notifications.push(...this.#settleClosed(either.right(state.result)));
         break;
-      case "failed":
+      }
+      case "failed": {
         notifications.push(...this.#settleClosed(either.left(state.failure)));
         break;
+      }
     }
 
     flushNotifications(notifications, suppressor);

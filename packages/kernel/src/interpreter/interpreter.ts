@@ -53,14 +53,18 @@ export class Interpreter {
     const runner = handle.runner();
 
     switch (runner.status) {
-      case "waiting":
+      case "waiting": {
         return processWaitingStep();
-      case "completed":
+      }
+      case "completed": {
         return processExitedStep(either.right(runner.stateAs(runner.status).result));
-      case "canceled":
+      }
+      case "canceled": {
         return processExitedStep(either.left(canceledFailure));
-      case "failed":
+      }
+      case "failed": {
         return processExitedStep(either.left(runner.stateAs(runner.status).failure));
+      }
       case "running": {
         // oxlint-disable-next-line init-declarations
         let next: RuntimeProcessRunnerNext<Relic, Sigil>;
@@ -79,10 +83,12 @@ export class Interpreter {
         }
 
         switch (next.kind) {
-          case "echo":
+          case "echo": {
             return this.#interpret(handle, next, suppressor);
-          case "resonate":
+          }
+          case "resonate": {
             return processResonatedStep();
+          }
           case "relic": {
             const scope = this.#resolve(handle.scopeRef);
             scope.complete(handle.keeper(), next.relic, suppressor);
@@ -134,18 +140,23 @@ export class Interpreter {
   public scopeState(scope: ScopeRef<unknown>): ScopeState {
     const runtimeScope = this.#resolve(scope);
     switch (runtimeScope.status) {
-      case "running":
+      case "running": {
         return { ...scopeInfo(runtimeScope), status: "open" };
-      case "closing":
+      }
+      case "closing": {
         return { ...scopeInfo(runtimeScope), status: "closing" };
-      case "canceling":
+      }
+      case "canceling": {
         return { ...scopeInfo(runtimeScope), status: "closing" };
-      case "failing":
+      }
+      case "failing": {
         return { ...scopeInfo(runtimeScope), status: "closing" };
+      }
       case "canceled":
       case "completed":
-      case "failed":
+      case "failed": {
         return { ...scopeInfo(runtimeScope), status: "closed" };
+      }
     }
   }
 
@@ -153,14 +164,17 @@ export class Interpreter {
     const runner = this.#resolve(process).runner();
 
     switch (runner.status) {
-      case "running":
+      case "running": {
         return { activity: "running", status: "open" };
-      case "waiting":
+      }
+      case "waiting": {
         return { activity: "waiting", status: "open" };
+      }
       case "completed":
       case "canceled":
-      case "failed":
+      case "failed": {
         return { status: "closed" };
+      }
     }
   }
 
@@ -226,10 +240,11 @@ export class Interpreter {
 
     const [kind, sigil, accept] = fixRunningNext(next);
     switch (kind) {
-      case "bind":
+      case "bind": {
         bind(scope, sigil.key, sigil.value);
         accept(VOID);
         return processInterpretedStep();
+      }
       case "branch": {
         const child = this.scopeBranch(
           scope,
@@ -245,19 +260,22 @@ export class Interpreter {
         });
         return processInterpretedStep();
       }
-      case "cede":
+      case "cede": {
         accept(VOID);
         return processCededStep();
-      case "cancel":
+      }
+      case "cancel": {
         cancel(scope, suppressor);
         return processExitedStep(either.left(canceledFailure));
-      case "defer":
+      }
+      case "defer": {
         defer(runner, (spawnCleanup) => {
           spawnCleanup(this.#provideProcess(sigil.cleanup));
         });
 
         accept(VOID);
         return processInterpretedStep();
+      }
       case "future": {
         const future = createFuture(scope);
         this.#touch(future);
@@ -265,22 +283,27 @@ export class Interpreter {
         accept(future.handle());
         return processInterpretedStep();
       }
-      case "halt":
+      case "halt": {
         halt(scope, process.keeper(), sigil.failure as Failure, suppressor);
         return processExitedStep(either.left(runner.stateAs("failed").failure));
-      case "lookup":
+      }
+      case "lookup": {
         accept(lookup(scope, sigil.key));
         return processInterpretedStep();
-      case "poll":
+      }
+      case "poll": {
         accept(poll(this.#resolve(sigil.future)));
         return processInterpretedStep();
-      case "self":
+      }
+      case "self": {
         accept(self(runner));
         return processInterpretedStep();
-      case "settle":
+      }
+      case "settle": {
         settle(this.#resolve(sigil.futureSettle), sigil.result, suppressor);
         accept(VOID);
         return processInterpretedStep();
+      }
       case "spawn": {
         const spawnedProcess = spawn(
           scope,
@@ -292,10 +315,11 @@ export class Interpreter {
         accept(spawnedProcess);
         return processInterpretedStep();
       }
-      case "unbind":
+      case "unbind": {
         unbind(scope, sigil.key);
         accept(VOID);
         return processInterpretedStep();
+      }
       case "wait": {
         const future = this.#resolve(sigil.future);
 
@@ -319,10 +343,11 @@ export class Interpreter {
         receive(scope, process.keeper(), sigil.messageKey, suppressor);
         return processWaitingStep();
       }
-      case "send":
+      case "send": {
         send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value, suppressor);
         accept(VOID);
         return processInterpretedStep();
+      }
     }
   }
 

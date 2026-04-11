@@ -110,12 +110,14 @@ export class RuntimeProcess<Relic>
   public get isClosed(): boolean {
     switch (this.status) {
       case "running":
-      case "waiting":
+      case "waiting": {
         return false;
+      }
       case "completed":
       case "canceled":
-      case "failed":
+      case "failed": {
         return true;
+      }
     }
   }
 

@@ -21,12 +21,14 @@ export class ExecutorDriver {
       const step = this.#stepProcess(process);
       switch (step.disposition) {
         case "interpreted":
-        case "resonated":
+        case "resonated": {
           continue;
+        }
         case "ceded":
         case "waiting":
-        case "exited":
+        case "exited": {
           return step;
+        }
       }
     }
   }
@@ -74,16 +76,19 @@ export class ExecutorDriver {
       const status = task!.step(faultSink);
 
       switch (status) {
-        case "ready":
+        case "ready": {
           continue;
-        case "cede":
+        }
+        case "cede": {
           this.#tasks.shift();
           this.#tasks.push(task!);
           return;
+        }
         case "waiting":
-        case "exited":
+        case "exited": {
           this.#tasks.shift();
           return;
+        }
       }
     }
   }
