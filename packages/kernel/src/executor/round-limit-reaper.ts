@@ -13,18 +13,20 @@ export class RoundLimitReaper implements Reaper {
     const state = this.#forgivenRounds.getOrInsertComputed(closingScope, () => ({
       round: 0,
     }));
-    if (state.round >= this.roundLimit) {
-      return wisp.of(option.some(this.#closingTimeoutFailure()));
-    }
+    const { round } = state;
     state.round += 1;
+
+    if (round >= this.roundLimit) {
+      return wisp.of(option.some(this.#createRoundLimitFailure(round)));
+    }
 
     return wisp.of(option.none);
   }
 
-  #closingTimeoutFailure(): Failure {
+  #createRoundLimitFailure(round: number): Failure {
     return externalFailure(
       {
-        kind: "reaper-closing-timeout",
+        round,
         roundLimit: this.roundLimit,
       },
       "Scope did not finish closing within the executor reaper round limit",
