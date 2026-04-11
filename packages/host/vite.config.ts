@@ -23,8 +23,15 @@ export default defineConfig({
       tsconfigPath: "./tsconfig.json",
     }),
   ],
+  resolve: {
+    alias: {
+      "#test": new globalThis.URL("./test", import.meta.url).pathname,
+    },
+  },
   test: {
+    coverage: { exclude: ["test/**"] },
     environment: "node",
     include: ["test/**/*.test.ts"],
+    setupFiles: ["./test/setup/polyfills.ts"],
   },
 });

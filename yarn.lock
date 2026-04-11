@@ -712,6 +712,8 @@ __metadata:
   dependencies:
     "@shajara/kernel": "workspace:^"
     "@shajara/presets": "workspace:^"
+    "@vitest/coverage-v8": "catalog:"
+    core-js: "catalog:"
     oxlint: "catalog:"
     type-fest: "catalog:"
     typescript: "catalog:"
