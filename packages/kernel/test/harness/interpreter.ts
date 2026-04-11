@@ -156,17 +156,13 @@ class RitualInterpreter<Relic> implements RitualInterpreterHandle<Relic> {
   }
 
   #waitFor<Result>(observe: () => Result | null, maxTurns: number): Promise<Result> {
-    const driver = this;
-
-    return waitForTurn(0);
-
-    async function waitForTurn(turn: number): Promise<Result> {
+    const waitForTurn = async (turn: number): Promise<Result> => {
       const observed = observe();
       if (observed !== null) {
         return observed;
       }
 
-      driver.driveSync();
+      this.driveSync();
 
       const observedAfterTurn = observe();
       if (observedAfterTurn !== null) {
@@ -182,7 +178,9 @@ class RitualInterpreter<Relic> implements RitualInterpreterHandle<Relic> {
       });
 
       return waitForTurn(turn + 1);
-    }
+    };
+
+    return waitForTurn(0);
   }
 
   async #dispose(): Promise<void> {

@@ -396,12 +396,12 @@ export type ProcessState = TaggedUnion<
   }
 >;
 
-export type ScopeInfo = {
+export interface ScopeInfo extends Record<string, unknown> {
   readonly children: readonly ScopeRef<unknown>[];
   readonly descriptor: ScopeDescriptor;
   readonly parent: ScopeRef<unknown> | null;
   readonly zone: ScopeZone;
-};
+}
 
 function fixRunningNext(next: RuntimeProcessNextEcho<Sigil>): RunningNext<Sigil> {
   return [next.sigil.kind, next.sigil, next.accept] as RunningNext<Sigil>;

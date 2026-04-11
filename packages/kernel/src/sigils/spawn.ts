@@ -2,7 +2,7 @@ import type { ECHO_TOKEN, ProcessRef, Ritual, SigilShape } from "#/contracts";
 
 export function spawn<Relic>(
   worker: Ritual<Relic>,
-  descriptor: ProcessDescriptor = { completionMode: "structural" },
+  descriptor: ProcessDescriptor = DEFAULT_PROCESS_DESCRIPTOR,
 ): SpawnSigil<Relic> {
   return {
     descriptor,
@@ -23,3 +23,5 @@ export interface ProcessDescriptor {
 }
 
 export type CompletionMode = "structural" | "detached";
+
+const DEFAULT_PROCESS_DESCRIPTOR: ProcessDescriptor = { completionMode: "structural" };

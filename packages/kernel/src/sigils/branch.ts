@@ -2,7 +2,7 @@ import type { ECHO_TOKEN, ProcessRef, Ritual, ScopeRef, SigilShape } from "#/con
 
 export function branch<Relic>(
   entry: Ritual<Relic>,
-  descriptor: ScopeDescriptor = { failureMode: "propagate" },
+  descriptor: ScopeDescriptor = DEFAULT_SCOPE_DESCRIPTOR,
 ): BranchSigil<Relic> {
   return {
     descriptor,
@@ -28,3 +28,5 @@ export interface BranchHandle<Relic> {
 }
 
 export type FailureMode = "propagate" | "contain";
+
+const DEFAULT_SCOPE_DESCRIPTOR: ScopeDescriptor = { failureMode: "propagate" };

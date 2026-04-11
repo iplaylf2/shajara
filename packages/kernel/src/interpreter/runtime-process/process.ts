@@ -123,14 +123,12 @@ export class RuntimeProcess<Relic>
 
   // oxlint-disable-next-line no-undef
   declare public readonly [REF_TOKEN]: ProcessRef<Relic>[typeof REF_TOKEN];
-  public readonly scopeRef: ScopeRef<unknown>;
 
   private constructor(
-    scopeRef: ScopeRef<unknown>,
+    public readonly scopeRef: ScopeRef<unknown>,
     worker: Ritual<Relic>,
     descriptor: ProcessDescriptor,
   ) {
-    this.scopeRef = scopeRef;
     this.#descriptor = descriptor;
     this.#state = createRunningState(new Stepper(worker));
   }
