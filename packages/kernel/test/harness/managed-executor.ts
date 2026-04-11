@@ -33,6 +33,10 @@ class ManagedExecutor implements AsyncDisposable {
     return this.#executor;
   }
 
+  public get turnFaults(): readonly unknown[] {
+    return this.#pacer.faults;
+  }
+
   async #dispose(): Promise<void> {
     this.#executor.cancel(this.#executor.scope);
     const settled = await waitForSettled(this.#executor);

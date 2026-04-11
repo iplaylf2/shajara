@@ -114,7 +114,8 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentCount: 2,
+        assignmentsAfterWait: 2,
+        assignmentsBeforeWait: 1,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -174,7 +175,8 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentCount: 2,
+        assignmentsAfterWait: 2,
+        assignmentsBeforeWait: 1,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -374,10 +376,13 @@ async function settleSuspendedAutonomy(
   taskStatuses: ProcessorTaskStatus[],
 ) {
   executor.settle(await futureSettle.promise, right(entryResult));
+  const assignmentsBeforeWait = assignedProcesses.length;
+  const settled = await waitForSettled(handle);
 
   return {
-    assignmentCount: assignedProcesses.length,
-    settled: await waitForSettled(handle),
+    assignmentsAfterWait: assignedProcesses.length,
+    assignmentsBeforeWait,
+    settled,
     settledStatus: handle.status,
     taskStatuses,
   };

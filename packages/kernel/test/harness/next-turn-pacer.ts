@@ -14,14 +14,16 @@ export class NextTurnPacer implements Pacer {
 
     this.#pendingTasks += 1;
     globalThis.setTimeout(() => {
-      try {
-        if (scheduled.active && this.#isRunning) {
+      if (scheduled.active && this.#isRunning) {
+        try {
           scheduled.work();
+        } catch (error) {
+          this.#faults.push(error);
         }
-      } finally {
-        this.#pendingTasks -= 1;
-        this.#flushQuiescenceWaiters();
       }
+
+      this.#pendingTasks -= 1;
+      this.#flushQuiescenceWaiters();
     }, TURN_DELAY_MS);
 
     return () => {
@@ -35,6 +37,10 @@ export class NextTurnPacer implements Pacer {
 
   public shutdown(): void {
     this.#isRunning = false;
+  }
+
+  public get faults(): readonly unknown[] {
+    return this.#faults;
   }
 
   async #waitForQuiescence(turn: number): Promise<void> {
@@ -67,6 +73,7 @@ export class NextTurnPacer implements Pacer {
 
   #isRunning = true;
   #pendingTasks = 0;
+  readonly #faults: unknown[] = [];
   #quiescenceWaiters: Array<() => void> = [];
   readonly #slice: Slice = {
     shouldYield: () => false,

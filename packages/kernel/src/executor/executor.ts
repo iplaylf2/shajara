@@ -89,10 +89,9 @@ class RuntimeExecutor implements Executor {
       return false;
     }
 
-    const process = this.#interpreter.spawn(this.scope, () => settle(futureSettle, result), {
+    this.#interpreter.spawn(this.scope, () => settle(futureSettle, result), {
       capture: unreachable,
     });
-    this.#driver.driveSyncUnsafely(process);
 
     return true;
   }
@@ -105,15 +104,13 @@ class RuntimeExecutor implements Executor {
     using fault = new FaultSink(
       "Out-of-band failures occurred while spawning a cancellation process",
     );
-    const process = this.#interpreter.spawn(scope, cancel, fault);
+    this.#interpreter.spawn(scope, cancel, fault);
     const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);
 
       return false;
     }
-
-    this.#driver.driveSyncUnsafely(process);
 
     return true;
   }

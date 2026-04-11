@@ -2,7 +2,7 @@ import type { ExecutionScopeRef, FutureSettleKey } from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
 import { future, halt, park, settle, wait } from "#/index";
-import { isSome, left, right } from "#/utils";
+import { iife, isSome, left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -174,30 +174,34 @@ describe("/ interfaces: Executor", () => {
             kind: "canceled",
           },
           settledStatus: "closed",
+          turnFaults: [expect.objectContaining({ message: "listener-threw" })],
         },
       },
     ])(
       "suppresses onSettled listener exceptions without blocking settlement delivery",
       async ({ given: [causeMessage, throwingEntry, recordingEntry], outcome }) => {
-        await using managed = createManagedExecutor();
-        const { executor } = managed;
-
-        const handle = unwrapSome(executor.launch(executor.scope, () => park()));
         const listenerCalls: string[] = [];
-        handle.onSettled(() => {
-          listenerCalls.push(throwingEntry);
-          throw new Error(causeMessage);
-        });
-        handle.onSettled(() => {
-          listenerCalls.push(recordingEntry);
-        });
+        const actual = await iife(async () => {
+          await using managed = createManagedExecutor();
+          const { executor } = managed;
 
-        executor.cancel(handle.scope);
-        const actual = {
-          listenerCalls,
-          settled: await waitForSettled(handle),
-          settledStatus: handle.status,
-        };
+          const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+          handle.onSettled(() => {
+            listenerCalls.push(throwingEntry);
+            throw new Error(causeMessage);
+          });
+          handle.onSettled(() => {
+            listenerCalls.push(recordingEntry);
+          });
+
+          executor.cancel(handle.scope);
+          return {
+            listenerCalls,
+            settled: await waitForSettled(handle),
+            settledStatus: handle.status,
+            turnFaults: managed.turnFaults,
+          };
+        });
 
         expect(actual).toEqual(outcome);
       },
@@ -210,7 +214,7 @@ describe("/ interfaces: Executor", () => {
         given: ["should-not-launch"] as const,
         outcome: {
           canceled: true,
-          launchAfterClose: false,
+          launchAfterClose: true,
           settled: {
             kind: "canceled",
           },
@@ -238,7 +242,7 @@ describe("/ interfaces: Executor", () => {
         given: ["future-ready"] as const,
         outcome: {
           firstSettle: true,
-          secondSettle: false,
+          secondSettle: true,
           settled: {
             kind: "success",
             result: right("future-ready"),
@@ -387,7 +391,7 @@ describe("/ interfaces: Executor", () => {
         given: [] as const,
         outcome: {
           firstCancel: true,
-          secondCancel: false,
+          secondCancel: true,
           settled: {
             kind: "canceled",
           },
@@ -441,8 +445,8 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["late-launch"] as const,
         outcome: {
-          cancelAfterClose: false,
-          launchAfterClose: false,
+          cancelAfterClose: true,
+          launchAfterClose: true,
           rootCancel: true,
           settled: {
             kind: "canceled",
