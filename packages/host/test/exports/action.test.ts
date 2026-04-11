@@ -28,10 +28,19 @@ describe("/ operations: action", () => {
   test.for([
     {
       given: [new Error("action-failed")] as const,
+      outcome: {
+        cause: {
+          failure: {
+            kind: "external",
+          },
+          kind: "process",
+        },
+        kind: "scope",
+      } as const,
     },
   ])(
     "propagates the original error instance when the host rejects the action",
-    async ({ given: [cause] }) => {
+    async ({ given: [cause], outcome }) => {
       const settled = run(function* settled() {
         const pending = yield* action<never>();
 
@@ -46,14 +55,14 @@ describe("/ operations: action", () => {
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({
+        ...outcome,
         cause: {
+          ...outcome.cause,
           failure: {
-            kind: "external",
+            ...outcome.cause.failure,
             raw: cause,
           },
-          kind: "process",
         },
-        kind: "scope",
       });
     },
   );

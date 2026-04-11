@@ -4,5 +4,5 @@ import testOverride from "@shajara/presets/test.oxlint.override.ts";
 
 export default defineConfig({
   ...shared,
-  overrides: [testOverride],
+  overrides: [{ ...testOverride, rules: { ...testOverride.rules, "eslint/require-yield": "off" } }],
 });

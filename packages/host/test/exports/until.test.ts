@@ -16,22 +16,31 @@ describe("/ operations: until", () => {
   test.for([
     {
       given: [new Error("until-failed")] as const,
+      outcome: {
+        cause: {
+          failure: {
+            kind: "external",
+          },
+          kind: "process",
+        },
+        kind: "scope",
+      } as const,
     },
-  ])("preserves rejected Error instances", async ({ given: [cause] }) => {
+  ])("preserves rejected Error instances", async ({ given: [cause], outcome }) => {
     const settled = run(() => until(() => Promise.reject(cause)));
 
     const actual = await Promise.resolve(settled).catch((error: unknown) => error);
 
     expect(actual).toBeInstanceOf(ScopeError);
     expect(actual).toMatchObject({
+      ...outcome,
       cause: {
+        ...outcome.cause,
         failure: {
-          kind: "external",
+          ...outcome.cause.failure,
           raw: cause,
         },
-        kind: "process",
       },
-      kind: "scope",
     });
   });
 
