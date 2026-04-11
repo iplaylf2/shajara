@@ -46,6 +46,8 @@ run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulProm
 - 取消时抛出 `CanceledError`。
 - 失败时抛出 `Error`；结构性失败表现为 `ShajaraError` 子类，用户代码抛出的外部异常会尽量保留原始实例。
 
+这里的“尽量保留原始实例”有一个明确边界：如果异常已经驱动当前计算对应的 Scope 以失败路径收敛，那么对外稳定表现为 `ScopeError`。这表示“某个 Scope failed”，而不只是“某段宿主代码抛错”。原始根因位于 `scopeError.cause.failure`；若根因来自外部异常，则原始 `Error` 位于 `scopeError.cause.failure.raw`。
+
 当 `signal` 触发 abort 时，对应运行被取消。
 
 ### createScope
@@ -94,22 +96,24 @@ yield* until<T>(thunk: () => PromiseLike<T>): T
 
 桥接一个 promise thunk，等待完成后返回结果值；reject 按异常传播。
 
+若 promise rejection 最终使当前 Scope 失败，则调用方收到的是 `ScopeError`，而不是直接收到原始 rejection 对象。这是结构化收敛边界的稳定语义；原始根因仍可经由 `scopeError.cause.failure` 读取。
+
 ## 5. 编排原语
 
 原语是在 `RiteRoutine` 内通过 `yield*` 调用的编排操作。每个原语都有自己的返回值形状；`yield*` 得到的就是该原语的结果值。
 
 ### 5.1 并发构造
 
-| 原语        | 签名概要                                     | 说明                                                                                                                                                                          |
-| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(worker) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                                                                                |
-| `enclose`   | `enclose(ritual) → T`                        | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                                                                          |
-| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                                                                                    |
-| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败会以 `ScopeError` 交给 `recover(scopeError)` 处理，底层根因位于 `scopeError.cause.failure`。                               |
-| `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                                                                                           |
-| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速 `Scope` 的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。                                                          |
-| `resource`  | `resource(body) → RiteFuture<T>`             | 声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并让该资源的存在期附着于所属 `Scope`。                                                                             |
-| `autonomy`  | `autonomy(entry, options) → RiteFuture<T>`   | 创建一个带 executor 自治治理配置的子 Scope；`scheduler` 直通，`reaper` 采用 host 回调形状 `(closingScope) => RiteCoroutine<void>`，正常返回表示继续等待，抛异常表示强制失败。 |
+| 原语        | 签名概要                                     | 说明                                                                                                                                                                                               |
+| ----------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spawn`     | `spawn(worker) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                                                                                                     |
+| `enclose`   | `enclose(ritual) → T`                        | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                                                                                               |
+| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                                                                                                         |
+| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败会以 `ScopeError` 交给 `recover(scopeError)` 处理，底层根因位于 `scopeError.cause.failure`。`suppressed` 仅表示收敛期间附带捕获的其他 failure。 |
+| `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                                                                                                                |
+| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速 `Scope` 的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。                                                                               |
+| `resource`  | `resource(body) → RiteFuture<T>`             | 声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并让该资源的存在期附着于所属 `Scope`。                                                                                                  |
+| `autonomy`  | `autonomy(entry, options) → RiteFuture<T>`   | 创建一个带 executor 自治治理配置的子 Scope；`scheduler` 直通，`reaper` 采用 host 回调形状 `(closingScope) => RiteCoroutine<void>`，正常返回表示继续等待，抛异常表示强制失败。                      |
 
 ### 5.2 基础
 

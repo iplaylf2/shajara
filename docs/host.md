@@ -39,7 +39,16 @@ kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保�
 
 `Failure`（kernel 共享失败契约）不向用户侧暴露；结构性 failure 在 host 侧映射为 `ShajaraError`（继承 `Error`）子类，`canceled` 映射为 `CanceledError`；外部 failure 若携带原始 `Error`，则直接复用该实例。
 
-因此 `run` / `wait` 在 external failure 上保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；结构性 failure 映射为 `ShajaraError` 子类。`guard(entry, recover)` 的恢复回调则固定接收 `ScopeError`，其 `cause.failure` 保留底层 failure；若根因为 external failure，原始 `Error` 仍位于 `cause.failure.raw`。
+需要特别注意的是：只要某个外部异常已经驱动其所属 Scope 进入 failed 收敛，host 对外看到的就不再只是“原始异常”，而是“该 Scope 以该异常为根因失败”这一结构性事实。因此 `run` / `wait` / `enclose` 在面对 scope failure 时返回 `ScopeError` 是刻意的边界语义，不是额外包装造成的信息丢失。
+
+读取这类失败时，约定如下：
+
+- `ScopeError` 表示一个 Scope 已经以失败路径收敛。
+- 根因始终位于 `scopeError.cause.failure`。
+- 若根因是 external failure，原始 `Error` 位于 `scopeError.cause.failure.raw`。
+- `scopeError.suppressed` 仅表示收敛期间额外捕获到的其他 failure；它不是原始异常链，也不会在单一根因失败时出现内容。
+
+因此 `run` / `wait` 只会在 failure 尚未提升为 scope failure 时直接保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；一旦失败已经形成 Scope 收敛事实，对外就稳定表现为 `ScopeError`。`guard(entry, recover)` 的恢复回调也固定接收 `ScopeError`，以便恢复逻辑面对的是显式的 Scope 边界，而不只是某个脱离上下文的原始异常。
 
 ## 4. 执行入口
 
