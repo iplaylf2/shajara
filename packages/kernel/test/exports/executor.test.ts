@@ -206,6 +206,57 @@ describe("/ interfaces: Executor", () => {
         expect(actual).toEqual(outcome);
       },
     );
+
+    test.for([
+      {
+        given: ["first-listener-threw", "second-listener-threw"] as const,
+        outcome: {
+          settled: {
+            kind: "canceled",
+          },
+          settledStatus: "closed",
+          turnFaultErrorCounts: [2],
+          turnFaultKinds: ["AggregateError"],
+          turnFaultMessages: ["Out-of-band failures occurred while processing executor work"],
+        },
+      },
+    ])(
+      "aggregates multiple onSettled listener exceptions raised in the same settlement turn",
+      async ({ given: [firstCauseMessage, secondCauseMessage], outcome }) => {
+        const actual = await iife(async () => {
+          await using managed = createManagedExecutor();
+          const { executor } = managed;
+
+          const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+          handle.onSettled(() => {
+            throw new Error(firstCauseMessage);
+          });
+          handle.onSettled(() => {
+            throw new Error(secondCauseMessage);
+          });
+
+          executor.cancel(handle.scope);
+          const settled = await waitForSettled(handle);
+          await new Promise<void>((resolve) => {
+            globalThis.setTimeout(resolve, 0);
+          });
+
+          return {
+            settled,
+            settledStatus: handle.status,
+            turnFaultErrorCounts: managed.turnFaults.map((fault) =>
+              fault instanceof AggregateError ? fault.errors.length : 0,
+            ),
+            turnFaultKinds: managed.turnFaults.map((fault) => fault?.constructor?.name),
+            turnFaultMessages: managed.turnFaults.map((fault) =>
+              fault instanceof Error ? fault.message : String(fault),
+            ),
+          };
+        });
+
+        expect(actual).toEqual(outcome);
+      },
+    );
   });
 
   describe("/: launch, settle, cancel", () => {

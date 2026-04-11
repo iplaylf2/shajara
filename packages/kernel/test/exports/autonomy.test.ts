@@ -8,7 +8,18 @@ import type {
   Reaper,
   Scheduler,
 } from "#/index";
-import { autonomy, cancel, defer, externalFailure, future, park, spawn, wait } from "#/index";
+import {
+  all,
+  autonomy,
+  cancel,
+  cede,
+  defer,
+  externalFailure,
+  future,
+  park,
+  spawn,
+  wait,
+} from "#/index";
 import {
   createInlineProcessor,
   createManagedExecutor,
@@ -235,6 +246,71 @@ describe("/ primitives: autonomy", () => {
 
   test.for([
     {
+      given: [
+        ["alpha-before", "beta-before", "alpha-after", "beta-after"] as const,
+        [right("alpha"), right("beta")] as const,
+      ] as const,
+      outcome: {
+        assignmentCount: 2,
+        settled: {
+          kind: "success",
+          result: right([right("alpha"), right("beta")]),
+        },
+        settledStatus: "closed",
+        taskStatuses: ["ready", "cede", "ready", "cede", "exited", "exited"],
+      },
+    },
+  ])(
+    "routes ceded autonomous tasks through the shared queued scheduler in admission order",
+    async ({ given: [eventOrder, resultOrder], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const events: string[] = [];
+
+      await using queued = createManagedQueuedProcessor(taskStatuses);
+      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            all([
+              () =>
+                pipe(
+                  autonomy(() => createCededAutonomyRitual("alpha", events), { scheduler }),
+                  wisp.chain(wait),
+                ),
+              () =>
+                pipe(
+                  autonomy(() => createCededAutonomyRitual("beta", events), { scheduler }),
+                  wisp.chain(wait),
+                ),
+            ]),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+      const settled = await waitForSettled(handle);
+
+      const actual = {
+        assignmentCount: assignedProcesses.length,
+        events,
+        settled,
+        settledStatus: handle.status,
+        taskStatuses,
+      };
+
+      expect(actual).toEqual({
+        ...outcome,
+        events: [...eventOrder],
+      });
+      expect(assignedProcesses).toHaveLength(resultOrder.length);
+    },
+  );
+
+  test.for([
+    {
       given: [externalFailure("reaper-failure", "reaped autonomy scope")] as const,
       outcome: {
         adjudicationCount: 1,
@@ -293,6 +369,85 @@ describe("/ primitives: autonomy", () => {
 
       const actual = {
         adjudicationCount: adjudicatedScopes.length,
+        settled,
+        settledStatus: handle.status,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: [
+        "autonomy-ready",
+        externalFailure("composed-reaper", "reaped composed autonomy scope"),
+      ] as const,
+      outcome: {
+        adjudicationCount: 1,
+        assignmentsAfterSettle: 6,
+        assignmentsBeforeSettle: 1,
+        settled: {
+          failure: expect.objectContaining({
+            cause: expect.objectContaining({
+              failure: expect.objectContaining({
+                cause: expect.objectContaining({
+                  failure: {
+                    kind: "external",
+                    message: "reaped composed autonomy scope",
+                    raw: "composed-reaper",
+                  },
+                }),
+                kind: "scope",
+              }),
+              kind: "scope",
+            }),
+            kind: "scope",
+          }),
+          kind: "failure",
+        },
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "composes scheduler and reaper governance within the same autonomous scope",
+    async ({ given: [entryResult, failure], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
+      let adjudicationCount = 0;
+
+      await using queued = createManagedQueuedProcessor(taskStatuses);
+      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      const reaper: Reaper = {
+        adjudicate: () => {
+          adjudicationCount += 1;
+          return wisp.of(some(failure));
+        },
+      };
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(() => createSuspendedStuckClosingAutonomyRitual(entryResult, futureSettle), {
+              reaper,
+              scheduler,
+            }),
+            wisp.chain(wait),
+          ),
+        ),
+      );
+
+      executor.settle(await futureSettle.promise, right(entryResult));
+      const assignmentsBeforeSettle = assignedProcesses.length;
+      const settled = await waitForSettled(handle);
+
+      const actual = {
+        adjudicationCount,
+        assignmentsAfterSettle: assignedProcesses.length,
+        assignmentsBeforeSettle,
         settled,
         settledStatus: handle.status,
       };
@@ -365,6 +520,47 @@ function createTrackingScheduler(
       return processor;
     },
   };
+}
+
+function createCededAutonomyRitual(label: string, events: string[]) {
+  return pipe(
+    wisp.fromIO(() => {
+      events.push(`${label}-before`);
+    }),
+    wisp.chain(() => cede()),
+    wisp.chain(() =>
+      wisp.fromIO(() => {
+        events.push(`${label}-after`);
+        return label;
+      }),
+    ),
+  );
+}
+
+function createSuspendedStuckClosingAutonomyRitual(
+  entryResult: string,
+  futureSettle: PromiseWithResolvers<FutureSettleKey<string>>,
+) {
+  return pipe(
+    future<string>(),
+    wisp.chain(([futureKey, nextFutureSettle]) =>
+      pipe(
+        wisp.fromIO(() => {
+          futureSettle.resolve(nextFutureSettle);
+          return futureKey;
+        }),
+        wisp.chain(wait),
+        wisp.chain(() => wisp.of(entryResult)),
+        wisp.chain(() =>
+          pipe(
+            defer(() => park()),
+            wisp.chain(() => spawn(cancel)),
+            wisp.chain(() => park()),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 async function settleSuspendedAutonomy(
