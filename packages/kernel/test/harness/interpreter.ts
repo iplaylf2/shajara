@@ -3,11 +3,25 @@ import { Interpreter } from "#/interpreter";
 import type { ProcessStep } from "#/interpreter";
 import { option } from "fp-ts";
 
-export function interpretRitual<Relic>(ritual: Ritual<Relic>) {
+export function interpretRitual<Relic>(ritual: Ritual<Relic>): RitualInterpreterHandle<Relic> {
   return new RitualInterpreter(ritual);
 }
 
-class RitualInterpreter<Relic> implements AsyncDisposable {
+export interface RitualInterpreterHandle<Relic> extends AsyncDisposable {
+  driveSync(): ProcessStep<Relic>;
+  waitForClosed(options?: WaitOptions): Promise<ProcessStep<Relic>>;
+  waitForFuture<Result>(
+    futureKey: FutureKey<Result>,
+    options?: WaitOptions,
+  ): Promise<FutureResult<Result>>;
+  readonly suppressorErrors: readonly unknown[];
+}
+
+export interface WaitOptions {
+  readonly maxTurns?: number;
+}
+
+class RitualInterpreter<Relic> implements RitualInterpreterHandle<Relic> {
   public constructor(ritual: Ritual<Relic>) {
     this.#interpreter = Interpreter.create(ritual, {
       trackProcess: (process: ProcessRef<unknown>) => {
@@ -192,10 +206,6 @@ class RitualInterpreter<Relic> implements AsyncDisposable {
       this.#suppressorErrors.push(error);
     },
   };
-}
-
-interface WaitOptions {
-  readonly maxTurns?: number;
 }
 
 function failEntryNeverStepped(): never {

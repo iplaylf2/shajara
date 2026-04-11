@@ -3,11 +3,16 @@ import { NextTurnPacer } from "./next-turn-pacer";
 import { createExecutor } from "#/index";
 import { waitForSettled } from "./settlement";
 
-export function createManagedExecutor() {
+export function createManagedExecutor(): ManagedExecutorHandle {
   return new ManagedExecutor();
 }
 
-class ManagedExecutor implements AsyncDisposable {
+export interface ManagedExecutorHandle extends AsyncDisposable {
+  readonly executor: Executor;
+  readonly turnFaults: readonly unknown[];
+}
+
+class ManagedExecutor implements ManagedExecutorHandle {
   public constructor() {
     try {
       this.#executor = createExecutor(this.#pacer);

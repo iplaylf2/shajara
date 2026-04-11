@@ -51,7 +51,7 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     }
   }
 
-  public override close() {
+  public override close(): void {
     this.#closingScopes.clear();
     this.#leafScopes.clear();
     super.close();

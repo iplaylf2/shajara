@@ -1,2 +1,3 @@
-// oxlint-disable-next-line no-empty-function
-export function noop() {}
+export function noop(): void {
+  // Noop
+}

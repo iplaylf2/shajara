@@ -8,11 +8,17 @@ export function createInlineProcessor(taskStatuses: ProcessorTaskStatus[] = []):
   };
 }
 
-export function createManagedQueuedProcessor(taskStatuses: ProcessorTaskStatus[] = []) {
+export function createManagedQueuedProcessor(
+  taskStatuses: ProcessorTaskStatus[] = [],
+): ManagedQueuedProcessorHandle {
   return new ManagedQueuedProcessor(taskStatuses);
 }
 
-class ManagedQueuedProcessor implements AsyncDisposable {
+export interface ManagedQueuedProcessorHandle extends AsyncDisposable {
+  readonly processor: Processor;
+}
+
+class ManagedQueuedProcessor implements ManagedQueuedProcessorHandle {
   public constructor(taskStatuses: ProcessorTaskStatus[]) {
     this.#taskStatuses = taskStatuses;
   }

@@ -218,7 +218,7 @@ export class Interpreter {
     return childScope;
   }
 
-  protected initialize() {
+  protected initialize(): void {
     (this as any).#scopeRoot = RuntimeScope.root(
       this.#provideProcess(this.entry),
       { failureMode: "contain" },
