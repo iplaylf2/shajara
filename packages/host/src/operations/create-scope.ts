@@ -6,7 +6,7 @@ import { park } from "#/primitives";
 
 export function createScope(): Scope {
   const executor = ensureExecutor();
-  const launchedScope = launch(executor, executor.rootScope, park);
+  const launchedScope = launch(executor, executor.scope, park);
   const closed: Promise<void> = Promise.resolve(launchedScope.settled);
 
   return {

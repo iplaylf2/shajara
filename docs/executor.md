@@ -21,20 +21,29 @@
 
 `executor` 当前对外承诺的接口是：
 
-- `rootScope: ExecutionScopeRef`
+- `scope: ExecutionScopeRef`
+- `status: "open" | "closing" | "closed"`
+- `onSettled(listener): Disposer`
 - `launch(scope, ritual): LaunchHandle<T>`
-- `settle(futureSettle, result): void`
-- `cancel(scope): void`
+- `settle(futureSettle, result): boolean`
+- `cancel(scope): boolean`
 
 这些签名定义了 `executor` 的稳定外部能力。
 
-### 2.1 `rootScope`
+### 2.1 `scope`
 
-`rootScope` 是执行环境的根 `ExecutionScopeRef`。
+`scope` 是执行环境的根 `ExecutionScopeRef`。
 
 它表示该执行环境中最稳定的外部入口锚点。调用方通过它把新的入口 ritual 接入到同一套长期存在的执行环境。
 
-### 2.2 `launch`
+### 2.2 `status` / `onSettled`
+
+`executor` 本身也是根 scope 的 `LaunchHandle` 视图。
+
+- `status` 用于观察根 scope 的生命周期状态。
+- `onSettled(listener)` 用于订阅根 scope 的单次收敛结果。
+
+### 2.3 `launch`
 
 `launch(scope, ritual)` 表示在某个 `ExecutionScopeRef` 下启动新的入口 ritual，并返回 `LaunchHandle<T>`。
 
@@ -42,7 +51,7 @@
 
 - `scope: ExecutionScopeRef`：每次 launch 都要产出一个新的执行 scope 引用。
 - `onSettled(listener)`：调用方可以订阅该入口的单次收敛结果。
-- `state(): "open" | "closing" | "closed"`：调用方可以观察该入口 scope 的生命周期状态。
+- `status: "open" | "closing" | "closed"`：调用方可以观察该入口 scope 的生命周期状态。
 
 `LaunchResult<T>` 的结果域固定为：
 
@@ -50,13 +59,17 @@
 - `failure`
 - `canceled`
 
-### 2.3 `settle`
+### 2.4 `settle`
 
 `settle(futureSettle, result)` 负责向运行中的环境注入 future 的收敛结果。
 
-### 2.4 `cancel`
+它返回 `boolean`，用于表示该 future 是否仍处于可注入状态。
+
+### 2.5 `cancel`
 
 `cancel(scope)` 负责取消指定 `ExecutionScopeRef`。
+
+它返回 `boolean`，用于表示取消请求是否成功接入当前执行环境。
 
 ## 3. 依赖关系
 
@@ -149,7 +162,7 @@ zone / autonomy 只定义治理归属，不改写 kernel closing 的结构拓扑
 `executor` 通过 `createExecutor(pacer)` 创建，内部构造并持有 `Interpreter`（两者 1:1）。实现应优先围绕以下主线展开：
 
 - 维护一个长期存在的执行环境。
-- 提供统一的 `rootScope` 作为 execution root。
+- 通过 `executor.scope` 提供统一的 execution root，并通过 `status` / `onSettled` 暴露其根句柄视图。
 - 为每次 `launch` 组织新的 execution scope，并返回稳定的收敛句柄。
 - 把 future settlement 与 termination 这些外部能力接入环境内部。
 - 在需要时解释 `autonomy` primitive，并接入相应的调度、回收或治理策略。

@@ -8,5 +8,5 @@ export function run<Return>(
   options?: RunOptions,
 ): StatefulPromise<Return> {
   const executor = ensureExecutor();
-  return launch(executor, executor.rootScope, ritual, options).settled;
+  return launch(executor, executor.scope, ritual, options).settled;
 }
