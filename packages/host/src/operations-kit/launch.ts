@@ -60,8 +60,8 @@ export interface RunOptions {
   readonly signal?: AbortSignal;
 }
 
-export interface StatefulPromise<Return> extends PromiseLike<Return> {
-  status: LaunchStatus;
+export interface StatefulPromise<Return> extends Promise<Return> {
+  readonly status: LaunchStatus;
 }
 
 function unwrap<Return>(execution: Option<LaunchHandle<Return>>): LaunchHandle<Return> {
@@ -97,10 +97,15 @@ function toStatefulPromise<Return>(
   execution: LaunchHandle<Return>,
   settled: Promise<Return>,
 ): StatefulPromise<Return> {
-  return {
-    get status(): LaunchStatus {
+  const stateful = settled as StatefulPromise<Return>;
+
+  Object.defineProperty(stateful, "status", {
+    configurable: true,
+    enumerable: true,
+    get(): LaunchStatus {
       return execution.status;
     },
-    then: settled.then.bind(settled),
-  };
+  });
+
+  return stateful;
 }

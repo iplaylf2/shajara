@@ -17,7 +17,7 @@ describe("/ primitives: autonomy", () => {
             return value;
           },
           {
-            reaper: function* keepWaiting() {},
+            reaper: keepWaiting,
           },
         );
 
@@ -28,3 +28,7 @@ describe("/ primitives: autonomy", () => {
     },
   );
 });
+
+function* keepWaiting() {
+  // Keep waiting until the autonomous entry settles.
+}

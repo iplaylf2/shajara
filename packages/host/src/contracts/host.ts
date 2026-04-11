@@ -12,5 +12,5 @@ export type RiteFutureHandle<Result> = FutureHandle<Result>;
 
 export abstract class ShajaraError extends Error implements FailureShape {
   abstract readonly kind: string;
-  abstract override readonly name: string;
+  override readonly name: string = "ShajaraError";
 }

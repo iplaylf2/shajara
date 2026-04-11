@@ -1,8 +1,8 @@
 import { defer, enclose } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
+import { noop, right } from "#/utils";
 import { pipe } from "fp-ts/function";
-import { right } from "#/utils";
 import { wisp } from "#/internal/fp";
 
 describe("/ primitives: defer", () => {
@@ -22,12 +22,7 @@ describe("/ primitives: defer", () => {
       await using ritual = interpretRitual(() =>
         enclose(() =>
           pipe(
-            defer(() =>
-              pipe(
-                recordTrace(events, cleanupEntry),
-                wisp.map(() => {}),
-              ),
-            ),
+            defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
             wisp.chain(() => recordTrace(events, bodyEntry)),
           ),
         ),
@@ -58,19 +53,9 @@ describe("/ primitives: defer", () => {
       await using ritual = interpretRitual(() =>
         enclose(() =>
           pipe(
-            defer(() =>
-              pipe(
-                recordTrace(events, firstCleanupEntry),
-                wisp.map(() => {}),
-              ),
-            ),
+            defer(() => pipe(recordTrace(events, firstCleanupEntry), wisp.map(noop))),
             wisp.chain(() =>
-              defer(() =>
-                pipe(
-                  recordTrace(events, secondCleanupEntry),
-                  wisp.map(() => {}),
-                ),
-              ),
+              defer(() => pipe(recordTrace(events, secondCleanupEntry), wisp.map(noop))),
             ),
             wisp.chain(() => recordTrace(events, bodyEntry)),
           ),

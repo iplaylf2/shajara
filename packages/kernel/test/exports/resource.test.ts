@@ -1,7 +1,7 @@
 import { cancel, canceledFailure, defer, enclose, resource, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
-import { left, right } from "#/utils";
+import { left, noop, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -46,12 +46,7 @@ describe("/ primitives: resource", () => {
           pipe(
             resource<string>((provide) =>
               pipe(
-                defer(() =>
-                  pipe(
-                    recordTrace(events, cleanupEntry),
-                    wisp.map(() => {}),
-                  ),
-                ),
+                defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
                 wisp.chain(() => recordTrace(events, providedEntry)),
                 wisp.chain(() => provide(resourceValue)),
               ),

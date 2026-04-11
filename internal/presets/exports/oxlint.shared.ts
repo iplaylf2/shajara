@@ -37,6 +37,7 @@ export default defineConfig({
     "typescript/parameter-properties": ["error", { prefer: "parameter-property" }],
     "unicorn/no-array-callback-reference": "off",
     "unicorn/no-useless-undefined": ["error", { checkArguments: false }],
+    "unicorn/prefer-add-event-listener": "off",
     "oxc/no-async-await": "off",
     "oxc/no-optional-chaining": "off",
     "oxc/no-rest-spread-properties": "off",

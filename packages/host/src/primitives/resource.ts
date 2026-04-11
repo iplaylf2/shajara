@@ -5,9 +5,7 @@ import { resource as kernelResource } from "@shajara/kernel";
 
 export function resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteFuture<Value>> {
   return encodeRitual(() =>
-    kernelResource<Value>((provide) =>
-      decodeRitual<void>(() => body(toHostProvide<Value>(provide)))(),
-    ),
+    kernelResource<Value>((provide) => decodeRitual(() => body(toHostProvide<Value>(provide)))()),
   )();
 }
 
