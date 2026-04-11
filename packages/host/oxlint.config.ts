@@ -1,8 +1,13 @@
 import { defineConfig } from "oxlint";
 import shared from "@shajara/presets/oxlint.shared.ts";
-import testOverride from "@shajara/presets/test.oxlint.override.ts";
+import testShared from "@shajara/presets/test.oxlint.shared.ts";
 
 export default defineConfig({
-  ...shared,
-  overrides: [{ ...testOverride, rules: { ...testOverride.rules, "eslint/require-yield": "off" } }],
+  extends: [shared],
+  overrides: [
+    {
+      files: ["test/**/*.ts"],
+      rules: { ...testShared, "eslint/require-yield": "off" },
+    },
+  ],
 });

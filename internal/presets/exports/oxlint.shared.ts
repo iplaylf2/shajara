@@ -12,6 +12,7 @@ export default defineConfig({
   },
   plugins: ["import"],
   rules: {
+    "unicorn/no-null": "off",
     "eslint/default-case": "off",
     "eslint/func-style": ["error", "declaration"],
     "eslint/id-length": ["error", { exceptions: ["_"] }],
@@ -29,5 +30,13 @@ export default defineConfig({
     "import/no-default-export": "off",
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",
+    "typescript/ban-types": "off",
+    "typescript/explicit-function-return-type": "off",
+    "typescript/no-non-null-assertion": "off",
+    "typescript/parameter-properties": ["error", { prefer: "parameter-property" }],
+    "unicorn/no-array-callback-reference": "off",
+    "oxc/no-async-await": "off",
+    "oxc/no-optional-chaining": "off",
+    "oxc/no-rest-spread-properties": "off",
   },
 });
