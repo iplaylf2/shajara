@@ -48,14 +48,10 @@ describe("/ primitives: future, poll, wait", () => {
           message: "future-failed",
         }),
       ] as const,
-      outcome: left({
-        kind: "halted",
-        message: "future-failed",
-      }),
     },
   ])(
     "returns the result produced by a spawned settlement",
-    async ({ given: [settled], outcome }) => {
+    async ({ given: [settled], outcome = settled }) => {
       await using ritual = interpretRitual(() =>
         pipe(
           future<string>(),

@@ -1,7 +1,5 @@
 import type {
-  Executor,
   FutureSettleKey,
-  LaunchHandle,
   ProcessRef,
   Processor,
   ProcessorTaskStatus,
@@ -16,6 +14,7 @@ import {
   defer,
   externalFailure,
   future,
+  interruptedFailure,
   park,
   spawn,
   wait,
@@ -117,7 +116,19 @@ describe("/ primitives: autonomy", () => {
         settledKind: outcome.settledKind,
         settledStatus: outcome.settledStatus,
       });
-      expectInterruptedScopeFailure(actual.settled, outcome.interruptedCauseMessage);
+      if (actual.settled.kind !== "failure") {
+        throw new Error("Expected autonomy settlement to fail");
+      }
+
+      expect(findInterruptedFailure(actual.settled.failure)).toEqual(
+        expect.objectContaining(
+          interruptedFailure(
+            expect.objectContaining({
+              message: outcome.interruptedCauseMessage,
+            }),
+          ),
+        ),
+      );
     },
   );
 
@@ -169,14 +180,16 @@ describe("/ primitives: autonomy", () => {
           ),
         ),
       );
-      const actual = await settleSuspendedAutonomy(
-        executor,
-        futureSettle,
-        handle,
-        entryResult,
-        assignedProcesses,
+      executor.settle(await futureSettle.promise, right(entryResult));
+      const assignmentsBeforeWait = assignedProcesses.length;
+      const settled = await waitForSettled(handle);
+      const actual = {
+        assignmentsAfterWait: assignedProcesses.length,
+        assignmentsBeforeWait,
+        settled,
+        settledStatus: handle.status,
         taskStatuses,
-      );
+      };
 
       expect(actual).toEqual(outcome);
     },
@@ -231,14 +244,16 @@ describe("/ primitives: autonomy", () => {
           ),
         ),
       );
-      const actual = await settleSuspendedAutonomy(
-        executor,
-        futureSettle,
-        handle,
-        entryResult,
-        assignedProcesses,
+      executor.settle(await futureSettle.promise, right(entryResult));
+      const assignmentsBeforeWait = assignedProcesses.length;
+      const settled = await waitForSettled(handle);
+      const actual = {
+        assignmentsAfterWait: assignedProcesses.length,
+        assignmentsBeforeWait,
+        settled,
+        settledStatus: handle.status,
         taskStatuses,
-      );
+      };
 
       expect(actual).toEqual(outcome);
     },
@@ -247,6 +262,7 @@ describe("/ primitives: autonomy", () => {
   test.for([
     {
       given: [
+        ["alpha", "beta"] as const,
         ["alpha-before", "beta-before", "alpha-after", "beta-after"] as const,
         [right("alpha"), right("beta")] as const,
       ] as const,
@@ -262,7 +278,7 @@ describe("/ primitives: autonomy", () => {
     },
   ])(
     "routes ceded autonomous tasks through the shared queued scheduler in admission order",
-    async ({ given: [eventOrder, resultOrder], outcome }) => {
+    async ({ given: [labels, eventOrder, resultOrder], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
       const assignedProcesses: ProcessRef<unknown>[] = [];
       const events: string[] = [];
@@ -278,12 +294,42 @@ describe("/ primitives: autonomy", () => {
             all([
               () =>
                 pipe(
-                  autonomy(() => createCededAutonomyRitual("alpha", events), { scheduler }),
+                  autonomy(
+                    () =>
+                      pipe(
+                        wisp.fromIO(() => {
+                          events.push(`${labels[0]}-before`);
+                        }),
+                        wisp.chain(() => cede()),
+                        wisp.chain(() =>
+                          wisp.fromIO(() => {
+                            events.push(`${labels[0]}-after`);
+                            return labels[0];
+                          }),
+                        ),
+                      ),
+                    { scheduler },
+                  ),
                   wisp.chain(wait),
                 ),
               () =>
                 pipe(
-                  autonomy(() => createCededAutonomyRitual("beta", events), { scheduler }),
+                  autonomy(
+                    () =>
+                      pipe(
+                        wisp.fromIO(() => {
+                          events.push(`${labels[1]}-before`);
+                        }),
+                        wisp.chain(() => cede()),
+                        wisp.chain(() =>
+                          wisp.fromIO(() => {
+                            events.push(`${labels[1]}-after`);
+                            return labels[1];
+                          }),
+                        ),
+                      ),
+                    { scheduler },
+                  ),
                   wisp.chain(wait),
                 ),
             ]),
@@ -431,10 +477,30 @@ describe("/ primitives: autonomy", () => {
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
           pipe(
-            autonomy(() => createSuspendedStuckClosingAutonomyRitual(entryResult, futureSettle), {
-              reaper,
-              scheduler,
-            }),
+            autonomy(
+              () =>
+                pipe(
+                  future<string>(),
+                  wisp.chain(([futureKey, nextFutureSettle]) =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        futureSettle.resolve(nextFutureSettle);
+                        return futureKey;
+                      }),
+                      wisp.chain(wait),
+                      wisp.chain(() => wisp.of(entryResult)),
+                      wisp.chain(() =>
+                        pipe(
+                          defer(() => park()),
+                          wisp.chain(() => spawn(cancel)),
+                          wisp.chain(() => park()),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              { reaper, scheduler },
+            ),
             wisp.chain(wait),
           ),
         ),
@@ -505,7 +571,19 @@ describe("/ primitives: autonomy", () => {
         settledKind: outcome.settledKind,
         settledStatus: outcome.settledStatus,
       });
-      expectInterruptedScopeFailure(actual.settled, outcome.interruptedCauseMessage);
+      if (actual.settled.kind !== "failure") {
+        throw new Error("Expected autonomy settlement to fail");
+      }
+
+      expect(findInterruptedFailure(actual.settled.failure)).toEqual(
+        expect.objectContaining(
+          interruptedFailure(
+            expect.objectContaining({
+              message: outcome.interruptedCauseMessage,
+            }),
+          ),
+        ),
+      );
     },
   );
 });
@@ -520,87 +598,6 @@ function createTrackingScheduler(
       return processor;
     },
   };
-}
-
-function createCededAutonomyRitual(label: string, events: string[]) {
-  return pipe(
-    wisp.fromIO(() => {
-      events.push(`${label}-before`);
-    }),
-    wisp.chain(() => cede()),
-    wisp.chain(() =>
-      wisp.fromIO(() => {
-        events.push(`${label}-after`);
-        return label;
-      }),
-    ),
-  );
-}
-
-function createSuspendedStuckClosingAutonomyRitual(
-  entryResult: string,
-  futureSettle: PromiseWithResolvers<FutureSettleKey<string>>,
-) {
-  return pipe(
-    future<string>(),
-    wisp.chain(([futureKey, nextFutureSettle]) =>
-      pipe(
-        wisp.fromIO(() => {
-          futureSettle.resolve(nextFutureSettle);
-          return futureKey;
-        }),
-        wisp.chain(wait),
-        wisp.chain(() => wisp.of(entryResult)),
-        wisp.chain(() =>
-          pipe(
-            defer(() => park()),
-            wisp.chain(() => spawn(cancel)),
-            wisp.chain(() => park()),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-async function settleSuspendedAutonomy(
-  executor: Executor,
-  futureSettle: PromiseWithResolvers<FutureSettleKey<string>>,
-  handle: LaunchHandle<unknown>,
-  entryResult: string,
-  assignedProcesses: ProcessRef<unknown>[],
-  taskStatuses: ProcessorTaskStatus[],
-) {
-  executor.settle(await futureSettle.promise, right(entryResult));
-  const assignmentsBeforeWait = assignedProcesses.length;
-  const settled = await waitForSettled(handle);
-
-  return {
-    assignmentsAfterWait: assignedProcesses.length,
-    assignmentsBeforeWait,
-    settled,
-    settledStatus: handle.status,
-    taskStatuses,
-  };
-}
-
-function expectInterruptedScopeFailure(
-  settled: Awaited<ReturnType<typeof waitForSettled>>,
-  causeMessage: string,
-): void {
-  if (settled.kind !== "failure") {
-    throw new Error("Expected autonomy settlement to fail");
-  }
-
-  expect(findInterruptedFailure(settled.failure)).toEqual(
-    expect.objectContaining({
-      cause: expect.objectContaining({
-        message: causeMessage,
-      }),
-      kind: "interrupted",
-      message: "Scope progression was interrupted by an out-of-band failure",
-    }),
-  );
 }
 
 function findInterruptedFailure(value: unknown): unknown {

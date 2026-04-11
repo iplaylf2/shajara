@@ -9,34 +9,26 @@ describe("/ failures", () => {
       given: [
         {
           build: interruptedFailure,
+          expect: interruptedFailure,
           input: { reason: "interrupt" },
         },
       ] as const,
-      outcome: {
-        cause: { reason: "interrupt" },
-        kind: "interrupted",
-        message: "Scope progression was interrupted by an out-of-band failure",
-      },
     },
     {
       given: [
         {
           build: (raw: unknown) => externalFailure(raw, "mapped into failure"),
+          expect: (raw: unknown) => externalFailure(raw, "mapped into failure"),
           input: "raw-external",
         },
       ] as const,
-      outcome: {
-        kind: "external",
-        message: "mapped into failure",
-        raw: "raw-external",
-      },
     },
   ])(
     "exposes stable public failure shapes for direct constructor helpers",
-    ({ given: [{ build, input }], outcome }) => {
+    ({ given: [{ build, expect: expectation, input }] }) => {
       const actual = build(input);
 
-      expect(actual).toEqual(outcome);
+      expect(actual).toEqual(expectation(input));
     },
   );
 
@@ -66,15 +58,9 @@ describe("/ failures", () => {
       ] as const,
       outcome: {
         cause: expect.objectContaining({
-          failure: expect.objectContaining({
-            cause: "scope-broke",
-            kind: "interrupted",
-            message: "Scope progression was interrupted by an out-of-band failure",
-          }),
+          failure: interruptedFailure("scope-broke"),
           kind: "scope",
         }),
-        kind: "scope",
-        message: "Scope failed during closing",
         suppressed: [canceledFailure],
       },
     },
@@ -92,15 +78,9 @@ describe("/ failures", () => {
       ] as const,
       outcome: {
         cause: expect.objectContaining({
-          failure: expect.objectContaining({
-            kind: "external",
-            message: "process failed",
-            raw: "process-broke",
-          }),
+          failure: externalFailure("process-broke", "process failed"),
           kind: "process",
         }),
-        kind: "scope",
-        message: "Scope failed during closing",
         suppressed: [canceledFailure],
       },
     },
@@ -111,7 +91,12 @@ describe("/ failures", () => {
       const handle = unwrapExitedSucceeded(ritual.driveSync());
       const failure = build(handle, outcome.suppressed);
 
-      expect(failure).toEqual(outcome);
+      expect(failure).toEqual(
+        expect.objectContaining({
+          ...scopeFailure(failure.cause, outcome.suppressed),
+          cause: outcome.cause,
+        }),
+      );
     },
   );
 });

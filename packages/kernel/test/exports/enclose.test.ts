@@ -29,25 +29,20 @@ describe("/ primitives: enclose", () => {
           message: "halted for test",
         },
       ] as const,
-      outcome: left(
+    },
+  ])("enclose contains halt failures inside its result channel", async ({ given: [failure] }) => {
+    await using ritual = interpretRitual(() => enclose(() => halt(failure)));
+    const step = ritual.driveSync();
+    const actual = unwrapExitedSucceeded(step);
+
+    expect(actual).toEqual(
+      left(
         expect.objectContaining({
           cause: expect.objectContaining({
-            failure: {
-              kind: "halted",
-              message: "halted for test",
-            },
+            failure,
           }),
         }),
       ),
-    },
-  ])(
-    "enclose contains halt failures inside its result channel",
-    async ({ given: [failure], outcome }) => {
-      await using ritual = interpretRitual(() => enclose(() => halt(failure)));
-      const step = ritual.driveSync();
-      const actual = unwrapExitedSucceeded(step);
-
-      expect(actual).toEqual(outcome);
-    },
-  );
+    );
+  });
 });

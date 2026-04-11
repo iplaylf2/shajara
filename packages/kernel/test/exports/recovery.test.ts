@@ -2,7 +2,7 @@ import type { FutureKey, ScopeFailure } from "#/index";
 import { describe, expect, test } from "vitest";
 import { guard, halt, resumable } from "#/index";
 import { interpretRitual, unwrapExited, unwrapRight } from "#test/harness";
-import { left, right } from "#/utils";
+import { isLeft, left, right } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -15,27 +15,25 @@ describe("/ primitives: guard, resumable", () => {
           message: "halted without guard",
         },
       ] as const,
-      outcome: left(
-        expect.objectContaining({
-          cause: expect.objectContaining({
-            failure: {
-              kind: "halted",
-              message: "halted without guard",
-            },
-          }),
-          kind: "scope",
-        }),
-      ),
     },
   ])(
     "resumable returns its scope failure when no guard recovery boundary is present",
-    async ({ given: [failure], outcome }) => {
+    async ({ given: [failure] }) => {
       await using ritual = interpretRitual(() => resumable(() => halt(failure)));
       const step = ritual.driveSync();
       const exitFuture = unwrapRight(unwrapExited(step));
       const actual = await ritual.waitForFuture(exitFuture);
 
-      expect(actual).toEqual(outcome);
+      expect(actual).toEqual(
+        left(
+          expect.objectContaining({
+            cause: expect.objectContaining({
+              failure,
+            }),
+            kind: "scope",
+          }),
+        ),
+      );
     },
   );
 
@@ -88,17 +86,6 @@ describe("/ primitives: guard, resumable", () => {
         right("recovered:halted"),
       ] as const,
       outcome: {
-        caughtFailure: right(
-          expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: {
-                kind: "halted",
-                message: "halted for test",
-              },
-            }),
-            kind: "scope",
-          }),
-        ),
         guardExit: right(undefined),
         resumableResult: right("recovered:halted"),
       },
@@ -115,28 +102,6 @@ describe("/ primitives: guard, resumable", () => {
         }),
       ] as const,
       outcome: {
-        caughtFailure: right(
-          expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: {
-                kind: "halted",
-                message: "halted for rejected recovery",
-              },
-            }),
-            kind: "scope",
-          }),
-        ),
-        guardExit: left(
-          expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: {
-                kind: "halted",
-                message: "recovery refused",
-              },
-            }),
-            kind: "scope",
-          }),
-        ),
         resumableResult: left({
           kind: "halted",
           message: "recovery refused",
@@ -179,7 +144,29 @@ describe("/ primitives: guard, resumable", () => {
         resumableResult: await ritual.waitForFuture(resumableFuture),
       };
 
-      expect(actual).toEqual(outcome);
+      expect(actual.resumableResult).toEqual(outcome.resumableResult);
+      expect(actual.caughtFailure).toEqual(
+        right(
+          expect.objectContaining({
+            cause: expect.objectContaining({
+              failure: entryFailure,
+            }),
+            kind: "scope",
+          }),
+        ),
+      );
+      expect(actual.guardExit).toEqual(
+        isLeft(recoveryResult)
+          ? left(
+              expect.objectContaining({
+                cause: expect.objectContaining({
+                  failure: recoveryResult.left,
+                }),
+                kind: "scope",
+              }),
+            )
+          : outcome.guardExit,
+      );
     },
   );
 });

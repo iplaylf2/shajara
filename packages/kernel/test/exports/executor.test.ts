@@ -1,4 +1,4 @@
-import type { ExecutionScopeRef, Executor, FutureSettleKey, LaunchHandle } from "#/index";
+import type { ExecutionScopeRef, FutureSettleKey } from "#/index";
 import { cancel, defer, future, halt, park, settle, spawn, wait } from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
@@ -161,7 +161,14 @@ describe("/ interfaces: Executor", () => {
         const handle = unwrapSome(executor.launch(executor.scope, () => halt(failure)));
         const actual = await waitForSettled(handle);
 
-        expect(actual).toEqual(outcome);
+        expect(actual).toEqual({
+          ...outcome,
+          failure: expect.objectContaining({
+            cause: expect.objectContaining({
+              failure,
+            }),
+          }),
+        });
       },
     );
 
@@ -348,10 +355,7 @@ describe("/ interfaces: Executor", () => {
           injected: true,
           settled: {
             kind: "success",
-            result: left({
-              kind: "halted",
-              message: "future-failed",
-            }),
+            result: null,
           },
           settledStatus: "closed",
         },
@@ -386,7 +390,13 @@ describe("/ interfaces: Executor", () => {
           settledStatus: handle.status,
         };
 
-        expect(actual).toEqual(outcome);
+        expect(actual).toEqual({
+          ...outcome,
+          settled: {
+            ...outcome.settled,
+            result: left(failure),
+          },
+        });
       },
     );
 
@@ -532,22 +542,6 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["root"] as const,
         outcome: {
-          settled: expect.objectContaining({
-            failure: expect.objectContaining({
-              cause: expect.objectContaining({
-                failure: expect.objectContaining({
-                  kind: "external",
-                  message: "Scope did not finish closing within the executor reaper round limit",
-                  raw: {
-                    round: 2,
-                    roundLimit: 2,
-                  },
-                }),
-              }),
-              kind: "scope",
-            }),
-            kind: "failure",
-          }),
           settledStatus: "closed",
           turnFaults: [],
         },
@@ -555,22 +549,6 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["nested"] as const,
         outcome: {
-          settled: expect.objectContaining({
-            failure: expect.objectContaining({
-              cause: expect.objectContaining({
-                failure: expect.objectContaining({
-                  kind: "external",
-                  message: "Scope did not finish closing within the executor reaper round limit",
-                  raw: {
-                    round: 2,
-                    roundLimit: 2,
-                  },
-                }),
-              }),
-              kind: "scope",
-            }),
-            kind: "failure",
-          }),
           settledStatus: "closed",
           turnFaults: [],
         },
@@ -580,7 +558,19 @@ describe("/ interfaces: Executor", () => {
       async ({ given: [path], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
-        const handle = launchStuckClosingHandle(executor, path);
+        const parentScope =
+          path === "root"
+            ? executor.scope
+            : unwrapSome(executor.launch(executor.scope, () => park())).scope;
+        const handle = unwrapSome(
+          executor.launch(parentScope, () =>
+            pipe(
+              defer(() => park()),
+              wisp.chain(() => spawn(cancel)),
+              wisp.chain(() => park()),
+            ),
+          ),
+        );
 
         const actual = {
           settled: await waitForSettled(handle),
@@ -588,7 +578,26 @@ describe("/ interfaces: Executor", () => {
           turnFaults: managed.turnFaults,
         };
 
-        expect(actual).toEqual(outcome);
+        expect({
+          settledStatus: actual.settledStatus,
+          turnFaults: actual.turnFaults,
+        }).toEqual(outcome);
+        expect(actual.settled.kind).toBe("failure");
+        expect(
+          actual.settled.kind === "failure"
+            ? (actual.settled.failure as { cause?: { failure?: unknown; kind?: string } }).cause
+                ?.failure
+            : null,
+        ).toEqual(
+          expect.objectContaining({
+            kind: "external",
+            message: "Scope did not finish closing within the executor reaper round limit",
+            raw: {
+              round: 2,
+              roundLimit: 2,
+            },
+          }),
+        );
       },
     );
 
@@ -596,39 +605,7 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["root", "root"] as const,
         outcome: {
-          firstSettled: expect.objectContaining({
-            failure: expect.objectContaining({
-              cause: expect.objectContaining({
-                failure: expect.objectContaining({
-                  kind: "external",
-                  message: "Scope did not finish closing within the executor reaper round limit",
-                  raw: {
-                    round: 2,
-                    roundLimit: 2,
-                  },
-                }),
-              }),
-              kind: "scope",
-            }),
-            kind: "failure",
-          }),
           firstSettledStatus: "closed",
-          secondSettled: expect.objectContaining({
-            failure: expect.objectContaining({
-              cause: expect.objectContaining({
-                failure: expect.objectContaining({
-                  kind: "external",
-                  message: "Scope did not finish closing within the executor reaper round limit",
-                  raw: {
-                    round: 2,
-                    roundLimit: 2,
-                  },
-                }),
-              }),
-              kind: "scope",
-            }),
-            kind: "failure",
-          }),
           secondSettledStatus: "closed",
         },
       },
@@ -637,8 +614,32 @@ describe("/ interfaces: Executor", () => {
       async ({ given: [firstPath, secondPath], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
-        const first = launchStuckClosingHandle(executor, firstPath);
-        const second = launchStuckClosingHandle(executor, secondPath);
+        const firstParentScope =
+          firstPath === "root"
+            ? executor.scope
+            : unwrapSome(executor.launch(executor.scope, () => park())).scope;
+        const first = unwrapSome(
+          executor.launch(firstParentScope, () =>
+            pipe(
+              defer(() => park()),
+              wisp.chain(() => spawn(cancel)),
+              wisp.chain(() => park()),
+            ),
+          ),
+        );
+        const secondParentScope =
+          secondPath === "root"
+            ? executor.scope
+            : unwrapSome(executor.launch(executor.scope, () => park())).scope;
+        const second = unwrapSome(
+          executor.launch(secondParentScope, () =>
+            pipe(
+              defer(() => park()),
+              wisp.chain(() => spawn(cancel)),
+              wisp.chain(() => park()),
+            ),
+          ),
+        );
 
         const actual = {
           firstSettled: await waitForSettled(first),
@@ -647,32 +648,41 @@ describe("/ interfaces: Executor", () => {
           secondSettledStatus: second.status,
         };
 
-        expect(actual).toEqual(outcome);
+        expect({
+          firstSettledStatus: actual.firstSettledStatus,
+          secondSettledStatus: actual.secondSettledStatus,
+        }).toEqual(outcome);
+        expect(actual.firstSettled.kind).toBe("failure");
+        expect(
+          actual.firstSettled.kind === "failure"
+            ? (actual.firstSettled.failure as { cause?: { failure?: unknown } }).cause?.failure
+            : null,
+        ).toEqual(
+          expect.objectContaining({
+            kind: "external",
+            message: "Scope did not finish closing within the executor reaper round limit",
+            raw: {
+              round: 2,
+              roundLimit: 2,
+            },
+          }),
+        );
+        expect(actual.secondSettled.kind).toBe("failure");
+        expect(
+          actual.secondSettled.kind === "failure"
+            ? (actual.secondSettled.failure as { cause?: { failure?: unknown } }).cause?.failure
+            : null,
+        ).toEqual(
+          expect.objectContaining({
+            kind: "external",
+            message: "Scope did not finish closing within the executor reaper round limit",
+            raw: {
+              round: 2,
+              roundLimit: 2,
+            },
+          }),
+        );
       },
     );
   });
 });
-
-function createStuckClosingRitual() {
-  return pipe(
-    defer(() => park()),
-    wisp.chain(() => spawn(cancel)),
-    wisp.chain(() => park()),
-  );
-}
-
-function launchStuckClosingHandle(
-  executor: Executor,
-  path: "root" | "nested",
-): LaunchHandle<unknown> {
-  if (path === "root") {
-    return unwrapSome(executor.launch(executor.scope, createStuckClosingRitual));
-  }
-
-  return unwrapSome(
-    executor.launch(
-      unwrapSome(executor.launch(executor.scope, () => park())).scope,
-      createStuckClosingRitual,
-    ),
-  );
-}
