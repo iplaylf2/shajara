@@ -23,6 +23,7 @@ import {
   createInlineProcessor,
   createManagedExecutor,
   createManagedQueuedProcessor,
+  findFailureByKind,
   unwrapSome,
   waitForSettled,
 } from "#test/harness";
@@ -120,7 +121,7 @@ describe("/ primitives: autonomy", () => {
         throw new Error("Expected autonomy settlement to fail");
       }
 
-      expect(findInterruptedFailure(actual.settled.failure)).toEqual(
+      expect(findFailureByKind(actual.settled.failure, "interrupted")).toEqual(
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
@@ -575,7 +576,7 @@ describe("/ primitives: autonomy", () => {
         throw new Error("Expected autonomy settlement to fail");
       }
 
-      expect(findInterruptedFailure(actual.settled.failure)).toEqual(
+      expect(findFailureByKind(actual.settled.failure, "interrupted")).toEqual(
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
@@ -598,36 +599,4 @@ function createTrackingScheduler(
       return processor;
     },
   };
-}
-
-function findInterruptedFailure(value: unknown): unknown {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const failure = value as {
-    cause?: { failure?: unknown };
-    kind?: string;
-    suppressed?: readonly unknown[];
-  };
-  if (failure.kind === "interrupted") {
-    return failure;
-  }
-
-  const nested = failure.cause?.failure;
-  if (nested) {
-    const foundNested = findInterruptedFailure(nested);
-    if (foundNested !== null) {
-      return foundNested;
-    }
-  }
-
-  for (const suppressed of failure.suppressed ?? []) {
-    const foundSuppressed = findInterruptedFailure(suppressed);
-    if (foundSuppressed !== null) {
-      return foundSuppressed;
-    }
-  }
-
-  return null;
 }

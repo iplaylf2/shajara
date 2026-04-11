@@ -29,10 +29,8 @@ describe("/ operations: until", () => {
   ])("preserves rejected Error instances", async ({ given: [cause], outcome }) => {
     const settled = run(() => until(() => Promise.reject(cause)));
 
-    const actual = await Promise.resolve(settled).catch((error: unknown) => error);
-
-    expect(actual).toBeInstanceOf(ScopeError);
-    expect(actual).toMatchObject({
+    await expect(settled).rejects.toBeInstanceOf(ScopeError);
+    await expect(settled).rejects.toMatchObject({
       ...outcome,
       cause: {
         ...outcome.cause,
@@ -55,10 +53,8 @@ describe("/ operations: until", () => {
   ])("wraps non-Error rejections as ExternalError", async ({ given: [cause], outcome }) => {
     const settled = run(() => until(() => Promise.reject(cause)));
 
-    const actual = await Promise.resolve(settled).catch((error: unknown) => error);
-
-    expect(actual).toBeInstanceOf(ScopeError);
-    expect(actual).toMatchObject({
+    await expect(settled).rejects.toBeInstanceOf(ScopeError);
+    await expect(settled).rejects.toMatchObject({
       cause: {
         failure: {
           kind: "external",

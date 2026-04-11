@@ -39,10 +39,8 @@ describe("/ primitives: cancel, halt, settleError", () => {
       });
     });
 
-    const actual = await Promise.resolve(settled).catch((error: unknown) => error);
-
-    expect(actual).toBeInstanceOf(ScopeError);
-    expect(actual).toMatchObject(outcome);
+    await expect(settled).rejects.toBeInstanceOf(ScopeError);
+    await expect(settled).rejects.toMatchObject(outcome);
   });
 
   test.for([
@@ -65,10 +63,8 @@ describe("/ primitives: cancel, halt, settleError", () => {
         return yield* wait(futureKey);
       });
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
-
-      expect(actual).toBeInstanceOf(ScopeError);
-      expect(actual).toMatchObject(outcome);
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject(outcome);
     },
   );
 });

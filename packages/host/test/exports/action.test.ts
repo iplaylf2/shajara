@@ -51,10 +51,8 @@ describe("/ operations: action", () => {
         return yield* wait(pending.future);
       });
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
-
-      expect(actual).toBeInstanceOf(ScopeError);
-      expect(actual).toMatchObject({
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
         ...outcome,
         cause: {
           ...outcome.cause,

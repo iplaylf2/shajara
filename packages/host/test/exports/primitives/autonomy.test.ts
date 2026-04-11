@@ -1,6 +1,7 @@
 import { ScopeError, run, until } from "#/index";
 import { autonomy, cancel, defer, park, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
+import { findFailureByKind } from "#test/harness";
 
 describe("/ primitives: autonomy", () => {
   test.for([
@@ -66,7 +67,7 @@ describe("/ primitives: autonomy", () => {
       });
 
       await expect(reaped.promise).resolves.toEqual(outcome.reaped ? expect.anything() : null);
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
+      const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
@@ -104,7 +105,7 @@ describe("/ primitives: autonomy", () => {
         return yield* wait(future);
       });
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
+      const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
@@ -147,7 +148,7 @@ describe("/ primitives: autonomy", () => {
         return yield* wait(future);
       });
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
+      const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
@@ -161,36 +162,4 @@ describe("/ primitives: autonomy", () => {
 
 function* keepWaiting() {
   // Keep waiting until the autonomous entry settles.
-}
-
-function findFailureByKind(value: unknown, kind: string): unknown {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const failure = value as {
-    cause?: { failure?: unknown };
-    kind?: string;
-    suppressed?: readonly unknown[];
-  };
-  if (failure.kind === kind) {
-    return failure;
-  }
-
-  const nested = failure.cause?.failure;
-  if (nested) {
-    const foundNested = findFailureByKind(nested, kind);
-    if (foundNested !== null) {
-      return foundNested;
-    }
-  }
-
-  for (const suppressed of failure.suppressed ?? []) {
-    const foundSuppressed = findFailureByKind(suppressed, kind);
-    if (foundSuppressed !== null) {
-      return foundSuppressed;
-    }
-  }
-
-  return null;
 }

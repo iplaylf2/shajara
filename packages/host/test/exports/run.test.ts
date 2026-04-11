@@ -1,5 +1,6 @@
 import { CanceledError, ScopeError, run, until } from "#/index";
 import { describe, expect, test } from "vitest";
+import { createPendingPromise } from "#test/harness";
 
 describe("/ operations: run", () => {
   test.for([
@@ -61,10 +62,8 @@ describe("/ operations: run", () => {
         throw cause;
       }) as never);
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
-
-      expect(actual).toBeInstanceOf(ScopeError);
-      expect(actual).toMatchObject({
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
         ...outcome,
         cause: {
           ...outcome.cause,
@@ -97,9 +96,3 @@ describe("/ operations: run", () => {
     },
   );
 });
-
-function createPendingPromise(): Promise<never> {
-  return new Promise<never>(() => {
-    // Keep the promise pending until the ritual is canceled.
-  });
-}

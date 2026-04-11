@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { guard, halt, resumable, wait } from "#/primitives";
 import type { ScopeError } from "#/index";
+import { findFailureByKind } from "#test/harness";
 import { run } from "#/index";
 
 describe("/ primitives: guard, resumable", () => {
@@ -28,7 +29,7 @@ describe("/ primitives: guard, resumable", () => {
         return yield* wait(future);
       });
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
+      const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toMatchObject(outcome);
     },
@@ -119,45 +120,13 @@ describe("/ primitives: guard, resumable", () => {
         return yield* wait(guardFuture);
       });
 
-      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
+      const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findExternalFailure(actual)).toMatchObject({
+      expect(findFailureByKind(actual, "external")).toMatchObject({
         ...outcome.external,
         raw: recoveryCause,
       });
     },
   );
 });
-
-function findExternalFailure(value: unknown): unknown {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const failure = value as {
-    cause?: { failure?: unknown };
-    kind?: string;
-    suppressed?: readonly unknown[];
-  };
-  if (failure.kind === "external") {
-    return failure;
-  }
-
-  const nested = failure.cause?.failure;
-  if (nested) {
-    const foundNested = findExternalFailure(nested);
-    if (foundNested !== null) {
-      return foundNested;
-    }
-  }
-
-  for (const suppressed of failure.suppressed ?? []) {
-    const foundSuppressed = findExternalFailure(suppressed);
-    if (foundSuppressed !== null) {
-      return foundSuppressed;
-    }
-  }
-
-  return null;
-}

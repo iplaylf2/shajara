@@ -1,6 +1,7 @@
 import { CanceledError, ScopeError, createScope, until } from "#/index";
 import { defer, park } from "#/primitives";
 import { describe, expect, test } from "vitest";
+import { createPendingPromise } from "#test/harness";
 
 describe("/ operations: createScope", () => {
   test.for([
@@ -141,14 +142,12 @@ describe("/ operations: createScope", () => {
         yield* park();
       });
 
-      const cancelation = await Promise.resolve(scope.cancel()).catch((error: unknown) => error);
-      const closed = await Promise.resolve(scope.closed).catch((error: unknown) => error);
-      const execution = await Promise.resolve(settled).catch((error: unknown) => error);
+      const cancelation = scope.cancel();
 
-      expect(cancelation).toBeInstanceOf(CanceledError);
-      expect(closed).toBeInstanceOf(CanceledError);
-      expect(execution).toBeInstanceOf(ScopeError);
-      expect(execution).toMatchObject({
+      await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
         ...outcome,
         cause: {
           ...outcome.cause,
@@ -161,9 +160,3 @@ describe("/ operations: createScope", () => {
     },
   );
 });
-
-function createPendingPromise(): Promise<never> {
-  return new Promise<never>(() => {
-    // Keep the promise pending until the scope is canceled.
-  });
-}
