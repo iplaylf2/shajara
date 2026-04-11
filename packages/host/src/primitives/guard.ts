@@ -22,12 +22,12 @@ function toKernelRecoveryHandler(recover: RecoveryHandler) {
 
 function* hostRecovery(
   recover: RecoveryHandler,
-  error: ScopeError,
+  cause: ScopeError,
 ): RiteCoroutine<Either<Failure, unknown>> {
   try {
-    const replacement = yield* recover(error);
+    const replacement = yield* recover(cause);
     return right(replacement);
-  } catch (caught) {
-    return left(toFailureUnknown(caught));
+  } catch (error) {
+    return left(toFailureUnknown(error));
   }
 }

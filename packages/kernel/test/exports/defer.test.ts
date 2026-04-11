@@ -25,7 +25,7 @@ describe("/ primitives: defer", () => {
             defer(() =>
               pipe(
                 recordTrace(events, cleanupEntry),
-                wisp.map(() => undefined),
+                wisp.map(() => {}),
               ),
             ),
             wisp.chain(() => recordTrace(events, bodyEntry)),
@@ -61,14 +61,14 @@ describe("/ primitives: defer", () => {
             defer(() =>
               pipe(
                 recordTrace(events, firstCleanupEntry),
-                wisp.map(() => undefined),
+                wisp.map(() => {}),
               ),
             ),
             wisp.chain(() =>
               defer(() =>
                 pipe(
                   recordTrace(events, secondCleanupEntry),
-                  wisp.map(() => undefined),
+                  wisp.map(() => {}),
                 ),
               ),
             ),

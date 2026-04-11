@@ -10,7 +10,7 @@ export function* until<Return>(thunk: PromiseThunk<Return>): RiteCoroutine<Retur
 
   thunk().then(
     (value: Return) => executor.settle(resultSettle, right(value)),
-    (reason: unknown) => executor.settle(resultSettle, left(toFailureUnknown(reason))),
+    (error: unknown) => executor.settle(resultSettle, left(toFailureUnknown(error))),
   );
 
   return yield* wait(resultFuture);

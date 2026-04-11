@@ -49,7 +49,7 @@ function* hostAdjudication(reaper: Reaper, scope: ScopeRef<unknown>) {
   try {
     yield* reaper(scope);
     return none;
-  } catch (caught) {
-    return some(toFailureUnknown(caught));
+  } catch (error) {
+    return some(toFailureUnknown(error));
   }
 }

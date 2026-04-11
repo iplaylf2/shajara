@@ -74,7 +74,7 @@ export class NextTurnPacer implements Pacer {
   #isRunning = true;
   #pendingTasks = 0;
   readonly #faults: unknown[] = [];
-  #quiescenceWaiters: Array<() => void> = [];
+  #quiescenceWaiters: (() => void)[] = [];
   readonly #slice: Slice = {
     shouldYield: () => false,
   };

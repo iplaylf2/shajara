@@ -17,9 +17,7 @@ describe("/ primitives: autonomy", () => {
             return value;
           },
           {
-            reaper: function* keepWaiting() {
-              return undefined;
-            },
+            reaper: function* keepWaiting() {},
           },
         );
 

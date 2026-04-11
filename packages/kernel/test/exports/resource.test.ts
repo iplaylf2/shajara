@@ -49,7 +49,7 @@ describe("/ primitives: resource", () => {
                 defer(() =>
                   pipe(
                     recordTrace(events, cleanupEntry),
-                    wisp.map(() => undefined),
+                    wisp.map(() => {}),
                   ),
                 ),
                 wisp.chain(() => recordTrace(events, providedEntry)),

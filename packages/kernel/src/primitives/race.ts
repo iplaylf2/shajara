@@ -20,10 +20,7 @@ type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
   readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
 };
 
-function raceArena(
-  branches: ReadonlyArray<Ritual<unknown>>,
-  winnerSettle: FutureSettleKey<unknown>,
-) {
+function raceArena(branches: readonly Ritual<unknown>[], winnerSettle: FutureSettleKey<unknown>) {
   return () =>
     pipe(
       branches,

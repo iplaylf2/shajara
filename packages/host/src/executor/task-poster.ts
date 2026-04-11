@@ -19,7 +19,7 @@ export class TaskPoster {
     };
   }
 
-  readonly #queue: Array<(() => void) | null> = [];
+  readonly #queue: ((() => void) | null)[] = [];
   readonly #channel = new globalThis.MessageChannel();
 }
 
