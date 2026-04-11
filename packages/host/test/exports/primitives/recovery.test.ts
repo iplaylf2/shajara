@@ -85,4 +85,79 @@ describe("/ primitives: guard, resumable", () => {
       });
     },
   );
+
+  test.for([
+    {
+      given: [
+        new Error("halted for failed recovery"),
+        new Error("recovery-handler-failed"),
+      ] as const,
+      outcome: {
+        external: {
+          kind: "external",
+        },
+        kind: "scope",
+      } as const,
+    },
+  ])(
+    "guard fails with the recovery handler error when recovery throws",
+    async ({ given: [haltCause, recoveryCause], outcome }) => {
+      const settled = run(function* awaitFailedRecovery() {
+        const guardFuture = yield* guard(
+          function* runGuardedEntry() {
+            const resumableFuture = yield* resumable(function* haltRecoverableScope() {
+              yield* halt(haltCause);
+            });
+
+            return yield* wait(resumableFuture);
+          },
+          function* throwFromRecovery() {
+            throw recoveryCause;
+          },
+        );
+
+        return yield* wait(guardFuture);
+      });
+
+      const actual = await Promise.resolve(settled).catch((error: unknown) => error);
+
+      expect(actual).toMatchObject({ kind: outcome.kind });
+      expect(findExternalFailure(actual)).toMatchObject({
+        ...outcome.external,
+        raw: recoveryCause,
+      });
+    },
+  );
 });
+
+function findExternalFailure(value: unknown): unknown {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const failure = value as {
+    cause?: { failure?: unknown };
+    kind?: string;
+    suppressed?: readonly unknown[];
+  };
+  if (failure.kind === "external") {
+    return failure;
+  }
+
+  const nested = failure.cause?.failure;
+  if (nested) {
+    const foundNested = findExternalFailure(nested);
+    if (foundNested !== null) {
+      return foundNested;
+    }
+  }
+
+  for (const suppressed of failure.suppressed ?? []) {
+    const foundSuppressed = findExternalFailure(suppressed);
+    if (foundSuppressed !== null) {
+      return foundSuppressed;
+    }
+  }
+
+  return null;
+}
