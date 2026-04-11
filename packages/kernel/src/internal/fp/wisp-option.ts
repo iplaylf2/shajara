@@ -13,7 +13,7 @@ declare module "fp-ts/HKT" {
   }
 }
 
-// oxlint-disable-next-line typescript-eslint/no-namespace
+// oxlint-disable-next-line no-namespace
 export namespace wispOption {
   export const URI = "WispOption";
   export type URI = typeof URI;

@@ -1,4 +1,4 @@
-// oxlint-disable import/max-dependencies
+// oxlint-disable max-dependencies
 import type { Disposer, Option } from "#/utils";
 import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
