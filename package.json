@@ -11,6 +11,7 @@
     "lint": "yarn workspaces foreach -Ap run lint",
     "pack:license": "node ./scripts/pack-license.mjs",
     "spellcheck": "yarn cspell-cli .",
+    "test": "yarn workspaces foreach -Ap run test",
     "typecheck": "yarn workspaces foreach -Ap run typecheck"
   },
   "devDependencies": {
