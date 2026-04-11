@@ -2,7 +2,7 @@
 import type { Disposer, Option } from "#/utils";
 import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
-import { cancel, park, settle } from "#/primitives";
+import { cancel, halt, park, settle } from "#/primitives";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, io, option } from "fp-ts";
 import { noop, unreachable } from "#/utils";
@@ -147,7 +147,7 @@ class RuntimeExecutor implements Executor {
             ),
           ),
           either.getOrElse((failure) => () => {
-            this.#interpreter.forceFailed(scope, failure as Failure, suppressor);
+            this.#interpreter.spawn(scope, () => halt(failure), suppressor);
           }),
           (run) => run(),
         );
