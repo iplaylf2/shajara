@@ -10,5 +10,6 @@ export function unbind(key: ContextKey<unknown>): UnbindSigil {
 export interface UnbindSigil extends SigilShape {
   readonly kind: "unbind";
   readonly key: ContextKey<unknown>;
+  // oxlint-disable-next-line no-invalid-void-type
   readonly [ECHO_TOKEN]?: readonly [void];
 }

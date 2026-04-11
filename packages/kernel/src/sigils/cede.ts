@@ -8,5 +8,6 @@ export function cede(): CedeSigil {
 
 export interface CedeSigil extends SigilShape {
   readonly kind: "cede";
+  // oxlint-disable-next-line no-invalid-void-type
   readonly [ECHO_TOKEN]?: readonly [void];
 }

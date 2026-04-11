@@ -15,5 +15,6 @@ export interface SettleSigil<Result> extends SigilShape {
   readonly kind: "settle";
   readonly futureSettle: FutureSettleKey<Result>;
   readonly result: FutureResult<Result>;
+  // oxlint-disable-next-line no-invalid-void-type
   readonly [ECHO_TOKEN]?: readonly [void];
 }
