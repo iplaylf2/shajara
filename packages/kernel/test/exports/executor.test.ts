@@ -264,6 +264,46 @@ describe("/ interfaces: Executor", () => {
         expect(actual).toEqual(outcome);
       },
     );
+
+    test.for([
+      {
+        given: [] as const,
+        outcome: {
+          listenerCalls: 1,
+          settled: {
+            kind: "canceled",
+          },
+        },
+      },
+    ])(
+      "treats repeated registrations of the same onSettled function as distinct subscriptions",
+      async ({ outcome }) => {
+        const actual = await iife(async () => {
+          await using managed = createManagedExecutor();
+          const { executor } = managed;
+
+          const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+          let listenerCalls = 0;
+          function listener() {
+            listenerCalls += 1;
+          }
+
+          const unsubscribeFirst = handle.onSettled(listener);
+          handle.onSettled(listener);
+          unsubscribeFirst();
+
+          executor.cancel(handle.scope);
+          const settled = await waitForSettled(handle);
+
+          return {
+            listenerCalls,
+            settled,
+          };
+        });
+
+        expect(actual).toEqual(outcome);
+      },
+    );
   });
 
   describe("/: launch, settle, cancel", () => {

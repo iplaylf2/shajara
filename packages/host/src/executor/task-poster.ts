@@ -7,11 +7,12 @@ export class TaskPoster {
   }
 
   post(work: () => void): Disposer {
-    this.#tasks.add(work);
+    const task = [work] as const;
+    this.#tasks.add(task);
     this.#ensureTurnScheduled();
 
     return () => {
-      this.#tasks.delete(work);
+      this.#tasks.delete(task);
       if (this.#tasks.size === 0) {
         this.#cancelScheduledTurn();
       }
@@ -30,7 +31,7 @@ export class TaskPoster {
     this.#tasks.clear();
 
     const errors: unknown[] = [];
-    for (const task of tasks) {
+    for (const [task] of tasks) {
       try {
         task();
       } catch (error) {
@@ -81,7 +82,7 @@ export class TaskPoster {
   #nextTurnAt = 0;
   #turnTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   readonly #channel = new globalThis.MessageChannel();
-  readonly #tasks = new Set<() => void>();
+  readonly #tasks = new Set<readonly [() => void]>();
 }
 
 function now(): number {

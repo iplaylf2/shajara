@@ -24,10 +24,11 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
       return unreachable();
     }
 
-    this.#waiters.add(onSettled);
+    const waiter = [onSettled] as const;
+    this.#waiters.add(waiter);
 
     return () => {
-      this.#waiters.delete(onSettled);
+      this.#waiters.delete(waiter);
     };
   }
 
@@ -39,7 +40,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
     this.#result = result;
 
     return (suppressor) => {
-      for (const waiter of this.#waiters) {
+      for (const [waiter] of this.#waiters) {
         waiter(result, suppressor);
       }
       this.#waiters.clear();
@@ -53,7 +54,7 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: FutureKey<Result>[typeof KEY_TOKEN] &
     FutureSettleKey<Result>[typeof KEY_TOKEN];
-  #waiters = new Set<FutureSettler<Result>>();
+  #waiters = new Set<readonly [FutureSettler<Result>]>();
   #result: FutureResult<Result> | null = null;
 }
 

@@ -29,11 +29,12 @@ export class ExecutorDriver {
   }
 
   public continueLater(work: () => void): Disposer {
-    this.#scheduledWorks.add(work);
+    const scheduledWork = [work] as const;
+    this.#scheduledWorks.add(scheduledWork);
     this.#ensureTurnArmed();
 
     return () => {
-      this.#scheduledWorks.delete(work);
+      this.#scheduledWorks.delete(scheduledWork);
     };
   }
 
@@ -86,7 +87,7 @@ export class ExecutorDriver {
     this.#scheduledWorks.clear();
 
     const faultSink = new FaultSink("");
-    for (const work of scheduledWork) {
+    for (const [work] of scheduledWork) {
       try {
         work();
       } catch (error) {
@@ -132,7 +133,7 @@ export class ExecutorDriver {
 
   #isStopped = false;
   #isTurnArmed = false;
-  readonly #scheduledWorks = new Set<() => void>();
+  readonly #scheduledWorks = new Set<readonly [() => void]>();
   readonly #processorTasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
     admit: (task) => {
