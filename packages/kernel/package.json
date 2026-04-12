@@ -1,12 +1,24 @@
 {
   "name": "@shajara/kernel",
   "version": "0.1.0",
-  "description": "Structured concurrency semantics kernel for shajara.",
+  "description": "Structured concurrency kernel and executor primitives.",
+  "keywords": [
+    "concurrency",
+    "executor",
+    "kernel",
+    "runtime",
+    "shajara",
+    "structured-concurrency"
+  ],
   "homepage": "https://github.com/iplaylf2/shajara#readme",
   "bugs": {
     "url": "https://github.com/iplaylf2/shajara/issues"
   },
   "license": "BSD-3-Clause",
+  "author": {
+    "name": "iplaylf2",
+    "url": "https://github.com/iplaylf2"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iplaylf2/shajara.git",

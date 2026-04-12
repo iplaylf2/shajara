@@ -1,12 +1,24 @@
 {
   "name": "@shajara/host",
   "version": "0.1.0",
-  "description": "Host runtime and boundary adapters for shajara.",
+  "description": "Structured concurrency API for JavaScript applications.",
+  "keywords": [
+    "async",
+    "concurrency",
+    "generator",
+    "runtime",
+    "shajara",
+    "structured-concurrency"
+  ],
   "homepage": "https://github.com/iplaylf2/shajara#readme",
   "bugs": {
     "url": "https://github.com/iplaylf2/shajara/issues"
   },
   "license": "BSD-3-Clause",
+  "author": {
+    "name": "iplaylf2",
+    "url": "https://github.com/iplaylf2"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iplaylf2/shajara.git",

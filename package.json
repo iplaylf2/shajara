@@ -1,5 +1,10 @@
 {
   "name": "shajara",
+  "private": true,
+  "author": {
+    "name": "iplaylf2",
+    "url": "https://github.com/iplaylf2"
+  },
   "workspaces": [
     "internal/*",
     "packages/*",
