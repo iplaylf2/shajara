@@ -44,21 +44,4 @@ jobs:
         run: yarn typecheck
 
       - name: Test with coverage
-        run: |
-          set -euo pipefail
-
-          coverage_log=$(mktemp)
-
-          yarn workspaces foreach -A --verbose run test:coverage -- --coverage.reporter=text-summary 2>&1 | tee "${coverage_log}"
-
-          {
-            echo "## Coverage"
-            echo
-            echo '```text'
-            awk '
-              /^\[[^]]+\]: =============================== Coverage summary ===============================$/ { printing=1 }
-              printing { print }
-              /^\[[^]]+\]: ================================================================================$/ { printing=0; print "" }
-            ' "${coverage_log}"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: yarn workspaces foreach -Ap run test:coverage -- --coverage.reporter=text-summary
