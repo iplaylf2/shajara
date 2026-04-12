@@ -62,7 +62,7 @@ export class TaskPoster {
 
     this.#turnTimer = globalThis.setTimeout(() => {
       this.#turnTimer = null;
-      this.#postTurn();
+      this.#handleTurn();
     }, delayMs);
   }
 
