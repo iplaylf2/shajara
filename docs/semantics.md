@@ -1,167 +1,167 @@
-# 语义基线
+# Semantic Baseline
 
-基础语义由本篇定义。
+This document defines the core semantics.
 
-## 计算承载
+## Computation
 
 ### `Wisp`
 
-`Wisp<T>` 是基础计算承载面。
+`Wisp<T>` is the primary computation carrier.
 
-- `stirring`：携带一枚 `sigil`，并等待对应 `echo` 继续推进
-- `resting`：携带最终 `relic`
+- `stirring`: carries a `sigil` and waits for the corresponding `echo` to continue
+- `resting`: carries the final `relic`
 
-执行时，运行时解释 `sigil`，得到 `echo`，再把 `echo` 交回 `resonate`，直到进入 `resting`。
+At runtime, the interpreter handles the `sigil`, produces an `echo`, and feeds that `echo` back into `resonate` until the computation reaches `resting`.
 
 ### `Ritual`
 
-`Ritual<T>` 是 `() => Wisp<T>`。它表示一段延迟显现的计算入口。
+`Ritual<T>` is `() => Wisp<T>`. It represents a deferred computation entry.
 
 ### `Sigil`
 
-`Sigil` 是运行时可解释的指令对象。每种 sigil 通过自己的类型见证声明 `echo` 形状。
+`Sigil` is an instruction object interpreted by the runtime. Each sigil declares the shape of its `echo` through its own type witness.
 
-公开的 sigil 种类包括：
+The public sigil kinds include:
 
-- 上下文：`bind`、`lookup`、`unbind`
-- 生命周期：`cancel`、`cede`、`defer`、`halt`
-- 并发：`branch`、`spawn`
-- future：`future`、`poll`、`settle`、`wait`
-- 消息：`send`、`receive`
-- 自省：`self`
+- context: `bind`, `lookup`, `unbind`
+- lifecycle: `cancel`, `cede`, `defer`, `halt`
+- concurrency: `branch`, `spawn`
+- future: `future`, `poll`, `settle`, `wait`
+- message: `send`, `receive`
+- introspection: `self`
 
-## 结构对象
+## Structural Objects
 
 ### `Scope`
 
-`Scope` 是结构化并发边界，统一承载：
+`Scope` is the structured concurrency boundary that carries:
 
-- process 归属
-- 上下文可见性
-- future 归属
-- 失败传播与取消收敛
+- process ownership
+- context visibility
+- future ownership
+- failure propagation and cancellation convergence
 
-`ScopeRef<T>` 是 scope 的控制面引用，并显式携带 `exitFuture`。
+`ScopeRef<T>` is the control reference for a scope and explicitly carries `exitFuture`.
 
-每个 scope 在创建时带有只读 `ScopeDescriptor`。其中与收敛相关的字段是：
+Each scope is created with a read-only `ScopeDescriptor`. The field relevant to convergence is:
 
 ```ts
 type FailureMode = "propagate" | "contain";
 ```
 
-- `propagate`：该 scope 的失败继续向父链传播
-- `contain`：该 scope 自身构成失败与取消的收敛边界
+- `propagate`: failures continue upward through the parent chain
+- `contain`: the scope itself forms the convergence boundary for failure and cancellation
 
 ### `Process`
 
-`Process` 是某段 `Wisp` 的运行实例。每个 process 始终且仅属于一个 scope。
+`Process` is the running instance of a `Wisp`. Each process always belongs to exactly one scope.
 
-`ProcessRef<T>` 是 process 的控制面引用，并显式携带 `exitFuture`。
+`ProcessRef<T>` is the control reference for a process and explicitly carries `exitFuture`.
 
-每个 process 在创建时带有只读 `ProcessDescriptor`。其中与完成判定相关的字段是：
+Each process is created with a read-only `ProcessDescriptor`. The field relevant to completion is:
 
 ```ts
 type CompletionMode = "structural" | "detached";
 ```
 
-- `structural`：参与所属 scope 的完成判定
-- `detached`：不参与所属 scope 的完成判定
+- `structural`: participates in completion for its enclosing scope
+- `detached`: does not participate in completion for its enclosing scope
 
-## Future、Context、Message
+## Future, Context, and Message
 
 ### `Future`
 
-`FutureKey<T>` 与 `FutureSettleKey<T>` 共同标识一个单次收敛槽位：
+`FutureKey<T>` and `FutureSettleKey<T>` together identify a single convergence slot:
 
-- `FutureKey<T>` 只用于观察
-- `FutureSettleKey<T>` 只用于收敛
+- `FutureKey<T>` is observation-only
+- `FutureSettleKey<T>` is settlement-only
 
-future 的结果域固定为 `Either<FailureShape, T>`。因此：
+The result domain of a future is fixed to `Either<FailureShape, T>`. Therefore:
 
-- `wait(future)` 返回 `Either<FailureShape, T>`
-- `poll(future)` 返回 `Option<Either<FailureShape, T>>`
-- 同一个 future 可被多个等待者重复观察
+- `wait(future)` returns `Either<FailureShape, T>`
+- `poll(future)` returns `Option<Either<FailureShape, T>>`
+- the same future may be observed repeatedly by multiple waiters
 
-owner scope 结束时，仍未完成的 future 会以 `canceled` 统一收束。
+When the owner scope finishes, any unfinished futures converge uniformly as `canceled`.
 
 ### `ContextKey`
 
-`ContextKey<T>` 用于 scope 链上的绑定与查找。绑定在当前 scope 记录，查找沿祖先链可见。
+`ContextKey<T>` is used for binding and lookup along the scope chain. Bindings are recorded on the current scope, and lookups remain visible along the ancestor chain.
 
 ### `MessageKey`
 
-`MessageKey<T>` 用于 scope 内 mailbox 协议。
+`MessageKey<T>` is used by the scope-local mailbox protocol.
 
-消息通道的语义是：
+The message channel is:
 
 - scope-local
 - FIFO
-- 单条消息只投递给一个接收者
+- single-delivery per message
 
-`send(scope, key, value)` 向目标 scope 追加消息，`receive(key)` 从当前 scope 读取消息；没有消息时阻塞。
+`send(scope, key, value)` appends a message to the target scope. `receive(key)` reads from the current scope and blocks when no message is available.
 
-## 失败
+## Failure
 
-失败类型共有四类：
+There are four failure kinds:
 
 - `canceled`
 - `external`
 - `interrupted`
 - `scope`
 
-它们的语义分别是：
+Their meanings are:
 
-- `canceled`：取消路径导致的收敛
-- `external`：外部异常或拒绝值被映射进失败结果
-- `interrupted`：调度或治理中的带外错误打断了推进
-- `scope`：scope 在 closing 阶段以结构性失败收敛
+- `canceled`: convergence along the cancellation path
+- `external`: an external exception or rejected value mapped into a failure result
+- `interrupted`: an out-of-band failure in scheduling or governance interrupted progression
+- `scope`: a scope converged structurally as a failure during `closing`
 
-`ScopeFailure` 额外携带：
+`ScopeFailure` additionally carries:
 
-- `cause`：根因来自 process 或子 scope；其 `kind` 为 `process` 或 `scope`
-- `suppressed`：收敛过程中附带捕获的其他 failure
+- `cause`: the root cause came from a process or child scope; its `kind` is `process` or `scope`
+- `suppressed`: additional failures captured during convergence
 
-`halt(failure)` 会让当前 process 以失败退出，并驱动所属 scope 按既有失败收敛规则进入关闭路径。
+`halt(failure)` makes the current process exit as a failure and drives its enclosing scope into the failure-closing path according to the existing failure convergence rules.
 
-## 收敛
+## Convergence
 
-### Scope 生命周期
+### Scope Lifecycle
 
-对外可观察的 scope 生命周期状态为：
+The externally observable lifecycle states of a scope are:
 
 - `open`
 - `closing`
 - `closed`
 
-scope 会因为以下原因进入关闭路径：
+A scope enters its closing path for the following reasons:
 
-- 结构性 process 全部退出
-- 本地 process 失败
-- 祖先取消级联
-- 可传播的子 scope 失败上传
+- all structural processes have exited
+- a local process failed
+- an ancestor cancellation cascaded into it
+- a propagating child-scope failure moved upward into it
 
-### `contain` 与 `propagate`
+### `contain` and `propagate`
 
-- `contain` 把失败和取消留在本边界内收敛
-- `propagate` 把失败继续向祖先链上传
+- `contain` keeps failure and cancellation converging within the local boundary
+- `propagate` continues failure upward through the ancestor chain
 
 ### cleanup
 
-`defer(cleanup)` 把 cleanup ritual 注册到当前 process。process 退出后，运行时触发这些 cleanup。
+`defer(cleanup)` registers a cleanup ritual on the current process. The runtime triggers those cleanups after the process exits.
 
-多个 deferred cleanup 按注册顺序运行。
+Multiple deferred cleanups run in registration order.
 
-### 强制失败
+### Forced Failure
 
-除了由 process 发起的失败之外，运行时还支持把某个 scope 直接推进到失败收敛路径。强制失败会：
+In addition to failures initiated by a process, the runtime can also force a scope directly into failure convergence. Forced failure:
 
-- 结束该 scope 内阻塞中的 process
-- 收束该 scope 内仍未完成的 future
-- 让该 scope 以给定失败结束
+- ends blocked processes within that scope
+- converges any unfinished futures within that scope
+- causes the scope to finish with the given failure
 
-## 步进
+## Stepping
 
-最小执行模型是步进推进。对 runnable process 反复执行解释，单个步骤可能得到：
+The minimal execution model is stepwise progression. Repeated interpretation of a runnable process may yield:
 
 - `interpreted`
 - `resonated`
@@ -169,6 +169,6 @@ scope 会因为以下原因进入关闭路径：
 - `waiting`
 - `exited`
 
-`cede` 表示协作式让权，`waiting` 表示等待 future、message 或其他阻塞条件。
+`cede` means cooperative yielding. `waiting` means waiting on a future, message, or another blocking condition.
 
-FIFO 队列是默认的最小调度闭环；更复杂的调度建立在这套语义之上。
+The FIFO queue is the default minimal scheduling loop. More advanced schedulers build on top of these semantics.

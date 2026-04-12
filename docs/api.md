@@ -1,55 +1,55 @@
-# 公开接口
+# Public Interface
 
-本篇汇总公开导出面与调用结果。
+This document summarizes the public export surfaces and call results.
 
-## 发布包
+## Published Packages
 
 ### `@shajara/host`
 
-面向应用代码。根入口重导出：
+This package is intended for application code. Its root entry re-exports:
 
 - `contracts`
 - `errors`
 - `operations`
 
-根入口名称包括：
+Names available from the root entry include:
 
-- 运行入口：`run`、`createScope`
-- 宿主操作：`action`、`sleep`、`until`
-- 错误类型：`ShajaraError`、`CanceledError`、`ExternalError`、`InterruptedError`、`ScopeError`
-- host 契约：`RiteRoutine`、`RiteCoroutine`、`RiteFuture`、`RiteFutureSettle`、`RiteFutureHandle`
-- kernel 契约重导出：`ContextKey`、`Failure`、`FailureShape`、`FutureKey`、`LaunchStatus`、`ScopeRef`、`SelfHandle`、`contextKey`
-- 其余根入口类型：`Action`、`Scope`、`ScopeStatus`、`RunOptions`、`StatefulPromise`、`PromiseThunk`、`Disposer`
+- runtime entries: `run`, `createScope`
+- host operations: `action`, `sleep`, `until`
+- error types: `ShajaraError`, `CanceledError`, `ExternalError`, `InterruptedError`, `ScopeError`
+- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`
+- re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
+- other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
-子路径 `@shajara/host/primitives` 公开：
+The subpath `@shajara/host/primitives` exposes:
 
-- 并发与边界：`all`、`autonomy`、`enclose`、`guard`、`race`、`resource`、`resumable`、`spawn`
-- future：`future`、`poll`、`settle`、`settleError`、`wait`
-- 上下文与自省：`bind`、`lookup`、`self`、`unbind`
-- 控制与生命周期：`cancel`、`cede`、`defer`、`halt`、`park`
+- concurrency and boundaries: `all`, `autonomy`, `enclose`, `guard`, `race`, `resource`, `resumable`, `spawn`
+- future operations: `future`, `poll`, `settle`, `settleError`, `wait`
+- context and introspection: `bind`, `lookup`, `self`, `unbind`
+- control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
 
 ### `@shajara/kernel`
 
-面向底层实现。根入口重导出：
+This package is intended for lower-level integrations. Its root entry re-exports:
 
 - `contracts`
 - `executor`
 - `failures`
 - `primitives`
 
-根入口名称包括：
+Names available from the root entry include:
 
-- contracts：`Wisp`、`Ritual`、`ScopeRef`、`ProcessRef`、`FutureKey`、`FutureSettleKey`、`FutureHandle`、`ContextKey`、`MessageKey`、`contextKey`、`messageKey`
-- failures：`Failure`、`canceledFailure`、`externalFailure`、`interruptedFailure`、`scopeFailure`
-- executor：`createExecutor`、`Executor`、`LaunchHandle`、`LaunchResult`、`LaunchStatus`、`Pacer`、`Slice`、`ExecutionScopeRef`、`autonomy` 相关类型
-- primitives：对应的 `Wisp` 原语
+- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `MessageKey`, `contextKey`, `messageKey`
+- failures: `Failure`, `canceledFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
+- executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
+- primitives: the corresponding `Wisp` primitives
 
-子路径公开：
+Public subpaths:
 
 - `@shajara/kernel/sigils`
 - `@shajara/kernel/utils`
 
-## 宿主入口
+## Host Runtime Entries
 
 ### `run`
 
@@ -60,18 +60,18 @@ run<Return>(
 ): StatefulPromise<Return>
 ```
 
-返回值：
+Return value:
 
-- 是 Promise
-- 同时带只读 `status`
-- `status` 取值为 `open | closing | closed`
+- it is a Promise
+- it also carries a read-only `status`
+- `status` can be `open | closing | closed`
 
-结果：
+Result:
 
-- 成功时 resolve 结果值
-- 取消时 reject `CanceledError`
-- 失败时 reject `Error`
-- 结构性失败通常表现为 `ScopeError`
+- resolves with the result value on success
+- rejects with `CanceledError` on cancellation
+- rejects with `Error` on failure
+- structural failures usually surface as `ScopeError`
 
 ### `createScope`
 
@@ -79,7 +79,7 @@ run<Return>(
 createScope(): Scope
 ```
 
-返回对象公开：
+The returned object exposes:
 
 - `run(ritual, options?)`
 - `cancel()`
@@ -87,14 +87,14 @@ createScope(): Scope
 - `closed`
 - `[Symbol.asyncDispose]()`
 
-结果语义：
+Result semantics:
 
-- `cancel()` 会等待该 scope 的关闭结果
-- `closed` 表示同一个关闭结果
-- 若该 scope 以取消或失败结束，`cancel()` 与 `closed` 会 reject 对应错误
-- 已关闭 scope 上再次 `run(...)` 会同步抛错
+- `cancel()` waits for the scope's closure result
+- `closed` represents that same closure result
+- if the scope ends in cancellation or failure, `cancel()` and `closed` reject with the corresponding error
+- calling `run(...)` on a closed scope throws synchronously
 
-## 宿主操作
+## Host Operations
 
 ### `action`
 
@@ -102,7 +102,7 @@ createScope(): Scope
 yield * action<Return>();
 ```
 
-返回：
+Returns:
 
 - `future`
 - `resolve(value)`
@@ -120,11 +120,11 @@ yield * sleep(milliseconds);
 yield * until(thunk);
 ```
 
-## 宿主原语返回值
+## Host Primitive Return Values
 
-### 并发与边界
+### Concurrency and boundaries
 
-| 原语        | 返回值             |
+| Primitive   | Return value       |
 | ----------- | ------------------ |
 | `spawn`     | `RiteFuture<T>`    |
 | `all`       | `RiteFuture<T[]>`  |
@@ -135,9 +135,9 @@ yield * until(thunk);
 | `resource`  | `RiteFuture<T>`    |
 | `autonomy`  | `RiteFuture<T>`    |
 
-### future 原语
+### `future` primitives
 
-| 原语          | 返回值                                 |
+| Primitive     | Return value                           |
 | ------------- | -------------------------------------- |
 | `future`      | `[RiteFuture<T>, RiteFutureSettle<T>]` |
 | `poll`        | `T \| undefined`                       |
@@ -145,26 +145,26 @@ yield * until(thunk);
 | `settleError` | `void`                                 |
 | `wait`        | `T`                                    |
 
-### 上下文、控制与生命周期
+### Context, control, and lifecycle
 
-| 原语     | 返回值           |
-| -------- | ---------------- |
-| `bind`   | `void`           |
-| `lookup` | `T \| undefined` |
-| `unbind` | `void`           |
-| `self`   | `SelfHandle`     |
-| `halt`   | `never`          |
-| `cancel` | `never`          |
-| `cede`   | `void`           |
-| `defer`  | `void`           |
-| `park`   | `never`          |
+| Primitive | Return value     |
+| --------- | ---------------- |
+| `bind`    | `void`           |
+| `lookup`  | `T \| undefined` |
+| `unbind`  | `void`           |
+| `self`    | `SelfHandle`     |
+| `halt`    | `never`          |
+| `cancel`  | `never`          |
+| `cede`    | `void`           |
+| `defer`   | `void`           |
+| `park`    | `never`          |
 
-## Kernel 原语结果模型
+## Kernel Primitive Result Model
 
-`@shajara/kernel` 与 host 的主要接口差异在返回值模型：
+The main interface difference between `@shajara/kernel` and host lies in the result model:
 
-- kernel `wait(future)` 返回 `Either<FailureShape, T>`
-- kernel `poll(future)` 返回 `Option<Either<FailureShape, T>>`
-- kernel `enclose(ritual)` 返回 `Either<FailureShape, T>`
+- kernel `wait(future)` returns `Either<FailureShape, T>`
+- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
+- kernel `enclose(ritual)` returns `Either<FailureShape, T>`
 
-直接消费 kernel 时，结果模型就是这些显式结果值。
+When consuming kernel directly, these explicit result values are the result model.

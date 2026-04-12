@@ -1,37 +1,37 @@
-# 执行环境
+# Execution Environment
 
-执行环境建立在基础语义之上。
+The execution environment builds on the semantic baseline.
 
-## 对象职责
+## Executor
 
-`Executor` 是长期存在的执行环境对象。它提供：
+`Executor` is a long-lived execution environment object. It provides:
 
-- 一个稳定的根执行入口
-- 启动新入口 `ritual` 的能力
-- 从宿主侧注入 `future` 结果的能力
-- 从宿主侧取消执行入口 scope 的能力
+- a stable root execution entry
+- the ability to start new entry rituals
+- the ability to inject future results from the host side
+- the ability to cancel execution-entry scopes from the host side
 
-创建入口：
+Creation:
 
 ```ts
 const executor = createExecutor(pacer);
 ```
 
-## 执行入口
+## Execution Entries
 
-executor 在 `ScopeRef` 之上引入 `ExecutionScopeRef`。
+The executor introduces `ExecutionScopeRef` on top of `ScopeRef`.
 
-它不是新的语义对象，而是“可作为执行入口与外部控制目标的 scope 引用”。`Executor` 注册并公开的，正是这类可 `launch`、可 `cancel` 的执行入口。
+It is not a new semantic object. It is a scope reference that can serve as an execution entry and an external control target. What matters here is not what a scope is, but which scopes the `Executor` registers and exposes as entries that can be `launch`ed and `cancel`ed.
 
-executor 自身公开一个长期根入口：
+The executor itself exposes one long-lived root entry:
 
 - `executor.scope`
 
-后续所有入口启动都从某个 `ExecutionScopeRef` 出发。
+All subsequent entry launches begin from an `ExecutionScopeRef`.
 
-## 启动入口
+## Launching
 
-`Executor` 的核心接口是：
+The core `Executor` interface is:
 
 ```ts
 interface Executor extends LaunchHandle<never> {
@@ -46,15 +46,15 @@ interface Executor extends LaunchHandle<never> {
 }
 ```
 
-`launch(...)` 的职责是：在指定 `ExecutionScopeRef` 下创建一段新的入口计算，并返回它的 `LaunchHandle`。
+`launch(...)` creates a new entry computation under a given `ExecutionScopeRef` and returns its `LaunchHandle`.
 
-如果目标 scope 已不再合法或不再开放，则返回 `none`。
+If the target scope is no longer valid or no longer open, it returns `none`.
 
-每次 `launch` 都先建立一个 `failureMode: "contain"` 的入口 scope，再在该边界内运行目标 `ritual`。`LaunchHandle.scope` 对应的就是这个入口 scope。
+Each `launch` first establishes an entry scope with `failureMode: "contain"`, then runs the target `ritual` within that boundary. `LaunchHandle.scope` is that entry scope.
 
-## 入口句柄
+## Entry Handle
 
-`LaunchHandle<Result>` 是 executor 暴露给外部的入口句柄：
+`LaunchHandle<Result>` is the entry handle exposed by the executor:
 
 ```ts
 interface LaunchHandle<Result> {
@@ -64,39 +64,39 @@ interface LaunchHandle<Result> {
 }
 ```
 
-它回答三件事：
+It answers three questions:
 
-- 这次 `launch` 对应哪个 `ExecutionScopeRef`
-- 这个入口现在处于什么生命周期状态
-- 这次入口最终如何收敛
+- which `ExecutionScopeRef` this `launch` created
+- which lifecycle state the entry is currently in
+- how that entry eventually converged
 
-`LaunchResult<Result>` 的结果域只有三种：
+`LaunchResult<Result>` has only three result kinds:
 
 - `success`
 - `failure`
 - `canceled`
 
-executor 自身也是根 scope 的 `LaunchHandle` 视图，因此同样公开 `status` 与 `onSettled(...)`。
+The executor itself is also the `LaunchHandle` view of the root scope, so it exposes `status` and `onSettled(...)` as well.
 
-## 外部注入
+## External Injection
 
-### `future` 收敛
+### `future` convergence
 
-`settle(futureSettle, result)` 负责从执行环境外部把结果写入运行中的 `future`。
+`settle(futureSettle, result)` writes a result into a running `future` from outside the execution environment.
 
-- 返回 `true`：注入成功接入
-- 返回 `false`：`future` 已经收敛，或当前环境无法再接入这次注入
+- returns `true`: the injection was accepted
+- returns `false`: the `future` already converged, or the environment can no longer accept this injection
 
-### scope 取消
+### scope cancellation
 
-`cancel(scope)` 负责从执行环境外部请求取消某个执行入口 scope。
+`cancel(scope)` requests cancellation for an execution-entry scope from outside the execution environment.
 
-- 返回 `true`：取消请求被接入
-- 返回 `false`：scope 非法、未注册，或已不再开放
+- returns `true`: the cancellation request was accepted
+- returns `false`: the scope is invalid, unregistered, or no longer open
 
-## 切片推进
+## Slice Progression
 
-`Executor` 通过 `Pacer` 与宿主事件循环协作：
+`Executor` collaborates with the host event loop through `Pacer`:
 
 ```ts
 interface Pacer {
@@ -109,13 +109,13 @@ interface Slice {
 }
 ```
 
-- `beginSlice()` 开启一次新的同步切片
-- `shouldYield()` 决定当前切片是否应让出线程
-- `continueLater(work)` 把后续工作投递给宿主侧
+- `beginSlice()` starts a new synchronous slice
+- `shouldYield()` decides whether the current slice should yield
+- `continueLater(work)` posts subsequent work back to the host side
 
-## 自治治理
+## Autonomy
 
-`autonomy` 是 `Executor` 对部分 scope 追加的治理能力。它不改写 `Scope` 的基本语义，只改变“这个 scope 由谁调度、何时需要额外回收仲裁”。
+`autonomy` adds governance capabilities to selected scopes within the `Executor`. It does not rewrite the basic semantics of `Scope`; it only changes who schedules a scope and when additional adjudication is needed to reclaim a closing scope.
 
 ### `scheduler`
 
@@ -125,9 +125,9 @@ interface Scheduler {
 }
 ```
 
-当自治 scope 下的 process 变为 runnable 时，`Executor` 调用 `scheduler.assign(process)`，把该 process 路由到某个 `Processor`。
+When a process in an autonomous scope becomes runnable, the `Executor` calls `scheduler.assign(process)` and routes that process to a `Processor`.
 
-这里 `ProcessRef` 表示调度目标。
+Here, `ProcessRef` is the scheduling target.
 
 ### `reaper`
 
@@ -137,9 +137,9 @@ interface Reaper {
 }
 ```
 
-当 `closing` scope 不能自然及时收敛时，`Executor` 可以把该 scope 提交给 `reaper` 仲裁：
+When a `closing` scope cannot converge naturally in time, the `Executor` can submit that scope to a `reaper` for adjudication:
 
-- 返回 `none`：继续等待自然收敛
-- 返回 `some(failure)`：以该 failure 对目标 scope 发起失败收敛
+- return `none`: keep waiting for natural convergence
+- return `some(failure)`: initiate failure convergence for the target scope with that failure
 
-这里 reaper 处理的是治理决策。
+The `reaper` is responsible for governance decisions.

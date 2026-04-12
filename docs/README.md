@@ -1,50 +1,50 @@
-# 文档索引
+# Documentation Index
 
-## 文档职责
+## Document Roles
 
-| 文档                         | 职责                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------- |
-| [semantics.md](semantics.md) | 基础语义文档。定义 `Wisp`、`Sigil`、`Scope`、`Process`、`Future`、失败与收敛规则。          |
-| [executor.md](executor.md)   | 执行环境文档。内容包括 `Executor`、`ExecutionScopeRef`、`launch(...)`、`Pacer` 与自治治理。 |
-| [host.md](host.md)           | 宿主适配文档。内容包括 `@shajara/host` 的 generator 风格 API、错误映射与宿主接入。          |
-| [api.md](api.md)             | 发布接口文档。内容包括两个包的导出面、导入路径、返回值形状与公开入口。                      |
+| Document                     | Role                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [semantics.md](semantics.md) | Semantic baseline. Defines `Wisp`, `Sigil`, `Scope`, `Process`, `Future`, failure, and convergence.      |
+| [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, `launch(...)`, `Pacer`, and autonomy.     |
+| [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, error mapping, and host integration. |
+| [api.md](api.md)             | Public interface reference. Covers exports, import paths, result shapes, and public entry points.        |
 
-## 依赖关系
+## Dependency Direction
 
-文档依赖方向如下：
+The documents depend on one another in this direction:
 
 ```text
 semantics -> executor -> host -> api
 ```
 
-- [semantics.md](semantics.md) 给出基础概念。
-- [executor.md](executor.md) 建立在 `semantics.md` 之上。
-- [host.md](host.md) 建立在 `semantics.md` 与 `executor.md` 之上。
-- [api.md](api.md) 汇总公开接口与调用结果。
+- [semantics.md](semantics.md) establishes the core concepts.
+- [executor.md](executor.md) builds on `semantics.md`.
+- [host.md](host.md) builds on `semantics.md` and `executor.md`.
+- [api.md](api.md) summarizes public interfaces and observable results.
 
-## 阅读顺序
+## Reading Order
 
 1. [semantics.md](semantics.md)
 2. [executor.md](executor.md)
 3. [host.md](host.md)
 4. [api.md](api.md)
 
-## 概念落点
+## Concept Placement
 
-同一概念在不同文档中分别落在不同切面：
+The same concept appears in different documents from different angles:
 
-- 在 `semantics.md` 中，概念按语义定义出现。
-- 在 `executor.md` 中，概念按执行环境与治理责任出现。
-- 在 `host.md` 中，概念按宿主适配与边界语义出现。
-- 在 `api.md` 中，概念按公开接口与调用结果出现。
+- In `semantics.md`, concepts appear as semantic definitions.
+- In `executor.md`, concepts appear as execution-environment and governance concerns.
+- In `host.md`, concepts appear as host adaptation and boundary behavior.
+- In `api.md`, concepts appear as public interfaces and call results.
 
-## 核心术语
+## Core Terms
 
-下列术语用于区分几类相近但不同的概念：
+The following terms distinguish concepts that are close to each other but not identical:
 
-- “入口”指一段可从外部启动的运行边界，例如 `launch(...)`、`run(...)` 与 `createScope().run(...)`。
-- “收敛”指 future 或 scope 进入最终结果。
-- “关闭”只用于 scope 生命周期，以及 `open`、`closing`、`closed` 这组状态。
-- “失败”指失败结果或失败收敛；“强制失败”只指运行时直接把 scope 推入失败收敛路径。
-- “取消”只指 `canceled` 路径。
-- “仲裁”只用于 `reaper` 对处于 `closing` 状态的 scope 的治理决策。
+- "Entry" means a runnable boundary that can be started from the outside, such as `launch(...)`, `run(...)`, or `createScope().run(...)`.
+- "Convergence" means a future or scope reaching its final result.
+- "Closing" is only used for scope lifecycle and the `open`, `closing`, and `closed` states.
+- "Failure" means a failure result or failure convergence. "Forced failure" only means directly pushing a scope into failure convergence.
+- "Cancellation" only refers to the `canceled` path.
+- "Adjudication" only refers to the governance decision a `reaper` makes over a scope in the `closing` state.
