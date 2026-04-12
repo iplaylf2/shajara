@@ -13,39 +13,28 @@ describe("/ operations: sleep", () => {
   ])(
     "settles only after the requested timeout elapses",
     async ({ given: [milliseconds], outcome }) => {
+      vi.useFakeTimers();
       const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
-      const capturedTimer: { fire: (() => void) | null } = { fire: null };
-      const timeoutToken = Symbol("timeout");
 
       try {
-        setTimeoutSpy.mockImplementation(((handler: TimerHandler) => {
-          capturedTimer.fire = () => {
-            if (typeof handler === "function") {
-              handler();
-            }
-          };
-
-          return timeoutToken as unknown as ReturnType<typeof globalThis.setTimeout>;
-        }) as typeof globalThis.setTimeout);
-
         const settled = run(() => sleep(milliseconds));
-        await waitForPostedTasks();
+        await flushPostedTasks();
 
         expect(settled.status).toBe(outcome.statusBeforeDelay);
         expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), milliseconds);
 
-        const fireTimer = capturedTimer.fire;
-        expect(fireTimer).not.toBeNull();
-        if (fireTimer === null) {
-          throw new Error("Expected sleep() to register a timeout callback.");
-        }
+        await vi.advanceTimersByTimeAsync(milliseconds - 1);
+        expect(settled.status).toBe(outcome.statusBeforeDelay);
 
-        fireTimer();
+        await vi.advanceTimersByTimeAsync(1);
+        await vi.runOnlyPendingTimersAsync();
+        await flushPostedTasks();
         await expect(settled).resolves.toBeUndefined();
         expect(settled.status).toBe(outcome.statusAfterDelay);
-        expect(clearTimeoutSpy).toHaveBeenCalledWith(timeoutToken);
+        expect(clearTimeoutSpy).toHaveBeenCalled();
       } finally {
+        vi.useRealTimers();
         setTimeoutSpy.mockRestore();
         clearTimeoutSpy.mockRestore();
       }
@@ -53,7 +42,7 @@ describe("/ operations: sleep", () => {
   );
 });
 
-function waitForPostedTasks(): Promise<void> {
+function flushPostedTasks(): Promise<void> {
   return new Promise<void>((resolve) => {
     const channel = new globalThis.MessageChannel();
     channel.port1.onmessage = () => {
