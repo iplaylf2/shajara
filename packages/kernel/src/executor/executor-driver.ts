@@ -1,9 +1,10 @@
 import type { Processor, ProcessorTask } from "./processor";
+import { readonlyArray, readonlySet } from "fp-ts";
+import type { Disposer } from "#/utils";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import type { ProcessRef } from "#/contracts";
 import type { ProcessStep } from "#/interpreter";
-import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {
   public stop(): void {
@@ -27,6 +28,15 @@ export class ExecutorDriver {
     }
   }
 
+  public continueLater(work: () => void): Disposer {
+    this.#scheduledWorks.add(work);
+    this.#ensureTurnArmed();
+
+    return () => {
+      this.#scheduledWorks.delete(work);
+    };
+  }
+
   public constructor(
     pacer: Pacer,
     stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
@@ -40,36 +50,57 @@ export class ExecutorDriver {
   }
 
   #ensureTurnArmed(): void {
-    if (this.#isStopped || this.#isTurnArmed || !this.#hasTask) {
+    if (this.#isStopped || this.#isTurnArmed || !this.#hasRunnableWork) {
       return;
     }
 
     this.#isTurnArmed = true;
     this.#pacer.continueLater(() => {
+      this.#isTurnArmed = false;
+
       if (this.#isStopped) {
-        this.#isTurnArmed = false;
         return;
       }
 
       try {
-        this.#runCurrentTurn();
+        this.#runTurn();
       } finally {
-        this.#isTurnArmed = false;
         this.#ensureTurnArmed();
       }
     });
   }
 
-  #runCurrentTurn(): void {
+  #runTurn(): void {
     const slice = this.#pacer.beginSlice();
 
-    while (this.#hasTask && !slice.shouldYield()) {
-      this.#consumeTask();
+    this.#runScheduledWork();
+
+    while (this.#hasProcessorTask && !slice.shouldYield()) {
+      this.#consumeProcessorTask();
     }
   }
 
-  #consumeTask(): void {
-    const [task] = this.#tasks;
+  #runScheduledWork(): void {
+    if (readonlySet.isEmpty(this.#scheduledWorks)) {
+      return;
+    }
+
+    const scheduledWork = [...this.#scheduledWorks];
+    this.#scheduledWorks.clear();
+
+    const faultSink = new FaultSink("");
+    for (const work of scheduledWork) {
+      try {
+        work();
+      } catch (error) {
+        faultSink.capture(error);
+      }
+    }
+    faultSink.throwIfAny();
+  }
+
+  #consumeProcessorTask(): void {
+    const [task] = this.#processorTasks;
     while (true) {
       using faultSink = new FaultSink(
         "Out-of-band failures occurred while processing executor work",
@@ -81,30 +112,35 @@ export class ExecutorDriver {
           continue;
         }
         case "cede": {
-          this.#tasks.shift();
-          this.#tasks.push(task!);
+          this.#processorTasks.shift();
+          this.#processorTasks.push(task!);
           return;
         }
         case "waiting":
         case "exited": {
-          this.#tasks.shift();
+          this.#processorTasks.shift();
           return;
         }
       }
     }
   }
 
-  get #hasTask(): boolean {
-    return readonlyArray.isNonEmpty(this.#tasks);
+  get #hasRunnableWork(): boolean {
+    return !readonlySet.isEmpty(this.#scheduledWorks) || this.#hasProcessorTask;
+  }
+
+  get #hasProcessorTask(): boolean {
+    return readonlyArray.isNonEmpty(this.#processorTasks);
   }
 
   #isStopped = false;
   #isTurnArmed = false;
   readonly #pacer: Pacer;
-  readonly #tasks: ProcessorTask[] = [];
+  readonly #scheduledWorks = new Set<() => void>();
+  readonly #processorTasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
     admit: (task) => {
-      this.#tasks.push(task);
+      this.#processorTasks.push(task);
       this.#ensureTurnArmed();
     },
   };

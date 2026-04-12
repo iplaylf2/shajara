@@ -34,7 +34,6 @@ export interface Executor extends LaunchHandle<never> {
 
 class RuntimeExecutor implements Executor {
   public constructor(pacer: Pacer) {
-    this.#pacer = pacer;
     this.#driver = new ExecutorDriver(pacer, (process) =>
       this.#interpreter.step(process, { capture: unreachable }),
     );
@@ -198,7 +197,7 @@ class RuntimeExecutor implements Executor {
     }
 
     this.#isReaperRoundQueued = true;
-    this.#pacer.continueLater(() => {
+    this.#driver.continueLater(() => {
       const hasReaperTask = this.#startReaperRound();
       this.#isReaperRoundQueued = false;
 
@@ -218,7 +217,6 @@ class RuntimeExecutor implements Executor {
   }
 
   #isReaperRoundQueued = false;
-  readonly #pacer: Pacer;
   readonly #driver: ExecutorDriver;
   readonly #interpreter: DomainInterpreter;
   readonly #rootScope: ExecutionScopeRef<never>;
