@@ -2,25 +2,33 @@ import type { Disposer } from "@shajara/kernel/utils";
 
 export class TaskPoster {
   post(work: () => void): Disposer {
-    this.#queue.push(work);
+    const task: Task = {
+      canceled: false,
+      work,
+    };
+
+    this.#queue.push(task);
     this.#channel.port2.postMessage(null);
 
     return () => {
-      const index = this.#queue.indexOf(work);
-      if (index !== MISSING_INDEX) {
-        this.#queue[index] = null;
-      }
+      task.canceled = true;
     };
   }
 
   constructor() {
     this.#channel.port1.onmessage = () => {
-      this.#queue.shift()?.();
+      const task = this.#queue.shift();
+      if (task && !task.canceled) {
+        task.work();
+      }
     };
   }
 
-  readonly #queue: ((() => void) | null)[] = [];
+  readonly #queue: Task[] = [];
   readonly #channel = new globalThis.MessageChannel();
 }
 
-const MISSING_INDEX = -1;
+interface Task {
+  canceled: boolean;
+  work: () => void;
+}

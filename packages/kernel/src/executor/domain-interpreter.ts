@@ -15,8 +15,9 @@ export class DomainInterpreter extends Interpreter {
   public static createByAutonomy(
     entry: Ritual<unknown>,
     autonomy: SchedulerOption & ReaperOption,
+    noteClosingObserved: () => void,
   ): DomainInterpreter {
-    const interpreter = new DomainInterpreter(entry, autonomy);
+    const interpreter = new DomainInterpreter(entry, autonomy, noteClosingObserved);
     interpreter.initialize();
     return interpreter;
   }
@@ -46,7 +47,11 @@ export class DomainInterpreter extends Interpreter {
     }
   }
 
-  protected constructor(entry: Ritual<unknown>, autonomy: SchedulerOption & ReaperOption) {
+  protected constructor(
+    entry: Ritual<unknown>,
+    autonomy: SchedulerOption & ReaperOption,
+    noteClosingObserved: () => void,
+  ) {
     const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
       this.#createProcessorTask(process),
     );
@@ -59,12 +64,17 @@ export class DomainInterpreter extends Interpreter {
         schedulerDomainRoot.admitProcess(process, this.processState(process));
       },
       trackScope: (scope) => {
-        reaperDomainRoot.trackScope(scope, this.scopeState(scope));
+        const state = this.scopeState(scope);
+        reaperDomainRoot.trackScope(scope, state);
+        if (state.status === "closing") {
+          noteClosingObserved();
+        }
       },
     };
 
     super(entry, zoneRoot);
 
+    this.#noteClosingObserved = noteClosingObserved;
     this.#reaperDomainRoot = reaperDomainRoot;
   }
 
@@ -180,7 +190,11 @@ export class DomainInterpreter extends Interpreter {
     const trackScope =
       "reaper" in autonomy
         ? (scope: ScopeRef<unknown>) => {
-            reaperDomain.trackScope(scope, this.scopeState(scope));
+            const state = this.scopeState(scope);
+            reaperDomain.trackScope(scope, state);
+            if (state.status === "closing") {
+              this.#noteClosingObserved();
+            }
           }
         : domainZone.trackScope;
 
@@ -241,6 +255,7 @@ export class DomainInterpreter extends Interpreter {
     reaperDomain.addLeafScope(scope);
   }
 
+  readonly #noteClosingObserved: () => void;
   readonly #reaperDomainRoot: ReaperDomain;
 }
 

@@ -6,12 +6,6 @@ import type { ProcessStep } from "#/interpreter";
 import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {
-  public static create(pacer: Pacer, loop: ExecutorDriverLoop): ExecutorDriver {
-    const driver = new ExecutorDriver(pacer, loop);
-    driver.#armTurn();
-    return driver;
-  }
-
   public stop(): void {
     this.#isStopped = true;
   }
@@ -33,34 +27,41 @@ export class ExecutorDriver {
     }
   }
 
+  public constructor(
+    pacer: Pacer,
+    stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
+  ) {
+    this.#pacer = pacer;
+    this.#stepProcess = stepProcess;
+  }
+
   public get processor(): Processor {
     return this.#processor;
   }
 
-  private constructor(pacer: Pacer, loop: ExecutorDriverLoop) {
-    this.#pacer = pacer;
-    this.#loop = loop;
-  }
+  #ensureTurnArmed(): void {
+    if (this.#isStopped || this.#isTurnArmed || !this.#hasTask) {
+      return;
+    }
 
-  #armTurn(): void {
+    this.#isTurnArmed = true;
     this.#pacer.continueLater(() => {
       if (this.#isStopped) {
+        this.#isTurnArmed = false;
         return;
       }
 
       try {
         this.#runCurrentTurn();
       } finally {
-        if (!this.#isStopped) {
-          this.#armTurn();
-        }
+        this.#isTurnArmed = false;
+        this.#ensureTurnArmed();
       }
     });
   }
 
   #runCurrentTurn(): void {
     const slice = this.#pacer.beginSlice();
-    this.#loop.beginTurn();
 
     while (this.#hasTask && !slice.shouldYield()) {
       this.#consumeTask();
@@ -98,21 +99,15 @@ export class ExecutorDriver {
   }
 
   #isStopped = false;
+  #isTurnArmed = false;
   readonly #pacer: Pacer;
-  readonly #loop: ExecutorDriverLoop;
   readonly #tasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
     admit: (task) => {
       this.#tasks.push(task);
+      this.#ensureTurnArmed();
     },
   };
 
-  #stepProcess<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
-    return this.#loop.stepProcess(process);
-  }
-}
-
-export interface ExecutorDriverLoop {
-  beginTurn(): void;
-  stepProcess<Result>(process: ProcessRef<Result>): ProcessStep<Result>;
+  readonly #stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>;
 }

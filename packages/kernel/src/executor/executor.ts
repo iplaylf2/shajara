@@ -34,14 +34,18 @@ export interface Executor extends LaunchHandle<never> {
 
 class RuntimeExecutor implements Executor {
   public constructor(pacer: Pacer) {
-    this.#driver = ExecutorDriver.create(pacer, {
-      beginTurn: () => this.#startReaperRound(),
-      stepProcess: (process) => this.#interpreter.step(process, { capture: unreachable }),
-    });
-    this.#interpreter = DomainInterpreter.createByAutonomy(park, {
-      reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
-      scheduler: { assign: () => this.#driver.processor },
-    });
+    this.#pacer = pacer;
+    this.#driver = new ExecutorDriver(pacer, (process) =>
+      this.#interpreter.step(process, { capture: unreachable }),
+    );
+    this.#interpreter = DomainInterpreter.createByAutonomy(
+      park,
+      {
+        reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
+        scheduler: { assign: () => this.#driver.processor },
+      },
+      () => this.#ensureReaperRound(),
+    );
     this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot as never);
     this.#interpreter.wait(this.#rootScope.exitFuture, () => {
       this.#driver.stop();
@@ -126,9 +130,11 @@ class RuntimeExecutor implements Executor {
     return this.#status(this.#rootScope);
   }
 
-  #startReaperRound(): void {
+  #startReaperRound(): boolean {
     using faultSink = new FaultSink("Out-of-band failures occurred while starting a reaper round");
+    let startedReaperTask = false;
     for (const [scope, process] of this.#interpreter.startReaperTasks(faultSink)) {
+      startedReaperTask = true;
       this.#interpreter.wait(process.exitFuture, (result, suppressor) => {
         if (this.#interpreter.scopeState(scope).status === "closed") {
           return;
@@ -149,6 +155,8 @@ class RuntimeExecutor implements Executor {
         );
       });
     }
+
+    return startedReaperTask;
   }
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
@@ -184,6 +192,22 @@ class RuntimeExecutor implements Executor {
     return this.#interpreter.scopeState(scope).status;
   }
 
+  #ensureReaperRound(): void {
+    if (this.#isReaperRoundQueued) {
+      return;
+    }
+
+    this.#isReaperRoundQueued = true;
+    this.#pacer.continueLater(() => {
+      const started = this.#startReaperRound();
+      this.#isReaperRoundQueued = false;
+
+      if (started) {
+        this.#ensureReaperRound();
+      }
+    });
+  }
+
   #registerScope<Result>(scope: ScopeRef<Result>): ExecutionScopeRef<Result> {
     this.#scopeRegistry.add(scope);
     return scope as ExecutionScopeRef<Result>;
@@ -193,6 +217,8 @@ class RuntimeExecutor implements Executor {
     return this.#scopeRegistry.has(scope);
   }
 
+  #isReaperRoundQueued = false;
+  readonly #pacer: Pacer;
   readonly #driver: ExecutorDriver;
   readonly #interpreter: DomainInterpreter;
   readonly #rootScope: ExecutionScopeRef<never>;
