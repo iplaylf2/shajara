@@ -13,5 +13,5 @@ export class ShajaraPacer implements Pacer {
     return this.#taskPoster.post(work);
   }
 
-  #taskPoster = new TaskPoster();
+  #taskPoster = new TaskPoster(DEFAULT_QUANTUM_MS);
 }

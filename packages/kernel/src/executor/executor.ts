@@ -132,9 +132,9 @@ class RuntimeExecutor implements Executor {
 
   #startReaperRound(): boolean {
     using faultSink = new FaultSink("Out-of-band failures occurred while starting a reaper round");
-    let startedReaperTask = false;
+    let hasReaperTask = false;
     for (const [scope, process] of this.#interpreter.startReaperTasks(faultSink)) {
-      startedReaperTask = true;
+      hasReaperTask = true;
       this.#interpreter.wait(process.exitFuture, (result, suppressor) => {
         if (this.#interpreter.scopeState(scope).status === "closed") {
           return;
@@ -156,7 +156,7 @@ class RuntimeExecutor implements Executor {
       });
     }
 
-    return startedReaperTask;
+    return hasReaperTask;
   }
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
@@ -199,10 +199,10 @@ class RuntimeExecutor implements Executor {
 
     this.#isReaperRoundQueued = true;
     this.#pacer.continueLater(() => {
-      const started = this.#startReaperRound();
+      const hasReaperTask = this.#startReaperRound();
       this.#isReaperRoundQueued = false;
 
-      if (started) {
+      if (hasReaperTask) {
         this.#ensureReaperRound();
       }
     });
