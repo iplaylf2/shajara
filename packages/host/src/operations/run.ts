@@ -1,12 +1,17 @@
-import type { RunOptions, StatefulPromise } from "#/operations-kit";
+import type { RunOptions, RuntimeLaunchServices, StatefulPromise } from "#/operations-kit";
 import type { RiteRoutine } from "#/contracts";
+import { RuntimeLaunch } from "#/operations-kit";
 import { ensureExecutor } from "#/executor";
-import { launch } from "#/operations-kit";
 
 export function run<Return>(
   ritual: RiteRoutine<Return>,
   options?: RunOptions,
 ): StatefulPromise<Return> {
   const executor = ensureExecutor();
-  return launch(executor, executor.scope, ritual, options).settled;
+  const services: RuntimeLaunchServices = {
+    cancelScope: (scope) => executor.cancel(scope),
+    launchInScope: (scope, worker) => executor.launch(scope, worker),
+  };
+
+  return RuntimeLaunch.create(executor.scope, ritual, services, options).settled;
 }

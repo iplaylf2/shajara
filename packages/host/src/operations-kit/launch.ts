@@ -1,9 +1,9 @@
 import type {
   ExecutionScopeRef,
-  Executor,
   LaunchHandle,
   LaunchResult,
   LaunchStatus,
+  Ritual,
 } from "@shajara/kernel";
 import { decodeRitual, fromFailure } from "#/boundary";
 import { CanceledError } from "#/errors";
@@ -11,49 +11,59 @@ import type { Option } from "@shajara/kernel/utils";
 import type { RiteRoutine } from "#/contracts";
 import { isNone } from "@shajara/kernel/utils";
 
-export function launch<Result>(
-  executor: Executor,
-  scope: ExecutionScopeRef<unknown>,
-  ritual: RiteRoutine<Result>,
-  options?: RunOptions,
-): HostLaunchResult<Result> {
-  const signal = options?.signal;
+export class RuntimeLaunch<Result> {
+  public static create<Result>(
+    scope: ExecutionScopeRef<unknown>,
+    ritual: RiteRoutine<Result>,
+    services: RuntimeLaunchServices,
+    options?: RunOptions,
+  ): RuntimeLaunch<Result> {
+    const signal = options?.signal;
 
-  function* guardedRitual(): ReturnType<RiteRoutine<Result>> {
-    if (!signal) {
-      return yield* ritual();
-    }
+    const execution = unwrap(
+      services.launchInScope(
+        scope,
+        decodeRitual(function* guardedRitual(): ReturnType<RiteRoutine<Result>> {
+          if (!signal) {
+            return yield* ritual();
+          }
 
-    function onAbort(): void {
-      if (execution.status === "open") {
-        executor.cancel(execution.scope);
-      }
-    }
+          function onAbort(): void {
+            if (execution.status === "open") {
+              services.cancelScope(execution.scope);
+            }
+          }
 
-    if (signal.aborted) {
-      onAbort();
-    }
+          if (signal.aborted) {
+            onAbort();
+          }
 
-    signal.addEventListener("abort", onAbort, { once: true });
-    try {
-      return yield* ritual();
-    } finally {
-      signal.removeEventListener("abort", onAbort);
-    }
+          signal.addEventListener("abort", onAbort, { once: true });
+          try {
+            return yield* ritual();
+          } finally {
+            signal.removeEventListener("abort", onAbort);
+          }
+        }),
+      ),
+    );
+
+    return new RuntimeLaunch(execution);
   }
 
-  const execution = unwrap(executor.launch(scope, decodeRitual(guardedRitual)));
-  const settled = asSettledPromise(execution);
+  public get settled(): StatefulPromise<Result> {
+    return this.#settled;
+  }
 
-  return {
-    scope: execution.scope,
-    settled: toStatefulPromise(execution, settled),
-  };
-}
+  public get scope(): ExecutionScopeRef<Result> {
+    return this.execution.scope;
+  }
 
-export interface HostLaunchResult<Result> {
-  readonly scope: ExecutionScopeRef<Result>;
-  readonly settled: StatefulPromise<Result>;
+  private constructor(private readonly execution: LaunchHandle<Result>) {
+    this.#settled = createSettledPromise(execution);
+  }
+
+  readonly #settled: StatefulPromise<Result>;
 }
 
 export interface RunOptions {
@@ -64,6 +74,14 @@ export interface StatefulPromise<Return> extends Promise<Return> {
   readonly status: LaunchStatus;
 }
 
+export interface RuntimeLaunchServices {
+  cancelScope(scope: ExecutionScopeRef<unknown>): boolean;
+  launchInScope<Result>(
+    scope: ExecutionScopeRef<unknown>,
+    ritual: Ritual<Result>,
+  ): Option<LaunchHandle<Result>>;
+}
+
 function unwrap<Return>(execution: Option<LaunchHandle<Return>>): LaunchHandle<Return> {
   if (isNone(execution)) {
     throw new Error("Cannot launch ritual with an illegal scope.");
@@ -72,8 +90,8 @@ function unwrap<Return>(execution: Option<LaunchHandle<Return>>): LaunchHandle<R
   return execution.value;
 }
 
-function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Return> {
-  return new Promise<Return>((resolve, reject) => {
+function createSettledPromise<Return>(execution: LaunchHandle<Return>): StatefulPromise<Return> {
+  const settled = new Promise<Return>((resolve, reject) => {
     execution.onSettled((result: LaunchResult<Return>) => {
       switch (result.kind) {
         case "success": {
@@ -91,21 +109,12 @@ function asSettledPromise<Return>(execution: LaunchHandle<Return>): Promise<Retu
       }
     });
   });
-}
 
-function toStatefulPromise<Return>(
-  execution: LaunchHandle<Return>,
-  settled: Promise<Return>,
-): StatefulPromise<Return> {
-  const stateful = settled as StatefulPromise<Return>;
-
-  Object.defineProperty(stateful, "status", {
+  return Object.defineProperty(settled, "status", {
     configurable: true,
     enumerable: true,
     get(): LaunchStatus {
       return execution.status;
     },
-  });
-
-  return stateful;
+  }) as StatefulPromise<Return>;
 }
