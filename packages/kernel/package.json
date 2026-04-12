@@ -47,7 +47,6 @@
     "prepack": "yarn build && yarn run -T pack:license stage",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest",
     "typecheck": "yarn run -T tsc --noEmit && yarn run -T tsc -p test/tsconfig.json --noEmit"
   },
   "devDependencies": {

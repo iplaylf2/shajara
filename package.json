@@ -15,7 +15,7 @@
     "typecheck": "yarn workspaces foreach -Ap run typecheck"
   },
   "devDependencies": {
-    "cspell-cli": "git+https://github.com/streetsidesoftware/cspell-cli.git",
+    "cspell-cli": "^10.0.0",
     "oxfmt": "^0.44.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"
