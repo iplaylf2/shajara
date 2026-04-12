@@ -1,0 +1,65 @@
+name: Pre-merge to master
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Validation
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Build
+        run: yarn build
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Test with coverage
+        run: |
+          set -euo pipefail
+
+          coverage_log=$(mktemp)
+
+          yarn workspaces foreach -A --verbose run test:coverage -- --coverage.reporter=text-summary 2>&1 | tee "${coverage_log}"
+
+          {
+            echo "## Coverage"
+            echo
+            echo '```text'
+            awk '
+              /^\[[^]]+\]: =============================== Coverage summary ===============================$/ { printing=1 }
+              printing { print }
+              /^\[[^]]+\]: ================================================================================$/ { printing=0; print "" }
+            ' "${coverage_log}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

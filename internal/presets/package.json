@@ -1,5 +1,6 @@
 {
   "name": "@shajara/presets",
+  "private": true,
   "type": "module",
   "exports": {
     "./*": "./exports/*"
