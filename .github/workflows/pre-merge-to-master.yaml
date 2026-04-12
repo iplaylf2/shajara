@@ -20,7 +20,9 @@ concurrency:
 jobs:
   checks:
     name: Validation
-    if: github.event.pull_request.draft == false
+    if: >-
+      github.event.pull_request.draft == false &&
+      !startsWith(github.event.pull_request.head.ref, 'changeset-release/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -12,14 +12,18 @@
   ],
   "scripts": {
     "build": "yarn workspaces foreach -At --topological run build",
+    "changeset": "changeset",
     "format": "yarn run oxfmt --write .",
     "lint": "yarn workspaces foreach -Ap run lint",
     "pack:license": "node ./scripts/pack-license.mjs",
+    "release": "changeset publish",
     "spellcheck": "yarn cspell-cli .",
     "test": "yarn workspaces foreach -Ap run test",
-    "typecheck": "yarn workspaces foreach -Ap run typecheck"
+    "typecheck": "yarn workspaces foreach -Ap run typecheck",
+    "version-packages": "changeset version"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.30.0",
     "cspell-cli": "^10.0.0",
     "oxfmt": "^0.44.0",
     "oxlint": "catalog:",
