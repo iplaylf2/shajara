@@ -1,92 +1,131 @@
-# Host 架构
+# 宿主适配
 
-本文档描述 host 的分层职责、适配协议以及推进机制。
+`@shajara/host` 在 `Executor` 与基础语义之上建立 generator 风格宿主层。
 
----
+## 宿主层职责
 
-## 1. 分层
+host 负责三类事情：
 
+- 提供面向应用代码的运行入口：`run`、`createScope`、`action`、`sleep`、`until`
+- 提供 generator 风格原语：`@shajara/host/primitives`
+- 把 kernel 失败映射成 JavaScript 错误对象
+
+## 入口适配
+
+host 用两条边界适配 kernel：
+
+- `decodeRitual`：`RiteRoutine<T>` -> kernel `Ritual<T>`
+- `encodeRitual`：kernel `Ritual<T>` -> `RiteCoroutine<T>`
+
+对应类型：
+
+```ts
+type RiteRoutine<T> = () => RiteCoroutine<T>;
+type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 ```
-用户代码  ──yield*──▶  host（generator 编排 + 宿主桥接）
-                            │
-                  decodeRitual / encodeRitual
-                            │
-                      kernel（Wisp 解释 + Scope 树 + EventQueue）
-```
 
-- **kernel** 提供执行语义。
-- **host** 负责将用户侧 generator 表达映射为可执行 Wisp，并在宿主边界承载 `run`、`createScope`、`action`、`sleep`、`until` 等 API。
-- **host** 同时承担 executor 的宿主侧接线：通过 `host/src/executor/` 组织 `ensureExecutor`、`Pacer` 适配与任务投递器，并以 `createExecutor(pacer)` 创建并持有 executor 实例（executor 语义参见 [executor.md](executor.md)）。
+在 host 中，`Ritual` 表示“应用代码如何以 generator 写出同一段计算”。
 
-host 通过执行入口把降解后的 Ritual 提交给 executor。
+## 结果通道
 
-## 2. Ritual 适配协议
+host 与 kernel 的主要区别，不是能力集合，而是结果通道。
 
-用户以 `RiteRoutine<T>`（generator function）书写流程，通过 `yield*` 组合原语。双向桥接由两个适配器完成：
+典型改写如下：
 
-| 适配器         | 方向          | 作用                                                                 |
-| -------------- | ------------- | -------------------------------------------------------------------- |
-| `encodeRitual` | kernel → host | 以 `Ritual<T>` 为入口，在 host 中按需编码为 `RiteCoroutine<T>`。     |
-| `decodeRitual` | host → kernel | 以 `RiteRoutine<T>` 为入口，在 kernel 边界解码为可执行 `Ritual<T>`。 |
+- kernel `wait(future)` 返回 `Either<FailureShape, T>`
+- host `wait(future)` 返回 `T`，失败时抛错
 
-`RiteCoroutine<T>` 即 `Generator<Sigil, T, unknown>`；`RiteRoutine<T>` 即 `() => RiteCoroutine<T>`。适配入口统一采用 ritual。
+- kernel `lookup(key)` 返回 `Option<T>`
+- host `lookup(key)` 返回 `T | undefined`
 
-术语方向固定：`encode` = kernel → host（编码为宿主承载形态），`decode` = host → kernel（解码回 kernel ritual）。
+- kernel `enclose(ritual)` 返回 `Either<FailureShape, T>`
+- host `enclose(ritual)` 返回 `T`，失败时抛错
 
-## 3. 失败通道分层
+因此 host 中的 `Future`、`Scope`、`Failure` 都以用户可见结果为主。
 
-kernel 以代数容器 `Either<Failure, T>` 在 primitive 层表达失败，保持可组合与可推理。host 在 primitive 适配边界统一解包：`Right` 直接返回成功值，`Left` 映射为宿主侧 `Error` 抛出。用户侧得到“成功返回值、失败抛异常”的模型。
+## 错误映射
 
-`Failure`（kernel 共享失败契约）不向用户侧暴露；结构性 failure 在 host 侧映射为 `ShajaraError`（继承 `Error`）子类，`canceled` 映射为 `CanceledError`；外部 failure 若携带原始 `Error`，则直接复用该实例。
+host 会把 kernel 失败映射成 JavaScript 错误对象。
 
-需要特别注意的是：只要某个外部异常已经驱动其所属 Scope 进入 failed 收敛，host 对外看到的就不再只是“原始异常”，而是“该 Scope 以该异常为根因失败”这一结构性事实。因此 `run` / `wait` / `enclose` 在面对 scope failure 时返回 `ScopeError` 是刻意的边界语义，不是额外包装造成的信息丢失。
+### 写入 kernel 的方向
 
-读取这类失败时，约定如下：
+以下入口会把宿主错误改写成 kernel 失败：
 
-- `ScopeError` 表示一个 Scope 已经以失败路径收敛。
-- 根因始终位于 `scopeError.cause.failure`。
-- 若根因是 external failure，原始 `Error` 位于 `scopeError.cause.failure.raw`。
-- `scopeError.suppressed` 仅表示收敛期间额外捕获到的其他 failure；它不是原始异常链，也不会在单一根因失败时出现内容。
+- `halt(error)`
+- `settleError(futureSettle, error)`
+- `action.reject(error)`
+- `until(...).catch(...)`
 
-因此 `run` / `wait` 只会在 failure 尚未提升为 scope failure 时直接保留原始 `Error` 实例，以维持一致的 `instanceof` 识别语义；一旦失败已经形成 Scope 收敛事实，对外就稳定表现为 `ScopeError`。`guard(entry, recover)` 的恢复回调也固定接收 `ScopeError`，以便恢复逻辑面对的是显式的 Scope 边界，而不只是某个脱离上下文的原始异常。
+### 从 kernel 返回的方向
 
-## 4. 执行入口
+host 通过 `fromFailure(...)` 做统一映射：
 
-host 以 `launch` 为统一收敛锚点：
+- `canceled` -> `CanceledError`
+- `interrupted` -> `InterruptedError`
+- `scope` -> `ScopeError`
+- `external` -> 原始 `Error` 或 `ExternalError`
 
-1. 调用 `executor.launch(scope, ritual)` 获取 `LaunchHandle<T>`。
-2. 通过 `handle.onSettled(...)` 观察单次 `LaunchResult<T>`（`success | failure | canceled`）并收敛为 Promise 语义。
-3. 返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state()`）。
-4. 可选 `AbortSignal` 映射为 `executor.cancel(handle.scope)`。
+这里 `ScopeError` 的含义是：调用方看到的已经不是单个原始异常，而是“某个 scope 以该根因失败收敛”这一结构事实。
 
-`run` 和 `createScope` 均通过 `launch` 实现。
+原始根因位于：
 
-## 5. 宿主桥接
+- `ScopeError.cause.failure`
+- 若该根因来自 `external` failure，则原始外部值位于 `raw`
 
-`action`、`sleep`、`until` 等宿主操作在内部利用 future settlement capability 完成宿主回调到 kernel 的单次收敛闭环：
+## 运行入口
 
-- host 侧创建 `FutureKey<T> / FutureSettleKey<T>` 对；其内部收敛结果固定为 `Either<Failure, T>`。
-- kernel 侧通过 `wait(futureKey)` 等待收敛。
-- 宿主回调通过 `executor.settle(futureSettleKey, result)` 注入最终结果。
+### `run`
 
-`Scope`、并发与结果收敛在 host 公开 API 中分别落在 `createScope`、`spawn` 与 future 相关原语上。
+`run` 的职责是把宿主 `ritual` 接到长期 `Executor` 上，并把 `LaunchHandle` 暴露成带 `status` 的 Promise。
 
-`autonomy` 也落在这一层适配责任中：host 直接复用 kernel 提供的 autonomy primitive，并对 `options.reaper` 做宿主侧转译，使其保持“正常返回表示继续等待、抛异常表示强制失败”的 host 风格失败通道。
+结果语义是：
 
-## 6. Scope 引用类型
+- 成功时 resolve 结果值
+- 取消时 reject `CanceledError`
+- 失败时 reject `Error`
+- 结构性失败通常表现为 `ScopeError`
 
-host 与 kernel 的契约中，`Scope` 及其相关引用类型承载运行边界。
+### `createScope`
 
-host 直接消费 kernel 与 executor 导出的引用类型：
+`createScope` 的职责是从 `Executor` 根入口派生一个长期托管 scope，并向调用方公开：
 
-| 类型                | 来源     | 用途                    |
-| ------------------- | -------- | ----------------------- |
-| `ScopeRef`          | kernel   | 结构层引用              |
-| `ExecutionScopeRef` | executor | 执行入口引用（含 root） |
-| `SelfHandle`        | kernel   | 自省信息                |
+- `run(...)`
+- `cancel()`
+- `status`
+- `closed`
 
-命名规则：角色用 `*Scope`，控制面句柄用 `*Ref`。
+这里的 scope 重点是宿主侧的运行边界，而不是再次解释 kernel scope 的内部语义。
 
-## 7. 运行时状态
+关闭语义是：
 
-host 不维护 Scope 树、Process 表或等待登记；这些运行时状态由 kernel 与 executor 承接。host 只消费它们暴露出的能力边界。
+- `cancel()` 会等待该 scope 的关闭结果
+- `closed` 会在该 scope 完全关闭后 settle
+- 若关闭结果是取消或失败，`cancel()` 与 `closed` 都反映同一个结果
+
+## 宿主接入
+
+### `action`
+
+`action()` 为宿主代码暴露一组 `future` 收敛能力：
+
+- `future`
+- `resolve(value)`
+- `reject(error)`
+
+### `sleep`
+
+`sleep(milliseconds)` 用宿主计时器恢复等待中的计算。
+
+### `until`
+
+`until(thunk)` 用 promise 的 fulfilled / rejected 回调把结果写回 future。
+
+这三者把浏览器或 JavaScript 宿主对象接回 `Executor` 可消费的收敛通道。
+
+## 自治治理的宿主适配
+
+host 暴露的 `autonomy(entry, options)` 复用了 kernel 的 `autonomy`，但在 `reaper` 上采用宿主切面：
+
+- host `reaper` 的形状是 `(scope) => RiteCoroutine<void>`
+- 正常返回表示继续等待
+- 抛出异常表示以该异常为根因提交失败仲裁

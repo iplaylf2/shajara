@@ -1,42 +1,50 @@
-# shajara
+# 文档索引
 
-shajara 由两层构成：
+## 文档职责
 
-- **`@shajara/kernel`** — 纯代数执行内核，以 `Wisp`（free monad over `Sigil`）为承载面，定义 Scope 树、Process 生命周期与 sigil 协议。
-- **`@shajara/host`** — 面向用户的 generator 编排层，桥接 kernel 语义并提供宿主 API（`run`、`createScope`、`action`、`sleep`、`until`）。
+| 文档                         | 职责                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| [semantics.md](semantics.md) | 基础语义文档。定义 `Wisp`、`Sigil`、`Scope`、`Process`、`Future`、失败与收敛规则。          |
+| [executor.md](executor.md)   | 执行环境文档。内容包括 `Executor`、`ExecutionScopeRef`、`launch(...)`、`Pacer` 与自治治理。 |
+| [host.md](host.md)           | 宿主适配文档。内容包括 `@shajara/host` 的 generator 风格 API、错误映射与宿主接入。          |
+| [api.md](api.md)             | 发布接口文档。内容包括两个包的导出面、导入路径、返回值形状与公开入口。                      |
 
-## 文档索引
+## 依赖关系
 
-| 文档                                                           | 职责                                                                                          |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [semantics.md](semantics.md)                                   | kernel 语义单源：核心语义、对象模型、执行循环、收敛与 sigil 协议。                            |
-| [api.md](api.md)                                               | 用户侧公开 API 与使用约束。                                                                   |
-| [interpreter.md](interpreter.md)                               | `Interpreter` 的职责、驱动模型，以及 `RuntimeScope` / `RuntimeProcess` 的状态承接与事件边界。 |
-| [executor.md](executor.md)                                     | `executor` 的环境治理职责，以及它如何建立在 `Interpreter` 之上。                              |
-| [host.md](host.md)                                             | host 分层架构与 kernel 适配协议。                                                             |
-| [implementation-constraints.md](implementation-constraints.md) | 实现期约束、命名治理与结构落位。                                                              |
-| [execution.md](execution.md)                                   | 当前实现状态快照，以及实现与文档基线之间仍存在的偏差。                                        |
+文档依赖方向如下：
 
-## 建议阅读顺序
+```text
+semantics -> executor -> host -> api
+```
 
-按文档依赖方向阅读时，建议：
+- [semantics.md](semantics.md) 给出基础概念。
+- [executor.md](executor.md) 建立在 `semantics.md` 之上。
+- [host.md](host.md) 建立在 `semantics.md` 与 `executor.md` 之上。
+- [api.md](api.md) 汇总公开接口与调用结果。
 
-1. `semantics.md`：先看 kernel 语义定义。
-2. `api.md`：再看用户侧公开 API 与使用模型。
-3. `interpreter.md`：查看解释器对象的职责、驱动模型与接口边界。
-4. `executor.md`：查看执行环境如何建立在 `Interpreter` 之上。
-5. `host.md`：查看 host 暴露的适配面与边界。
-6. `implementation-constraints.md`：最后看实现阶段必须持续遵守的约束。
+## 阅读顺序
 
-`execution.md` 记录实现状态，可在需要了解当前实现进展时单独阅读。
+1. [semantics.md](semantics.md)
+2. [executor.md](executor.md)
+3. [host.md](host.md)
+4. [api.md](api.md)
 
-## 语义单源
+## 概念落点
 
-每个概念只在一处文档定义，其余文档仅引用：
+同一概念在不同文档中分别落在不同切面：
 
-- `wisp / sigil / echo / resonance / relic / ritual`、Scope / Process 语义、sigil 语义、执行循环 → `semantics.md`
-- `Interpreter` 的对象设计、步进模型与接口语义 → `interpreter.md`
-- `executor` 的环境治理职责与对 `Interpreter` 的依赖关系 → `executor.md`
-- host 层架构与适配方向 → `host.md`
-- 用户可见 API 形状 → `api.md`
-- 实现期约束 → `implementation-constraints.md`
+- 在 `semantics.md` 中，概念按语义定义出现。
+- 在 `executor.md` 中，概念按执行环境与治理责任出现。
+- 在 `host.md` 中，概念按宿主适配与边界语义出现。
+- 在 `api.md` 中，概念按公开接口与调用结果出现。
+
+## 核心术语
+
+下列术语用于区分几类相近但不同的概念：
+
+- “入口”指一段可从外部启动的运行边界，例如 `launch(...)`、`run(...)` 与 `createScope().run(...)`。
+- “收敛”指 future 或 scope 进入最终结果。
+- “关闭”只用于 scope 生命周期，以及 `open`、`closing`、`closed` 这组状态。
+- “失败”指失败结果或失败收敛；“强制失败”只指运行时直接把 scope 推入失败收敛路径。
+- “取消”只指 `canceled` 路径。
+- “仲裁”只用于 `reaper` 对处于 `closing` 状态的 scope 的治理决策。

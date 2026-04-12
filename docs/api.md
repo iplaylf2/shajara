@@ -1,145 +1,170 @@
-# API
+# 公开接口
 
-本文档定义用户侧公开 API 与使用方式。用户通过 `@shajara/host` 消费所有能力。
+本篇汇总公开导出面与调用结果。
 
----
+## 发布包
 
-## 1. 计算单元
+### `@shajara/host`
 
-### RiteRoutine
+面向应用代码。根入口重导出：
 
-`RiteRoutine<T>` 是用户侧编排单元：generator function，通过 `yield*` 组合编排操作，通过 `return` 产生结果。本文把这些可通过 `yield*` 调用的编排操作统称为原语。
+- `contracts`
+- `errors`
+- `operations`
+
+根入口名称包括：
+
+- 运行入口：`run`、`createScope`
+- 宿主操作：`action`、`sleep`、`until`
+- 错误类型：`ShajaraError`、`CanceledError`、`ExternalError`、`InterruptedError`、`ScopeError`
+- host 契约：`RiteRoutine`、`RiteCoroutine`、`RiteFuture`、`RiteFutureSettle`、`RiteFutureHandle`
+- kernel 契约重导出：`ContextKey`、`Failure`、`FailureShape`、`FutureKey`、`LaunchStatus`、`ScopeRef`、`SelfHandle`、`contextKey`
+- 其余根入口类型：`Action`、`Scope`、`ScopeStatus`、`RunOptions`、`StatefulPromise`、`PromiseThunk`、`Disposer`
+
+子路径 `@shajara/host/primitives` 公开：
+
+- 并发与边界：`all`、`autonomy`、`enclose`、`guard`、`race`、`resource`、`resumable`、`spawn`
+- future：`future`、`poll`、`settle`、`settleError`、`wait`
+- 上下文与自省：`bind`、`lookup`、`self`、`unbind`
+- 控制与生命周期：`cancel`、`cede`、`defer`、`halt`、`park`
+
+### `@shajara/kernel`
+
+面向底层实现。根入口重导出：
+
+- `contracts`
+- `executor`
+- `failures`
+- `primitives`
+
+根入口名称包括：
+
+- contracts：`Wisp`、`Ritual`、`ScopeRef`、`ProcessRef`、`FutureKey`、`FutureSettleKey`、`FutureHandle`、`ContextKey`、`MessageKey`、`contextKey`、`messageKey`
+- failures：`Failure`、`canceledFailure`、`externalFailure`、`interruptedFailure`、`scopeFailure`
+- executor：`createExecutor`、`Executor`、`LaunchHandle`、`LaunchResult`、`LaunchStatus`、`Pacer`、`Slice`、`ExecutionScopeRef`、`autonomy` 相关类型
+- primitives：对应的 `Wisp` 原语
+
+子路径公开：
+
+- `@shajara/kernel/sigils`
+- `@shajara/kernel/utils`
+
+## 宿主入口
+
+### `run`
 
 ```ts
-const myTask: RiteRoutine<string> = function* () {
-  yield* cede();
-  return "done";
-};
+run<Return>(
+  ritual: RiteRoutine<Return>,
+  options?: { signal?: AbortSignal },
+): StatefulPromise<Return>
 ```
 
----
+返回值：
 
-## 2. Scope
+- 是 Promise
+- 同时带只读 `status`
+- `status` 取值为 `open | closing | closed`
 
-每段 ritual 都运行在某个 `Scope` 内。把 `Scope` 理解成一段计算的边界时，它决定：
+结果：
 
-- 生命周期归属
-- 上下文值的可见范围
-- future 的归属范围
-- 子流程的失败传播与收敛位置
+- 成功时 resolve 结果值
+- 取消时 reject `CanceledError`
+- 失败时 reject `Error`
+- 结构性失败通常表现为 `ScopeError`
 
-不同原语会以不同方式使用 `Scope`：有的在当前 `Scope` 内展开并发，有的创建新的 `Scope`，有的让一组子流程共享同一个组合 `Scope`。
-
----
-
-## 3. 宿主入口
-
-### run
-
-```ts
-run<T>(ritual: RiteRoutine<T>, options?: { signal?: AbortSignal }): StatefulPromise<T>
-```
-
-启动一段 ritual，返回 `StatefulPromise<T>`（`PromiseLike<T>` + `state(): LaunchState`）。
-
-- 成功时返回结果值。
-- 取消时抛出 `CanceledError`。
-- 失败时抛出 `Error`；结构性失败表现为 `ShajaraError` 子类，用户代码抛出的外部异常会尽量保留原始实例。
-
-这里的“尽量保留原始实例”有一个明确边界：如果异常已经驱动当前计算对应的 Scope 以失败路径收敛，那么对外稳定表现为 `ScopeError`。这表示“某个 Scope failed”，而不只是“某段宿主代码抛错”。原始根因位于 `scopeError.cause.failure`；若根因来自外部异常，则原始 `Error` 位于 `scopeError.cause.failure.raw`。
-
-当 `signal` 触发 abort 时，对应运行被取消。
-
-### createScope
+### `createScope`
 
 ```ts
 createScope(): Scope
 ```
 
-创建一个托管 `Scope`。返回：
+返回对象公开：
 
-| 成员                           | 说明                                                |
-| ------------------------------ | --------------------------------------------------- |
-| `scope.run(ritual, options?)`  | 在该 `Scope` 下启动 ritual，行为与顶层 `run` 一致。 |
-| `scope.cancel()`               | 取消该 `Scope` 并等待收敛。                         |
-| `scope.state`                  | 同步状态快照：`open \| closing \| closed`。         |
-| `scope.closed`                 | 清理完成后 resolve；取消/失败时按对应类型抛出。     |
-| `scope[Symbol.asyncDispose]()` | 等价于 `scope.cancel()`。                           |
+- `run(ritual, options?)`
+- `cancel()`
+- `status`
+- `closed`
+- `[Symbol.asyncDispose]()`
 
----
+结果语义：
 
-## 4. 宿主操作
+- `cancel()` 会等待该 scope 的关闭结果
+- `closed` 表示同一个关闭结果
+- 若该 scope 以取消或失败结束，`cancel()` 与 `closed` 会 reject 对应错误
+- 已关闭 scope 上再次 `run(...)` 会同步抛错
 
-以下操作在 `RiteRoutine` 内通过 `yield*` 使用。
+## 宿主操作
 
-### action
-
-```ts
-yield* action<T>(): Action<T>   // { future, resolve, reject }
-```
-
-获取一组宿主侧可结算能力。宿主代码稍后通过 `resolve` / `reject` 完成单次收敛，ritual 侧通过返回的 `future` 观察结果。
-
-### sleep
+### `action`
 
 ```ts
-yield* sleep(milliseconds): void
+yield * action<Return>();
 ```
 
-等待一段宿主时间。
+返回：
 
-### until
+- `future`
+- `resolve(value)`
+- `reject(error)`
+
+### `sleep`
 
 ```ts
-yield* until<T>(thunk: () => PromiseLike<T>): T
+yield * sleep(milliseconds);
 ```
 
-桥接一个 promise thunk，等待完成后返回结果值；reject 按异常传播。
+### `until`
 
-若 promise rejection 最终使当前 Scope 失败，则调用方收到的是 `ScopeError`，而不是直接收到原始 rejection 对象。这是结构化收敛边界的稳定语义；原始根因仍可经由 `scopeError.cause.failure` 读取。
+```ts
+yield * until(thunk);
+```
 
-## 5. 编排原语
+## 宿主原语返回值
 
-原语是在 `RiteRoutine` 内通过 `yield*` 调用的编排操作。每个原语都有自己的返回值形状；`yield*` 得到的就是该原语的结果值。
+### 并发与边界
 
-### 5.1 并发构造
+| 原语        | 返回值             |
+| ----------- | ------------------ |
+| `spawn`     | `RiteFuture<T>`    |
+| `all`       | `RiteFuture<T[]>`  |
+| `race`      | `RiteFuture<T>`    |
+| `enclose`   | `T`                |
+| `resumable` | `RiteFuture<T>`    |
+| `guard`     | `RiteFuture<void>` |
+| `resource`  | `RiteFuture<T>`    |
+| `autonomy`  | `RiteFuture<T>`    |
 
-| 原语        | 签名概要                                     | 说明                                                                                                                                                                                               |
-| ----------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `spawn`     | `spawn(worker) → RiteFuture<T>`              | 在当前 `Scope` 内启动一个并行分支，并返回该分支结果的 future。                                                                                                                                     |
-| `enclose`   | `enclose(ritual) → T`                        | 创建一个独立收敛的 `Scope`，运行子流程并等待它完成。                                                                                                                                               |
-| `resumable` | `resumable(ritual) → RiteFuture<T>`          | 声明一段可由外围 `guard` 恢复的计算，并返回其结果 future。                                                                                                                                         |
-| `guard`     | `guard(entry, recover) → RiteFuture<void>`   | 运行一段带恢复逻辑的子流程；其中 `resumable` 的失败会以 `ScopeError` 交给 `recover(scopeError)` 处理，底层根因位于 `scopeError.cause.failure`。`suppressed` 仅表示收敛期间附带捕获的其他 failure。 |
-| `all`       | `all(rituals) → RiteFuture<T>`               | 并行启动多个子流程，返回聚合结果 future；需要配合 `wait` 显式等待。                                                                                                                                |
-| `race`      | `race(rituals) → RiteFuture<ArrayValues<T>>` | 并行启动一组共享竞速 `Scope` 的分支，返回最先完成者的结果 future；需要配合 `wait` 显式等待。`rituals` 为非空 tuple。                                                                               |
-| `resource`  | `resource(body) → RiteFuture<T>`             | 声明一个宿主资源协议。`body` 通过 `provide(value)` 暴露值，并让该资源的存在期附着于所属 `Scope`。                                                                                                  |
-| `autonomy`  | `autonomy(entry, options) → RiteFuture<T>`   | 创建一个带 executor 自治治理配置的子 Scope；`scheduler` 直通，`reaper` 采用 host 回调形状 `(closingScope) => RiteCoroutine<void>`，正常返回表示继续等待，抛异常表示强制失败。                      |
+### future 原语
 
-### 5.2 基础
+| 原语          | 返回值                                 |
+| ------------- | -------------------------------------- |
+| `future`      | `[RiteFuture<T>, RiteFutureSettle<T>]` |
+| `poll`        | `T \| undefined`                       |
+| `settle`      | `void`                                 |
+| `settleError` | `void`                                 |
+| `wait`        | `T`                                    |
 
-| 原语          | 签名概要                                             | 说明                                                            |
-| ------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
-| `future`      | `future<T>() → [RiteFuture<T>, RiteFutureSettle<T>]` | 在当前 `Scope` 创建一个 pending future 及其 settle capability。 |
-| `poll`        | `poll(future) → T \| undefined`                      | 非阻塞观察 future；未收敛时返回 `undefined`。                   |
-| `settle`      | `settle(futureSettle, value) → void`                 | 将 future 收敛为成功值。                                        |
-| `settleError` | `settleError(futureSettle, error) → void`            | 将 future 收敛为失败。                                          |
-| `wait`        | `wait(future) → T`                                   | 等待 future 收敛并返回结果。                                    |
-| `bind`        | `bind(ContextKey<T>, value) → void`                  | 在当前 `Scope` 绑定一个上下文值。                               |
-| `unbind`      | `unbind(ContextKey<T>) → void`                       | 在当前 `Scope` 解绑一个上下文值。                               |
-| `lookup`      | `lookup(ContextKey<T>) → T \| undefined`             | 读取当前 `Scope` 可见的上下文值；未命中时返回 `undefined`。     |
-| `self`        | `self() → SelfHandle`                                | 读取当前执行信息。                                              |
-| `halt`        | `halt(error) → never`                                | 以显式 failure 结束当前流程。                                   |
-| `cancel`      | `cancel() → never`                                   | 取消当前 `Scope`。                                              |
-| `cede`        | `cede() → void`                                      | 协作式让权。                                                    |
-| `defer`       | `defer(cleanup) → void`                              | 在当前流程上注册退出 cleanup；当该流程结束时触发。              |
-| `park`        | `park() → never`                                     | 持续挂起，直到外部结束该流程。                                  |
+### 上下文、控制与生命周期
 
----
+| 原语     | 返回值           |
+| -------- | ---------------- |
+| `bind`   | `void`           |
+| `lookup` | `T \| undefined` |
+| `unbind` | `void`           |
+| `self`   | `SelfHandle`     |
+| `halt`   | `never`          |
+| `cancel` | `never`          |
+| `cede`   | `void`           |
+| `defer`  | `void`           |
+| `park`   | `never`          |
 
-## 6. 使用方式
+## Kernel 原语结果模型
 
-- 原语通过 `yield* 原语(...)` 调用。
-- 需要并发结果句柄时，使用 `spawn` 返回的 `RiteFuture`。
-- 需要显式等待结果时，使用 `wait(future)`。
-- 需要独立收敛或恢复语义时，使用 `enclose`、`guard`、`resumable`。
-- generator 侧成功通过返回值表达，失败由 host 以异常抛出传播。
+`@shajara/kernel` 与 host 的主要接口差异在返回值模型：
+
+- kernel `wait(future)` 返回 `Either<FailureShape, T>`
+- kernel `poll(future)` 返回 `Option<Either<FailureShape, T>>`
+- kernel `enclose(ritual)` 返回 `Either<FailureShape, T>`
+
+直接消费 kernel 时，结果模型就是这些显式结果值。

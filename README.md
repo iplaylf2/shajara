@@ -1,10 +1,8 @@
 # shajara
 
-shajara 是一个结构化并发语义内核。`wisp / sigil / echo / resonance / relic / ritual` 构成它的基本对象；并发计算的生命周期管理则下沉到一组最小机制里。
+shajara 是一套分成两层的结构化并发实现：
 
-本仓库处于开发阶段，接口与实现会随重构迭代。
+- `@shajara/kernel` 提供 `Wisp`、`Ritual`、`Scope`、`Future`、`Executor` 等底层语义与执行能力。
+- `@shajara/host` 把 kernel 语义适配成 generator 风格的宿主 API，提供 `run`、`createScope`、`action`、`sleep`、`until` 和一组可 `yield*` 的原语。
 
-## 入口
-
-- 文档索引：`docs/README.md`
-- 当前迭代快照：`docs/execution.md`
+长期文档入口在 [docs/README.md](docs/README.md)。
