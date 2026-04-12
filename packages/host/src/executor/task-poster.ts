@@ -2,8 +2,7 @@
 import type { Disposer } from "@shajara/kernel/utils";
 
 export class TaskPoster {
-  public constructor(turnIntervalMs = 0) {
-    this.#turnInterval = turnIntervalMs;
+  public constructor(private readonly turnIntervalMs = 0) {
     this.#channel.port1.onmessage = this.#handleTurn.bind(this);
   }
 
@@ -26,7 +25,7 @@ export class TaskPoster {
       return;
     }
 
-    this.#nextTurnAt = now() + this.#turnInterval;
+    this.#nextTurnAt = now() + this.turnIntervalMs;
     const tasks = [...this.#tasks];
     this.#tasks.clear();
 
@@ -81,8 +80,6 @@ export class TaskPoster {
   #isScheduled = false;
   #nextTurnAt = 0;
   #turnTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
-
-  readonly #turnInterval: number;
   readonly #channel = new globalThis.MessageChannel();
   readonly #tasks = new Set<() => void>();
 }

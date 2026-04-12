@@ -44,7 +44,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
     this.#triggerCleanup(closure.cleanups, suppressor);
-    this.#zone.trackProcess(process, suppressor);
+    this.scopeZone.trackProcess(process, suppressor);
     this.#advanceClosing([closure.notification], suppressor);
   }
 
@@ -53,7 +53,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups, suppressor);
-    this.#zone.trackProcess(process, suppressor);
+    this.scopeZone.trackProcess(process, suppressor);
 
     const notifications = [closure.notification];
     const state = this.#state;
@@ -110,7 +110,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const process = provideProcess(this, descriptor);
 
     this.#processContainerFor(process).add(process);
-    this.#zone.trackProcess(process, suppressor);
+    this.scopeZone.trackProcess(process, suppressor);
 
     return process as ProcessRef<Relic>;
   }
@@ -134,11 +134,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): void {
     const unsubscribe = future.wait((result, suppressor2) => {
       process.resume(result);
-      this.#zone.trackProcess(process, suppressor2);
+      this.scopeZone.trackProcess(process, suppressor2);
     });
 
     process.wait(unsubscribe);
-    this.#zone.trackProcess(process, suppressor);
+    this.scopeZone.trackProcess(process, suppressor);
   }
 
   // oxlint-disable-next-line class-methods-use-this
@@ -161,7 +161,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     process.wait(() => {
       this.#mailbox.cancelReceiver(process);
     });
-    this.#zone.trackProcess(process, suppressor);
+    this.scopeZone.trackProcess(process, suppressor);
   }
 
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
@@ -177,7 +177,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       return option.none;
     }
 
-    return this.#parent.lookup(contextKey);
+    return this.parentScope.lookup(contextKey);
   }
 
   public bind<Value>(contextKey: ContextKey<Value>, value: Value): void {
@@ -202,7 +202,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public get descriptor(): ScopeDescriptor {
-    return this.#descriptor;
+    return this.scopeDescriptor;
   }
 
   public get entryProcess(): ProcessRef<unknown> {
@@ -210,11 +210,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public get zone(): ScopeZone {
-    return this.#zone;
+    return this.scopeZone;
   }
 
   public get parent(): RuntimeScope | null {
-    return this.#isRoot ? null : this.#parent;
+    return this.#isRoot ? null : this.parentScope;
   }
 
   public get children(): readonly RuntimeScope[] {
@@ -250,19 +250,16 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   private constructor(
     entry: ProvideRuntimeProcess,
-    descriptor: ScopeDescriptor,
-    parent: RuntimeScope,
-    zone: ScopeZone,
+    private readonly scopeDescriptor: ScopeDescriptor,
+    private readonly parentScope: RuntimeScope,
+    private readonly scopeZone: ScopeZone,
   ) {
     this.#exitFuture = new RuntimeFuture<unknown>();
-    this.#zone = zone;
     const entryProcess = entry(this, { completionMode: "structural" });
 
     this.#processContainerFor(entryProcess).add(entryProcess);
 
     this.#entryProcess = entryProcess;
-    this.#descriptor = descriptor;
-    this.#parent = parent;
   }
 
   #advanceClosing(notifications: FutureNotification[], suppressor: Suppressor): void {
@@ -326,8 +323,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     this.#transitionTo({ draft, status: "failing" }, notifications, suppressor);
     failingDefer();
-    if (control.propagateFailure && this.#parent.#notReconciledFor(isFailing)) {
-      this.#parent.#enterFailingByChild(this, suppressor);
+    if (control.propagateFailure && this.parentScope.#notReconciledFor(isFailing)) {
+      this.parentScope.#enterFailingByChild(this, suppressor);
     }
     this.#tryFailed(draft, [], suppressor);
   }
@@ -336,8 +333,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
       this.#transitionTo({ result, status: "completed" }, notifications, suppressor);
-      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
-        this.#parent.#advanceClosing([], suppressor);
+      if (!this.#isRoot && this.parentScope.#notReconciledFor(isAnyStatus)) {
+        this.parentScope.#advanceClosing([], suppressor);
       }
       return;
     }
@@ -348,8 +345,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   #tryCanceled(notifications: FutureNotification[], suppressor: Suppressor): void {
     if (this.#isIdle) {
       this.#transitionTo({ status: "canceled" }, notifications, suppressor);
-      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
-        this.#parent.#advanceClosing([], suppressor);
+      if (!this.#isRoot && this.parentScope.#notReconciledFor(isAnyStatus)) {
+        this.parentScope.#advanceClosing([], suppressor);
       }
       return;
     }
@@ -364,8 +361,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): void {
     if (this.#isIdle) {
       this.#transitionTo({ failure: draft.build(), status: "failed" }, notifications, suppressor);
-      if (!this.#isRoot && this.#parent.#notReconciledFor(isAnyStatus)) {
-        this.#parent.#advanceClosing([], suppressor);
+      if (!this.#isRoot && this.parentScope.#notReconciledFor(isAnyStatus)) {
+        this.parentScope.#advanceClosing([], suppressor);
       }
       return;
     }
@@ -408,7 +405,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     flushNotifications(notifications, suppressor);
 
-    this.#zone.trackScope(this, suppressor);
+    this.scopeZone.trackScope(this, suppressor);
   }
 
   #cancelManaged(suppressor: Suppressor): FutureNotification[] {
@@ -422,7 +419,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups, suppressor);
-      this.#zone.trackProcess(process, suppressor);
+      this.scopeZone.trackProcess(process, suppressor);
 
       notifications.push(closure.notification);
     }
@@ -444,7 +441,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
       this.#triggerCleanup(closure.cleanups, suppressor);
-      this.#zone.trackProcess(process, suppressor);
+      this.scopeZone.trackProcess(process, suppressor);
 
       notifications.push(closure.notification);
     }
@@ -454,7 +451,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #settleClosed(result: FutureResult<unknown>): FutureNotification[] {
     if (!this.#isRoot) {
-      this.#parent.#removeChild(this);
+      this.parentScope.#removeChild(this);
     }
 
     this.#mailbox.clear();
@@ -471,7 +468,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     if (process) {
       process.resume(value);
-      this.#zone.trackProcess(process, suppressor);
+      this.scopeZone.trackProcess(process, suppressor);
     }
   }
 
@@ -555,21 +552,17 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   get #propagatesFailure(): boolean {
-    return this.#descriptor.failureMode === "propagate";
+    return this.scopeDescriptor.failureMode === "propagate";
   }
 
   get #isRoot(): boolean {
-    return this.#parent === RuntimeScope.#sentinel;
+    return this.parentScope === RuntimeScope.#sentinel;
   }
 
   static readonly #sentinel = null as unknown as RuntimeScope;
 
   readonly #exitFuture: RuntimeFuture<unknown>;
   readonly #entryProcess: RuntimeProcessKeeper;
-  readonly #parent: RuntimeScope;
-  readonly #descriptor: ScopeDescriptor;
-  readonly #zone: ScopeZone;
-
   #state: RuntimeScopeState = { status: "running" };
   #isReconciling = false;
   readonly #children = new Set<RuntimeScope>();

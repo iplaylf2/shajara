@@ -13,7 +13,7 @@ export class ExecutorDriver {
 
   public driveSyncUnsafely<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
     while (true) {
-      const step = this.#stepProcess(process);
+      const step = this.stepProcess(process);
       switch (step.disposition) {
         case "interpreted":
         case "resonated": {
@@ -38,12 +38,9 @@ export class ExecutorDriver {
   }
 
   public constructor(
-    pacer: Pacer,
-    stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
-  ) {
-    this.#pacer = pacer;
-    this.#stepProcess = stepProcess;
-  }
+    private readonly pacer: Pacer,
+    private readonly stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
+  ) {}
 
   public get processor(): Processor {
     return this.#processor;
@@ -55,7 +52,7 @@ export class ExecutorDriver {
     }
 
     this.#isTurnArmed = true;
-    this.#pacer.continueLater(() => {
+    this.pacer.continueLater(() => {
       this.#isTurnArmed = false;
 
       if (this.#isStopped) {
@@ -71,7 +68,7 @@ export class ExecutorDriver {
   }
 
   #runTurn(): void {
-    const slice = this.#pacer.beginSlice();
+    const slice = this.pacer.beginSlice();
 
     this.#runScheduledWork();
 
@@ -135,7 +132,6 @@ export class ExecutorDriver {
 
   #isStopped = false;
   #isTurnArmed = false;
-  readonly #pacer: Pacer;
   readonly #scheduledWorks = new Set<() => void>();
   readonly #processorTasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
@@ -144,6 +140,4 @@ export class ExecutorDriver {
       this.#ensureTurnArmed();
     },
   };
-
-  readonly #stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>;
 }

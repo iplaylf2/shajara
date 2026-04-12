@@ -17,22 +17,17 @@ export class SchedulerDomain extends Domain<SchedulerDomain> {
 
   public admitProcess(process: ProcessRef<unknown>, state: ProcessState): void {
     if (state.status === "open" && state.activity === "running") {
-      this.#scheduler.assign(process).admit(this.#createTask(process));
+      this.scheduler.assign(process).admit(this.createTask(process));
     }
   }
 
   private constructor(
     parent: SchedulerDomain,
-    scheduler: Scheduler,
-    createTask: SchedulerTaskFactory,
+    private readonly scheduler: Scheduler,
+    private readonly createTask: SchedulerTaskFactory,
   ) {
     super(parent);
-    this.#scheduler = scheduler;
-    this.#createTask = createTask;
   }
-
-  readonly #createTask: SchedulerTaskFactory;
-  readonly #scheduler: Scheduler;
 }
 
 export type SchedulerTaskFactory = (process: ProcessRef<unknown>) => ProcessorTask;

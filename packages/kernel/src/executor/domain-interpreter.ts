@@ -50,7 +50,7 @@ export class DomainInterpreter extends Interpreter {
   protected constructor(
     entry: Ritual<unknown>,
     autonomy: SchedulerOption & ReaperOption,
-    noteClosingObserved: () => void,
+    private readonly noteClosingObserved: () => void,
   ) {
     const schedulerDomainRoot = SchedulerDomain.root(autonomy.scheduler, (process) =>
       this.#createProcessorTask(process),
@@ -74,7 +74,6 @@ export class DomainInterpreter extends Interpreter {
 
     super(entry, zoneRoot);
 
-    this.#noteClosingObserved = noteClosingObserved;
     this.#reaperDomainRoot = reaperDomainRoot;
   }
 
@@ -193,7 +192,7 @@ export class DomainInterpreter extends Interpreter {
             const state = this.scopeState(scope);
             reaperDomain.trackScope(scope, state);
             if (state.status === "closing") {
-              this.#noteClosingObserved();
+              this.noteClosingObserved();
             }
           }
         : domainZone.trackScope;
@@ -255,7 +254,6 @@ export class DomainInterpreter extends Interpreter {
     reaperDomain.addLeafScope(scope);
   }
 
-  readonly #noteClosingObserved: () => void;
   readonly #reaperDomainRoot: ReaperDomain;
 }
 

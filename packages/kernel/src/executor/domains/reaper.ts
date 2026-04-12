@@ -45,7 +45,7 @@ export class ReaperDomain extends Domain<ReaperDomain> {
       if (scopeState(scope).status === "closing") {
         yield {
           scope,
-          worker: () => this.#reaper.adjudicate(scope),
+          worker: () => this.reaper.adjudicate(scope),
         };
       }
     }
@@ -65,15 +65,16 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     return this.#scopeRoot;
   }
 
-  private constructor(parent: ReaperDomain, reaper: Reaper) {
+  private constructor(
+    parent: ReaperDomain,
+    private readonly reaper: Reaper,
+  ) {
     super(parent);
-    this.#reaper = reaper;
   }
 
   #scopeRoot!: ScopeRef<unknown>;
   readonly #closingScopes = new Set<ScopeRef<unknown>>();
   readonly #leafScopes = new Set<ScopeRef<unknown>>();
-  readonly #reaper: Reaper;
 }
 
 export interface ReaperWorker {

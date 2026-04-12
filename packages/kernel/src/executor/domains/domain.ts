@@ -18,12 +18,10 @@ export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
     return Domain.#sentinel as Instance;
   }
 
-  protected constructor(parent: DerivedDomain) {
-    this.#parent = parent;
-  }
+  protected constructor(private readonly parent: DerivedDomain) {}
 
   public close(): void {
-    this.#parent.removeChild(this as unknown as DerivedDomain);
+    this.parent.removeChild(this as unknown as DerivedDomain);
   }
 
   protected addChild(child: DerivedDomain): void {
@@ -35,13 +33,12 @@ export abstract class Domain<DerivedDomain extends Domain<DerivedDomain>> {
   }
 
   protected get isRoot(): boolean {
-    return this.#parent === Domain.#sentinel;
+    return this.parent === Domain.#sentinel;
   }
 
   // oxlint-disable-next-line no-explicit-any
   static readonly #sentinel = null as unknown as Domain<any>;
 
-  readonly #parent: DerivedDomain;
   readonly #children = new Set<DerivedDomain>();
 }
 

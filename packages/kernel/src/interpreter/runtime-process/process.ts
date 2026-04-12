@@ -100,7 +100,11 @@ export class RuntimeProcess<Relic>
   }
 
   public get descriptor(): ProcessDescriptor {
-    return this.#descriptor;
+    return this.processDescriptor;
+  }
+
+  public get scopeRef(): ScopeRef<unknown> {
+    return this.scopeReference;
   }
 
   public get status(): RuntimeProcessStatus {
@@ -125,11 +129,10 @@ export class RuntimeProcess<Relic>
   declare public readonly [REF_TOKEN]: ProcessRef<Relic>[typeof REF_TOKEN];
 
   private constructor(
-    public readonly scopeRef: ScopeRef<unknown>,
+    private readonly scopeReference: ScopeRef<unknown>,
     worker: Ritual<Relic>,
-    descriptor: ProcessDescriptor,
+    private readonly processDescriptor: ProcessDescriptor,
   ) {
-    this.#descriptor = descriptor;
     this.#state = createRunningState(new Stepper(worker));
   }
 
@@ -150,7 +153,6 @@ export class RuntimeProcess<Relic>
   }
 
   readonly #exitFuture = new RuntimeFuture<Relic>();
-  readonly #descriptor: ProcessDescriptor;
   #cleanups: CleanupTask[] = [];
   #state: RuntimeProcessState<Relic>;
 }

@@ -19,9 +19,7 @@ export interface ManagedQueuedProcessorHandle extends AsyncDisposable {
 }
 
 class ManagedQueuedProcessor implements ManagedQueuedProcessorHandle {
-  public constructor(taskStatuses: ProcessorTaskStatus[]) {
-    this.#taskStatuses = taskStatuses;
-  }
+  public constructor(private readonly taskStatuses: ProcessorTaskStatus[]) {}
 
   public async [Symbol.asyncDispose](): Promise<void> {
     this.#isRunning = false;
@@ -54,7 +52,7 @@ class ManagedQueuedProcessor implements ManagedQueuedProcessorHandle {
   #runCurrentTurn(): void {
     while (this.#tasks.length > 0) {
       const task = this.#tasks.shift()!;
-      const status = consumeTask(task, this.#taskStatuses);
+      const status = consumeTask(task, this.taskStatuses);
       if (status === "cede") {
         this.#tasks.push(task);
       }
@@ -82,7 +80,6 @@ class ManagedQueuedProcessor implements ManagedQueuedProcessorHandle {
   }
   #isRunning = true;
   #pendingTurns = 0;
-  readonly #taskStatuses: ProcessorTaskStatus[];
   readonly #tasks: ProcessorTask[] = [];
   #turnScheduled = false;
   readonly #processor: Processor = {

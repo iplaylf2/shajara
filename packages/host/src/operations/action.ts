@@ -21,12 +21,10 @@ export interface Action<Return> {
 
 class RuntimeAction<Return> implements Action<Return> {
   public constructor(
-    futureRef: RiteFuture<Return>,
+    private readonly futureRef: RiteFuture<Return>,
     private readonly actionSettle: FutureSettleKey<Return>,
     private readonly settleFuture: FutureSettler,
-  ) {
-    this.#future = futureRef;
-  }
+  ) {}
 
   public reject(reason: Error): void {
     this.settleFuture(this.actionSettle, left(toFailure(reason)));
@@ -37,10 +35,8 @@ class RuntimeAction<Return> implements Action<Return> {
   }
 
   public get future(): RiteFuture<Return> {
-    return this.#future;
+    return this.futureRef;
   }
-
-  readonly #future: RiteFuture<Return>;
 }
 
 type FutureSettler = <Result>(
