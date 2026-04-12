@@ -28,11 +28,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: package.json
-          cache: yarn
+      - name: Set up Node.js and Yarn
+        uses: ./.github/actions/setup-yarn
 
       - name: Install dependencies
         run: yarn install --immutable

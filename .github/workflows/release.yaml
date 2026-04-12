@@ -24,12 +24,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: package.json
-          registry-url: https://registry.npmjs.org
-          cache: yarn
+      - name: Set up Node.js and Yarn
+        uses: ./.github/actions/setup-yarn
 
       - name: Install dependencies
         run: yarn install --immutable

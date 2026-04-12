@@ -8,3 +8,4 @@ pipeable
 pipefail
 vite
 vitest
+yarnrc
