@@ -49,9 +49,6 @@
       "types": "./dist/utils.d.ts"
     }
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "vite build",
     "lint": "oxlint",

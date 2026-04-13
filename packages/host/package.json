@@ -44,9 +44,6 @@
       "types": "./dist/primitives.d.ts"
     }
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "vite build",
     "lint": "oxlint",
