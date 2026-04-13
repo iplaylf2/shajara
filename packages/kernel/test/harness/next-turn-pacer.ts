@@ -2,32 +2,27 @@ import type { Pacer, Slice } from "#/index";
 import type { Disposer } from "#/utils";
 
 export class NextTurnPacer implements Pacer {
+  public constructor() {
+    this.#channel.port1.onmessage = this.#handleTurn.bind(this);
+  }
+
   public beginSlice(): Slice {
-    return this.#slice;
+    const deadline = now() + this.#quantumMs;
+    return {
+      shouldYield: () => now() >= deadline,
+    };
   }
 
   public continueLater(work: () => void): Disposer {
-    const scheduled = {
-      active: true,
-      work,
-    };
-
-    this.#pendingTasks += 1;
-    globalThis.setTimeout(() => {
-      if (scheduled.active && this.#isRunning) {
-        try {
-          scheduled.work();
-        } catch (error) {
-          this.#faults.push(error);
-        }
-      }
-
-      this.#pendingTasks -= 1;
-      this.#flushQuiescenceWaiters();
-    }, TURN_DELAY_MS);
+    const task = [work] as const;
+    this.#tasks.add(task);
+    this.#ensureTurnScheduled();
 
     return () => {
-      scheduled.active = false;
+      this.#tasks.delete(task);
+      if (this.#tasks.size === 0) {
+        this.#cancelScheduledTurn();
+      }
     };
   }
 
@@ -36,7 +31,8 @@ export class NextTurnPacer implements Pacer {
   }
 
   public shutdown(): void {
-    this.#isRunning = false;
+    this.#cancelScheduledTurn();
+    this.#tasks.clear();
   }
 
   public get faults(): readonly unknown[] {
@@ -44,7 +40,7 @@ export class NextTurnPacer implements Pacer {
   }
 
   async #waitForQuiescence(turn: number): Promise<void> {
-    if (this.#pendingTasks === 0) {
+    if (this.#tasks.size === 0 && !this.#isScheduled) {
       return;
     }
 
@@ -53,32 +49,80 @@ export class NextTurnPacer implements Pacer {
     }
 
     await new Promise<void>((resolve) => {
-      this.#quiescenceWaiters.push(resolve);
+      globalThis.setTimeout(resolve, TURN_INTERVAL_MS);
     });
 
     return this.#waitForQuiescence(turn + 1);
   }
 
-  #flushQuiescenceWaiters(): void {
-    if (this.#pendingTasks !== 0) {
+  #handleTurn(): void {
+    this.#isScheduled = false;
+
+    if (this.#tasks.size === 0) {
       return;
     }
 
-    const waiters = this.#quiescenceWaiters;
-    this.#quiescenceWaiters = [];
-    for (const waiter of waiters) {
-      waiter();
+    this.#nextTurnAt = now() + TURN_INTERVAL_MS;
+    const tasks = [...this.#tasks];
+    this.#tasks.clear();
+
+    for (const [task] of tasks) {
+      try {
+        task();
+      } catch (error) {
+        this.#faults.push(error);
+      }
+    }
+
+    if (this.#tasks.size > 0) {
+      this.#ensureTurnScheduled();
     }
   }
 
-  #isRunning = true;
-  #pendingTasks = 0;
+  #ensureTurnScheduled(): void {
+    if (this.#isScheduled) {
+      return;
+    }
+
+    this.#isScheduled = true;
+    const delayMs = Math.max(0, this.#nextTurnAt - now());
+    if (delayMs === 0) {
+      this.#postTurn();
+      return;
+    }
+
+    this.#turnTimer = globalThis.setTimeout(() => {
+      this.#turnTimer = null;
+      this.#handleTurn();
+    }, delayMs);
+  }
+
+  #cancelScheduledTurn(): void {
+    if (this.#turnTimer !== null) {
+      globalThis.clearTimeout(this.#turnTimer);
+      this.#turnTimer = null;
+    }
+
+    this.#isScheduled = false;
+  }
+
+  #postTurn(): void {
+    this.#channel.port2.postMessage(null);
+  }
+
+  #isScheduled = false;
+  #nextTurnAt = 0;
+  readonly #quantumMs = DEFAULT_QUANTUM_MS;
   readonly #faults: unknown[] = [];
-  #quiescenceWaiters: (() => void)[] = [];
-  readonly #slice: Slice = {
-    shouldYield: () => false,
-  };
+  readonly #channel = new globalThis.MessageChannel();
+  readonly #tasks = new Set<readonly [() => void]>();
+  #turnTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 }
 
 const MAX_QUIESCENCE_TURNS = 10;
-const TURN_DELAY_MS = 0;
+const DEFAULT_QUANTUM_MS = 8;
+const TURN_INTERVAL_MS = 0;
+
+function now(): number {
+  return globalThis.performance.now();
+}

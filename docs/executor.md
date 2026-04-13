@@ -14,7 +14,7 @@ The execution environment builds on the semantic baseline.
 Creation:
 
 ```ts
-const executor = createExecutor(pacer);
+const executor = createExecutor(bindTurn);
 ```
 
 ## Execution Entries
@@ -50,7 +50,7 @@ interface Executor extends LaunchHandle<never> {
 
 If the target scope is no longer valid or no longer open, it returns `none`.
 
-Each `launch` first establishes an entry scope with `failureMode: "contain"`, then runs the target `ritual` within that boundary. `LaunchHandle.scope` is that entry scope.
+Each `launch` first establishes an entry scope with `failureMode: "contain"`, then runs the target `ritual` within that boundary. `LaunchHandle.scope` refers to that entry scope.
 
 ## Entry Handle
 
@@ -96,7 +96,15 @@ The executor itself is also the `LaunchHandle` view of the root scope, so it exp
 
 ## Slice Progression
 
-`Executor` collaborates with the host event loop through `Pacer`:
+`Executor` is created through `BindTurn`, then collaborates with the host through the returned `Pacer`:
+
+```ts
+type BindTurn = (flushTurn: () => void) => Pacer;
+```
+
+`flushTurn` is the callback the host promises to poll on its own turn cadence.
+
+The returned `Pacer` handles slice progression and deferred follow-up work:
 
 ```ts
 interface Pacer {
@@ -125,7 +133,7 @@ interface Scheduler {
 }
 ```
 
-When a process in an autonomous scope becomes runnable, the `Executor` calls `scheduler.assign(process)` and routes that process to a `Processor`.
+When a process in an autonomous scope becomes runnable, the `Executor` calls `scheduler.assign(process)` and routes it to a `Processor`.
 
 Here, `ProcessRef` is the scheduling target.
 
@@ -137,7 +145,7 @@ interface Reaper {
 }
 ```
 
-When a `closing` scope cannot converge naturally in time, the `Executor` can submit that scope to a `reaper` for adjudication:
+When a `closing` scope cannot converge naturally in time, the `Executor` can submit it to a `reaper` for adjudication:
 
 - return `none`: keep waiting for natural convergence
 - return `some(failure)`: initiate failure convergence for the target scope with that failure

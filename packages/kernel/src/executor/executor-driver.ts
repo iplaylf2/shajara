@@ -1,10 +1,9 @@
 import type { Processor, ProcessorTask } from "./processor";
-import { readonlyArray, readonlySet } from "fp-ts";
-import type { Disposer } from "#/utils";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import type { ProcessRef } from "#/contracts";
 import type { ProcessStep } from "#/interpreter";
+import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {
   public stop(): void {
@@ -28,16 +27,6 @@ export class ExecutorDriver {
     }
   }
 
-  public continueLater(work: () => void): Disposer {
-    const scheduledWork = [work] as const;
-    this.#scheduledWorks.add(scheduledWork);
-    this.#ensureTurnArmed();
-
-    return () => {
-      this.#scheduledWorks.delete(scheduledWork);
-    };
-  }
-
   public constructor(
     private readonly pacer: Pacer,
     private readonly stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
@@ -48,21 +37,21 @@ export class ExecutorDriver {
   }
 
   #ensureTurnArmed(): void {
-    if (this.#isStopped || this.#isTurnArmed || !this.#hasRunnableWork) {
+    if (this.#isStopped || this.#isTurnArmed || !this.#hasProcessorTask) {
       return;
     }
 
     this.#isTurnArmed = true;
     this.pacer.continueLater(() => {
-      this.#isTurnArmed = false;
-
       if (this.#isStopped) {
+        this.#isTurnArmed = false;
         return;
       }
 
       try {
         this.#runTurn();
       } finally {
+        this.#isTurnArmed = false;
         this.#ensureTurnArmed();
       }
     });
@@ -71,30 +60,9 @@ export class ExecutorDriver {
   #runTurn(): void {
     const slice = this.pacer.beginSlice();
 
-    this.#runScheduledWork();
-
     while (this.#hasProcessorTask && !slice.shouldYield()) {
       this.#consumeProcessorTask();
     }
-  }
-
-  #runScheduledWork(): void {
-    if (readonlySet.isEmpty(this.#scheduledWorks)) {
-      return;
-    }
-
-    const scheduledWork = [...this.#scheduledWorks];
-    this.#scheduledWorks.clear();
-
-    const faultSink = new FaultSink("");
-    for (const [work] of scheduledWork) {
-      try {
-        work();
-      } catch (error) {
-        faultSink.capture(error);
-      }
-    }
-    faultSink.throwIfAny();
   }
 
   #consumeProcessorTask(): void {
@@ -123,17 +91,12 @@ export class ExecutorDriver {
     }
   }
 
-  get #hasRunnableWork(): boolean {
-    return !readonlySet.isEmpty(this.#scheduledWorks) || this.#hasProcessorTask;
-  }
-
   get #hasProcessorTask(): boolean {
     return readonlyArray.isNonEmpty(this.#processorTasks);
   }
 
   #isStopped = false;
   #isTurnArmed = false;
-  readonly #scheduledWorks = new Set<readonly [() => void]>();
   readonly #processorTasks: ProcessorTask[] = [];
   readonly #processor: Processor = {
     admit: (task) => {

@@ -31,14 +31,18 @@ Together, these capabilities define shajara's computation carrier, structured co
 ```ts
 import { cede, createExecutor } from "@shajara/kernel";
 
-const executor = createExecutor({
-  beginSlice: () => ({
-    shouldYield: () => false,
-  }),
-  continueLater(work) {
-    queueMicrotask(work);
-    return () => {};
-  },
+const executor = createExecutor((flushTurn) => {
+  globalThis.setInterval(flushTurn, 0);
+
+  return {
+    beginSlice: () => ({
+      shouldYield: () => false,
+    }),
+    continueLater(work) {
+      queueMicrotask(work);
+      return () => {};
+    },
+  };
 });
 
 const launched = executor.launch(executor.scope, cede);
