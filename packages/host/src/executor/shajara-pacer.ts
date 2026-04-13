@@ -4,14 +4,22 @@ import type { Disposer } from "@shajara/kernel/utils";
 import { TaskPoster } from "./task-poster";
 
 export class ShajaraPacer implements Pacer {
-  // oxlint-disable-next-line class-methods-use-this
   beginSlice(): Slice {
-    return new TimeSlice(DEFAULT_QUANTUM_MS);
+    return new TimeSlice(this.#turnIntervalMs);
   }
 
   continueLater(work: () => void): Disposer {
     return this.#taskPoster.post(work);
   }
 
-  #taskPoster = new TaskPoster(DEFAULT_QUANTUM_MS);
+  bindTurn(flushTurn: () => void): Disposer {
+    const turnInterval = globalThis.setInterval(flushTurn, this.#turnIntervalMs);
+
+    return () => {
+      globalThis.clearInterval(turnInterval);
+    };
+  }
+
+  readonly #turnIntervalMs = DEFAULT_QUANTUM_MS;
+  readonly #taskPoster = new TaskPoster(this.#turnIntervalMs);
 }
