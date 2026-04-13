@@ -1,25 +1,25 @@
 import { DEFAULT_QUANTUM_MS, TimeSlice } from "./time-slice";
 import type { Pacer, Slice } from "@shajara/kernel";
 import type { Disposer } from "@shajara/kernel/utils";
-import { TaskPoster } from "./task-poster";
+import { TurnCoordinator } from "./turn-coordinator";
 
-export class ShajaraPacer implements Pacer {
-  beginSlice(): Slice {
+export class ShajaraPacer implements Pacer, Disposable {
+  public constructor(flushTurn: () => void) {
+    this.#turnCoordinator = new TurnCoordinator(flushTurn, this.#turnIntervalMs);
+  }
+
+  public beginSlice(): Slice {
     return new TimeSlice(this.#turnIntervalMs);
   }
 
-  continueLater(work: () => void): Disposer {
-    return this.#taskPoster.post(work);
+  public continueLater(work: () => void): Disposer {
+    return this.#turnCoordinator.post(work);
   }
 
-  bindTurn(flushTurn: () => void): Disposer {
-    const turnInterval = globalThis.setInterval(flushTurn, this.#turnIntervalMs);
-
-    return () => {
-      globalThis.clearInterval(turnInterval);
-    };
+  public [Symbol.dispose](): void {
+    this.#turnCoordinator[Symbol.dispose]();
   }
 
   readonly #turnIntervalMs = DEFAULT_QUANTUM_MS;
-  readonly #taskPoster = new TaskPoster(this.#turnIntervalMs);
+  readonly #turnCoordinator: TurnCoordinator;
 }

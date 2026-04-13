@@ -1,4 +1,3 @@
-import type { Disposer } from "@shajara/kernel/utils";
 import type { Executor } from "@shajara/kernel";
 import { ShajaraPacer } from "./shajara-pacer";
 import { createExecutor } from "@shajara/kernel";
@@ -8,15 +7,14 @@ export function ensureExecutor(): Executor {
     return executorSingleton;
   }
 
-  const pacer = new ShajaraPacer();
   // oxlint-disable-next-line init-declarations
-  let disposeTurnBinding!: Disposer;
+  let pacer!: ShajaraPacer;
   const executor = createExecutor((flushTurn) => {
-    disposeTurnBinding = pacer.bindTurn(flushTurn);
+    pacer = new ShajaraPacer(flushTurn);
     return pacer;
   });
   executor.onSettled(() => {
-    disposeTurnBinding();
+    pacer[Symbol.dispose]();
   });
   executorSingleton = executor;
 
