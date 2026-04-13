@@ -20,9 +20,7 @@ concurrency:
 jobs:
   checks:
     name: Validation
-    if: >-
-      github.event.pull_request.draft == false &&
-      !startsWith(github.event.pull_request.head.ref, 'changeset-release/')
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,6 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
+
+      - name: Format
+        run: yarn run oxfmt --check .
 
       - name: Lint
         run: yarn lint
