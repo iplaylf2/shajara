@@ -30,16 +30,14 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Build
+        run: yarn build
+
       - name: Create release pull request
         id: changesets
         uses: changesets/action@v1
         with:
           version: yarn version-packages
+          publish: yarn release
           commit: "chore: version packages"
           title: "chore: version packages"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish packages to npm with trusted publishing
-        if: steps.changesets.outputs.hasChangesets == 'false'
-        run: yarn release
