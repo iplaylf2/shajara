@@ -1,0 +1,39 @@
+name: Setup Node and Yarn
+description: Set up Node.js, activate the Yarn version declared in package.json via Corepack, and restore Yarn caches.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      id: setup-node
+      uses: actions/setup-node@v6
+      with:
+        node-version-file: package.json
+        registry-url: https://registry.npmjs.org
+
+    - name: Enable Corepack
+      shell: bash
+      run: |
+        set -euo pipefail
+        corepack enable
+        yarn --version
+
+    - name: Resolve Yarn cache paths
+      id: yarn-config
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "cache-dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Yarn cache
+      id: yarn-cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ${{ steps.yarn-config.outputs.cache-dir }}
+          .yarn
+          .pnp.cjs
+          .pnp.loader.mjs
+        key: ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-yarn-${{ hashFiles('yarn.lock', '.yarnrc.yml', 'package.json', 'internal/*/package.json', 'packages/*/package.json', 'apps/*/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-yarn-

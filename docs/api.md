@@ -1,0 +1,170 @@
+# Public Interface
+
+This document summarizes the public export surfaces and call results.
+
+## Published Packages
+
+### `@shajara/host`
+
+This package is intended for application code. Its root entry re-exports:
+
+- `contracts`
+- `errors`
+- `operations`
+
+Names available from the root entry include:
+
+- runtime entries: `run`, `createScope`
+- host operations: `action`, `sleep`, `until`
+- error types: `ShajaraError`, `CanceledError`, `ExternalError`, `InterruptedError`, `ScopeError`
+- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`
+- re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
+- other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
+
+The subpath `@shajara/host/primitives` exposes:
+
+- concurrency and boundaries: `all`, `autonomy`, `enclose`, `guard`, `race`, `resource`, `resumable`, `spawn`
+- future operations: `future`, `poll`, `settle`, `settleError`, `wait`
+- context and introspection: `bind`, `lookup`, `self`, `unbind`
+- control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
+
+### `@shajara/kernel`
+
+This package is intended for lower-level integrations. Its root entry re-exports:
+
+- `contracts`
+- `executor`
+- `failures`
+- `primitives`
+
+Names available from the root entry include:
+
+- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `MessageKey`, `contextKey`, `messageKey`
+- failures: `Failure`, `canceledFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
+- executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
+- primitives: the corresponding `Wisp` primitives
+
+Public subpaths:
+
+- `@shajara/kernel/sigils`
+- `@shajara/kernel/utils`
+
+## Host Runtime Entries
+
+### `run`
+
+```ts
+run<Return>(
+  ritual: RiteRoutine<Return>,
+  options?: { signal?: AbortSignal },
+): StatefulPromise<Return>
+```
+
+Return value:
+
+- it is a Promise
+- it also carries a read-only `status`
+- `status` can be `open | closing | closed`
+
+Result:
+
+- resolves with the result value on success
+- rejects with `CanceledError` on cancellation
+- rejects with `Error` on failure
+- structural failures usually surface as `ScopeError`
+
+### `createScope`
+
+```ts
+createScope(): Scope
+```
+
+The returned object exposes:
+
+- `run(ritual, options?)`
+- `cancel()`
+- `status`
+- `closed`
+- `[Symbol.asyncDispose]()`
+
+Result semantics:
+
+- `cancel()` waits for the scope's closure result
+- `closed` represents that same closure result
+- if the scope ends in cancellation or failure, `cancel()` and `closed` reject with the corresponding error
+- calling `run(...)` on a closed scope throws synchronously
+
+## Host Operations
+
+### `action`
+
+```ts
+yield * action<Return>();
+```
+
+Returns:
+
+- `future`
+- `resolve(value)`
+- `reject(error)`
+
+### `sleep`
+
+```ts
+yield * sleep(milliseconds);
+```
+
+### `until`
+
+```ts
+yield * until(thunk);
+```
+
+## Host Primitive Return Values
+
+### Concurrency and boundaries
+
+| Primitive   | Return value       |
+| ----------- | ------------------ |
+| `spawn`     | `RiteFuture<T>`    |
+| `all`       | `RiteFuture<T[]>`  |
+| `race`      | `RiteFuture<T>`    |
+| `enclose`   | `T`                |
+| `resumable` | `RiteFuture<T>`    |
+| `guard`     | `RiteFuture<void>` |
+| `resource`  | `RiteFuture<T>`    |
+| `autonomy`  | `RiteFuture<T>`    |
+
+### `future` primitives
+
+| Primitive     | Return value                           |
+| ------------- | -------------------------------------- |
+| `future`      | `[RiteFuture<T>, RiteFutureSettle<T>]` |
+| `poll`        | `T \| undefined`                       |
+| `settle`      | `void`                                 |
+| `settleError` | `void`                                 |
+| `wait`        | `T`                                    |
+
+### Context, control, and lifecycle
+
+| Primitive | Return value     |
+| --------- | ---------------- |
+| `bind`    | `void`           |
+| `lookup`  | `T \| undefined` |
+| `unbind`  | `void`           |
+| `self`    | `SelfHandle`     |
+| `halt`    | `never`          |
+| `cancel`  | `never`          |
+| `cede`    | `void`           |
+| `defer`   | `void`           |
+| `park`    | `never`          |
+
+## Kernel Primitive Result Model
+
+The main interface difference between `@shajara/kernel` and host lies in the result model:
+
+- kernel `wait(future)` returns `Either<FailureShape, T>`
+- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
+- kernel `enclose(ritual)` returns `Either<FailureShape, T>`
+
+When consuming kernel directly, these explicit result values are the result model.

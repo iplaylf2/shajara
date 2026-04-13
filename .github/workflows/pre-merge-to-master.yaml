@@ -1,0 +1,48 @@
+name: Pre-merge to master
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Validation
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js and Yarn
+        uses: ./.github/actions/setup-yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Format
+        run: yarn run oxfmt --check .
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Build
+        run: yarn build
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Test with coverage
+        run: yarn workspaces foreach -Ap run test:coverage -- --coverage.reporter=text-summary

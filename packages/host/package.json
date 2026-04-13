@@ -1,0 +1,70 @@
+{
+  "name": "@shajara/host",
+  "version": "0.1.0",
+  "description": "Structured concurrency API for JavaScript applications.",
+  "keywords": [
+    "async",
+    "concurrency",
+    "generator",
+    "runtime",
+    "shajara",
+    "structured-concurrency"
+  ],
+  "homepage": "https://github.com/iplaylf2/shajara#readme",
+  "bugs": {
+    "url": "https://github.com/iplaylf2/shajara/issues"
+  },
+  "license": "BSD-3-Clause",
+  "author": {
+    "name": "iplaylf2",
+    "url": "https://github.com/iplaylf2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iplaylf2/shajara.git",
+    "directory": "packages/host"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./primitives": {
+      "import": "./dist/primitives.js",
+      "require": "./dist/primitives.cjs",
+      "types": "./dist/primitives.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "lint": "oxlint",
+    "postpack": "yarn run -T pack:license clean",
+    "prepack": "yarn build && yarn run -T pack:license stage",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "yarn run -T tsc --noEmit && yarn run -T tsc -p test/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@shajara/kernel": "workspace:^"
+  },
+  "devDependencies": {
+    "@shajara/presets": "workspace:^",
+    "@vitest/coverage-v8": "catalog:",
+    "core-js": "catalog:",
+    "oxlint": "catalog:",
+    "type-fest": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  }
+}

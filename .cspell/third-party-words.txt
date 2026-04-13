@@ -1,0 +1,11 @@
+bimap
+effection
+mktemp
+oxfmt
+oxlint
+oxlintrc
+pipeable
+pipefail
+vite
+vitest
+yarnrc

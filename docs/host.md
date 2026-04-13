@@ -1,0 +1,131 @@
+# Host Adaptation
+
+`@shajara/host` builds a generator-style host layer on top of `Executor` and the semantic baseline.
+
+## Host Responsibilities
+
+The host layer is responsible for three things:
+
+- providing application-facing runtime entries: `run`, `createScope`, `action`, `sleep`, `until`
+- providing generator-style primitives: `@shajara/host/primitives`
+- mapping kernel failures into JavaScript error objects
+
+## Ritual Adaptation
+
+The host layer adapts kernel execution through two boundaries:
+
+- `decodeRitual`: `RiteRoutine<T>` -> kernel `Ritual<T>`
+- `encodeRitual`: kernel `Ritual<T>` -> `RiteCoroutine<T>`
+
+The corresponding types are:
+
+```ts
+type RiteRoutine<T> = () => RiteCoroutine<T>;
+type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
+```
+
+In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
+
+## Result Channels
+
+The primary difference between host and kernel is not the set of capabilities, but the result channel.
+
+Typical rewrites include:
+
+- kernel `wait(future)` returns `Either<FailureShape, T>`
+- host `wait(future)` returns `T` and throws on failure
+
+- kernel `lookup(key)` returns `Option<T>`
+- host `lookup(key)` returns `T | undefined`
+
+- kernel `enclose(ritual)` returns `Either<FailureShape, T>`
+- host `enclose(ritual)` returns `T` and throws on failure
+
+As a result, `Future`, `Scope`, and `Failure` are exposed on the host side primarily as user-visible results.
+
+## Error Mapping
+
+The host layer maps kernel failures into JavaScript error objects.
+
+### Writing into kernel
+
+The following entries rewrite host-side errors into kernel failures:
+
+- `halt(error)`
+- `settleError(futureSettle, error)`
+- `action.reject(error)`
+- `until(...).catch(...)`
+
+### Returning from kernel
+
+The host layer uses `fromFailure(...)` for unified mapping:
+
+- `canceled` -> `CanceledError`
+- `interrupted` -> `InterruptedError`
+- `scope` -> `ScopeError`
+- `external` -> the original `Error` or `ExternalError`
+
+Here, `ScopeError` means that the caller is no longer observing a single raw exception, but the structural fact that a scope converged as a failure with that cause.
+
+The original cause lives at:
+
+- `ScopeError.cause.failure`
+- if that cause comes from an `external` failure, the original external value is in `raw`
+
+## Runtime Entries
+
+### `run`
+
+`run` connects a host `ritual` to the long-lived `Executor` and exposes the resulting `LaunchHandle` as a Promise with `status`.
+
+Result semantics:
+
+- resolves with the result value on success
+- rejects with `CanceledError` on cancellation
+- rejects with `Error` on failure
+- structural failures usually surface as `ScopeError`
+
+### `createScope`
+
+`createScope` derives a long-lived managed scope from the `Executor` root entry and exposes:
+
+- `run(...)`
+- `cancel()`
+- `status`
+- `closed`
+
+The focus here is the host-side runtime boundary, not a second explanation of kernel scope internals.
+
+Closing semantics:
+
+- `cancel()` waits for the closure result of that scope
+- `closed` settles when that scope has fully closed
+- if the closure result is cancellation or failure, `cancel()` and `closed` reflect the same result
+
+## Host Integration
+
+### `action`
+
+`action()` exposes a set of `future` convergence capabilities to host code:
+
+- `future`
+- `resolve(value)`
+- `reject(error)`
+
+### `sleep`
+
+`sleep(milliseconds)` uses a host timer to resume a waiting computation.
+
+### `until`
+
+`until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
+
+Together, these three entries reconnect browser or JavaScript host objects back into convergence channels the `Executor` can consume.
+
+## Host Form of Autonomous Governance
+
+The host form of `autonomy(entry, options)` reuses kernel `autonomy`, but adapts the `reaper` from the host side:
+
+- the host `reaper` shape is `(scope) => RiteCoroutine<void>`
+- returning normally means "keep waiting"
+- throwing means "submit a failure adjudication rooted in that exception"
