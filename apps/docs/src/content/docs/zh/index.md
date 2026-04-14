@@ -1,16 +1,16 @@
 ---
 title: shajara
-description: 中文文档与演示入口骨架。
+description: shajara 的文档、产品说明与动画编排示例入口。
 template: splash
 hero:
-  tagline: 中文文档骨架已接入，可在此继续补充正式内容。
+  tagline: 正式文档正在整理中，后续将陆续发布于此。
   actions:
-    - text: 开始
+    - text: 文档预览
       link: /zh/guides/getting-started/
       icon: right-arrow
-    - text: 打开演示
+    - text: 查看示例
       link: /zh/demo/
       icon: right-arrow
 ---
 
-中文站点骨架已就位，后续可以在这里补充正式文档与演示内容。
+文档中心正在完善中。当前你可以先查看动画编排示例，后续这里会补充使用指南、API 参考与集成说明等正式内容。

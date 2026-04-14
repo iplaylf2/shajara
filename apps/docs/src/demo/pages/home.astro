@@ -13,9 +13,12 @@ const { locale } = Astro.props;
 
 <DemoPageShell
   docsHref={docsHomeLink(locale)}
-  intro={`Demo scaffold for ${locale}. Keep behavior aligned across locales, and fill in locale-specific copy only when the content is ready.`}
-  locale={locale}
-  title="Solid is wired into Astro."
+  intro={Astro.locals.t("demo.home.intro")}
+  title={Astro.locals.t("demo.home.title")}
 >
-  <Counter client:load />
+  <Counter
+    buttonLabel={Astro.locals.t("demo.counter.button")}
+    client:load
+    countLabel={Astro.locals.t("demo.counter.countLabel")}
+  />
 </DemoPageShell>

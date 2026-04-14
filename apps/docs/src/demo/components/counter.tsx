@@ -4,25 +4,47 @@ import { createSignal } from "solid-js";
 const INITIAL_COUNT = 0;
 const COUNT_STEP = 1;
 
-export default function Counter(): JSX.Element {
+interface Props {
+  buttonLabel: string;
+  countLabel: string;
+}
+
+export default function Counter({ buttonLabel, countLabel }: Props): JSX.Element {
   const [count, setCount] = createSignal(INITIAL_COUNT);
 
   return (
-    <button
-      onClick={() => setCount((value) => value + COUNT_STEP)}
+    <div
       style={{
-        "background-color": "#111827",
-        border: "0",
-        "border-radius": "999px",
-        color: "#f9fafb",
-        cursor: "pointer",
-        "font-size": "1rem",
-        "font-weight": "600",
-        padding: "0.875rem 1.25rem",
+        display: "grid",
+        gap: "0.75rem",
+        "justify-items": "start",
       }}
-      type="button"
     >
-      Clicked {count()} times
-    </button>
+      <button
+        onClick={() => setCount((value) => value + COUNT_STEP)}
+        style={{
+          "background-color": "#111827",
+          border: "0",
+          "border-radius": "999px",
+          color: "#f9fafb",
+          cursor: "pointer",
+          "font-size": "1rem",
+          "font-weight": "600",
+          padding: "0.875rem 1.25rem",
+        }}
+        type="button"
+      >
+        {buttonLabel}
+      </button>
+      <p
+        style={{
+          color: "#374151",
+          "font-size": "0.95rem",
+          margin: "0",
+        }}
+      >
+        {countLabel}: {count()}
+      </p>
+    </div>
   );
 }

@@ -1,8 +1,14 @@
 export const I18N = {
   defaultLocale: "en",
   locales: {
-    en: "English",
-    zh: "中文",
+    en: {
+      label: "English",
+      lang: "en",
+    },
+    zh: {
+      label: "中文",
+      lang: "zh-CN",
+    },
   },
 } as const;
 
@@ -15,11 +21,15 @@ export const SECONDARY_SITE_LOCALES = SITE_LOCALES.filter(
 
 export const STARLIGHT_LOCALES = {
   root: {
-    label: I18N.locales.en,
-    lang: "en",
+    label: I18N.locales.en.label,
+    lang: I18N.locales.en.lang,
   },
   zh: {
-    label: I18N.locales.zh,
-    lang: "zh",
+    label: I18N.locales.zh.label,
+    lang: I18N.locales.zh.lang,
   },
 } as const;
+
+export function siteLanguageTag(locale: SiteLocale): string {
+  return I18N.locales[locale].lang;
+}

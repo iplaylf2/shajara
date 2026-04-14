@@ -1,15 +1,15 @@
 ---
-title: Getting Started
-description: Minimal placeholder page for the English docs tree.
+title: Documentation Preview
+description: An overview of what will be published in the shajara documentation.
 ---
 
-## Structure
+The full shajara documentation set is on the way.
 
-- `src/content/docs/en`: English docs tree.
-- `src/content/docs/zh`: Chinese docs tree.
-- `src/pages/demo`: default-locale demo route.
-- `src/pages/[locale]/demo`: secondary-locale demo routes.
-- `site`: package-level shared docs metadata, i18n declarations, and link helpers.
-- `starlight.config.ts`: Starlight-specific configuration.
+This site will expand with:
 
-Keep this page as the English landing point until the first real guide is ready.
+- Quickstart guides for core workflows
+- API and runtime reference material
+- Architecture notes and usage patterns
+- Examples that highlight animation orchestration and timing
+
+Until those sections are published, the example page remains the best place to see the current direction.

@@ -2,15 +2,16 @@
 interface Props {
   docsHref: string;
   intro: string;
-  locale: string;
   title: string;
 }
 
-const { docsHref, intro, locale, title } = Astro.props;
+const { docsHref, intro, title } = Astro.props;
+const lang = Astro.currentLocale ?? "en";
+const dir = Astro.locals.t.dir();
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html dir={dir} lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
@@ -72,9 +73,9 @@ const { docsHref, intro, locale, title } = Astro.props;
   </head>
   <body>
     <main>
-      <p><a href={docsHref}>Back to docs</a></p>
+      <p><a href={docsHref}>{Astro.locals.t("demo.shell.backToDocs")}</a></p>
       <header>
-        <p class="eyebrow">Demo</p>
+        <p class="eyebrow">{Astro.locals.t("demo.shell.eyebrow")}</p>
         <h1>{title}</h1>
         <p>{intro}</p>
       </header>

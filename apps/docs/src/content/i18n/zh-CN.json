@@ -1,0 +1,8 @@
+{
+  "demo.counter.button": "推进序列",
+  "demo.counter.countLabel": "已触发步骤",
+  "demo.home.intro": "这里展示当前的动画编排示例。正式文档发布前，你可以先从这里了解整体方向与呈现效果。",
+  "demo.home.title": "动画编排示例",
+  "demo.shell.backToDocs": "返回文档",
+  "demo.shell.eyebrow": "示例"
+}

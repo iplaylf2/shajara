@@ -1,16 +1,16 @@
 ---
 title: shajara
-description: English documentation and demo entry scaffold.
+description: Documentation, product notes, and animation orchestration examples for shajara.
 template: splash
 hero:
-  tagline: English docs scaffold is in place and ready for real content.
+  tagline: Documentation is being prepared and will be published here soon.
   actions:
-    - text: Getting Started
+    - text: Documentation Preview
       link: /guides/getting-started/
       icon: right-arrow
-    - text: Open demo
+    - text: View Example
       link: /demo/
       icon: right-arrow
 ---
 
-English docs scaffold is in place. Add real docs and demos here when ready.
+The documentation hub is being finalized. In the meantime, you can view the current animation example and check back here for upcoming guides, API references, and integration notes.
