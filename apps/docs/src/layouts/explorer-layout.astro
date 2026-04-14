@@ -1,0 +1,98 @@
+---
+import { I18N } from "#site";
+
+const { docsHref, intro, title } = Astro.props;
+const lang = Astro.currentLocale ?? I18N.locales[I18N.defaultLocale].lang;
+const dir = Astro.locals.t.dir();
+---
+
+<!doctype html>
+<html dir={dir} lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>{title}</title>
+    <style>
+      :root {
+        color: #1f2937;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background-color: #f8fafc;
+        line-height: 1.6;
+      }
+
+      main {
+        box-sizing: border-box;
+        display: grid;
+        gap: 1.25rem;
+        margin: 0 auto;
+        max-width: 44rem;
+        min-height: 100vh;
+        padding: 3rem 1.5rem 4rem;
+        align-content: start;
+      }
+
+      p,
+      h1 {
+        margin: 0;
+      }
+
+      header {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .eyebrow {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        color: #0f172a;
+        font-size: clamp(2rem, 5vw, 2.75rem);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      header p {
+        color: #475569;
+      }
+
+      .surface {
+        padding: 1.5rem;
+        background-color: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+      }
+
+      @media (width <= 48rem) {
+        main {
+          padding: 2rem 1rem 3rem;
+        }
+
+        .surface {
+          padding: 1.25rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href={docsHref}>{Astro.locals.t("explorer.shell.backToDocs")}</a></p>
+      <header>
+        <p class="eyebrow">{Astro.locals.t("explorer.shell.eyebrow")}</p>
+        <h1>{title}</h1>
+        <p>{intro}</p>
+      </header>
+      <section class="surface">
+        <slot />
+      </section>
+    </main>
+  </body>
+</html>

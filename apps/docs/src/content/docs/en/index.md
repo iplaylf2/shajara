@@ -8,9 +8,9 @@ hero:
     - text: Documentation Preview
       link: /guides/getting-started/
       icon: right-arrow
-    - text: View Example
-      link: /demo/
+    - text: Open Explorer
+      link: /explorer/
       icon: right-arrow
 ---
 
-The documentation hub is being finalized. In the meantime, you can view the current animation example and check back here for upcoming guides, API references, and integration notes.
+The documentation hub is being finalized. In the meantime, you can open the concurrency explorer to preview how shajara will explain orchestration, then check back here for guides, API references, and integration notes.

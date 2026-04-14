@@ -2,7 +2,7 @@ import { docsLoader, i18nLoader } from "@astrojs/starlight/loaders";
 import { docsSchema, i18nSchema } from "@astrojs/starlight/schema";
 import { I18N } from "#site";
 import { defineCollection } from "astro:content";
-import { demoUiI18nSchema } from "#/content/i18n-schema";
+import { explorerUiI18nSchema } from "#/content/i18n-schema";
 
 export const collections: {
   docs: ReturnType<typeof defineCollection>;
@@ -15,7 +15,7 @@ export const collections: {
   i18n: defineCollection({
     loader: i18nLoader(),
     schema: i18nSchema({
-      extend: demoUiI18nSchema,
+      extend: explorerUiI18nSchema,
     }),
   }),
 };

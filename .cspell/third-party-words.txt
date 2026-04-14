@@ -6,9 +6,9 @@ mktemp
 oxfmt
 oxlint
 oxlintrc
-palatino
 pipeable
 pipefail
+segoe
 vite
 vitest
 yarnrc

@@ -8,9 +8,9 @@ hero:
     - text: 文档预览
       link: /zh-cn/guides/getting-started/
       icon: right-arrow
-    - text: 查看示例
-      link: /zh-cn/demo/
+    - text: 打开探索页
+      link: /zh-cn/explorer/
       icon: right-arrow
 ---
 
-文档中心正在完善中。当前你可以先查看动画编排示例，后续这里会补充使用指南、API 参考与集成说明等正式内容。
+文档中心正在完善中。当前你可以先打开并发探索页，看看 shajara 将如何借助动画解释编排机制；后续这里会补充使用指南、API 参考与集成说明等正式内容。
