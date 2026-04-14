@@ -5,7 +5,7 @@
     "jsxImportSource": "solid-js",
     "paths": {
       "#/*": ["./src/*"],
-      "#config/*": ["./config/*"]
+      "#site": ["./site/index.ts"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],

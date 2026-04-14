@@ -1,5 +1,4 @@
-import { SITE, STARLIGHT_LOCALES, localizePath } from "./site";
-import type { SiteLocale } from "./site";
+import { SITE, STARLIGHT_LOCALES } from "./site";
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 export const docsConfig = {
@@ -21,7 +20,3 @@ export const docsConfig = {
   ],
   title: SITE.title,
 } satisfies StarlightUserConfig;
-
-export function docsHomeLink(locale: SiteLocale): string {
-  return localizePath("/", locale);
-}

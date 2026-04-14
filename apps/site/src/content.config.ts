@@ -1,4 +1,4 @@
-import { I18N } from "#config/site";
+import { I18N } from "#site";
 import { defineCollection } from "astro:content";
 import { docsLoader } from "@astrojs/starlight/loaders";
 import { docsSchema } from "@astrojs/starlight/schema";

@@ -1,5 +1,5 @@
 import { defineConfig } from "astro/config";
-import { docsConfig } from "./config/starlight";
+import { docsConfig } from "./starlight.config";
 import solid from "@astrojs/solid-js";
 import starlight from "@astrojs/starlight";
 
