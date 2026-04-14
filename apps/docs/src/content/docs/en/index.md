@@ -13,4 +13,4 @@ hero:
       icon: right-arrow
 ---
 
-English site scaffold is in place. Add real docs and demos here when ready.
+English docs scaffold is in place. Add real docs and demos here when ready.

@@ -2992,6 +2992,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@shajara/docs@workspace:apps/docs":
+  version: 0.0.0-use.local
+  resolution: "@shajara/docs@workspace:apps/docs"
+  dependencies:
+    "@astrojs/check": "npm:^0.9.8"
+    "@astrojs/solid-js": "npm:^6.0.1"
+    "@astrojs/starlight": "npm:^0.38.3"
+    "@shajara/presets": "workspace:^"
+    astro: "npm:^6.1.6"
+    oxlint: "catalog:"
+    solid-js: "npm:^1.9.12"
+    typescript: "catalog:"
+  dependenciesMeta:
+    "@astrojs/check":
+      unplugged: true
+    astro:
+      unplugged: true
+  languageName: unknown
+  linkType: soft
+
 "@shajara/host@workspace:packages/host":
   version: 0.0.0-use.local
   resolution: "@shajara/host@workspace:packages/host"
@@ -3031,26 +3051,6 @@ __metadata:
   resolution: "@shajara/presets@workspace:internal/presets"
   dependencies:
     oxlint: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@shajara/site@workspace:apps/site":
-  version: 0.0.0-use.local
-  resolution: "@shajara/site@workspace:apps/site"
-  dependencies:
-    "@astrojs/check": "npm:^0.9.8"
-    "@astrojs/solid-js": "npm:^6.0.1"
-    "@astrojs/starlight": "npm:^0.38.3"
-    "@shajara/presets": "workspace:^"
-    astro: "npm:^6.1.6"
-    oxlint: "catalog:"
-    solid-js: "npm:^1.9.12"
-    typescript: "catalog:"
-  dependenciesMeta:
-    "@astrojs/check":
-      unplugged: true
-    astro:
-      unplugged: true
   languageName: unknown
   linkType: soft
 

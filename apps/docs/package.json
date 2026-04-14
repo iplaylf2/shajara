@@ -1,8 +1,8 @@
 {
-  "name": "@shajara/site",
+  "name": "@shajara/docs",
   "version": "0.1.0",
   "private": true,
-  "description": "Documentation and demo site for shajara.",
+  "description": "Documentation and demo app for shajara.",
   "author": {
     "name": "iplaylf2",
     "url": "https://github.com/iplaylf2"
@@ -10,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iplaylf2/shajara.git",
-    "directory": "apps/site"
+    "directory": "apps/docs"
   },
   "type": "module",
   "scripts": {
@@ -18,7 +18,7 @@
     "dev": "astro dev",
     "lint": "oxlint",
     "preview": "astro preview --host",
-    "test": "node -e \"console.log('No tests for @shajara/site')\"",
+    "test": "node -e \"console.log('No tests for @shajara/docs')\"",
     "typecheck": "astro-check"
   },
   "dependencies": {
