@@ -1,0 +1,21 @@
+---
+import Counter from "#/demo/components/counter";
+import DemoPageShell from "#/demo/layouts/page-shell.astro";
+import type { SiteLocale } from "#config/site";
+import { docsHomeLink } from "#config/starlight";
+
+interface Props {
+  locale: SiteLocale;
+}
+
+const { locale } = Astro.props;
+---
+
+<DemoPageShell
+  docsHref={docsHomeLink(locale)}
+  intro={`Demo scaffold for ${locale}. Keep behavior aligned across locales, and fill in locale-specific copy only when the content is ready.`}
+  locale={locale}
+  title="Solid is wired into Astro."
+>
+  <Counter client:load />
+</DemoPageShell>

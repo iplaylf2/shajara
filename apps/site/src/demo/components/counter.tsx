@@ -4,7 +4,7 @@ import { createSignal } from "solid-js";
 const INITIAL_COUNT = 0;
 const COUNT_STEP = 1;
 
-export default function SolidCounter(): JSX.Element {
+export default function Counter(): JSX.Element {
   const [count, setCount] = createSignal(INITIAL_COUNT);
 
   return (

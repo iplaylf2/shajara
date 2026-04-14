@@ -4,7 +4,8 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "paths": {
-      "#/*": ["./src/*"]
+      "#/*": ["./src/*"],
+      "#config/*": ["./config/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],

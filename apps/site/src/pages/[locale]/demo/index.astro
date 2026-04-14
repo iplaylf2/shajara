@@ -1,0 +1,12 @@
+---
+import { SECONDARY_SITE_LOCALES, type SiteLocale } from "#config/site";
+import DemoHomePage from "#/demo/pages/home.astro";
+
+export function getStaticPaths() {
+  return SECONDARY_SITE_LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as SiteLocale;
+---
+
+<DemoHomePage locale={locale} />

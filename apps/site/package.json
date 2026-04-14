@@ -2,7 +2,7 @@
   "name": "@shajara/site",
   "version": "0.1.0",
   "private": true,
-  "description": "Documentation site for shajara.",
+  "description": "Documentation and demo site for shajara.",
   "author": {
     "name": "iplaylf2",
     "url": "https://github.com/iplaylf2"
