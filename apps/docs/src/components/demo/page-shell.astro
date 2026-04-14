@@ -1,4 +1,6 @@
 ---
+import { I18N } from "#site";
+
 interface Props {
   docsHref: string;
   intro: string;
@@ -6,7 +8,7 @@ interface Props {
 }
 
 const { docsHref, intro, title } = Astro.props;
-const lang = Astro.currentLocale ?? "en";
+const lang = Astro.currentLocale ?? I18N.locales[I18N.defaultLocale].lang;
 const dir = Astro.locals.t.dir();
 ---
 

@@ -6,10 +6,10 @@ hero:
   tagline: 正式文档正在整理中，后续将陆续发布于此。
   actions:
     - text: 文档预览
-      link: /zh/guides/getting-started/
+      link: /zh-cn/guides/getting-started/
       icon: right-arrow
     - text: 查看示例
-      link: /zh/demo/
+      link: /zh-cn/demo/
       icon: right-arrow
 ---
 

@@ -5,7 +5,7 @@ export const I18N = {
       label: "English",
       lang: "en",
     },
-    zh: {
+    "zh-cn": {
       label: "中文",
       lang: "zh-CN",
     },
@@ -14,8 +14,7 @@ export const I18N = {
 
 export type SiteLocale = keyof typeof I18N.locales;
 
-export const SITE_LOCALES = Object.keys(I18N.locales) as SiteLocale[];
-export const SECONDARY_SITE_LOCALES = SITE_LOCALES.filter(
+export const SECONDARY_SITE_LOCALES = (Object.keys(I18N.locales) as SiteLocale[]).filter(
   (locale) => locale !== I18N.defaultLocale,
 );
 
@@ -24,12 +23,8 @@ export const STARLIGHT_LOCALES = {
     label: I18N.locales.en.label,
     lang: I18N.locales.en.lang,
   },
-  zh: {
-    label: I18N.locales.zh.label,
-    lang: I18N.locales.zh.lang,
+  "zh-cn": {
+    label: I18N.locales["zh-cn"].label,
+    lang: I18N.locales["zh-cn"].lang,
   },
 } as const;
-
-export function siteLanguageTag(locale: SiteLocale): string {
-  return I18N.locales[locale].lang;
-}

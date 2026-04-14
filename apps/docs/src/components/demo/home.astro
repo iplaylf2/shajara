@@ -1,0 +1,17 @@
+---
+import Counter from "#/components/demo/counter";
+import DemoPageShell from "#/components/demo/page-shell.astro";
+import { docsHomeLink } from "#/pages-kit/demo-links";
+---
+
+<DemoPageShell
+  docsHref={docsHomeLink(Astro.currentLocale)}
+  intro={Astro.locals.t("demo.home.intro")}
+  title={Astro.locals.t("demo.home.title")}
+>
+  <Counter
+    buttonLabel={Astro.locals.t("demo.counter.button")}
+    client:load
+    countLabel={Astro.locals.t("demo.counter.countLabel")}
+  />
+</DemoPageShell>
