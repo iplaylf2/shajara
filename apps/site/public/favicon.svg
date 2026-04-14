@@ -1,0 +1,13 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 128 128"
+  role="img"
+  aria-labelledby="title"
+>
+  <title>shajara</title>
+  <rect width="128" height="128" rx="24" fill="#111827" />
+  <path
+    d="M32 94V34h12l20 26 20-26h12v60H84V53L64 78 44 53v41H32Z"
+    fill="#f3f4f6"
+  />
+</svg>

@@ -1,9 +1,12 @@
+astrojs
 bimap
 effection
+labelledby
 mktemp
 oxfmt
 oxlint
 oxlintrc
+palatino
 pipeable
 pipefail
 vite
