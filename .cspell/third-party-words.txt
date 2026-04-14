@@ -9,6 +9,7 @@ oxlintrc
 pipeable
 pipefail
 segoe
+topbar
 vite
 vitest
 yarnrc

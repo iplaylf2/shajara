@@ -1,55 +1,295 @@
 .root {
   display: grid;
-  gap: 1.5rem;
+  gap: 1rem;
+  color: #1c2431;
 }
 
-.note {
-  display: grid;
-  gap: 0.5rem;
-  padding: 1rem 1.125rem;
-  background-color: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+.topbar {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  color: #4f6178;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
 }
 
-.noteLabel {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.75rem;
+.brandLink {
+  color: inherit;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  text-decoration: none;
 }
 
-.noteBody {
-  margin: 0;
-  color: #374151;
+.brandLink:hover {
+  color: #0f172a;
 }
 
-.areaList {
+.topbarDivider {
+  color: #b9c6d8;
+}
+
+.topbarSection {
+  color: #58708f;
+}
+
+.topbarTitle {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.surface {
+  display: grid;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 14rem;
+  grid-template-areas:
+    "stage rail"
+    "code rail";
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.stagePanel,
+.rail,
+.codePanel {
+  border: 1px solid #d6e0ec;
+  border-radius: 0.5rem;
+  background: #fcfdff;
+}
+
+.stagePanel {
+  grid-area: stage;
   display: grid;
   gap: 1rem;
-  margin: 0;
-  padding: 0 0 0 1.25rem;
+  padding: 1rem;
+  border-color: #cad8e8;
+  background: linear-gradient(180deg, #f3f9ff, #fcfdff 5.5rem), #fcfdff;
 }
 
-.areaItem {
+.rail {
+  grid-area: rail;
+  position: sticky;
+  top: 1rem;
+  padding: 0.5rem;
+  border-color: #d6dfeb;
+  background: #f8fbff;
+}
+
+.codePanel {
+  grid-area: code;
   display: grid;
-  gap: 0.25rem;
+  gap: 1rem;
+  padding: 1rem;
+  border-color: #d7e0ea;
+  background: linear-gradient(180deg, #fbfdff, #f6f8fb), #fbfdff;
 }
 
-.areaTitle {
-  color: #111827;
-  font-weight: 600;
+.sceneHeader,
+.placeholderIntro {
+  display: grid;
+  gap: 0.35rem;
 }
 
-.areaDescription {
+.sceneHeader {
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #e4ebf4;
+}
+
+.sceneBody,
+.placeholderBody {
   margin: 0;
-  color: #4b5563;
+  color: #42556d;
 }
 
-@media (width <= 48rem) {
-  .note {
-    padding: 0.875rem 1rem;
+.sceneBody {
+  max-width: 48rem;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #31465f;
+}
+
+.placeholderBody {
+  max-width: 42rem;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: #556b84;
+}
+
+.stageCanvas {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e4ebf4;
+}
+
+.stageCanvasFrame,
+.stageCanvasFooter,
+.guideLine,
+.guideLineShort,
+.codeSkeletonLine {
+  display: block;
+  border-radius: 999px;
+  background: #eceff3;
+}
+
+.stageCanvasFrame {
+  height: 16rem;
+  border: 1px solid #d5e1ee;
+  border-radius: 0.35rem;
+  background-color: #f7fbff;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(100% - 1px),
+      #e5edf7 calc(100% - 1px)
+    ),
+    linear-gradient(to right, transparent 0, transparent calc(100% - 1px), #e5edf7 calc(100% - 1px));
+  background-size:
+    100% 3.5rem,
+    12rem 100%;
+}
+
+.stageCanvasFooter {
+  width: 28%;
+  height: 0.5rem;
+  background: #d3dfee;
+}
+
+.guideList {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.guideRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.guideMarker {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #9eb8d8;
+}
+
+.guideTrack {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.guideLine {
+  width: 100%;
+  height: 0.55rem;
+  background: #dce7f4;
+}
+
+.guideLineShort {
+  width: 48%;
+  height: 0.45rem;
+  background: #e6eef8;
+}
+
+.tabList {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tabButton {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  color: #516983;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.tabButton:hover {
+  color: #0f172a;
+  border-color: #d9e4f1;
+  background: #f4f9ff;
+}
+
+.tabButtonSelected {
+  color: #0f172a;
+  border-color: #c1d6ec;
+  background: #ecf5ff;
+}
+
+.codeSkeleton {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.4rem 0 0;
+  border-top: 1px solid #e4ebf4;
+}
+
+.codeSkeletonLine {
+  height: 0.7rem;
+  border-radius: 999px;
+  background: #dce6f2;
+}
+
+.codeSkeletonWide {
+  width: 100%;
+}
+
+.codeSkeletonMedium {
+  width: 78%;
+}
+
+.codeSkeletonNarrow {
+  width: 56%;
+}
+
+.codeSkeletonShort {
+  width: 36%;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (width <= 72rem) {
+  .contentGrid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "stage"
+      "rail"
+      "code";
+  }
+
+  .rail {
+    position: static;
+    padding: 0.75rem;
+  }
+}
+
+@media (width <= 52rem) {
+  .stagePanel,
+  .codePanel {
+    padding: 0.85rem;
+  }
+
+  .stageCanvasFrame {
+    height: 12rem;
   }
 }

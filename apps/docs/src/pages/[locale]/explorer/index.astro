@@ -3,33 +3,19 @@ import ExplorerLayout from "#/layouts/explorer-layout.astro";
 import ExplorerView from "#/components/explorer/explorer-view";
 import { SECONDARY_SITE_LOCALES } from "#site";
 import { docsHomeLink } from "#/pages-kit/docs-home-link";
+import { explorerExamplesZh } from "#/components/explorer/explorer-examples";
 
 export function getStaticPaths() {
   return SECONDARY_SITE_LOCALES.map((locale) => ({ params: { locale } }));
 }
 ---
 
-<ExplorerLayout
-  docsHref={docsHomeLink(Astro.currentLocale)}
-  intro={Astro.locals.t("explorer.home.intro")}
-  title={Astro.locals.t("explorer.home.title")}
->
+<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
   <ExplorerView
-    areas={[
-      {
-        description: Astro.locals.t("explorer.areas.timeline.description"),
-        title: Astro.locals.t("explorer.areas.timeline.title"),
-      },
-      {
-        description: Astro.locals.t("explorer.areas.dependencies.description"),
-        title: Astro.locals.t("explorer.areas.dependencies.title"),
-      },
-      {
-        description: Astro.locals.t("explorer.areas.states.description"),
-        title: Astro.locals.t("explorer.areas.states.title"),
-      },
-    ]}
-    note={Astro.locals.t("explorer.note.body")}
-    noteLabel={Astro.locals.t("explorer.note.label")}
+    client:load
+    brandHref={docsHomeLink(Astro.currentLocale)}
+    brandLabel="shajara"
+    examples={explorerExamplesZh}
+    explorerLabel="探索"
   />
 </ExplorerLayout>

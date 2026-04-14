@@ -1,7 +1,7 @@
 ---
 import { I18N } from "#site";
 
-const { docsHref, intro, title } = Astro.props;
+const { title } = Astro.props;
 const lang = Astro.currentLocale ?? I18N.locales[I18N.defaultLocale].lang;
 const dir = Astro.locals.t.dir();
 ---
@@ -15,23 +15,28 @@ const dir = Astro.locals.t.dir();
     <style>
       :root {
         color: #1f2937;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family:
+          "IBM Plex Sans",
+          "Segoe UI",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
       }
 
       body {
         margin: 0;
-        background-color: #f8fafc;
+        background: #f7fafc;
         line-height: 1.6;
       }
 
       main {
         box-sizing: border-box;
         display: grid;
-        gap: 1.25rem;
+        gap: 0;
         margin: 0 auto;
-        max-width: 44rem;
+        max-width: 80rem;
         min-height: 100vh;
-        padding: 3rem 1.5rem 4rem;
+        padding: 1rem 1.5rem 2.75rem;
         align-content: start;
       }
 
@@ -40,59 +45,16 @@ const dir = Astro.locals.t.dir();
         margin: 0;
       }
 
-      header {
-        display: grid;
-        gap: 0.5rem;
-      }
-
-      .eyebrow {
-        color: #64748b;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      h1 {
-        color: #0f172a;
-        font-size: clamp(2rem, 5vw, 2.75rem);
-        line-height: 1.1;
-        letter-spacing: -0.02em;
-      }
-
-      header p {
-        color: #475569;
-      }
-
-      .surface {
-        padding: 1.5rem;
-        background-color: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-      }
-
       @media (width <= 48rem) {
         main {
-          padding: 2rem 1rem 3rem;
-        }
-
-        .surface {
-          padding: 1.25rem;
+          padding: 0.85rem 1rem 2.25rem;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <p><a href={docsHref}>{Astro.locals.t("explorer.shell.backToDocs")}</a></p>
-      <header>
-        <p class="eyebrow">{Astro.locals.t("explorer.shell.eyebrow")}</p>
-        <h1>{title}</h1>
-        <p>{intro}</p>
-      </header>
-      <section class="surface">
-        <slot />
-      </section>
+      <slot />
     </main>
   </body>
 </html>
