@@ -1,5 +1,6 @@
 import { copyFile, rm } from "node:fs/promises";
 import { parseArgs } from "node:util";
+import { requireEnvPath } from "./support/environment.ts";
 import { resolve } from "node:path";
 
 const paths = resolvePaths();
@@ -20,8 +21,8 @@ switch (mode) {
 }
 
 function resolvePaths() {
-  const repoRoot = resolve(requireEnv("PROJECT_CWD"));
-  const packageRoot = resolve(requireEnv("INIT_CWD"));
+  const repoRoot = requireEnvPath("PROJECT_CWD");
+  const packageRoot = requireEnvPath("INIT_CWD");
 
   return {
     packageLicensePath: resolve(packageRoot, "LICENSE"),
@@ -51,16 +52,6 @@ async function stageLicense({ rootLicensePath, packageLicensePath }: ResolvedPat
 
 async function cleanLicense({ packageLicensePath }: ResolvedPaths) {
   await rm(packageLicensePath, { force: true });
-}
-
-function requireEnv(name: string) {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`Expected ${name} to be set.`);
-  }
-
-  return value;
 }
 
 interface ResolvedPaths {

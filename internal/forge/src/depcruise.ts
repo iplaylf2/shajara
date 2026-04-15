@@ -1,53 +1,38 @@
-// oxlint-disable max-lines
+import type { ICruiseOptions } from "dependency-cruiser";
+import type { WorkspaceTarget } from "./support/workspace-targets.ts";
 import { cruise } from "dependency-cruiser";
-import { execFileSync } from "node:child_process";
+import { getWorkspaceTargets } from "./support/workspace-targets.ts";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { requireEnvPath } from "./support/environment.ts";
 
 const FAILURE_EXIT_CODE = 1;
 const SUCCESS_EXIT_CODE = 0;
-const repoRoot = path.resolve(requireEnv("PROJECT_CWD"));
-const cruiseOptions = {
-  combinedDependencies: true,
-  doNotFollow: { path: ["(^|/)node_modules($|/)"] },
-  enhancedResolveOptions: {
-    conditionNames: ["import", "require", "node", "default", "types"],
-    exportsFields: ["exports"],
-    extensions: [".ts", ".tsx", ".astro", ".mjs", ".js", ".d.ts"],
-    mainFields: ["module", "main", "types", "typings"],
-  },
-  exclude: {
-    path: [
-      "(^|/)dist($|/)",
-      "(^|/)coverage($|/)",
-      "(^|/)node_modules($|/)",
-      String.raw`(^|/)\.astro($|/)`,
-    ],
-  },
-  tsConfig: { fileName: "tsconfig.json" },
-};
-const workspaces = execFileSync("yarn", ["workspaces", "list", "--json"], {
-  cwd: repoRoot,
-  encoding: "utf8",
-})
-  .trim()
-  .split("\n")
-  .map(parseWorkspace)
-  .filter(({ location }) => location !== "." && !location.startsWith("internal/"))
-  .map(({ name, location }) => ({ cwd: location, name, target: "src" }));
+
+const repoRoot = requireEnvPath("PROJECT_CWD");
+const cruiseConfigPath = path.join(repoRoot, ".dependency-cruiser.mjs");
 
 await main();
 
 async function main() {
-  const workspaceViolations = await Promise.all(workspaces.map(checkWorkspaceForDirectoryCycles));
+  const cruiseOptions = await loadCruiseOptions();
+  const workspaces = getWorkspaceTargets(repoRoot);
+  const workspaceViolations = await Promise.all(
+    workspaces.map((workspace) => checkWorkspaceForDirectoryCycles(workspace, cruiseOptions)),
+  );
   const violations = workspaceViolations.flat();
   const { exitCode, output, stream } = formatViolationReport(violations);
   stream.write(output);
   process.exitCode = exitCode;
 }
-async function checkWorkspaceForDirectoryCycles(workspace: WorkspaceTarget) {
+
+async function checkWorkspaceForDirectoryCycles(
+  workspace: WorkspaceTarget,
+  cruiseOptions: ICruiseOptions,
+) {
   const baseDirectory = path.resolve(repoRoot, workspace.cwd);
-  const modules = await cruiseTarget(workspace);
-  return findDirectoryCycles(baseDirectory, workspace.target, modules).map(
+  const modules = await cruiseTarget(workspace, cruiseOptions);
+  return findDirectoryCycles(baseDirectory, workspace.sourceRoots, modules).map(
     ({ directories, examples }) => ({
       directories,
       examples,
@@ -56,19 +41,34 @@ async function checkWorkspaceForDirectoryCycles(workspace: WorkspaceTarget) {
   );
 }
 
-async function cruiseTarget({ cwd, target }: CruiseTarget) {
-  const result = (await cruise([path.join(cwd, target)], {
+async function cruiseTarget(
+  { entryPaths, tsconfigPath }: WorkspaceTarget,
+  cruiseOptions: ICruiseOptions,
+) {
+  const result = (await cruise(entryPaths, {
     ...cruiseOptions,
     baseDir: repoRoot,
     tsConfig: {
-      fileName: path.join(cwd, "tsconfig.json"),
+      fileName: tsconfigPath,
     },
   })) as { output: { modules: ModuleRecord[] } };
 
   return result.output.modules;
 }
 
-function findDirectoryCycles(baseDirectory: string, target: string, modules: ModuleRecord[]) {
+async function loadCruiseOptions() {
+  const { default: configuration } = (await import(
+    pathToFileURL(cruiseConfigPath).href
+  )) as CruiseConfigurationModule;
+
+  return configuration.options;
+}
+
+function findDirectoryCycles(
+  baseDirectory: string,
+  sourceRoots: Set<string>,
+  modules: ModuleRecord[],
+) {
   const graph: DirectoryGraph = {
     edges: new Map<string, Map<string, EdgeExample[]>>(),
     nodes: new Set<string>(),
@@ -76,7 +76,7 @@ function findDirectoryCycles(baseDirectory: string, target: string, modules: Mod
   for (const moduleRecord of modules.toSorted((left, right) =>
     left.source.localeCompare(right.source),
   )) {
-    const fromBucket = getDirectoryNode(baseDirectory, target, moduleRecord.source);
+    const fromBucket = getDirectoryNode(baseDirectory, sourceRoots, moduleRecord.source);
     if (!fromBucket) {
       continue;
     }
@@ -87,7 +87,7 @@ function findDirectoryCycles(baseDirectory: string, target: string, modules: Mod
       if (!dependency.resolved || dependency.couldNotResolve || dependency.coreModule) {
         continue;
       }
-      const toBucket = getDirectoryNode(baseDirectory, target, dependency.resolved);
+      const toBucket = getDirectoryNode(baseDirectory, sourceRoots, dependency.resolved);
       if (!toBucket || fromBucket === toBucket) {
         continue;
       }
@@ -104,10 +104,9 @@ function findDirectoryCycles(baseDirectory: string, target: string, modules: Mod
   }));
 }
 
-function getDirectoryNode(baseDirectory: string, target: string, filePath: string) {
-  const targetRoot = path.resolve(baseDirectory, target);
+function getDirectoryNode(baseDirectory: string, sourceRoots: Set<string>, filePath: string) {
   const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(baseDirectory, filePath);
-  const relativePath = path.relative(targetRoot, absolutePath);
+  const relativePath = path.relative(baseDirectory, absolutePath);
   if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
     return null;
   }
@@ -116,11 +115,25 @@ function getDirectoryNode(baseDirectory: string, target: string, filePath: strin
   if (segments.length === 0) {
     return null;
   }
+  // Keep files at the workspace root in their own bucket when the tsconfig includes them.
   // oxlint-disable-next-line no-magic-numbers
   if (segments.length === 1) {
-    return target;
+    return sourceRoots.has(".") ? "." : null;
   }
-  return path.join(target, path.dirname(relativePath)).replaceAll(path.sep, "/");
+  const [sourceRoot, ...directorySegments] = segments;
+  if (!sourceRoot) {
+    return null;
+  }
+  if (!sourceRoots.has(sourceRoot)) {
+    return null;
+  }
+  // oxlint-disable-next-line no-magic-numbers
+  if (directorySegments.length === 1) {
+    return sourceRoot;
+  }
+  return path
+    .join(sourceRoot, path.dirname(directorySegments.join(path.sep)))
+    .replaceAll(path.sep, "/");
 }
 
 function getOrCreateEdgeExamples(
@@ -269,30 +282,6 @@ function formatViolationReport(violations: Violation[]) {
   }
   return { exitCode: FAILURE_EXIT_CODE, output: `${lines.join("\n")}\n`, stream: process.stderr };
 }
-
-function requireEnv(name: string) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Expected ${name} to be set.`);
-  }
-  return value;
-}
-
-function parseWorkspace(line: string) {
-  return JSON.parse(line) as WorkspaceListItem;
-}
-
-interface WorkspaceListItem {
-  location: string;
-  name: string;
-}
-interface CruiseTarget {
-  cwd: string;
-  target: string;
-}
-interface WorkspaceTarget extends CruiseTarget {
-  name: string;
-}
 interface ModuleRecord {
   dependencies: DependencyRecord[];
   source: string;
@@ -322,4 +311,10 @@ interface Violation {
   directories: string[];
   examples: string[];
   scope: string;
+}
+interface CruiseConfiguration {
+  options: ICruiseOptions;
+}
+interface CruiseConfigurationModule {
+  default: CruiseConfiguration;
 }

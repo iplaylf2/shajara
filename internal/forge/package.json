@@ -2,7 +2,7 @@
   "name": "@shajara/forge",
   "private": true,
   "bin": {
-    "shajara-forge": "./src/cli.ts"
+    "shajara-forge": "./src/index.ts"
   },
   "type": "module",
   "scripts": {

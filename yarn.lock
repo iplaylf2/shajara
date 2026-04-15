@@ -3022,7 +3022,7 @@ __metadata:
     oxlint: "catalog:"
     typescript: "catalog:"
   bin:
-    shajara-forge: ./src/cli.ts
+    shajara-forge: ./src/index.ts
   languageName: unknown
   linkType: soft
 
