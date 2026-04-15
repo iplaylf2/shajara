@@ -1,7 +1,48 @@
 import { For, createMemo, createSignal } from "solid-js";
 import type { JSX } from "solid-js";
-
 import styles from "./explorer-view.module.css";
+
+export default function ExplorerView(props: Props): JSX.Element {
+  const initialExampleId = readInitialExampleId(props.examples);
+  const [selectedExampleId, setSelectedExampleId] = createSignal(initialExampleId);
+
+  const selectedExample = createMemo(() =>
+    readSelectedExample(props.examples, selectedExampleId()),
+  );
+
+  return (
+    <div class={styles["root"]}>
+      <ExplorerTopbar
+        brandHref={props.brandHref}
+        brandLabel={props.brandLabel}
+        explorerLabel={props.explorerLabel}
+        title={selectedExample()?.title ?? ""}
+      />
+
+      <section class={styles["surface"]}>
+        <div class={styles["contentGrid"]}>
+          <StagePanel
+            description={selectedExample()?.description ?? ""}
+            placeholder={props.stagePlaceholder}
+            title={selectedExample()?.title ?? ""}
+          />
+          <ExampleRail
+            examples={props.examples}
+            selectedExampleId={selectedExampleId}
+            setSelectedExampleId={setSelectedExampleId}
+          />
+          <CodePanel placeholder={props.codePlaceholder} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export interface ExplorerExample {
+  description: string;
+  id: string;
+  title: string;
+}
 
 const FIRST_EXAMPLE_INDEX = 0;
 const STAGE_GUIDE_ROW_COUNT = 3;
@@ -15,19 +56,11 @@ const CODE_SKELETON_LINES = [
   "short",
 ] as const;
 
-interface Example {
-  description: string;
-  id: string;
-  title: string;
-}
-
-export type { Example as ExplorerExample };
-
 interface Props {
   brandHref: string;
   brandLabel: string;
   codePlaceholder: string;
-  examples: Example[];
+  examples: ExplorerExample[];
   explorerLabel: string;
   stagePlaceholder: string;
 }
@@ -36,11 +69,14 @@ function joinClasses(...classNames: (string | false | null | undefined)[]): stri
   return classNames.filter(Boolean).join(" ");
 }
 
-function readInitialExampleId(examples: Example[]): string {
+function readInitialExampleId(examples: ExplorerExample[]): string {
   return examples[FIRST_EXAMPLE_INDEX]?.id ?? "";
 }
 
-function readSelectedExample(examples: Example[], selectedExampleId: string): Example | undefined {
+function readSelectedExample(
+  examples: ExplorerExample[],
+  selectedExampleId: string,
+): ExplorerExample | undefined {
   return (
     examples.find((example) => example.id === selectedExampleId) ?? examples[FIRST_EXAMPLE_INDEX]
   );
@@ -112,7 +148,7 @@ function CodeSkeleton(): JSX.Element {
 }
 
 function ExampleTab(props: {
-  example: Example;
+  example: ExplorerExample;
   isSelected: boolean;
   onSelect: () => void;
 }): JSX.Element {
@@ -130,7 +166,7 @@ function ExampleTab(props: {
 }
 
 function ExampleRail(props: {
-  examples: Example[];
+  examples: ExplorerExample[];
   selectedExampleId: () => string;
   setSelectedExampleId: (value: string) => string;
 }): JSX.Element {
@@ -189,41 +225,5 @@ function CodePanel(props: { placeholder: string }): JSX.Element {
 
       <CodeSkeleton />
     </section>
-  );
-}
-
-export default function ExplorerView(props: Props): JSX.Element {
-  const initialExampleId = readInitialExampleId(props.examples);
-  const [selectedExampleId, setSelectedExampleId] = createSignal(initialExampleId);
-
-  const selectedExample = createMemo(() =>
-    readSelectedExample(props.examples, selectedExampleId()),
-  );
-
-  return (
-    <div class={styles["root"]}>
-      <ExplorerTopbar
-        brandHref={props.brandHref}
-        brandLabel={props.brandLabel}
-        explorerLabel={props.explorerLabel}
-        title={selectedExample()?.title ?? ""}
-      />
-
-      <section class={styles["surface"]}>
-        <div class={styles["contentGrid"]}>
-          <StagePanel
-            description={selectedExample()?.description ?? ""}
-            placeholder={props.stagePlaceholder}
-            title={selectedExample()?.title ?? ""}
-          />
-          <ExampleRail
-            examples={props.examples}
-            selectedExampleId={selectedExampleId}
-            setSelectedExampleId={setSelectedExampleId}
-          />
-          <CodePanel placeholder={props.codePlaceholder} />
-        </div>
-      </section>
-    </div>
   );
 }
