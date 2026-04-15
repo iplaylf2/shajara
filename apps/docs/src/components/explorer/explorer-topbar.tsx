@@ -6,7 +6,6 @@ interface Props {
   brandHref: string;
   brandLabel: string;
   explorerLabel: string;
-  localeLabel: string;
   localeLinks: ExplorerLocaleLink[];
   title: string;
 }
@@ -33,8 +32,7 @@ export default function ExplorerTopbar(props: Props): JSX.Element {
       </div>
 
       <details class={styles["localeMenu"]}>
-        <summary aria-label={props.localeLabel} class={styles["localeSummary"]}>
-          <span class={styles["localeSummaryLabel"]}>{props.localeLabel}</span>
+        <summary aria-label={currentLocaleLink?.label} class={styles["localeSummary"]}>
           <span class={styles["localeSummaryValue"]}>{currentLocaleLink?.label}</span>
           <span aria-hidden="true" class={styles["localeSummaryCaret"]}>
             ▾

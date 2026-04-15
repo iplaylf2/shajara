@@ -18,6 +18,5 @@
   "explorer.note.label": "进行中",
   "explorer.stage.placeholder": "这里刻意不预设动画编排的最终样式，这个区域目前只用来标记运行时动效将会出现的位置。",
   "explorer.shell.backToDocs": "返回文档",
-  "explorer.shell.eyebrow": "探索",
-  "explorer.shell.languageLabel": "语言"
+  "explorer.shell.eyebrow": "探索"
 }

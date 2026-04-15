@@ -20,7 +20,6 @@ export const explorerUiI18nFields = {
   "explorer.note.label": z.string(),
   "explorer.shell.backToDocs": z.string(),
   "explorer.shell.eyebrow": z.string(),
-  "explorer.shell.languageLabel": z.string(),
   "explorer.stage.placeholder": z.string(),
 } as const;
 

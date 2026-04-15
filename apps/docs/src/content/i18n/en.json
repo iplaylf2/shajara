@@ -18,6 +18,5 @@
   "explorer.note.label": "In Progress",
   "explorer.stage.placeholder": "Animation composition is intentionally undecided here. This tray only marks where the runtime motion will be staged.",
   "explorer.shell.backToDocs": "Back to docs",
-  "explorer.shell.eyebrow": "Explorer",
-  "explorer.shell.languageLabel": "Language"
+  "explorer.shell.eyebrow": "Explorer"
 }
