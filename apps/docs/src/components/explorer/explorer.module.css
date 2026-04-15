@@ -279,8 +279,8 @@
 }
 
 .tabButton {
+  box-sizing: border-box;
   display: block;
-  width: 100%;
   padding: 0.7rem 0.8rem;
   color: #516983;
   font: inherit;

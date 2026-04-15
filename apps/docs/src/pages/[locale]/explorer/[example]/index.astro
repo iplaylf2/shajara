@@ -1,9 +1,10 @@
 ---
 import {
   EXPLORER_EXAMPLE_IDS,
+  ExplorerBody,
   isExplorerExampleId,
-} from "#/components/explorer/explorer-content";
-import ExplorerPage from "#/components/explorer/explorer-page.astro";
+} from "#/pages-kit/explorer";
+import ExplorerLayout from "#/layouts/explorer-layout.astro";
 import { SITE_LOCALES } from "#site";
 import type { SiteLocale } from "#site";
 
@@ -25,4 +26,6 @@ if (!isExplorerExampleId(example)) {
 }
 ---
 
-<ExplorerPage currentExampleId={example} locale={locale} />
+<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
+  <ExplorerBody currentExampleId={example} locale={locale} />
+</ExplorerLayout>

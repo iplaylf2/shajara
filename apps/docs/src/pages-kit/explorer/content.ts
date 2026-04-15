@@ -5,14 +5,14 @@ export const EXPLORER_EXAMPLE_IDS = ["example-a", "example-b", "example-c"] as c
 
 export type ExplorerExampleId = (typeof EXPLORER_EXAMPLE_IDS)[number];
 
-export interface ExplorerExample {
+export interface ExplorerBodyExample {
   description: string;
   href: string;
   id: ExplorerExampleId;
   title: string;
 }
 
-export interface ExplorerLocaleLink {
+export interface ExplorerBodyLocaleLink {
   href: string;
   hreflang: string;
   isCurrent: boolean;
@@ -33,7 +33,7 @@ export function buildExplorerExamples({
   descriptions,
   locale,
   titles,
-}: BuildExplorerExamplesOptions): ExplorerExample[] {
+}: BuildExplorerExamplesOptions): ExplorerBodyExample[] {
   return EXPLORER_EXAMPLE_IDS.map((id) => ({
     description: descriptions[id],
     href: buildExplorerHref(locale, id),
@@ -45,7 +45,7 @@ export function buildExplorerExamples({
 export function buildExplorerLocaleLinks(
   currentExampleId: ExplorerExampleId | undefined,
   currentLocale: SiteLocale,
-): ExplorerLocaleLink[] {
+): ExplorerBodyLocaleLink[] {
   return (Object.entries(I18N.locales) as [SiteLocale, (typeof I18N.locales)[SiteLocale]][]).map(
     ([locale, localeConfig]) => ({
       href: buildExplorerHref(locale, currentExampleId),

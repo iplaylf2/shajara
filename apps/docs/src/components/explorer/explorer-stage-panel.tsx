@@ -1,15 +1,7 @@
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
-const STAGE_GUIDE_ROW_COUNT = 3;
-
-interface Props {
-  description: string;
-  placeholder: string;
-  title: string;
-}
-
-export default function ExplorerStagePanel(props: Props): JSX.Element {
+export function ExplorerStagePanel(props: Props): JSX.Element {
   return (
     <section aria-labelledby="explorer-stage-title" class={styles["stagePanel"]}>
       <h2 class={styles["srOnly"]} id="explorer-stage-title">
@@ -42,4 +34,12 @@ export default function ExplorerStagePanel(props: Props): JSX.Element {
       </div>
     </section>
   );
+}
+
+const STAGE_GUIDE_ROW_COUNT = 3;
+
+interface Props {
+  description: string;
+  placeholder: string;
+  title: string;
 }

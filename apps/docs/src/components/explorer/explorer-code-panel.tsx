@@ -1,21 +1,7 @@
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
-const CODE_SKELETON_LINES = [
-  styles["codeSkeletonWide"],
-  styles["codeSkeletonMedium"],
-  styles["codeSkeletonWide"],
-  styles["codeSkeletonNarrow"],
-  styles["codeSkeletonMedium"],
-  styles["codeSkeletonWide"],
-  styles["codeSkeletonShort"],
-] as const;
-
-interface Props {
-  placeholder: string;
-}
-
-export default function ExplorerCodePanel(props: Props): JSX.Element {
+export function ExplorerCodePanel(props: Props): JSX.Element {
   return (
     <section class={styles["codePanel"]}>
       <div class={styles["placeholderIntro"]}>
@@ -29,4 +15,18 @@ export default function ExplorerCodePanel(props: Props): JSX.Element {
       </div>
     </section>
   );
+}
+
+const CODE_SKELETON_LINES = [
+  styles["codeSkeletonWide"],
+  styles["codeSkeletonMedium"],
+  styles["codeSkeletonWide"],
+  styles["codeSkeletonNarrow"],
+  styles["codeSkeletonMedium"],
+  styles["codeSkeletonWide"],
+  styles["codeSkeletonShort"],
+] as const;
+
+interface Props {
+  placeholder: string;
 }

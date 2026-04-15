@@ -1,13 +1,7 @@
-import type { ExplorerExample } from "./explorer-content";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
-interface Props {
-  currentExampleId: string;
-  examples: ExplorerExample[];
-}
-
-export default function ExplorerExampleRail(props: Props): JSX.Element {
+export function ExplorerExampleRail(props: Props): JSX.Element {
   return (
     <aside class={styles["rail"]}>
       <div class={styles["tabList"]}>
@@ -23,4 +17,15 @@ export default function ExplorerExampleRail(props: Props): JSX.Element {
       </div>
     </aside>
   );
+}
+
+interface ExplorerExampleRailItem {
+  href: string;
+  id: string;
+  title: string;
+}
+
+interface Props {
+  currentExampleId: string;
+  examples: ExplorerExampleRailItem[];
 }

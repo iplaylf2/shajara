@@ -1,16 +1,7 @@
-import type { ExplorerLocaleLink } from "./explorer-content";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
-interface Props {
-  brandHref: string;
-  brandLabel: string;
-  explorerLabel: string;
-  localeLinks: ExplorerLocaleLink[];
-  title: string;
-}
-
-export default function ExplorerTopbar(props: Props): JSX.Element {
+export function ExplorerTopbar(props: Props): JSX.Element {
   const [fallbackLocaleLink] = props.localeLinks;
   const currentLocaleLink =
     props.localeLinks.find((localeLink) => localeLink.isCurrent) ?? fallbackLocaleLink;
@@ -54,4 +45,19 @@ export default function ExplorerTopbar(props: Props): JSX.Element {
       </details>
     </div>
   );
+}
+
+interface ExplorerTopbarLocaleLink {
+  href: string;
+  hreflang: string;
+  isCurrent: boolean;
+  label: string;
+}
+
+interface Props {
+  brandHref: string;
+  brandLabel: string;
+  explorerLabel: string;
+  localeLinks: ExplorerTopbarLocaleLink[];
+  title: string;
 }
