@@ -171,7 +171,7 @@ function getDirectoryNode(baseDirectory, target, filePath) {
     return target;
   }
 
-  return `${target}/${segments[0]}`.replaceAll(path.sep, "/");
+  return path.join(target, path.dirname(relativePath)).replaceAll(path.sep, "/");
 }
 
 function findStronglyConnectedComponents({ nodes, edges }) {
