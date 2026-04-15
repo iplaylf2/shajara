@@ -57,17 +57,15 @@ async function checkWorkspaceForDirectoryCycles(workspace: WorkspaceTarget) {
 }
 
 async function cruiseTarget({ cwd, target }: CruiseTarget) {
-  const previousDirectory = process.cwd();
-  const workingDirectory = path.resolve(repoRoot, cwd);
-  try {
-    process.chdir(workingDirectory);
-    const result = (await cruise([target], cruiseOptions)) as {
-      output: { modules: ModuleRecord[] };
-    };
-    return result.output.modules;
-  } finally {
-    process.chdir(previousDirectory);
-  }
+  const result = (await cruise([path.join(cwd, target)], {
+    ...cruiseOptions,
+    baseDir: repoRoot,
+    tsConfig: {
+      fileName: path.join(cwd, "tsconfig.json"),
+    },
+  })) as { output: { modules: ModuleRecord[] } };
+
+  return result.output.modules;
 }
 
 function findDirectoryCycles(baseDirectory: string, target: string, modules: ModuleRecord[]) {
