@@ -4,6 +4,9 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "noEmit": true,
+    "paths": {
+      "#src/*": ["./src/*"]
+    },
     "rootDir": "./src",
     "types": ["node"]
   },

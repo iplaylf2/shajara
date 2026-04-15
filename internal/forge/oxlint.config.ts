@@ -8,6 +8,7 @@ export default defineConfig({
   extends: [shared],
   rules: {
     "eslint/max-lines": "off",
+    "eslint/no-magic-numbers": "off",
     "import/no-nodejs-modules": "off",
   },
 });

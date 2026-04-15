@@ -5,6 +5,9 @@
     "shajara-forge": "./src/index.ts"
   },
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },

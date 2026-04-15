@@ -3,16 +3,16 @@ import { parseArgs } from "node:util";
 import { requireEnvPath } from "./support/environment.ts";
 import { resolve } from "node:path";
 
-const paths = resolvePaths();
+const licensePaths = resolveLicensePaths();
 const mode = parseMode();
 
 switch (mode) {
   case "stage": {
-    await stageLicense(paths);
+    await stageLicense(licensePaths);
     break;
   }
   case "clean": {
-    await cleanLicense(paths);
+    await cleanLicense(licensePaths);
     break;
   }
   default: {
@@ -20,7 +20,7 @@ switch (mode) {
   }
 }
 
-function resolvePaths() {
+function resolveLicensePaths() {
   const repoRoot = requireEnvPath("PROJECT_CWD");
   const packageRoot = requireEnvPath("INIT_CWD");
 

@@ -1,12 +1,11 @@
-// oxlint-disable no-magic-numbers
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import typescript from "typescript";
 
-export function getWorkspaceTargets(repoRoot: string) {
+export function collectWorkspaces(repoRoot: string) {
   return listWorkspaces(repoRoot)
-    .map((workspace) => resolveWorkspaceTarget(repoRoot, workspace))
-    .filter((workspace): workspace is WorkspaceTarget => workspace !== null);
+    .map((workspace) => resolveWorkspace(repoRoot, workspace))
+    .filter((workspace): workspace is WorkspaceSpec => workspace !== null);
 }
 
 function listWorkspaces(repoRoot: string) {
@@ -16,14 +15,14 @@ function listWorkspaces(repoRoot: string) {
   })
     .trim()
     .split("\n")
-    .map(parseWorkspace);
+    .map(parseWorkspaceLine);
 }
 
-function parseWorkspace(line: string) {
+function parseWorkspaceLine(line: string) {
   return JSON.parse(line) as WorkspaceListItem;
 }
 
-function resolveWorkspaceTarget(repoRoot: string, { location, name }: WorkspaceListItem) {
+function resolveWorkspace(repoRoot: string, { location, name }: WorkspaceListItem) {
   if (location === ".") {
     return null;
   }
@@ -31,14 +30,14 @@ function resolveWorkspaceTarget(repoRoot: string, { location, name }: WorkspaceL
   const workspaceRoot = path.resolve(repoRoot, location);
   const tsconfigPath = path.join(workspaceRoot, "tsconfig.json");
   const parsedTsconfig = parseTsconfig(tsconfigPath);
-  const includedFileNames = excludeGitIgnoredPaths(repoRoot, parsedTsconfig.fileNames);
-  const entryPaths = toRepoRelativePaths(repoRoot, includedFileNames);
+  const includedFiles = excludeGitIgnoredPaths(repoRoot, parsedTsconfig.fileNames);
+  const entries = toPathsRelativeTo(repoRoot, includedFiles);
 
   return {
-    cwd: location,
-    entryPaths,
+    entries,
     name,
-    sourceRoots: getSourceRoots(workspaceRoot, includedFileNames),
+    relativePath: location,
+    sourceRoots: getSourceRoots(workspaceRoot, includedFiles),
     tsconfigPath,
   };
 }
@@ -47,9 +46,7 @@ function parseTsconfig(tsconfigPath: string) {
   const configFile = typescript.readConfigFile(tsconfigPath, typescript.sys.readFile);
 
   if (configFile.error) {
-    throw new TypeError(
-      typescript.formatDiagnostics([configFile.error], typescriptFormatDiagnosticsHost),
-    );
+    throw new TypeError(typescript.formatDiagnostics([configFile.error], diagnosticsHost));
   }
 
   const parsedTsconfig = typescript.parseJsonConfigFileContent(
@@ -61,9 +58,7 @@ function parseTsconfig(tsconfigPath: string) {
   );
 
   if (parsedTsconfig.errors.length > 0) {
-    throw new Error(
-      typescript.formatDiagnostics(parsedTsconfig.errors, typescriptFormatDiagnosticsHost),
-    );
+    throw new Error(typescript.formatDiagnostics(parsedTsconfig.errors, diagnosticsHost));
   }
 
   return parsedTsconfig;
@@ -97,14 +92,14 @@ function excludeGitIgnoredPaths(repoRoot: string, fileNames: string[]) {
     return fileNames;
   }
 
-  const repoRelativePaths = toRepoRelativePaths(repoRoot, fileNames);
+  const repoRelativePaths = toPathsRelativeTo(repoRoot, fileNames);
   const ignoredPaths = listGitIgnoredPaths(repoRoot, repoRelativePaths);
 
   return fileNames.filter((_, index) => !ignoredPaths.has(repoRelativePaths[index]!));
 }
 
-function toRepoRelativePaths(repoRoot: string, fileNames: string[]) {
-  return fileNames.map((fileName) => path.relative(repoRoot, fileName));
+function toPathsRelativeTo(baseDirectory: string, fileNames: string[]) {
+  return fileNames.map((fileName) => path.relative(baseDirectory, fileName));
 }
 
 function listGitIgnoredPaths(repoRoot: string, repoRelativePaths: string[]) {
@@ -134,7 +129,7 @@ function isGitCheckIgnoreMiss(error: unknown) {
   );
 }
 
-const typescriptFormatDiagnosticsHost = {
+const diagnosticsHost = {
   getCanonicalFileName(fileName: string) {
     return typescript.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase();
   },
@@ -151,10 +146,10 @@ interface WorkspaceListItem {
   name: string;
 }
 
-export interface WorkspaceTarget {
-  cwd: string;
-  entryPaths: string[];
+export interface WorkspaceSpec {
+  entries: string[];
   name: string;
+  relativePath: string;
   sourceRoots: Set<string>;
   tsconfigPath: string;
 }
