@@ -3020,6 +3020,7 @@ __metadata:
     "@types/node": "npm:^25.6.0"
     dependency-cruiser: "npm:^17.3.10"
     oxlint: "catalog:"
+    typescript: "catalog:"
   bin:
     shajara-forge: ./src/cli.ts
   languageName: unknown
