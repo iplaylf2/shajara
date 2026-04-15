@@ -1,6 +1,5 @@
 import { docsLoader, i18nLoader } from "@astrojs/starlight/loaders";
 import { docsSchema, i18nSchema } from "@astrojs/starlight/schema";
-import { I18N } from "#site";
 import { defineCollection } from "astro:content";
 import { explorerUiI18nSchema } from "#/content/i18n-schema";
 
@@ -22,10 +21,5 @@ export const collections: {
 
 function generateDocsId({ entry }: { entry: string }): string {
   const withoutExtension = entry.replace(/\.[^.]+$/, "");
-  const withoutDefaultLocalePrefix = withoutExtension.replace(
-    new RegExp(`^${I18N.defaultLocale}/`),
-    "",
-  );
-
-  return withoutDefaultLocalePrefix.replace(/\/index$/, "") || "index";
+  return withoutExtension.replace(/\/index$/, "") || "index";
 }

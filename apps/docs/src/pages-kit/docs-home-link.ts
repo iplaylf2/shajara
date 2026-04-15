@@ -1,6 +1,6 @@
 import { I18N } from "#site";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import type { SiteLocale } from "#site";
 
-export function docsHomeLink(locale: string | undefined): string {
-  return getRelativeLocaleUrl(locale ?? I18N.locales[I18N.defaultLocale].lang, "");
+export function docsHomeLink(locale: SiteLocale | undefined): string {
+  return `/${locale ?? I18N.defaultLocale}/`;
 }

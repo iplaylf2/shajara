@@ -1,21 +1,13 @@
 ---
-import ExplorerLayout from "#/layouts/explorer-layout.astro";
-import ExplorerView from "#/components/explorer/explorer-view";
-import { SECONDARY_SITE_LOCALES } from "#site";
-import { docsHomeLink } from "#/pages-kit/docs-home-link";
-import { explorerExamplesZh } from "#/components/explorer/explorer-examples";
+import ExplorerPage from "#/components/explorer/explorer-page.astro";
+import { SITE_LOCALES } from "#site";
+import type { SiteLocale } from "#site";
 
 export function getStaticPaths() {
-  return SECONDARY_SITE_LOCALES.map((locale) => ({ params: { locale } }));
+  return SITE_LOCALES.map((locale) => ({ params: { locale } }));
 }
+
+const { locale } = Astro.params as { locale: SiteLocale };
 ---
 
-<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
-  <ExplorerView
-    client:load
-    brandHref={docsHomeLink(Astro.currentLocale)}
-    brandLabel="shajara"
-    examples={explorerExamplesZh}
-    explorerLabel="探索"
-  />
-</ExplorerLayout>
+<ExplorerPage locale={locale} />

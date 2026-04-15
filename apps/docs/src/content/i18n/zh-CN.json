@@ -1,6 +1,13 @@
 {
   "explorer.areas.dependencies.description": "展示哪些工作可以独立推进，以及哪些地方需要显式的顺序约束或汇合。",
   "explorer.areas.dependencies.title": "依赖关系",
+  "explorer.code.placeholder": "最终示例代码、注释组织方式以及补充说明都暂时保留为空，留待后续定稿。",
+  "explorer.examples.fan-out.description": "适合展示最基础的分叉与汇合：一个入口任务展开成多个并发分支，再收束成一个结果。",
+  "explorer.examples.fan-out.title": "分叉汇合",
+  "explorer.examples.race.description": "适合展示竞争策略：多个分支同时启动，但只要第一个可用结果出现，主流程就可以继续前进。",
+  "explorer.examples.race.title": "首个结果胜出",
+  "explorer.examples.staggered.description": "适合展示不同时长的任务重叠，让页面能表达“有些分支先落定，有些分支继续拖尾”的节奏感。",
+  "explorer.examples.staggered.title": "错峰完成",
   "explorer.areas.states.description": "把任务状态、状态迁移与中断过程先表达出来，但暂时不预设最终的交互形式。",
   "explorer.areas.states.title": "状态变化",
   "explorer.areas.timeline.description": "为后续的共享时间线表达预留空间，用来展示调度、重叠执行与完成时刻。",
@@ -9,6 +16,7 @@
   "explorer.home.title": "并发探索",
   "explorer.note.body": "当前页面刻意保持安静，只先划定首轮迭代的可视化范围，不提前暗示最终的呈现方式或交互模式。",
   "explorer.note.label": "进行中",
+  "explorer.stage.placeholder": "这里刻意不预设动画编排的最终样式，这个区域目前只用来标记运行时动效将会出现的位置。",
   "explorer.shell.backToDocs": "返回文档",
   "explorer.shell.eyebrow": "探索"
 }

@@ -1,0 +1,38 @@
+---
+import type { ExplorerExample } from "#/components/explorer/explorer-view";
+import ExplorerLayout from "#/layouts/explorer-layout.astro";
+import ExplorerView from "#/components/explorer/explorer-view";
+import type { SiteLocale } from "#site";
+import { docsHomeLink } from "#/pages-kit/docs-home-link";
+
+const { locale } = Astro.props as { locale: SiteLocale };
+const examples = [
+  {
+    description: Astro.locals.t("explorer.examples.fan-out.description"),
+    id: "fan-out",
+    title: Astro.locals.t("explorer.examples.fan-out.title"),
+  },
+  {
+    description: Astro.locals.t("explorer.examples.race.description"),
+    id: "race",
+    title: Astro.locals.t("explorer.examples.race.title"),
+  },
+  {
+    description: Astro.locals.t("explorer.examples.staggered.description"),
+    id: "staggered",
+    title: Astro.locals.t("explorer.examples.staggered.title"),
+  },
+] satisfies ExplorerExample[];
+---
+
+<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
+  <ExplorerView
+    client:load
+    brandHref={docsHomeLink(locale)}
+    brandLabel="shajara"
+    codePlaceholder={Astro.locals.t("explorer.code.placeholder")}
+    examples={examples}
+    explorerLabel={Astro.locals.t("explorer.shell.eyebrow")}
+    stagePlaceholder={Astro.locals.t("explorer.stage.placeholder")}
+  />
+</ExplorerLayout>

@@ -6,10 +6,10 @@ hero:
   tagline: Documentation is being prepared and will be published here soon.
   actions:
     - text: Documentation Preview
-      link: /guides/getting-started/
+      link: /en/guides/getting-started/
       icon: right-arrow
     - text: Open Explorer
-      link: /explorer/
+      link: /en/explorer/
       icon: right-arrow
 ---
 

@@ -26,8 +26,10 @@ export type { Example as ExplorerExample };
 interface Props {
   brandHref: string;
   brandLabel: string;
+  codePlaceholder: string;
   examples: Example[];
   explorerLabel: string;
+  stagePlaceholder: string;
 }
 
 function joinClasses(...classNames: (string | false | null | undefined)[]): string {
@@ -149,7 +151,11 @@ function ExampleRail(props: {
   );
 }
 
-function StagePanel(props: { description: string; title: string }): JSX.Element {
+function StagePanel(props: {
+  description: string;
+  placeholder: string;
+  title: string;
+}): JSX.Element {
   return (
     <section aria-labelledby="explorer-stage-title" class={styles["stagePanel"]}>
       <h2 class={styles["srOnly"]} id="explorer-stage-title">
@@ -161,10 +167,7 @@ function StagePanel(props: { description: string; title: string }): JSX.Element 
       </div>
 
       <div class={styles["placeholderIntro"]}>
-        <p class={styles["placeholderBody"]}>
-          Animation composition is intentionally undecided here. This tray only marks where the
-          runtime motion will be staged.
-        </p>
+        <p class={styles["placeholderBody"]}>{props.placeholder}</p>
       </div>
 
       <div class={styles["stageCanvas"]}>
@@ -177,13 +180,11 @@ function StagePanel(props: { description: string; title: string }): JSX.Element 
   );
 }
 
-function CodePanel(): JSX.Element {
+function CodePanel(props: { placeholder: string }): JSX.Element {
   return (
     <section class={styles["codePanel"]}>
       <div class={styles["placeholderIntro"]}>
-        <p class={styles["placeholderBody"]}>
-          Final example code, annotation style, and supplementary notes are intentionally left open.
-        </p>
+        <p class={styles["placeholderBody"]}>{props.placeholder}</p>
       </div>
 
       <CodeSkeleton />
@@ -212,6 +213,7 @@ export default function ExplorerView(props: Props): JSX.Element {
         <div class={styles["contentGrid"]}>
           <StagePanel
             description={selectedExample()?.description ?? ""}
+            placeholder={props.stagePlaceholder}
             title={selectedExample()?.title ?? ""}
           />
           <ExampleRail
@@ -219,7 +221,7 @@ export default function ExplorerView(props: Props): JSX.Element {
             selectedExampleId={selectedExampleId}
             setSelectedExampleId={setSelectedExampleId}
           />
-          <CodePanel />
+          <CodePanel placeholder={props.codePlaceholder} />
         </div>
       </section>
     </div>

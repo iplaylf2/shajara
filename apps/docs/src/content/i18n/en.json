@@ -1,6 +1,13 @@
 {
   "explorer.areas.dependencies.description": "Show where work can proceed independently and where ordering or joins become necessary.",
   "explorer.areas.dependencies.title": "Dependencies",
+  "explorer.code.placeholder": "Final example code, annotation style, and supplementary notes are intentionally left open.",
+  "explorer.examples.fan-out.description": "A first scene for showing fan-out and join: one request splits into parallel branches, then converges into a single result.",
+  "explorer.examples.fan-out.title": "Fan-out pipeline",
+  "explorer.examples.race.description": "A race scene for presenting early completion: several branches start together, but the first useful answer can resolve the whole frame.",
+  "explorer.examples.race.title": "First-result race",
+  "explorer.examples.staggered.description": "A layered scene for comparing tasks with different durations, useful when we want the stage to show overlap without turning into noise.",
+  "explorer.examples.staggered.title": "Staggered completion",
   "explorer.areas.states.description": "Make task state, transitions, and interruption visible without committing to a final interaction model yet.",
   "explorer.areas.states.title": "States",
   "explorer.areas.timeline.description": "Outline how scheduled work, overlap, and completion might be expressed across a shared timeline.",
@@ -9,6 +16,7 @@
   "explorer.home.title": "Concurrency Explorer",
   "explorer.note.body": "The current page is intentionally quiet. It marks the visual territory for the first iteration without implying a finished presentation or interaction pattern.",
   "explorer.note.label": "In Progress",
+  "explorer.stage.placeholder": "Animation composition is intentionally undecided here. This tray only marks where the runtime motion will be staged.",
   "explorer.shell.backToDocs": "Back to docs",
   "explorer.shell.eyebrow": "Explorer"
 }

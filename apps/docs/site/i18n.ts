@@ -14,12 +14,10 @@ export const I18N = {
 
 export type SiteLocale = keyof typeof I18N.locales;
 
-export const SECONDARY_SITE_LOCALES = (Object.keys(I18N.locales) as SiteLocale[]).filter(
-  (locale) => locale !== I18N.defaultLocale,
-);
+export const SITE_LOCALES = Object.keys(I18N.locales) as SiteLocale[];
 
 export const STARLIGHT_LOCALES = {
-  root: {
+  en: {
     label: I18N.locales.en.label,
     lang: I18N.locales.en.lang,
   },

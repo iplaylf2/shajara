@@ -2,7 +2,7 @@ import { SITE, STARLIGHT_LOCALES } from "./site";
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 export const docsConfig = {
-  defaultLocale: "root",
+  defaultLocale: "en",
   description: SITE.description,
   locales: STARLIGHT_LOCALES,
   sidebar: [
