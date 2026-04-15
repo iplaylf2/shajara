@@ -1,5 +1,6 @@
 astrojs
 bimap
+depcruise
 effection
 labelledby
 mktemp
