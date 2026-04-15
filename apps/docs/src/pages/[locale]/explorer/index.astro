@@ -1,4 +1,5 @@
 ---
+import { DEFAULT_EXPLORER_EXAMPLE_ID } from "#/components/explorer/explorer-content";
 import ExplorerPage from "#/components/explorer/explorer-page.astro";
 import { SITE_LOCALES } from "#site";
 import type { SiteLocale } from "#site";
@@ -10,4 +11,4 @@ export function getStaticPaths() {
 const { locale } = Astro.params as { locale: SiteLocale };
 ---
 
-<ExplorerPage locale={locale} />
+<ExplorerPage currentExampleId={DEFAULT_EXPLORER_EXAMPLE_ID} locale={locale} />

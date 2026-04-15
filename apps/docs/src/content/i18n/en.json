@@ -2,12 +2,12 @@
   "explorer.areas.dependencies.description": "Show where work can proceed independently and where ordering or joins become necessary.",
   "explorer.areas.dependencies.title": "Dependencies",
   "explorer.code.placeholder": "Final example code, annotation style, and supplementary notes are intentionally left open.",
-  "explorer.examples.fan-out.description": "A first scene for showing fan-out and join: one request splits into parallel branches, then converges into a single result.",
-  "explorer.examples.fan-out.title": "Fan-out pipeline",
-  "explorer.examples.race.description": "A race scene for presenting early completion: several branches start together, but the first useful answer can resolve the whole frame.",
-  "explorer.examples.race.title": "First-result race",
-  "explorer.examples.staggered.description": "A layered scene for comparing tasks with different durations, useful when we want the stage to show overlap without turning into noise.",
-  "explorer.examples.staggered.title": "Staggered completion",
+  "explorer.examples.example-a.description": "Neutral placeholder copy for the first child page. Replace this once the explorer scope and story are finalized.",
+  "explorer.examples.example-a.title": "Example A",
+  "explorer.examples.example-b.description": "Neutral placeholder copy for the second child page. It should not imply the final runtime concept, motion, or data model yet.",
+  "explorer.examples.example-b.title": "Example B",
+  "explorer.examples.example-c.description": "Neutral placeholder copy for the third child page. Keep it generic until a real scenario is ready to be documented.",
+  "explorer.examples.example-c.title": "Example C",
   "explorer.areas.states.description": "Make task state, transitions, and interruption visible without committing to a final interaction model yet.",
   "explorer.areas.states.title": "States",
   "explorer.areas.timeline.description": "Outline how scheduled work, overlap, and completion might be expressed across a shared timeline.",
@@ -18,5 +18,6 @@
   "explorer.note.label": "In Progress",
   "explorer.stage.placeholder": "Animation composition is intentionally undecided here. This tray only marks where the runtime motion will be staged.",
   "explorer.shell.backToDocs": "Back to docs",
-  "explorer.shell.eyebrow": "Explorer"
+  "explorer.shell.eyebrow": "Explorer",
+  "explorer.shell.languageLabel": "Language"
 }

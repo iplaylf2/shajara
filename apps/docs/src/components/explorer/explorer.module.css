@@ -6,11 +6,19 @@
 
 .topbar {
   display: flex;
-  gap: 0.45rem;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   color: #4f6178;
   font-size: 0.82rem;
   letter-spacing: 0.01em;
+}
+
+.topbarTrail {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 0;
 }
 
 .brandLink {
@@ -34,6 +42,82 @@
 .topbarTitle {
   color: #0f172a;
   font-weight: 600;
+}
+
+.localeMenu {
+  position: relative;
+}
+
+.localeMenu[open] .localeSummaryCaret {
+  transform: rotate(180deg);
+}
+
+.localeSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.18rem 0;
+  list-style: none;
+  color: #627790;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  transition: color 160ms ease;
+}
+
+.localeSummary::-webkit-details-marker {
+  display: none;
+}
+
+.localeSummary:hover {
+  color: #0f172a;
+}
+
+.localeSummaryLabel {
+  color: #8b9bb0;
+}
+
+.localeSummaryValue {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.localeSummaryCaret {
+  color: #7a8ea7;
+  transition: transform 160ms ease;
+}
+
+.localeMenuList {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 10;
+  display: grid;
+  gap: 0.1rem;
+  min-width: 8.5rem;
+  padding: 0.35rem 0;
+  border: 1px solid #e1e8f1;
+  border-radius: 0.6rem;
+  background: rgb(252 253 255 / 0.96);
+  box-shadow: 0 0.7rem 1.8rem rgb(15 23 42 / 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.localeLink {
+  display: block;
+  padding: 0.45rem 0.8rem;
+  color: #52677f;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.localeLink:hover {
+  color: #0f172a;
+  background: rgb(244 249 255 / 0.8);
 }
 
 .surface {
@@ -199,6 +283,7 @@
 }
 
 .tabButton {
+  display: block;
   width: 100%;
   padding: 0.7rem 0.8rem;
   color: #516983;
@@ -209,6 +294,7 @@
   border: 1px solid transparent;
   border-radius: 0.35rem;
   background: transparent;
+  text-decoration: none;
   transition:
     color 160ms ease,
     background-color 160ms ease,
@@ -284,6 +370,20 @@
 }
 
 @media (width <= 52rem) {
+  .topbar {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .localeMenu {
+    width: 100%;
+  }
+
+  .localeMenuList {
+    left: 0;
+    right: auto;
+  }
+
   .stagePanel,
   .codePanel {
     padding: 0.85rem;
