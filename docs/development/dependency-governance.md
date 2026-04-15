@@ -1,12 +1,16 @@
 # Dependency Governance
 
-Imports should express structural boundaries clearly enough that dependency analysis
-reflects the actual shape of the project.
+Imports should make dependency boundaries legible. These rules keep module relationships
+explicit enough for structural checks to be enforced consistently.
 
 ## Boundary Expression
 
-When a directory exposes symbols through `index.ts`, treat that file as the directory
-boundary and import through it.
+Choose import paths by the boundary they are meant to express.
+
+When a dependency is on a directory surface, use a path that points to that surface
+clearly. When a dependency is on a root-level barrel, use the barrel path. When multiple
+path shapes could resolve to different surfaces, choose the one that makes the target
+boundary explicit.
 
 Prefer:
 
@@ -22,22 +26,13 @@ import { future } from "#/primitives";
 import { wait } from "#/sigils";
 ```
 
-The shorter form may resolve through root-level barrel files such as `src/primitives.ts`
-or `src/sigils.ts`, lifting the dependency edge to the project root and distorting the
-directory graph.
-
-`#/foo` and `#/foo/index` are not interchangeable when the project contains both:
-
-- a root-level barrel such as `src/foo.ts`
-- a directory entry such as `src/foo/index.ts`
-
-Use `#/foo/index` when the dependency is on the `foo/` directory surface. Use `#/foo`
-only when the dependency is intentionally on the root-level barrel itself.
+Avoid the shorter form when it would resolve through a different surface, such as a
+root-level barrel file.
 
 ## Leaf Files
 
-If a symbol is already exported by a directory `index.ts`, import it through that
-directory entry instead of targeting a leaf file directly.
+If a symbol is already exported by a directory entry, import it through that entry rather
+than reaching directly into a leaf file.
 
 Prefer:
 
@@ -51,32 +46,25 @@ Avoid:
 import { wait } from "#/sigils/wait";
 ```
 
-If a file is not reachable through the directory `index.ts`, treat it as local
-implementation by default rather than something to depend on across directory boundaries.
+If a file is not reachable through the directory entry, treat it as local implementation
+by default. Keep `index.ts` focused on exports, and keep implementation in leaf files
+unless there is a clear reason not to.
 
 ## Rules
 
 - Use `./`-based relative imports, not the `#/` alias, for files in the same directory or
   a child directory.
 - Omit `.ts` and `.js` suffixes in internal TypeScript imports.
-- Prefer `#/area/index` over `#/area` when `#/area` may resolve through a root-level
-  barrel.
+- Prefer the import form that makes the dependency target unambiguous when multiple path
+  shapes are available.
 - Prefer directory entry points over leaf files when both are available.
-- Avoid mixing import levels for the same dependency area.
+- Keep `index.ts` focused on exports unless there is a strong reason to do otherwise.
 
 ## Dependency Analysis
 
-Directory-level cycle detection is only useful when import paths describe real ownership
-boundaries.
+Use `yarn depcruise` to enforce directory-level dependency discipline across all
+directories under the target source tree.
 
-Imports that route through root barrels or bypass declared directory surfaces make the
-graph harder to trust:
-
-- false cycles can appear
-- real boundaries become less visible
-- refactors become harder to reason about
-
-Use `yarn depcruise` to check directory-level circular dependencies. The script is defined
-in the repository toolchain.
-
-This check helps keep dependency direction accurate and legible across the project.
+Treat the result as a structural check on the boundaries expressed by the code. When it
+reveals a problem, fix the import path or the module structure so the dependency is stated
+at the correct boundary, rather than weakening the rule or working around the check.
