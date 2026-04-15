@@ -1,9 +1,10 @@
+// oxlint-disable no-magic-numbers
 const processArguments = process.argv.slice(2);
 const [command, ...arguments_] = processArguments;
 
 switch (command) {
   case "depcruise": {
-    await import("./check-directory-cycles.ts");
+    await import("./depcruise.ts");
     break;
   }
   case "pack:license": {
