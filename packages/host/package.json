@@ -46,7 +46,6 @@
   },
   "scripts": {
     "build": "vite build",
-    "lint": "oxlint",
     "postpack": "yarn run -T pack:license clean",
     "prepack": "yarn build && yarn run -T pack:license stage",
     "test": "vitest run",
