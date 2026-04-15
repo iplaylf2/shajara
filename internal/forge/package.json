@@ -1,0 +1,19 @@
+{
+  "name": "@shajara/forge",
+  "private": true,
+  "bin": {
+    "shajara-forge": "./src/cli.ts"
+  },
+  "type": "module",
+  "scripts": {
+    "typecheck": "yarn run -T tsc --noEmit"
+  },
+  "dependencies": {
+    "dependency-cruiser": "^17.3.10"
+  },
+  "devDependencies": {
+    "@shajara/presets": "workspace:^",
+    "@types/node": "^25.6.0",
+    "oxlint": "catalog:"
+  }
+}

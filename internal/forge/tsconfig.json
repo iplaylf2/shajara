@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmit": true,
+    "rootDir": "./src",
+    "types": ["node"]
+  },
+  "extends": "@shajara/presets/tsconfig.shared.json",
+  "include": ["src/**/*.ts"]
+}
