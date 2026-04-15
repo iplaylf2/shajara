@@ -72,24 +72,6 @@ async function main() {
   process.exit(1);
 }
 
-function getDirectoryBucket(baseDirectory, target, filePath) {
-  const targetRoot = path.resolve(baseDirectory, target);
-  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(baseDirectory, filePath);
-  const relativePath = path.relative(targetRoot, absolutePath);
-
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    return null;
-  }
-
-  const segments = relativePath.split(path.sep).filter(Boolean);
-
-  if (segments.length <= 1) {
-    return target;
-  }
-
-  return `${target}/${segments[0]}`.replaceAll(path.sep, "/");
-}
-
 async function cruiseTarget({ cwd, target }) {
   const previousDirectory = process.cwd();
   const workingDirectory = path.resolve(repoRoot, cwd);
@@ -108,8 +90,10 @@ function buildDirectoryGraph(baseDirectory, target, modules) {
   const nodes = new Set();
   const edges = new Map();
 
-  for (const moduleRecord of modules) {
-    const fromBucket = getDirectoryBucket(baseDirectory, target, moduleRecord.source);
+  for (const moduleRecord of modules.toSorted((left, right) =>
+    left.source.localeCompare(right.source),
+  )) {
+    const fromBucket = getDirectoryNode(baseDirectory, target, moduleRecord.source);
 
     if (!fromBucket) {
       continue;
@@ -117,12 +101,14 @@ function buildDirectoryGraph(baseDirectory, target, modules) {
 
     nodes.add(fromBucket);
 
-    for (const dependency of moduleRecord.dependencies) {
+    for (const dependency of moduleRecord.dependencies.toSorted((left, right) =>
+      (left.resolved ?? "").localeCompare(right.resolved ?? ""),
+    )) {
       if (!dependency.resolved || dependency.couldNotResolve || dependency.coreModule) {
         continue;
       }
 
-      const toBucket = getDirectoryBucket(baseDirectory, target, dependency.resolved);
+      const toBucket = getDirectoryNode(baseDirectory, target, dependency.resolved);
 
       if (!toBucket || fromBucket === toBucket) {
         continue;
@@ -136,16 +122,56 @@ function buildDirectoryGraph(baseDirectory, target, modules) {
         edges.set(fromBucket, currentEdges);
       }
 
-      if (!currentEdges.has(toBucket)) {
-        currentEdges.set(toBucket, {
-          from: moduleRecord.source,
-          to: dependency.resolved,
+      let examples = currentEdges.get(toBucket);
+
+      if (!examples) {
+        examples = [];
+        currentEdges.set(toBucket, examples);
+      }
+
+      const example = {
+        from: moduleRecord.source,
+        to: dependency.resolved,
+      };
+
+      if (!examples.some(({ from, to }) => from === example.from && to === example.to)) {
+        examples.push(example);
+        examples.sort((left, right) => {
+          const fromOrder = left.from.localeCompare(right.from);
+
+          if (fromOrder !== 0) {
+            return fromOrder;
+          }
+
+          return left.to.localeCompare(right.to);
         });
       }
     }
   }
 
   return { nodes, edges };
+}
+
+function getDirectoryNode(baseDirectory, target, filePath) {
+  const targetRoot = path.resolve(baseDirectory, target);
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(baseDirectory, filePath);
+  const relativePath = path.relative(targetRoot, absolutePath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    return null;
+  }
+
+  const segments = relativePath.split(path.sep).filter(Boolean);
+
+  if (segments.length === 0) {
+    return null;
+  }
+
+  if (segments.length === 1) {
+    return target;
+  }
+
+  return `${target}/${segments[0]}`.replaceAll(path.sep, "/");
 }
 
 function findStronglyConnectedComponents({ nodes, edges }) {
@@ -214,19 +240,25 @@ function formatEdgeExamples(component, edges) {
   const componentNodes = new Set(component);
   const examples = [];
 
-  for (const fromNode of component) {
+  for (const fromNode of component.toSorted()) {
     const outgoingEdges = edges.get(fromNode);
 
     if (!outgoingEdges) {
       continue;
     }
 
-    for (const [toNode, example] of outgoingEdges.entries()) {
+    for (const [toNode, edgeExamples] of [...outgoingEdges.entries()].toSorted(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
       if (!componentNodes.has(toNode)) {
         continue;
       }
 
-      examples.push(`    ${fromNode} -> ${toNode}\n      via ${example.from} -> ${example.to}`);
+      examples.push(`    ${fromNode} -> ${toNode}`);
+
+      for (const example of edgeExamples) {
+        examples.push(`      via ${example.from} -> ${example.to}`);
+      }
     }
   }
 
