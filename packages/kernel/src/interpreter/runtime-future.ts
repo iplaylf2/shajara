@@ -6,9 +6,9 @@ import type {
   KEY_TOKEN,
   Suppressor,
 } from "#/contracts";
-import type { Disposer } from "#/utils";
+import type { Disposer } from "#/utils/index";
 import { option } from "fp-ts";
-import { unreachable } from "#/utils";
+import { unreachable } from "#/utils/index";
 
 export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): option.Option<FutureResult<Result>> {

@@ -1,6 +1,6 @@
 import type { FutureKey, Ritual, Wisp } from "#/contracts";
 import type { AutonomyOptions } from "#/executor/autonomy";
-import { branch } from "#/sigils";
+import { branch } from "#/sigils/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 import { withAutonomy } from "#/executor/autonomy";

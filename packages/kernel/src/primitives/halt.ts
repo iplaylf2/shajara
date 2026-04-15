@@ -1,5 +1,5 @@
 import type { FailureShape, Wisp } from "#/contracts";
-import { halt as haltSigil } from "#/sigils";
+import { halt as haltSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 export function halt(failure: FailureShape): Wisp<never> {

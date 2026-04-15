@@ -1,8 +1,8 @@
 import type { ProcessRef, ScopeRef, Wisp } from "#/contracts";
 import type { Failure } from "#/failures";
-import type { Option } from "#/utils";
+import type { Option } from "#/utils/index";
 import type { Processor } from "./processor";
-import type { ScopeDescriptor } from "#/sigils";
+import type { ScopeDescriptor } from "#/sigils/index";
 
 export function withAutonomy(options: AutonomyOptions): AutonomyScopeDescriptor {
   return {

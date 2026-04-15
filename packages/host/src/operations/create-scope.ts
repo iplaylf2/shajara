@@ -3,7 +3,7 @@ import type { RunOptions, RuntimeLaunchServices, StatefulPromise } from "#/opera
 import type { ExecutionScopeRef } from "@shajara/kernel";
 import { RuntimeLaunch } from "#/operations-kit";
 import { ensureExecutor } from "#/executor";
-import { park } from "#/primitives";
+import { park } from "#/primitives/index";
 
 export function createScope(): Scope {
   const executor = ensureExecutor();

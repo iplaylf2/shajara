@@ -1,5 +1,5 @@
 import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
-import { branch, future, halt, lookup, send, spawn, wait } from "#/sigils";
+import { branch, future, halt, lookup, send, spawn, wait } from "#/sigils/index";
 import { flow, pipe } from "fp-ts/function";
 import { resumableDelegateKey, resumableFailureKey } from "#/primitives-kit";
 import { wisp, wispEither } from "#/internal/fp";

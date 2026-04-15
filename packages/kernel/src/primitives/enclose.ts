@@ -1,6 +1,6 @@
 import type { FailureShape, Ritual, Wisp } from "#/contracts";
-import { branch, wait } from "#/sigils";
-import type { Either } from "#/utils";
+import { branch, wait } from "#/sigils/index";
+import type { Either } from "#/utils/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 

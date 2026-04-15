@@ -1,6 +1,6 @@
 import { Domain } from "./domain";
 import type { ProcessRef } from "#/contracts";
-import type { ProcessState } from "#/interpreter";
+import type { ProcessState } from "#/interpreter/index";
 import type { ProcessorTask } from "#/executor/processor";
 import type { Scheduler } from "#/executor/autonomy";
 

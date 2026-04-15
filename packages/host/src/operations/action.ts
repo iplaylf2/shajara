@@ -2,7 +2,7 @@ import type { FutureResult, FutureSettleKey } from "@shajara/kernel";
 import type { RiteCoroutine, RiteFuture } from "#/contracts";
 import { left, right } from "@shajara/kernel/utils";
 import { ensureExecutor } from "#/executor";
-import { future } from "#/primitives";
+import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary";
 
 export function* action<Return>(): RiteCoroutine<Action<Return>> {

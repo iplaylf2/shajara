@@ -1,6 +1,6 @@
 import type { ScopeRef, Wisp } from "#/contracts";
 import type { Failure } from "#/failures";
-import type { Option } from "#/utils";
+import type { Option } from "#/utils/index";
 import type { Reaper } from "./autonomy";
 import { externalFailure } from "#/failures";
 import { option } from "fp-ts";

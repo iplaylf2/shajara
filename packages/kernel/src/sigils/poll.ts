@@ -1,5 +1,5 @@
 import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts";
-import type { Option } from "#/utils";
+import type { Option } from "#/utils/index";
 
 export function poll<Result>(future: FutureKey<Result>): PollSigil<Result> {
   return {

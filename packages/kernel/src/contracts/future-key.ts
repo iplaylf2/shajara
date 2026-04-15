@@ -1,4 +1,4 @@
-import type { Either } from "#/utils";
+import type { Either } from "#/utils/index";
 import type { FailureShape } from "./failure";
 import type { KEY_TOKEN } from "./token";
 

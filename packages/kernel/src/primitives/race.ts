@@ -1,6 +1,6 @@
 import type { ArrayValues, NonEmptyTuple } from "type-fest";
 import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts";
-import { branch, cancel, future, settle, spawn } from "#/sigils";
+import { branch, cancel, future, settle, spawn } from "#/sigils/index";
 import { either, readonlyArray } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";

@@ -1,9 +1,9 @@
 import type { FutureKey, Ritual, Wisp } from "#/contracts";
 import { flow, pipe } from "fp-ts/function";
 import { awaitProcessInBand } from "#/primitives-kit";
-import { narrowArrayAs } from "#/utils";
+import { narrowArrayAs } from "#/utils/index";
 import { readonlyArray } from "fp-ts";
-import { spawn } from "#/sigils";
+import { spawn } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 export function all<BranchReturns extends readonly unknown[]>(

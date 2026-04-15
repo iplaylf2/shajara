@@ -1,7 +1,7 @@
 import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
-import { bind, branch, receive, self, settle, spawn } from "#/sigils";
+import { bind, branch, receive, self, settle, spawn } from "#/sigils/index";
 import { resumableDelegateKey, resumableFailureKey } from "#/primitives-kit";
-import type { Either } from "#/utils";
+import type { Either } from "#/utils/index";
 import type { ResumableRecoveryRequest } from "#/primitives-kit";
 import type { ScopeFailure } from "#/failures";
 import { pipe } from "fp-ts/function";

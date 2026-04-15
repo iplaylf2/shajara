@@ -1,5 +1,5 @@
 import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { Option } from "#/utils";
+import type { Option } from "#/utils/index";
 
 export function lookup<Value>(key: ContextKey<Value>): LookupSigil<Value> {
   return {
