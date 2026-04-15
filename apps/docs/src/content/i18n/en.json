@@ -1,0 +1,22 @@
+{
+  "explorer.areas.dependencies.description": "Show where work can proceed independently and where ordering or joins become necessary.",
+  "explorer.areas.dependencies.title": "Dependencies",
+  "explorer.code.placeholder": "Final example code, annotation style, and supplementary notes are intentionally left open.",
+  "explorer.examples.example-a.description": "Neutral placeholder copy for the first child page. Replace this once the explorer scope and story are finalized.",
+  "explorer.examples.example-a.title": "Example A",
+  "explorer.examples.example-b.description": "Neutral placeholder copy for the second child page. It should not imply the final runtime concept, motion, or data model yet.",
+  "explorer.examples.example-b.title": "Example B",
+  "explorer.examples.example-c.description": "Neutral placeholder copy for the third child page. Keep it generic until a real scenario is ready to be documented.",
+  "explorer.examples.example-c.title": "Example C",
+  "explorer.areas.states.description": "Make task state, transitions, and interruption visible without committing to a final interaction model yet.",
+  "explorer.areas.states.title": "States",
+  "explorer.areas.timeline.description": "Outline how scheduled work, overlap, and completion might be expressed across a shared timeline.",
+  "explorer.areas.timeline.title": "Timeline",
+  "explorer.home.intro": "This space uses animation to help explain how shajara composes concurrent work.",
+  "explorer.home.title": "Concurrency Explorer",
+  "explorer.note.body": "The current page is intentionally quiet. It marks the visual territory for the first iteration without implying a finished presentation or interaction pattern.",
+  "explorer.note.label": "In Progress",
+  "explorer.stage.placeholder": "Animation composition is intentionally undecided here. This tray only marks where the runtime motion will be staged.",
+  "explorer.shell.backToDocs": "Back to docs",
+  "explorer.shell.eyebrow": "Explorer"
+}

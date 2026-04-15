@@ -1,11 +1,16 @@
+astrojs
 bimap
+depcruise
 effection
+labelledby
 mktemp
 oxfmt
 oxlint
 oxlintrc
 pipeable
 pipefail
+segoe
+topbar
 vite
 vitest
 yarnrc

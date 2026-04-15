@@ -1,0 +1,44 @@
+{
+  "name": "@shajara/docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation and demo app for shajara.",
+  "author": {
+    "name": "iplaylf2",
+    "url": "https://github.com/iplaylf2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iplaylf2/shajara.git",
+    "directory": "apps/docs"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "dev": "astro dev --host",
+    "lint": "oxlint",
+    "preview": "astro preview --host",
+    "test": "node -e \"console.log('No tests for @shajara/docs')\"",
+    "typecheck": "astro-check"
+  },
+  "dependencies": {
+    "solid-js": "^1.9.12"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.8",
+    "@astrojs/solid-js": "^6.0.1",
+    "@astrojs/starlight": "^0.38.3",
+    "@shajara/presets": "workspace:^",
+    "astro": "^6.1.6",
+    "oxlint": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependenciesMeta": {
+    "@astrojs/check": {
+      "unplugged": true
+    },
+    "astro": {
+      "unplugged": true
+    }
+  }
+}

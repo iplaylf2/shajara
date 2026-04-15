@@ -1,0 +1,60 @@
+---
+import { I18N } from "#site";
+
+const { title } = Astro.props;
+const lang = Astro.currentLocale ?? I18N.locales[I18N.defaultLocale].lang;
+const dir = Astro.locals.t.dir();
+---
+
+<!doctype html>
+<html dir={dir} lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>{title}</title>
+    <style>
+      :root {
+        color: #1f2937;
+        font-family:
+          "IBM Plex Sans",
+          "Segoe UI",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f7fafc;
+        line-height: 1.6;
+      }
+
+      main {
+        box-sizing: border-box;
+        display: grid;
+        gap: 0;
+        margin: 0 auto;
+        max-width: 80rem;
+        min-height: 100vh;
+        padding: 1rem 1.5rem 2.75rem;
+        align-content: start;
+      }
+
+      p,
+      h1 {
+        margin: 0;
+      }
+
+      @media (width <= 48rem) {
+        main {
+          padding: 0.85rem 1rem 2.25rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>
