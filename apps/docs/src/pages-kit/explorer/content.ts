@@ -56,15 +56,12 @@ export function buildExplorerLocaleLinks(
   );
 }
 
-export function buildExplorerHref(
-  locale: SiteLocale | undefined,
-  exampleId?: ExplorerExampleId,
-): string {
+export function isExplorerExampleId(value: string): value is ExplorerExampleId {
+  return EXPLORER_EXAMPLE_IDS.includes(value as ExplorerExampleId);
+}
+
+function buildExplorerHref(locale: SiteLocale | undefined, exampleId?: ExplorerExampleId): string {
   const path = `/${locale ?? I18N.defaultLocale}/${EXPLORER_ROUTE_SEGMENT}/`;
 
   return exampleId ? `${path}${exampleId}/` : path;
-}
-
-export function isExplorerExampleId(value: string): value is ExplorerExampleId {
-  return EXPLORER_EXAMPLE_IDS.includes(value as ExplorerExampleId);
 }

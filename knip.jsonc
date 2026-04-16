@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  "exclude": ["namespaceMembers"],
+  "ignoreBinaries": [
+    "astro",
+    "astro-check",
+    "changeset",
+    "cspell-cli",
+    "knip",
+    "oxlint",
+    "shajara-forge",
+    "tsc",
+    "vite",
+    "vitest",
+  ],
+  "ignoreDependencies": ["@astrojs/check", "@shajara/forge", "cspell-cli", "oxfmt", "vite"],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true,
+  },
+  "ignoreFiles": [".dependency-cruiser.mjs"],
+  "tags": ["-preserveSurface"],
+}

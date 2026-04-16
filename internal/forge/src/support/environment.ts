@@ -1,5 +1,6 @@
 import path from "node:path";
 
+/** @public */
 export function requireEnv(name: string): string {
   if (!(name in process.env)) {
     throw new Error(`Expected ${name} to be set.`);

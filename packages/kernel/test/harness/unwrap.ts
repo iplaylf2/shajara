@@ -20,6 +20,7 @@ export function unwrapRight<Right>(value: either.Either<unknown, Right>): Right 
   return value.right;
 }
 
+/** @public */
 export function unwrapSucceeded<Result>(value: FutureResult<Result>): Result {
   return unwrapRight(value);
 }
