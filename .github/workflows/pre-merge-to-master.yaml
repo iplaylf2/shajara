@@ -41,6 +41,9 @@ jobs:
       - name: Lint
         run: yarn lint
 
+      - name: Unused code and dependency check
+        run: yarn knip
+
       - name: Dependency cruise
         run: yarn depcruise
 

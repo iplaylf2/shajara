@@ -2,6 +2,7 @@ astrojs
 bimap
 depcruise
 effection
+knip
 labelledby
 mktemp
 oxfmt
