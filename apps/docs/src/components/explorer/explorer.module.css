@@ -123,16 +123,13 @@
 .contentGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 14rem;
-  grid-template-areas:
-    "stage rail"
-    "code rail";
+  grid-template-areas: "stage rail";
   gap: 1.1rem;
   align-items: start;
 }
 
 .stagePanel,
-.rail,
-.codePanel {
+.rail {
   border: 1px solid #d6e0ec;
   border-radius: 0.5rem;
   background: #fcfdff;
@@ -156,44 +153,19 @@
   background: #f8fbff;
 }
 
-.codePanel {
-  grid-area: code;
-  display: grid;
-  gap: 1rem;
-  padding: 1rem;
-  border-color: #d7e0ea;
-  background: linear-gradient(180deg, #fbfdff, #f6f8fb), #fbfdff;
-}
-
-.sceneHeader,
-.placeholderIntro {
+.sceneHeader {
   display: grid;
   gap: 0.35rem;
-}
-
-.sceneHeader {
   padding-bottom: 0.4rem;
   border-bottom: 1px solid #e4ebf4;
 }
 
-.sceneBody,
-.placeholderBody {
-  margin: 0;
-  color: #42556d;
-}
-
 .sceneBody {
+  margin: 0;
   max-width: 48rem;
   font-size: 1rem;
   line-height: 1.75;
   color: #31465f;
-}
-
-.placeholderBody {
-  max-width: 42rem;
-  font-size: 0.92rem;
-  line-height: 1.7;
-  color: #556b84;
 }
 
 .stageCanvas {
@@ -203,38 +175,177 @@
   border-bottom: 1px solid #e4ebf4;
 }
 
-.stageCanvasFrame,
-.stageCanvasFooter,
-.guideLine,
-.guideLineShort,
-.codeSkeletonLine {
-  display: block;
-  border-radius: 999px;
-  background: #eceff3;
-}
-
-.stageCanvasFrame {
-  height: 16rem;
-  border: 1px solid #d5e1ee;
+.hostConcurrencyDemo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  overflow: hidden;
+  border: 1px solid #c9d9e9;
   border-radius: 0.35rem;
-  background-color: #f7fbff;
-  background:
-    linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(100% - 1px),
-      #e5edf7 calc(100% - 1px)
-    ),
-    linear-gradient(to right, transparent 0, transparent calc(100% - 1px), #e5edf7 calc(100% - 1px));
-  background-size:
-    100% 3.5rem,
-    12rem 100%;
+  background: #f8fbff;
 }
 
-.stageCanvasFooter {
-  width: 28%;
-  height: 0.5rem;
-  background: #d3dfee;
+.hostConcurrencySvg {
+  display: block;
+  width: 100%;
+  min-height: 16rem;
+  background:
+    linear-gradient(#eef6ff 1px, transparent 1px),
+    linear-gradient(90deg, #eef6ff 1px, transparent 1px), #f8fbff;
+  background-size:
+    3rem 3rem,
+    3rem 3rem,
+    auto;
+}
+
+.hostConcurrencyScope {
+  fill: rgb(255 255 255 / 0.74);
+  stroke: #b8cde3;
+  stroke-width: 1.5;
+}
+
+.hostConcurrencyScopeLabel {
+  fill: #58708f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.hostConcurrencyNode {
+  fill: #ffffff;
+  stroke: #9fb9d6;
+  stroke-width: 1.4;
+  transition:
+    fill 180ms ease,
+    stroke 180ms ease,
+    stroke-width 180ms ease;
+  filter: drop-shadow(0 0.35rem 0.55rem rgb(54 83 116 / 0.08));
+}
+
+.hostConcurrencyNodeText {
+  fill: #26384d;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.hostConcurrencyNodeParent .hostConcurrencyNode {
+  fill: #f7fbff;
+  stroke: #7fa2c8;
+}
+
+.hostConcurrencyNodeBranch .hostConcurrencyNode {
+  stroke: #3f93a0;
+}
+
+.hostConcurrencyNodeJoin .hostConcurrencyNode {
+  stroke: #b0705f;
+}
+
+.hostConcurrencyNodeActive .hostConcurrencyNode {
+  fill: #e9fbfd;
+  stroke: #137f90;
+  stroke-width: 2.2;
+}
+
+.hostConcurrencyNodeDone .hostConcurrencyNode {
+  fill: #f3fbf8;
+  stroke: #4d9d78;
+}
+
+.hostConcurrencyNodeJoin.hostConcurrencyNodeDone .hostConcurrencyNode {
+  fill: #fff6f1;
+  stroke: #b0705f;
+}
+
+.hostConcurrencyLink {
+  fill: none;
+  stroke: #c8d6e6;
+  stroke-linecap: round;
+  stroke-width: 2.4;
+  transition:
+    stroke 180ms ease,
+    stroke-dashoffset 180ms ease;
+}
+
+.hostConcurrencyLinkActive {
+  stroke: #526a86;
+  stroke-dasharray: 11 7;
+  stroke-dashoffset: 18;
+}
+
+.hostConcurrencyTick {
+  fill: #2f8b68;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.hostConcurrencyTickVisible {
+  opacity: 1;
+}
+
+.hostConcurrencyResult text {
+  fill: #58708f;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.hostConcurrencyResult rect {
+  fill: #ffffff;
+  stroke: #c7d7e7;
+}
+
+.hostConcurrencyCode {
+  --astro-code-background: #ffffff;
+  --astro-code-foreground: #536981;
+  --astro-code-token-comment: #6a7d92;
+  --astro-code-token-constant: #005cc5;
+  --astro-code-token-function: #6f42c1;
+  --astro-code-token-keyword: #d73a49;
+  --astro-code-token-link: #005cc5;
+  --astro-code-token-parameter: #31465f;
+  --astro-code-token-punctuation: #52677f;
+  --astro-code-token-string: #032f62;
+  --astro-code-token-string-expression: #032f62;
+
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 100%;
+  padding: 1rem;
+  margin: 0;
+  overflow: auto;
+  color: #536981;
+  font-size: 0.76rem;
+  line-height: 1.32;
+  background: #ffffff;
+  border-left: 1px solid #d9e5f1;
+}
+
+.hostConcurrencyCode :global(code) {
+  display: grid;
+  gap: 0;
+}
+
+.hostConcurrencyCodeLine {
+  display: block;
+  padding: 0.02rem 0.35rem;
+  border-left: 2px solid transparent;
+  line-height: 1.32;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.hostConcurrencyCodeLineDone {
+  opacity: 0.86;
+}
+
+.hostConcurrencyCodeLineActive {
+  color: #143044;
+  border-color: #2c8795;
+  background: #ebf8fb;
 }
 
 .guideList {
@@ -261,16 +372,10 @@
   gap: 0.4rem;
 }
 
-.guideLine {
-  width: 100%;
-  height: 0.55rem;
-  background: #dce7f4;
-}
-
-.guideLineShort {
-  width: 48%;
-  height: 0.45rem;
-  background: #e6eef8;
+.guideText {
+  color: #465d76;
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .tabList {
@@ -307,35 +412,6 @@
   color: #0f172a;
   border-color: #c1d6ec;
   background: #ecf5ff;
-}
-
-.codeSkeleton {
-  display: grid;
-  gap: 0.7rem;
-  padding: 0.4rem 0 0;
-  border-top: 1px solid #e4ebf4;
-}
-
-.codeSkeletonLine {
-  height: 0.7rem;
-  border-radius: 999px;
-  background: #dce6f2;
-}
-
-.codeSkeletonWide {
-  width: 100%;
-}
-
-.codeSkeletonMedium {
-  width: 78%;
-}
-
-.codeSkeletonNarrow {
-  width: 56%;
-}
-
-.codeSkeletonShort {
-  width: 36%;
 }
 
 .srOnly {
@@ -380,12 +456,20 @@
     right: auto;
   }
 
-  .stagePanel,
-  .codePanel {
+  .stagePanel {
     padding: 0.85rem;
   }
 
-  .stageCanvasFrame {
-    height: 12rem;
+  .hostConcurrencyDemo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hostConcurrencySvg {
+    min-height: 13rem;
+  }
+
+  .hostConcurrencyCode {
+    border-top: 1px solid #d9e5f1;
+    border-left: 0;
   }
 }

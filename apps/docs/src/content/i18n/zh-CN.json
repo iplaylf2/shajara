@@ -1,13 +1,11 @@
 {
   "explorer.areas.dependencies.description": "展示哪些工作可以独立推进，以及哪些地方需要显式的顺序约束或汇合。",
   "explorer.areas.dependencies.title": "依赖关系",
-  "explorer.code.placeholder": "最终示例代码、注释组织方式以及补充说明都暂时保留为空，留待后续定稿。",
-  "explorer.examples.example-a.description": "第一个子页面的中性占位文案。等 explorer 的范围和叙事定稿后再替换成真实内容。",
-  "explorer.examples.example-a.title": "示例 A",
-  "explorer.examples.example-b.description": "第二个子页面的中性占位文案。当前不应该暗示最终的运行时概念、动效结构或数据模型。",
-  "explorer.examples.example-b.title": "示例 B",
-  "explorer.examples.example-c.description": "第三个子页面的中性占位文案。在真实场景准备好之前，先保持为泛化表达。",
-  "explorer.examples.example-c.title": "示例 C",
+  "explorer.examples.host-concurrency.description": "一个简短的 @shajara/host 草图：一个 RiteRoutine 自己承担整段编排，在内部 spawn 并行子任务，并在返回前 wait 汇合结果。",
+  "explorer.examples.host-concurrency.guide.scope": "RiteRoutine 本身就是这段并发编排的父作用域。",
+  "explorer.examples.host-concurrency.guide.spawn": "spawn(...) 在同一个作用域内启动并行推进的子任务。",
+  "explorer.examples.host-concurrency.guide.wait": "wait(...) 在父任务返回前汇合子任务结果。",
+  "explorer.examples.host-concurrency.title": "Host 并发",
   "explorer.areas.states.description": "把任务状态、状态迁移与中断过程先表达出来，但暂时不预设最终的交互形式。",
   "explorer.areas.states.title": "状态变化",
   "explorer.areas.timeline.description": "为后续的共享时间线表达预留空间，用来展示调度、重叠执行与完成时刻。",
@@ -16,7 +14,6 @@
   "explorer.home.title": "并发探索",
   "explorer.note.body": "当前页面刻意保持安静，只先划定首轮迭代的可视化范围，不提前暗示最终的呈现方式或交互模式。",
   "explorer.note.label": "进行中",
-  "explorer.stage.placeholder": "这里刻意不预设动画编排的最终样式，这个区域目前只用来标记运行时动效将会出现的位置。",
   "explorer.shell.backToDocs": "返回文档",
   "explorer.shell.eyebrow": "探索"
 }

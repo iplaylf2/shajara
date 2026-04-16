@@ -1,3 +1,4 @@
+import { HostConcurrencyDemo } from "./host-concurrency-demo";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
@@ -12,22 +13,14 @@ export function ExplorerStagePanel(props: Props): JSX.Element {
         <p class={styles["sceneBody"]}>{props.description}</p>
       </div>
 
-      <div class={styles["placeholderIntro"]}>
-        <p class={styles["placeholderBody"]}>{props.placeholder}</p>
-      </div>
-
-      <div class={styles["stageCanvas"]}>
-        <div class={styles["stageCanvasFrame"]} />
-        <div class={styles["stageCanvasFooter"]} />
-      </div>
+      <ExplorerStageContent stage={props.stage}>{props.children}</ExplorerStageContent>
 
       <div class={styles["guideList"]}>
-        {Array.from({ length: STAGE_GUIDE_ROW_COUNT }).map(() => (
+        {props.guideRows.map((row) => (
           <div class={styles["guideRow"]}>
             <span class={styles["guideMarker"]} />
             <div class={styles["guideTrack"]}>
-              <span class={styles["guideLine"]} />
-              <span class={styles["guideLineShort"]} />
+              <span class={styles["guideText"]}>{row}</span>
             </div>
           </div>
         ))}
@@ -36,10 +29,33 @@ export function ExplorerStagePanel(props: Props): JSX.Element {
   );
 }
 
-const STAGE_GUIDE_ROW_COUNT = 3;
+function ExplorerStageContent(props: ExplorerStageContentProps): JSX.Element {
+  switch (props.stage.kind) {
+    case "host-concurrency":
+      return (
+        <HostConcurrencyDemo codeBlockId={props.stage.codeBlockId}>
+          {props.children}
+        </HostConcurrencyDemo>
+      );
+  }
+}
 
 interface Props {
+  children?: JSX.Element;
   description: string;
-  placeholder: string;
+  guideRows: readonly string[];
+  stage: StageContent;
   title: string;
+}
+
+interface ExplorerStageContentProps {
+  children?: JSX.Element;
+  stage: StageContent;
+}
+
+type StageContent = HostConcurrencyStage;
+
+interface HostConcurrencyStage {
+  codeBlockId: string;
+  kind: "host-concurrency";
 }

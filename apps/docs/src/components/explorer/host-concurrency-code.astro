@@ -1,0 +1,43 @@
+---
+import { Code } from "astro/components";
+import { HOST_CONCURRENCY_CODE } from "#/domain/explorer/host-concurrency/trace";
+import styles from "./explorer.module.css";
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+const code = HOST_CONCURRENCY_CODE.map((line) => line.text).join("\n");
+const lineEvents = HOST_CONCURRENCY_CODE.map((line) => line.event);
+const FIRST_LINE = 1;
+const lineTransformer = {
+  line(node: { properties?: Record<string, unknown> }, lineNumber: number) {
+    const event = lineEvents.at(lineNumber - FIRST_LINE);
+
+    if (typeof event !== "string") {
+      return;
+    }
+
+    const className = [styles["hostConcurrencyCodeLine"]];
+    if (event === "routine") {
+      className.push(styles["hostConcurrencyCodeLineActive"]);
+    }
+
+    node.properties ??= {};
+    node.properties["class"] = className;
+    node.properties["data-host-concurrency-event"] = event;
+  },
+  name: "host-concurrency-lines",
+};
+---
+
+<Code
+  code={code}
+  data-host-concurrency-code
+  id={id}
+  lang="ts"
+  theme="css-variables"
+  transformers={[lineTransformer]}
+  class={styles["hostConcurrencyCode"]}
+/>

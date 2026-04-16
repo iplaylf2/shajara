@@ -3302,6 +3302,7 @@ __metadata:
     "@astrojs/check": "npm:^0.9.8"
     "@astrojs/solid-js": "npm:^6.0.1"
     "@astrojs/starlight": "npm:^0.38.3"
+    "@shajara/host": "workspace:^"
     "@shajara/presets": "workspace:^"
     astro: "npm:^6.1.6"
     oxlint: "catalog:"
@@ -3329,7 +3330,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@shajara/host@workspace:packages/host":
+"@shajara/host@workspace:^, @shajara/host@workspace:packages/host":
   version: 0.0.0-use.local
   resolution: "@shajara/host@workspace:packages/host"
   dependencies:

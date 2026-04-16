@@ -1,14 +1,32 @@
 import { I18N } from "#site";
 import type { SiteLocale } from "#site";
 
-export const EXPLORER_EXAMPLE_IDS = ["example-a", "example-b", "example-c"] as const;
+export const EXPLORER_EXAMPLES = [
+  {
+    descriptionKey: "explorer.examples.host-concurrency.description",
+    guideKeys: [
+      "explorer.examples.host-concurrency.guide.scope",
+      "explorer.examples.host-concurrency.guide.spawn",
+      "explorer.examples.host-concurrency.guide.wait",
+    ],
+    id: "host-concurrency",
+    stage: "host-concurrency",
+    titleKey: "explorer.examples.host-concurrency.title",
+  },
+] as const;
+
+export const EXPLORER_EXAMPLE_IDS = EXPLORER_EXAMPLES.map((example) => example.id);
 
 export type ExplorerExampleId = (typeof EXPLORER_EXAMPLE_IDS)[number];
+export type ExplorerStageKind = (typeof EXPLORER_EXAMPLES)[number]["stage"];
+export type ExplorerExampleDefinition = (typeof EXPLORER_EXAMPLES)[number];
 
 export interface ExplorerBodyExample {
   description: string;
+  guideRows: readonly string[];
   href: string;
   id: ExplorerExampleId;
+  stage: ExplorerStageKind;
   title: string;
 }
 
@@ -19,26 +37,19 @@ export interface ExplorerBodyLocaleLink {
   label: string;
 }
 
-export const [DEFAULT_EXPLORER_EXAMPLE_ID] = EXPLORER_EXAMPLE_IDS;
+export const DEFAULT_EXPLORER_EXAMPLE_ID = readFirstExplorerExample().id;
 
-const EXPLORER_ROUTE_SEGMENT = "explorer";
-
-interface BuildExplorerExamplesOptions {
-  descriptions: Record<ExplorerExampleId, string>;
-  locale: SiteLocale;
-  titles: Record<ExplorerExampleId, string>;
-}
-
-export function buildExplorerExamples({
-  descriptions,
-  locale,
-  titles,
-}: BuildExplorerExamplesOptions): ExplorerBodyExample[] {
-  return EXPLORER_EXAMPLE_IDS.map((id) => ({
-    description: descriptions[id],
-    href: buildExplorerHref(locale, id),
-    id,
-    title: titles[id],
+export function buildExplorerExamples(
+  locale: SiteLocale,
+  translate: (key: ExplorerExampleTranslationKey) => string,
+): ExplorerBodyExample[] {
+  return EXPLORER_EXAMPLES.map((example) => ({
+    description: translate(example.descriptionKey),
+    guideRows: example.guideKeys.map((key) => translate(key)),
+    href: buildExplorerHref(locale, example.id),
+    id: example.id,
+    stage: example.stage,
+    title: translate(example.titleKey),
   }));
 }
 
@@ -60,8 +71,38 @@ export function isExplorerExampleId(value: string): value is ExplorerExampleId {
   return EXPLORER_EXAMPLE_IDS.includes(value as ExplorerExampleId);
 }
 
+export function readExplorerExample(
+  exampleId: ExplorerExampleId,
+  examples: readonly ExplorerBodyExample[],
+): ExplorerBodyExample {
+  const example = examples.find((entry) => entry.id === exampleId);
+
+  if (!example) {
+    throw new Error(`Missing explorer example: ${exampleId}`);
+  }
+
+  return example;
+}
+
+const EXPLORER_ROUTE_SEGMENT = "explorer";
+
 function buildExplorerHref(locale: SiteLocale | undefined, exampleId?: ExplorerExampleId): string {
   const path = `/${locale ?? I18N.defaultLocale}/${EXPLORER_ROUTE_SEGMENT}/`;
 
   return exampleId ? `${path}${exampleId}/` : path;
 }
+
+function readFirstExplorerExample(): ExplorerExampleDefinition {
+  const [firstExplorerExample] = EXPLORER_EXAMPLES;
+
+  if (!firstExplorerExample) {
+    throw new Error("Explorer requires at least one example.");
+  }
+
+  return firstExplorerExample;
+}
+
+type ExplorerExampleTranslationKey =
+  | ExplorerExampleDefinition["descriptionKey"]
+  | ExplorerExampleDefinition["guideKeys"][number]
+  | ExplorerExampleDefinition["titleKey"];
