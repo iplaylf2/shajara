@@ -1,5 +1,7 @@
 import type { ICruiseOptions } from "dependency-cruiser";
-import { analyzeWorkspace } from "./analysis.ts";
+import type { Violation } from "./violations.ts";
+import { allExtensions } from "dependency-cruiser";
+import { collectWorkspaceViolations } from "./violations.ts";
 import { collectWorkspaces } from "#src/support/workspaces.ts";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,9 +9,9 @@ import { requireEnvPath } from "#src/support/environment.ts";
 
 const repoRoot = requireEnvPath("PROJECT_CWD");
 const depcruiseOptions = await loadDepcruiseOptions(repoRoot);
-const workspaces = collectWorkspaces(repoRoot);
+const workspaces = collectWorkspaces(repoRoot, getCruiseEntryExtensions(depcruiseOptions));
 const cycleReports = await Promise.all(
-  workspaces.map((workspace) => analyzeWorkspace(repoRoot, workspace, depcruiseOptions)),
+  workspaces.map((workspace) => collectWorkspaceViolations(repoRoot, workspace, depcruiseOptions)),
 );
 const violations = cycleReports.flat();
 const { exitCode, output, stream } = renderCycleReport(violations);
@@ -24,6 +26,18 @@ async function loadDepcruiseOptions(projectRoot: string) {
   )) as CruiseConfigurationModule;
 
   return configuration.options;
+}
+
+function getCruiseEntryExtensions(options: ICruiseOptions) {
+  const configuredExtensionList = options.enhancedResolveOptions?.extensions;
+  const configuredExtensions = configuredExtensionList && new Set(configuredExtensionList);
+
+  return allExtensions
+    .filter(
+      ({ available, extension }) =>
+        available && (!configuredExtensions || configuredExtensions.has(extension)),
+    )
+    .map(({ extension }) => extension);
 }
 
 function renderCycleReport(reports: Violation[]) {
@@ -49,13 +63,6 @@ function renderCycleReport(reports: Violation[]) {
     stream: process.stderr,
   };
 }
-
-interface Violation {
-  directories: string[];
-  examples: string[];
-  scope: string;
-}
-
 interface CruiseConfiguration {
   options: ICruiseOptions;
 }

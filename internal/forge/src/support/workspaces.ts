@@ -2,35 +2,34 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import typescript from "typescript";
 
-export function collectWorkspaces(repoRoot: string) {
-  return listWorkspaces(repoRoot)
-    .map((workspace) => resolveWorkspace(repoRoot, workspace))
-    .filter((workspace): workspace is WorkspaceSpec => workspace !== null);
+export function collectWorkspaces(repoRoot: string, entryExtensions: string[]): WorkspaceSpec[] {
+  return listWorkspaces(repoRoot).flatMap((workspace) =>
+    workspace.location === "." ? [] : [collectWorkspace(repoRoot, workspace, entryExtensions)],
+  );
 }
 
-function listWorkspaces(repoRoot: string) {
+function listWorkspaces(repoRoot: string): WorkspaceListItem[] {
   return execFileSync("yarn", ["workspaces", "list", "--json"], {
     cwd: repoRoot,
     encoding: "utf8",
   })
     .trim()
     .split("\n")
-    .map(parseWorkspaceLine);
+    .map((line) => JSON.parse(line) as WorkspaceListItem);
 }
 
-function parseWorkspaceLine(line: string) {
-  return JSON.parse(line) as WorkspaceListItem;
-}
-
-function resolveWorkspace(repoRoot: string, { location, name }: WorkspaceListItem) {
-  if (location === ".") {
-    return null;
-  }
-
+function collectWorkspace(
+  repoRoot: string,
+  { location, name }: WorkspaceListItem,
+  entryExtensions: string[],
+): WorkspaceSpec {
   const workspaceRoot = path.resolve(repoRoot, location);
   const tsconfigPath = path.join(workspaceRoot, "tsconfig.json");
   const parsedTsconfig = parseTsconfig(tsconfigPath);
-  const includedFiles = excludeGitIgnoredPaths(repoRoot, parsedTsconfig.fileNames);
+  const includedFiles = excludeGitIgnoredPaths(
+    repoRoot,
+    collectCruiseEntries(workspaceRoot, parsedTsconfig, entryExtensions),
+  );
   const entries = toPathsRelativeTo(repoRoot, includedFiles);
 
   return {
@@ -42,20 +41,56 @@ function resolveWorkspace(repoRoot: string, { location, name }: WorkspaceListIte
   };
 }
 
-function parseTsconfig(tsconfigPath: string) {
-  const configFile = typescript.readConfigFile(tsconfigPath, typescript.sys.readFile);
+function collectCruiseEntries(
+  workspaceRoot: string,
+  parsedTsconfig: ParsedTsconfig,
+  entryExtensions: string[],
+): string[] {
+  const entryExtensionSet = new Set(entryExtensions);
+  const includedFiles = readWorkspaceEntries(workspaceRoot, parsedTsconfig.raw, entryExtensions);
+  const explicitlyListedFiles = ((parsedTsconfig.raw.files ?? []) as string[])
+    .map((fileName: string) => path.resolve(workspaceRoot, fileName))
+    .filter((fileName) => entryExtensionSet.has(getFileExtension(fileName)));
 
-  if (configFile.error) {
-    throw new TypeError(typescript.formatDiagnostics([configFile.error], diagnosticsHost));
+  return [...new Set([...includedFiles, ...explicitlyListedFiles])];
+}
+
+function readWorkspaceEntries(
+  workspaceRoot: string,
+  rawTsconfig: ParsedTsconfig["raw"],
+  entryExtensions: string[],
+): string[] {
+  if (rawTsconfig.include && rawTsconfig.include.length > 0) {
+    return typescript.sys.readDirectory(
+      workspaceRoot,
+      entryExtensions,
+      rawTsconfig.exclude,
+      rawTsconfig.include,
+    );
   }
 
-  const parsedTsconfig = typescript.parseJsonConfigFileContent(
-    configFile.config,
-    typescript.sys,
-    path.dirname(tsconfigPath),
-    {},
+  if (rawTsconfig.files) {
+    return typescript.sys.readDirectory(workspaceRoot, entryExtensions, rawTsconfig.exclude, []);
+  }
+
+  return typescript.sys.readDirectory(workspaceRoot, entryExtensions, rawTsconfig.exclude);
+}
+
+function getFileExtension(fileName: string) {
+  return fileName.endsWith(".d.ts") ? ".d.ts" : path.extname(fileName);
+}
+
+function parseTsconfig(tsconfigPath: string): typescript.ParsedCommandLine {
+  const parsedTsconfig = typescript.getParsedCommandLineOfConfigFile(
     tsconfigPath,
-  );
+    {},
+    {
+      ...typescript.sys,
+      onUnRecoverableConfigFileDiagnostic(diagnostic) {
+        throw new TypeError(typescript.formatDiagnostics([diagnostic], diagnosticsHost));
+      },
+    },
+  )!;
 
   if (parsedTsconfig.errors.length > 0) {
     throw new Error(typescript.formatDiagnostics(parsedTsconfig.errors, diagnosticsHost));
@@ -64,7 +99,7 @@ function parseTsconfig(tsconfigPath: string) {
   return parsedTsconfig;
 }
 
-function getSourceRoots(workspaceRoot: string, fileNames: string[]) {
+function getSourceRoots(workspaceRoot: string, fileNames: string[]): Set<string> {
   const sourceRoots = new Set<string>();
 
   for (const fileName of fileNames) {
@@ -87,7 +122,7 @@ function getSourceRoots(workspaceRoot: string, fileNames: string[]) {
   return sourceRoots;
 }
 
-function excludeGitIgnoredPaths(repoRoot: string, fileNames: string[]) {
+function excludeGitIgnoredPaths(repoRoot: string, fileNames: string[]): string[] {
   if (fileNames.length === 0) {
     return fileNames;
   }
@@ -98,11 +133,11 @@ function excludeGitIgnoredPaths(repoRoot: string, fileNames: string[]) {
   return fileNames.filter((_, index) => !ignoredPaths.has(repoRelativePaths[index]!));
 }
 
-function toPathsRelativeTo(baseDirectory: string, fileNames: string[]) {
+function toPathsRelativeTo(baseDirectory: string, fileNames: string[]): string[] {
   return fileNames.map((fileName) => path.relative(baseDirectory, fileName));
 }
 
-function listGitIgnoredPaths(repoRoot: string, repoRelativePaths: string[]) {
+function listGitIgnoredPaths(repoRoot: string, repoRelativePaths: string[]): Set<string> {
   try {
     const output = execFileSync("git", ["check-ignore", "--stdin"], {
       cwd: repoRoot,
@@ -153,3 +188,4 @@ export interface WorkspaceSpec {
   sourceRoots: Set<string>;
   tsconfigPath: string;
 }
+type ParsedTsconfig = typescript.ParsedCommandLine;

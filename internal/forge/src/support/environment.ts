@@ -1,15 +1,13 @@
 import path from "node:path";
 
-export function requireEnv(name: string) {
-  const value = process.env[name];
-
-  if (!value) {
+export function requireEnv(name: string): string {
+  if (!(name in process.env)) {
     throw new Error(`Expected ${name} to be set.`);
   }
 
-  return value;
+  return process.env[name]!;
 }
 
-export function requireEnvPath(name: string) {
+export function requireEnvPath(name: string): string {
   return path.resolve(requireEnv(name));
 }

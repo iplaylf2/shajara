@@ -1,43 +1,22 @@
-import type { ICruiseOptions } from "dependency-cruiser";
-import type { WorkspaceSpec } from "#src/support/workspaces.ts";
-import { cruise } from "dependency-cruiser";
+import type { ModuleRecord } from "./modules.ts";
 import path from "node:path";
 
-export async function analyzeWorkspace(
+export function collectDirectoryCycles(
   repoRoot: string,
-  workspace: WorkspaceSpec,
-  depcruiseOptions: ICruiseOptions,
-) {
-  const workspaceRoot = path.resolve(repoRoot, workspace.relativePath);
+  workspaceRoot: string,
+  sourceRoots: Set<string>,
+  modules: ModuleRecord[],
+): DirectoryCycle[] {
   const resolveWorkspacePath = createWorkspacePathResolver(repoRoot, workspaceRoot);
-  const modules = await cruiseWorkspace(repoRoot, workspace, depcruiseOptions);
+  const graph = collectDirectoryGraph(resolveWorkspacePath, sourceRoots, modules);
 
-  return collectCycles(resolveWorkspacePath, workspace.sourceRoots, modules).map(
-    ({ directories, examples }) => ({
-      directories,
-      examples,
-      scope: workspace.name,
-    }),
-  );
+  return findStronglyConnectedComponents(graph).map((directories) => ({
+    directories,
+    examples: formatEdgeExamples(directories, graph.edges),
+  }));
 }
 
-async function cruiseWorkspace(
-  repoRoot: string,
-  { entries, tsconfigPath }: WorkspaceSpec,
-  depcruiseOptions: ICruiseOptions,
-) {
-  const result = (await cruise(entries, {
-    ...depcruiseOptions,
-    baseDir: repoRoot,
-    tsConfig: {
-      fileName: tsconfigPath,
-    },
-  })) as { output: { modules: ModuleRecord[] } };
-
-  return result.output.modules;
-}
-
-function collectCycles(
+function collectDirectoryGraph(
   resolveWorkspacePath: (modulePath: string) => string | null,
   sourceRoots: Set<string>,
   modules: ModuleRecord[],
@@ -47,9 +26,7 @@ function collectCycles(
     nodes: new Set<string>(),
   };
 
-  for (const moduleRecord of modules.toSorted((left, right) =>
-    left.source.localeCompare(right.source),
-  )) {
+  for (const moduleRecord of modules.toSorted(compareModules)) {
     const fromNode = resolveDirectoryNode(resolveWorkspacePath, sourceRoots, moduleRecord.source);
 
     if (!fromNode) {
@@ -58,9 +35,7 @@ function collectCycles(
 
     graph.nodes.add(fromNode);
 
-    for (const dependency of moduleRecord.dependencies.toSorted((left, right) =>
-      (left.resolved ?? "").localeCompare(right.resolved ?? ""),
-    )) {
+    for (const dependency of moduleRecord.dependencies.toSorted(compareDependencies)) {
       if (!dependency.resolved || dependency.couldNotResolve || dependency.coreModule) {
         continue;
       }
@@ -79,10 +54,7 @@ function collectCycles(
     }
   }
 
-  return findStronglyConnectedComponents(graph).map((directories) => ({
-    directories,
-    examples: formatEdgeExamples(directories, graph.edges),
-  }));
+  return graph;
 }
 
 function createWorkspacePathResolver(repoRoot: string, workspaceRoot: string) {
@@ -97,8 +69,7 @@ function createWorkspacePathResolver(repoRoot: string, workspaceRoot: string) {
       return resolvedPaths.get(modulePath)!;
     }
 
-    const absolutePath = path.resolve(repoRoot, modulePath);
-    const workspacePath = toWorkspacePath(workspaceRoot, absolutePath);
+    const workspacePath = toWorkspacePath(workspaceRoot, path.resolve(repoRoot, modulePath));
 
     resolvedPaths.set(modulePath, workspacePath);
 
@@ -123,7 +94,6 @@ function resolveDirectoryNode(
     return null;
   }
 
-  // Keep files at the workspace root in their own bucket when the tsconfig includes them.
   if (segments.length === 1) {
     return sourceRoots.has(".") ? "." : null;
   }
@@ -184,6 +154,17 @@ function addEdgeExample(edgeExamples: EdgeExample[], edgeExample: EdgeExample) {
   edgeExamples.sort(compareEdgeExamples);
 }
 
+function compareModules(left: ModuleRecord, right: ModuleRecord) {
+  return left.source.localeCompare(right.source);
+}
+
+function compareDependencies(
+  left: ModuleRecord["dependencies"][number],
+  right: ModuleRecord["dependencies"][number],
+) {
+  return (left.resolved ?? "").localeCompare(right.resolved ?? "");
+}
+
 function compareEdgeExamples(left: EdgeExample, right: EdgeExample) {
   const fromOrder = left.from.localeCompare(right.from);
 
@@ -210,7 +191,6 @@ function findStronglyConnectedComponents(graph: DirectoryGraph) {
     }
   }
 
-  // Ignore single-node components; this command only reports cycles spanning directories.
   return state.components.filter((component) => component.length > 1);
 }
 
@@ -218,7 +198,15 @@ function visitNode(edges: DirectoryGraph["edges"], state: TraversalState, node: 
   pushNode(state, node);
 
   for (const adjacentNode of edges.get(node)?.keys() ?? []) {
-    visitAdjacentNode(edges, state, node, adjacentNode);
+    if (!state.indexByNode.has(adjacentNode)) {
+      visitNode(edges, state, adjacentNode);
+      updateLowLink(state, node, state.lowLinkByNode.get(adjacentNode)!);
+      continue;
+    }
+
+    if (state.stackMembers.has(adjacentNode)) {
+      updateLowLink(state, node, state.indexByNode.get(adjacentNode)!);
+    }
   }
 
   if (state.lowLinkByNode.get(node) === state.indexByNode.get(node)) {
@@ -232,23 +220,6 @@ function pushNode(state: TraversalState, node: string) {
   state.nextIndex += 1;
   state.stack.push(node);
   state.stackMembers.add(node);
-}
-
-function visitAdjacentNode(
-  edges: DirectoryGraph["edges"],
-  state: TraversalState,
-  node: string,
-  adjacentNode: string,
-) {
-  if (!state.indexByNode.has(adjacentNode)) {
-    visitNode(edges, state, adjacentNode);
-    updateLowLink(state, node, state.lowLinkByNode.get(adjacentNode)!);
-    return;
-  }
-
-  if (state.stackMembers.has(adjacentNode)) {
-    updateLowLink(state, node, state.indexByNode.get(adjacentNode)!);
-  }
 }
 
 function updateLowLink(state: TraversalState, node: string, candidateIndex: number) {
@@ -282,9 +253,7 @@ function formatEdgeExamples(component: string[], edges: DirectoryGraph["edges"])
       continue;
     }
 
-    for (const [toNode, edgeExamples] of [...outgoingEdges.entries()].toSorted(([left], [right]) =>
-      left.localeCompare(right),
-    )) {
+    for (const [toNode, edgeExamples] of [...outgoingEdges.entries()].toSorted(compareEdgeNodes)) {
       if (!componentNodes.has(toNode)) {
         continue;
       }
@@ -300,15 +269,8 @@ function formatEdgeExamples(component: string[], edges: DirectoryGraph["edges"])
   return examples;
 }
 
-interface ModuleRecord {
-  dependencies: DependencyRecord[];
-  source: string;
-}
-
-interface DependencyRecord {
-  couldNotResolve?: boolean;
-  coreModule?: boolean;
-  resolved?: string;
+function compareEdgeNodes([left]: [string, EdgeExample[]], [right]: [string, EdgeExample[]]) {
+  return left.localeCompare(right);
 }
 
 interface DirectoryGraph {
@@ -319,6 +281,11 @@ interface DirectoryGraph {
 interface EdgeExample {
   from: string;
   to: string;
+}
+
+interface DirectoryCycle {
+  directories: string[];
+  examples: string[];
 }
 
 interface TraversalState {
