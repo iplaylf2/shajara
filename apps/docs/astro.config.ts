@@ -7,4 +7,5 @@ export default defineConfig({
   base: "/shajara",
   integrations: [solid(), starlight(docsConfig)],
   site: "https://iplaylf2.github.io",
+  trailingSlash: "never",
 });
