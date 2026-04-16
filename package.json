@@ -13,13 +13,12 @@
   "type": "module",
   "scripts": {
     "build": "yarn workspaces foreach -At run build",
-    "changeset": "changeset",
     "depcruise": "shajara-forge depcruise",
     "format": "yarn run oxfmt --write .",
     "lint": "oxlint",
     "pack:license": "shajara-forge pack:license",
     "release": "yarn workspaces foreach -At --no-private npm publish --access public --provenance --tolerate-republish",
-    "spellcheck": "yarn cspell-cli .",
+    "spellcheck": "cspell-cli .",
     "test": "yarn workspaces foreach -Ap run test",
     "typecheck": "yarn workspaces foreach -Ap run typecheck",
     "version-packages": "changeset version"
