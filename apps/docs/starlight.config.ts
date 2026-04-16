@@ -4,6 +4,7 @@ import type { StarlightUserConfig } from "@astrojs/starlight/types";
 export const docsConfig = {
   defaultLocale: "en",
   description: SITE.description,
+  disable404Route: true,
   locales: STARLIGHT_LOCALES,
   sidebar: [
     {
