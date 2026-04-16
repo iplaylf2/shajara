@@ -14,7 +14,7 @@ export function getStaticPaths() {
 const { locale } = Astro.params as { locale: SiteLocale };
 ---
 
-<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
+<ExplorerLayout locale={locale} title={Astro.locals.t("explorer.home.title")}>
   <ExplorerBody
     currentExampleId={DEFAULT_EXPLORER_EXAMPLE_ID}
     locale={locale}

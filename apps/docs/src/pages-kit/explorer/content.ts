@@ -1,5 +1,6 @@
 import { I18N } from "#site";
 import type { SiteLocale } from "#site";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
 export const EXPLORER_EXAMPLES = [
   {
@@ -86,10 +87,10 @@ export function readExplorerExample(
 
 const EXPLORER_ROUTE_SEGMENT = "explorer";
 
-function buildExplorerHref(locale: SiteLocale | undefined, exampleId?: ExplorerExampleId): string {
-  const path = `/${locale ?? I18N.defaultLocale}/${EXPLORER_ROUTE_SEGMENT}/`;
+function buildExplorerHref(locale: SiteLocale, exampleId?: ExplorerExampleId): string {
+  const route = exampleId ? `${EXPLORER_ROUTE_SEGMENT}/${exampleId}` : EXPLORER_ROUTE_SEGMENT;
 
-  return exampleId ? `${path}${exampleId}/` : path;
+  return getRelativeLocaleUrl(I18N.locales[locale].lang, route);
 }
 
 function readFirstExplorerExample(): ExplorerExampleDefinition {

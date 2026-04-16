@@ -12,8 +12,9 @@ import {
   ExplorerTopbar,
 } from "#/components/explorer";
 import HostConcurrencyCode from "#/components/explorer/host-concurrency-code.astro";
+import { I18N } from "#site";
 import type { SiteLocale } from "#site";
-import { docsHomeLink } from "#/pages-kit/docs-home-link";
+import { getRelativeLocaleUrl } from "astro:i18n";
 import styles from "#/components/explorer/explorer.module.css";
 
 const { currentExampleId = DEFAULT_EXPLORER_EXAMPLE_ID, locale } =
@@ -23,6 +24,7 @@ const { currentExampleId = DEFAULT_EXPLORER_EXAMPLE_ID, locale } =
   };
 const examples = buildExplorerExamples(locale, (key) => Astro.locals.t(key));
 const currentExample = readExplorerExample(currentExampleId, examples);
+const docsHomeHref = getRelativeLocaleUrl(I18N.locales[locale].lang);
 const localeLinks = buildExplorerLocaleLinks(currentExample.id, locale);
 const stage = buildExplorerStage(currentExample);
 const stagePanelProps = {
@@ -45,7 +47,7 @@ function buildExplorerStage(example: (typeof examples)[number]) {
 
 <div class={styles["root"]}>
   <ExplorerTopbar
-    brandHref={docsHomeLink(locale)}
+    brandHref={docsHomeHref}
     brandLabel="shajara"
     explorerLabel={Astro.locals.t("explorer.shell.eyebrow")}
     localeLinks={localeLinks}

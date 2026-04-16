@@ -1,0 +1,30 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+
+interface Props {
+  body: string;
+  description: string;
+  heroActions: {
+    icon: "right-arrow";
+    link: string;
+    text: string;
+  }[];
+  tagline: string;
+  title: string;
+}
+
+const { body, description, heroActions, tagline, title } = Astro.props;
+const frontmatter = {
+  description,
+  hero: {
+    actions: heroActions,
+    tagline,
+  },
+  template: "splash" as const,
+  title,
+};
+---
+
+<StarlightPage frontmatter={frontmatter}>
+  <p>{body}</p>
+</StarlightPage>

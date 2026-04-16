@@ -26,6 +26,6 @@ if (!isExplorerExampleId(example)) {
 }
 ---
 
-<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
+<ExplorerLayout locale={locale} title={Astro.locals.t("explorer.home.title")}>
   <ExplorerBody currentExampleId={example} locale={locale} />
 </ExplorerLayout>

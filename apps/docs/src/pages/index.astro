@@ -1,4 +1,10 @@
 ---
-// oxlint-disable-next-line prefer-module
-return Astro.rewrite("/en");
+import { I18N } from "#site";
+
+const rewritePath = `/${I18N.defaultLocale}/`;
+
+// oxlint-disable-next-line no-void
+void rewritePath;
+
+return Astro.rewrite(rewritePath);
 ---

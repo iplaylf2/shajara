@@ -1,6 +1,18 @@
 import { z } from "astro/zod";
 
 export const explorerUiI18nFields = {
+  "docs.404.body": z.string(),
+  "docs.404.description": z.string(),
+  "docs.404.hero.backHome": z.string(),
+  "docs.404.hero.explorer": z.string(),
+  "docs.404.hero.tagline": z.string(),
+  "docs.404.title": z.string(),
+  "docs.home.body": z.string(),
+  "docs.home.description": z.string(),
+  "docs.home.hero.explorer": z.string(),
+  "docs.home.hero.guides": z.string(),
+  "docs.home.hero.tagline": z.string(),
+  "docs.home.title": z.string(),
   "explorer.areas.dependencies.description": z.string(),
   "explorer.areas.dependencies.title": z.string(),
   "explorer.areas.states.description": z.string(),

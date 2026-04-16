@@ -16,13 +16,19 @@ export type SiteLocale = keyof typeof I18N.locales;
 
 export const SITE_LOCALES = Object.keys(I18N.locales) as SiteLocale[];
 
-export const STARLIGHT_LOCALES = {
-  en: {
-    label: I18N.locales.en.label,
-    lang: I18N.locales.en.lang,
-  },
-  "zh-cn": {
-    label: I18N.locales["zh-cn"].label,
-    lang: I18N.locales["zh-cn"].lang,
-  },
-} as const;
+export const STARLIGHT_LOCALES = Object.fromEntries(
+  (Object.entries(I18N.locales) as [SiteLocale, (typeof I18N.locales)[SiteLocale]][]).map(
+    ([locale, config]) => [
+      locale,
+      {
+        label: config.label,
+        lang: config.lang,
+      },
+    ],
+  ),
+) as {
+  [Locale in SiteLocale]: {
+    label: (typeof I18N.locales)[Locale]["label"];
+    lang: (typeof I18N.locales)[Locale]["lang"];
+  };
+};
