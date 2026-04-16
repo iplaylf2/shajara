@@ -19,5 +19,5 @@
     "type": true,
   },
   "ignoreFiles": [".dependency-cruiser.mjs"],
-  "tags": ["-completeSurface"],
+  "tags": ["-preserveSurface"],
 }
