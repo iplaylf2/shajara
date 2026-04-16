@@ -38,14 +38,14 @@ jobs:
       - name: Spellcheck
         run: yarn spellcheck
 
-      - name: Lint
-        run: yarn lint
-
-      - name: Unused code and dependency check
+      - name: Unused check
         run: yarn knip
 
       - name: Dependency cruise
         run: yarn depcruise
+
+      - name: Lint
+        run: yarn lint
 
       - name: Build
         run: yarn build
