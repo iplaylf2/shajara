@@ -16,7 +16,6 @@
   "scripts": {
     "build": "astro build",
     "dev": "astro dev --host",
-    "lint": "oxlint",
     "preview": "astro preview --host",
     "test": "node -e \"console.log('No tests for @shajara/docs')\"",
     "typecheck": "astro-check"

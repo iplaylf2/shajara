@@ -1,4 +1,4 @@
-import type { Disposer } from "#/utils";
+import type { Disposer } from "#/utils/index";
 
 export interface Pacer {
   beginSlice(): Slice;

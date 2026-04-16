@@ -1,5 +1,5 @@
 import type { ContextKey, Wisp } from "#/contracts";
-import { unbind as unbindSigil } from "#/sigils";
+import { unbind as unbindSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 export function unbind(key: ContextKey<unknown>): Wisp<void> {

@@ -3012,6 +3012,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@shajara/forge@workspace:^, @shajara/forge@workspace:internal/forge":
+  version: 0.0.0-use.local
+  resolution: "@shajara/forge@workspace:internal/forge"
+  dependencies:
+    "@shajara/presets": "workspace:^"
+    "@types/node": "npm:^25.6.0"
+    dependency-cruiser: "npm:^17.3.10"
+    oxlint: "catalog:"
+    typescript: "catalog:"
+  bin:
+    shajara-forge: ./src/index.ts
+  languageName: unknown
+  linkType: soft
+
 "@shajara/host@workspace:packages/host":
   version: 0.0.0-use.local
   resolution: "@shajara/host@workspace:packages/host"
@@ -3349,7 +3363,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
+"@types/node@npm:*, @types/node@npm:^25.6.0":
   version: 25.6.0
   resolution: "@types/node@npm:25.6.0"
   dependencies:
@@ -8927,8 +8941,9 @@ __metadata:
   resolution: "shajara@workspace:."
   dependencies:
     "@changesets/cli": "npm:^2.30.0"
+    "@shajara/forge": "workspace:^"
+    "@shajara/presets": "workspace:^"
     cspell-cli: "npm:^10.0.0"
-    dependency-cruiser: "npm:^17.3.10"
     oxfmt: "npm:^0.45.0"
     oxlint: "catalog:"
     typescript: "catalog:"

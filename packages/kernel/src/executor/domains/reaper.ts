@@ -1,9 +1,9 @@
 import type { Ritual, ScopeRef } from "#/contracts";
 import { Domain } from "./domain";
 import type { Failure } from "#/failures";
-import type { Option } from "#/utils";
+import type { Option } from "#/utils/index";
 import type { Reaper } from "#/executor/autonomy";
-import type { ScopeState } from "#/interpreter";
+import type { ScopeState } from "#/interpreter/index";
 import { readonlySet } from "fp-ts";
 
 export class ReaperDomain extends Domain<ReaperDomain> {

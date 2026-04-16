@@ -1,5 +1,5 @@
 import type { Echo, ProcessRef } from "#/contracts";
-import type { SelfHandle, Sigil } from "#/sigils";
+import type { SelfHandle, Sigil } from "#/sigils/index";
 import type { CleanupTask } from "./keeper";
 import type { Failure } from "#/failures";
 import type { TaggedUnion } from "type-fest";

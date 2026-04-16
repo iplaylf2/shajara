@@ -1,4 +1,4 @@
-import { future, wait } from "#/primitives";
+import { future, wait } from "#/primitives/index";
 import type { RiteCoroutine } from "#/contracts";
 import { ensureExecutor } from "#/executor";
 import { right } from "@shajara/kernel/utils";

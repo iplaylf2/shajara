@@ -1,8 +1,8 @@
 import type { ProcessRef, Wisp } from "#/contracts";
 import type { either } from "fp-ts";
-import { narrowAs } from "#/utils";
+import { narrowAs } from "#/utils/index";
 import { pipe } from "fp-ts/function";
-import { wait } from "#/sigils";
+import { wait } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**

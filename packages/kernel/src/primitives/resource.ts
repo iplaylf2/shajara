@@ -1,8 +1,8 @@
 import type { FutureKey, FutureSettleKey, Wisp } from "#/contracts";
-import { future, settle, spawn } from "#/sigils";
+import { future, settle, spawn } from "#/sigils/index";
 import { park } from "./park";
 import { pipe } from "fp-ts/function";
-import { right } from "#/utils";
+import { right } from "#/utils/index";
 import { wisp } from "#/internal/fp";
 
 export function resource<Value>(body: ResourceBody<Value>): Wisp<FutureKey<Value>> {

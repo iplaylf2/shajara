@@ -1,6 +1,6 @@
 import { CanceledError, createScope } from "#/index";
-import { defer, park, resource, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
+import { park, resource, wait } from "#/primitives";
 
 describe("/ primitives: resource", () => {
   test.for([
@@ -42,7 +42,7 @@ describe("/ primitives: resource", () => {
       outcome: ["provided", "cleanup"],
     },
   ])(
-    "remains attached to the scope until cancellation triggers deferred cleanup",
+    "remains attached to the scope until cancellation unwinds the provider finally block",
     async ({ given: [providedEntry, cleanupEntry, resourceValue], outcome }) => {
       const events: string[] = [];
       const scope = createScope();
@@ -51,11 +51,12 @@ describe("/ primitives: resource", () => {
       try {
         const settled = scope.run(function* manageScopedResource() {
           const resourceFuture = yield* resource<string>(function* provideScopedResource(provide) {
-            yield* defer(function* cleanupResource() {
+            try {
+              events.push(providedEntry);
+              yield* provide(resourceValue);
+            } finally {
               events.push(cleanupEntry);
-            });
-            events.push(providedEntry);
-            yield* provide(resourceValue);
+            }
           });
 
           const value = yield* wait(resourceFuture);

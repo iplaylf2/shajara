@@ -2,7 +2,7 @@ import type { Processor, ProcessorTask } from "./processor";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import type { ProcessRef } from "#/contracts";
-import type { ProcessStep } from "#/interpreter";
+import type { ProcessStep } from "#/interpreter/index";
 import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {

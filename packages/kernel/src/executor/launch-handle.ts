@@ -1,4 +1,4 @@
-import type { Disposer } from "#/utils";
+import type { Disposer } from "#/utils/index";
 import type { ExecutionScopeRef } from "./execution-scope";
 import type { Failure } from "#/failures";
 import type { ScopeRef } from "#/contracts";

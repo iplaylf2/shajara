@@ -4,10 +4,10 @@ import { ReaperDomain, SchedulerDomain } from "./domains";
 import { option, readonlyArray } from "fp-ts";
 import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
-import { Interpreter } from "#/interpreter";
+import { Interpreter } from "#/interpreter/index";
 import type { ProcessorTaskStatus } from "./processor";
-import type { ScopeDescriptor } from "#/sigils";
-import type { ScopeZone } from "#/interpreter";
+import type { ScopeDescriptor } from "#/sigils/index";
+import type { ScopeZone } from "#/interpreter/index";
 import { autonomyOf } from "./autonomy";
 import { interruptedFailure } from "#/failures";
 

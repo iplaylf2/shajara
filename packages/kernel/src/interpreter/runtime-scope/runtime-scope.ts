@@ -15,9 +15,9 @@ import type {
   ScopeRef,
   Suppressor,
 } from "#/contracts";
-import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils";
+import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
 import { either, option, readonlySet } from "fp-ts";
-import { iife, noop, unreachable } from "#/utils";
+import { iife, noop, unreachable } from "#/utils/index";
 import type { Failure } from "#/failures";
 import type { FutureNotification } from "#/interpreter/runtime-future";
 import { RuntimeFuture } from "#/interpreter/runtime-future";

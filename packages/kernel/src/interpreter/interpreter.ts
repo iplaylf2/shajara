@@ -21,7 +21,7 @@ import type {
   Suppressor,
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
-import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils";
+import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils/index";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option } from "fp-ts";
 import {
@@ -31,14 +31,14 @@ import {
   processResonatedStep,
   processWaitingStep,
 } from "./process-step";
-import type { Disposer } from "#/utils";
+import type { Disposer } from "#/utils/index";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
 import { RuntimeScope } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
-import { unreachable } from "#/utils";
+import { unreachable } from "#/utils/index";
 
 export class Interpreter {
   public static create(entry: Ritual<unknown>, zone: ScopeZone): Interpreter {

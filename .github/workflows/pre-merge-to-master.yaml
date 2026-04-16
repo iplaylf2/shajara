@@ -35,8 +35,14 @@ jobs:
       - name: Format
         run: yarn run oxfmt --check .
 
+      - name: Spellcheck
+        run: yarn spellcheck
+
       - name: Lint
         run: yarn lint
+
+      - name: Dependency cruise
+        run: yarn depcruise
 
       - name: Build
         run: yarn build
