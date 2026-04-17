@@ -1,3 +1,5 @@
+import type { ArrayValues } from "type-fest";
+
 export const HOST_CONCURRENCY_CODE = [
   { event: "routine", text: "function* loadPage() {" },
   { event: "spawn-header", text: "  const header = yield* spawn(function* loadHeader() {" },
@@ -21,7 +23,7 @@ export const INITIAL_HOST_TRACE: HostTrace = {
   result: "pending",
 };
 
-export type HostConcurrencyEvent = (typeof HOST_CONCURRENCY_CODE)[number]["event"];
+export type HostConcurrencyEvent = ArrayValues<typeof HOST_CONCURRENCY_CODE>["event"];
 
 export interface HostTrace {
   active: HostConcurrencyEvent;

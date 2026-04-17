@@ -1,5 +1,5 @@
-import type { ExplorerReplayRuntime } from "./contract";
 import type { HostConcurrencyResult } from "#/domain/explorer/host-concurrency/runtime";
+import type { ValueOf } from "type-fest";
 import { createHostConcurrencyReplay } from "#/domain/explorer/host-concurrency/runtime";
 
 export function readExplorerReplayRuntime(
@@ -9,7 +9,7 @@ export function readExplorerReplayRuntime(
 }
 
 export type ExplorerReplayRuntimeId = keyof typeof EXPLORER_REPLAY_RUNTIMES;
-type AnyExplorerReplayRuntime = ExplorerReplayRuntime<string, any>;
+type AnyExplorerReplayRuntime = ValueOf<typeof EXPLORER_REPLAY_RUNTIMES>;
 
 const EXPLORER_REPLAY_RUNTIMES = {
   "host-concurrency": {
@@ -18,4 +18,4 @@ const EXPLORER_REPLAY_RUNTIMES = {
       return `${result.header} + ${result.sidebar}`;
     },
   },
-} satisfies Record<string, AnyExplorerReplayRuntime>;
+} as const;

@@ -3307,6 +3307,7 @@ __metadata:
     astro: "npm:^6.1.7"
     oxlint: "catalog:"
     solid-js: "npm:^1.9.12"
+    type-fest: "catalog:"
     typescript: "catalog:"
   dependenciesMeta:
     "@astrojs/check":
