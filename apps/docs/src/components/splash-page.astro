@@ -1,6 +1,17 @@
 ---
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 
+const { body, description, heroActions, tagline, title } = Astro.props;
+const frontmatter = {
+  description,
+  hero: {
+    actions: heroActions,
+    tagline,
+  },
+  template: "splash" as const,
+  title,
+};
+
 interface Props {
   body: string;
   description: string;
@@ -12,17 +23,6 @@ interface Props {
   tagline: string;
   title: string;
 }
-
-const { body, description, heroActions, tagline, title } = Astro.props;
-const frontmatter = {
-  description,
-  hero: {
-    actions: heroActions,
-    tagline,
-  },
-  template: "splash" as const,
-  title,
-};
 ---
 
 <StarlightPage frontmatter={frontmatter}>

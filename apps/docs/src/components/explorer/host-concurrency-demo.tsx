@@ -16,13 +16,6 @@ export function HostConcurrencyDemo(props: Props): JSX.Element {
   return <HostConcurrencyView code={props.children} state={state()} />;
 }
 
-const HOST_REPLAY_DELAY_MS = 900;
-
-interface Props {
-  children?: JSX.Element;
-  codeBlockId: string;
-}
-
 function startHostReplay(setState: Setter<HostTrace>, codeBlockId: string): () => void {
   let isMounted = true;
   let replayTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
@@ -131,4 +124,11 @@ function style(name: string): string {
   }
 
   return className;
+}
+
+const HOST_REPLAY_DELAY_MS = 900;
+
+interface Props {
+  children?: JSX.Element;
+  codeBlockId: string;
 }

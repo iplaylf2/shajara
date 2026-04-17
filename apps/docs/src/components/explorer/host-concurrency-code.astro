@@ -3,10 +3,6 @@ import { Code } from "astro/components";
 import { HOST_CONCURRENCY_CODE } from "#/domain/explorer/host-concurrency/trace";
 import styles from "./explorer.module.css";
 
-interface Props {
-  id: string;
-}
-
 const { id } = Astro.props;
 const code = HOST_CONCURRENCY_CODE.map((line) => line.text).join("\n");
 const lineEvents = HOST_CONCURRENCY_CODE.map((line) => line.event);
@@ -30,6 +26,10 @@ const lineTransformer = {
   },
   name: "host-concurrency-lines",
 };
+
+interface Props {
+  id: string;
+}
 ---
 
 <Code

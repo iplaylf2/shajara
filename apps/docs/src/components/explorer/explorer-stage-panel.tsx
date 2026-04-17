@@ -1,5 +1,7 @@
+import type { ExplorerStage } from "#/domain/explorer/stage";
 import { HostConcurrencyDemo } from "./host-concurrency-demo";
 import type { JSX } from "solid-js";
+import { buildExplorerCodeBlockId } from "#/domain/explorer/stage";
 import styles from "./explorer.module.css";
 
 export function ExplorerStagePanel(props: Props): JSX.Element {
@@ -13,7 +15,9 @@ export function ExplorerStagePanel(props: Props): JSX.Element {
         <p class={styles["sceneBody"]}>{props.description}</p>
       </div>
 
-      <ExplorerStageContent stage={props.stage}>{props.children}</ExplorerStageContent>
+      <ExplorerStageContent exampleId={props.exampleId} stage={props.stage}>
+        {props.children}
+      </ExplorerStageContent>
 
       <div class={styles["guideList"]}>
         {props.guideRows.map((row) => (
@@ -30,19 +34,24 @@ export function ExplorerStagePanel(props: Props): JSX.Element {
 }
 
 function ExplorerStageContent(props: ExplorerStageContentProps): JSX.Element {
-  switch (props.stage.kind) {
-    case "host-concurrency":
-      return (
-        <HostConcurrencyDemo codeBlockId={props.stage.codeBlockId}>
-          {props.children}
-        </HostConcurrencyDemo>
-      );
-  }
+  const StageDemo = STAGE_DEMOS[props.stage.kind];
+
+  return (
+    <StageDemo codeBlockId={buildExplorerCodeBlockId(props.exampleId)}>{props.children}</StageDemo>
+  );
 }
+
+const STAGE_DEMOS = {
+  "host-concurrency": HostConcurrencyDemo,
+} satisfies Record<
+  ExplorerStage["kind"],
+  (props: { children?: JSX.Element; codeBlockId: string }) => JSX.Element
+>;
 
 interface Props {
   children?: JSX.Element;
   description: string;
+  exampleId: string;
   guideRows: readonly string[];
   stage: StageContent;
   title: string;
@@ -50,12 +59,8 @@ interface Props {
 
 interface ExplorerStageContentProps {
   children?: JSX.Element;
+  exampleId: string;
   stage: StageContent;
 }
 
-type StageContent = HostConcurrencyStage;
-
-interface HostConcurrencyStage {
-  codeBlockId: string;
-  kind: "host-concurrency";
-}
+type StageContent = ExplorerStage;
