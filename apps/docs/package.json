@@ -29,7 +29,7 @@
     "@astrojs/solid-js": "^6.0.1",
     "@astrojs/starlight": "^0.38.3",
     "@shajara/presets": "workspace:^",
-    "astro": "^6.1.6",
+    "astro": "^6.1.7",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },
