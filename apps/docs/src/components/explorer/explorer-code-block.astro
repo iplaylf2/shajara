@@ -1,0 +1,44 @@
+---
+import { Code } from "astro/components";
+import type { ExplorerExampleCodeLine } from "#/domain/explorer/contract";
+import styles from "./explorer.module.css";
+
+const { code, id } = Astro.props;
+const source = code.map((line) => line.text).join("\n");
+const FIRST_LINE = 1;
+const lineTransformer = {
+  line(node: { properties?: Record<string, unknown> }, lineNumber: number) {
+    const event = code.at(lineNumber - FIRST_LINE)?.event;
+
+    if (typeof event !== "string") {
+      return;
+    }
+
+    const className = [styles["explorerCodeLine"]];
+
+    if (lineNumber === FIRST_LINE) {
+      className.push(styles["explorerCodeLineActive"]);
+    }
+
+    node.properties ??= {};
+    node.properties["class"] = className;
+    node.properties["data-explorer-event"] = event;
+  },
+  name: "explorer-code-lines",
+};
+
+interface Props {
+  code: readonly ExplorerExampleCodeLine[];
+  id: string;
+}
+---
+
+<Code
+  code={source}
+  class={styles["explorerCode"]}
+  data-explorer-code
+  id={id}
+  lang="ts"
+  theme="css-variables"
+  transformers={[lineTransformer]}
+/>

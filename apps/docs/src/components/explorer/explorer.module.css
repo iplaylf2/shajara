@@ -175,7 +175,7 @@
   border-bottom: 1px solid #e4ebf4;
 }
 
-.hostConcurrencyDemo {
+.flowDemo {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
   overflow: hidden;
@@ -184,7 +184,7 @@
   background: #f8fbff;
 }
 
-.hostConcurrencySvg {
+.flowSvg {
   display: block;
   width: 100%;
   min-height: 16rem;
@@ -197,19 +197,19 @@
     auto;
 }
 
-.hostConcurrencyScope {
+.flowScope {
   fill: rgb(255 255 255 / 0.74);
   stroke: #b8cde3;
   stroke-width: 1.5;
 }
 
-.hostConcurrencyScopeLabel {
+.flowScopeLabel {
   fill: #58708f;
   font-size: 0.82rem;
   font-weight: 600;
 }
 
-.hostConcurrencyNode {
+.flowNode {
   fill: #ffffff;
   stroke: #9fb9d6;
   stroke-width: 1.4;
@@ -220,43 +220,43 @@
   filter: drop-shadow(0 0.35rem 0.55rem rgb(54 83 116 / 0.08));
 }
 
-.hostConcurrencyNodeText {
+.flowNodeText {
   fill: #26384d;
   font-size: 0.82rem;
   font-weight: 700;
   text-anchor: middle;
 }
 
-.hostConcurrencyNodeParent .hostConcurrencyNode {
+.flowNodeParent .flowNode {
   fill: #f7fbff;
   stroke: #7fa2c8;
 }
 
-.hostConcurrencyNodeBranch .hostConcurrencyNode {
+.flowNodeBranch .flowNode {
   stroke: #3f93a0;
 }
 
-.hostConcurrencyNodeJoin .hostConcurrencyNode {
+.flowNodeJoin .flowNode {
   stroke: #b0705f;
 }
 
-.hostConcurrencyNodeActive .hostConcurrencyNode {
+.flowNodeActive .flowNode {
   fill: #e9fbfd;
   stroke: #137f90;
   stroke-width: 2.2;
 }
 
-.hostConcurrencyNodeDone .hostConcurrencyNode {
+.flowNodeDone .flowNode {
   fill: #f3fbf8;
   stroke: #4d9d78;
 }
 
-.hostConcurrencyNodeJoin.hostConcurrencyNodeDone .hostConcurrencyNode {
+.flowNodeJoin.flowNodeDone .flowNode {
   fill: #fff6f1;
   stroke: #b0705f;
 }
 
-.hostConcurrencyLink {
+.flowLink {
   fill: none;
   stroke: #c8d6e6;
   stroke-linecap: round;
@@ -266,13 +266,13 @@
     stroke-dashoffset 180ms ease;
 }
 
-.hostConcurrencyLinkActive {
+.flowLinkActive {
   stroke: #526a86;
   stroke-dasharray: 11 7;
   stroke-dashoffset: 18;
 }
 
-.hostConcurrencyTick {
+.flowTick {
   fill: #2f8b68;
   font-size: 0.72rem;
   font-weight: 700;
@@ -280,22 +280,22 @@
   transition: opacity 180ms ease;
 }
 
-.hostConcurrencyTickVisible {
+.flowTickVisible {
   opacity: 1;
 }
 
-.hostConcurrencyResult text {
+.flowResult text {
   fill: #58708f;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-.hostConcurrencyResult rect {
+.flowResult rect {
   fill: #ffffff;
   stroke: #c7d7e7;
 }
 
-.hostConcurrencyCode {
+.explorerCode {
   --astro-code-background: #ffffff;
   --astro-code-foreground: #536981;
   --astro-code-token-comment: #6a7d92;
@@ -322,12 +322,12 @@
   border-left: 1px solid #d9e5f1;
 }
 
-.hostConcurrencyCode :global(code) {
+.explorerCode :global(code) {
   display: grid;
   gap: 0;
 }
 
-.hostConcurrencyCodeLine {
+.explorerCodeLine {
   display: block;
   padding: 0.02rem 0.35rem;
   border-left: 2px solid transparent;
@@ -338,11 +338,11 @@
     border-color 160ms ease;
 }
 
-.hostConcurrencyCodeLineDone {
+.explorerCodeLineDone {
   opacity: 0.86;
 }
 
-.hostConcurrencyCodeLineActive {
+.explorerCodeLineActive {
   color: #143044;
   border-color: #2c8795;
   background: #ebf8fb;
@@ -460,15 +460,15 @@
     padding: 0.85rem;
   }
 
-  .hostConcurrencyDemo {
+  .flowDemo {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .hostConcurrencySvg {
+  .flowSvg {
     min-height: 13rem;
   }
 
-  .hostConcurrencyCode {
+  .explorerCode {
     border-top: 1px solid #d9e5f1;
     border-left: 0;
   }

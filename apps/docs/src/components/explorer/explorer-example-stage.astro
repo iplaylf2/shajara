@@ -1,0 +1,47 @@
+---
+import ExplorerCodeBlock from "./explorer-code-block.astro";
+import type { ExplorerExample } from "#/domain/explorer/contract";
+import { ExplorerReplayDemo } from "./explorer-replay-demo";
+import styles from "./explorer.module.css";
+
+const { description, example, guideRows, title } = Astro.props;
+const codeBlockId = `explorer-${example.id}-code`;
+
+interface Props {
+  description: string;
+  example: ExplorerExample<string, string>;
+  guideRows: readonly string[];
+  title: string;
+}
+---
+
+<section aria-labelledby="explorer-stage-title" class={styles["stagePanel"]}>
+  <h2 class={styles["srOnly"]} id="explorer-stage-title">
+    {title}
+  </h2>
+
+  <div class={styles["sceneHeader"]}>
+    <p class={styles["sceneBody"]}>{description}</p>
+  </div>
+
+  <ExplorerReplayDemo
+    client:load
+    codeBlockId={codeBlockId}
+    stage={example.stage}
+  >
+    <ExplorerCodeBlock code={example.stage.code} id={codeBlockId} />
+  </ExplorerReplayDemo>
+
+  <div class={styles["guideList"]}>
+    {
+      guideRows.map((row) => (
+        <div class={styles["guideRow"]}>
+          <span class={styles["guideMarker"]} />
+          <div class={styles["guideTrack"]}>
+            <span class={styles["guideText"]}>{row}</span>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</section>

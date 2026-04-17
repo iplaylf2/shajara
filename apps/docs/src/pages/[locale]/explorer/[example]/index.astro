@@ -3,21 +3,17 @@ import {
   EXPLORER_EXAMPLES,
   buildExplorerHref,
   buildExplorerLocaleLinks,
+  readExplorerExample,
 } from "#/pages-kit/explorer";
 import type {
   ExplorerBodyExample,
   ExplorerExampleDefinition,
 } from "#/pages-kit/explorer";
-import {
-  ExplorerExampleRail,
-  ExplorerStagePanel,
-  ExplorerTopbar,
-} from "#/components/explorer";
+import { ExplorerExampleRail, ExplorerTopbar } from "#/components/explorer";
 import { I18N, SITE_LOCALES } from "#site";
+import ExplorerExampleStage from "#/components/explorer/explorer-example-stage.astro";
 import ExplorerLayout from "#/layouts/explorer-layout.astro";
-import HostConcurrencyCode from "#/components/explorer/host-concurrency-code.astro";
 import type { SiteLocale } from "#site";
-import { buildExplorerCodeBlockId } from "#/domain/explorer/stage";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import styles from "#/components/explorer/explorer.module.css";
 
@@ -26,7 +22,6 @@ export function getStaticPaths() {
     (locale) =>
       EXPLORER_EXAMPLES.map((exampleDefinition) => ({
         params: { example: exampleDefinition.id, locale },
-        props: { exampleDefinition },
       })),
     // oxlint-disable-next-line no-magic-numbers
     1,
@@ -41,7 +36,6 @@ function buildExplorerExample(
     guideRows: entry.guideKeys.map((key) => Astro.locals.t(key)),
     href: buildExplorerHref(locale, entry.id),
     id: entry.id,
-    stage: entry.stage,
     title: Astro.locals.t(entry.titleKey),
   };
 }
@@ -49,30 +43,18 @@ function buildExplorerExample(
 const { locale } = Astro.params as {
   locale: SiteLocale;
 };
-const { exampleDefinition } = Astro.props as {
-  exampleDefinition: ExplorerExampleDefinition;
+const { example } = Astro.params as {
+  example: string;
 };
-
-const STAGE_CODE_COMPONENTS = {
-  "host-concurrency": HostConcurrencyCode,
-} satisfies Record<
-  ExplorerExampleDefinition["stage"]["kind"],
-  typeof HostConcurrencyCode
->;
+const exampleDefinition = readExplorerExample(
+  example as ExplorerExampleDefinition["id"],
+);
 
 const examples: ExplorerBodyExample[] =
   EXPLORER_EXAMPLES.map(buildExplorerExample);
 const currentExample = buildExplorerExample(exampleDefinition);
 const docsHomeHref = getRelativeLocaleUrl(I18N.locales[locale].lang);
 const localeLinks = buildExplorerLocaleLinks(currentExample.id, locale);
-const stagePanelProps = {
-  description: currentExample.description,
-  exampleId: currentExample.id,
-  guideRows: currentExample.guideRows,
-  stage: currentExample.stage,
-  title: currentExample.title,
-};
-const CurrentStageCode = STAGE_CODE_COMPONENTS[currentExample.stage.kind];
 ---
 
 <ExplorerLayout locale={locale} title={Astro.locals.t("explorer.home.title")}>
@@ -87,9 +69,12 @@ const CurrentStageCode = STAGE_CODE_COMPONENTS[currentExample.stage.kind];
 
     <section class={styles["surface"]}>
       <div class={styles["contentGrid"]}>
-        <ExplorerStagePanel client:load {...stagePanelProps}>
-          <CurrentStageCode id={buildExplorerCodeBlockId(currentExample.id)} />
-        </ExplorerStagePanel>
+        <ExplorerExampleStage
+          description={currentExample.description}
+          example={exampleDefinition}
+          guideRows={currentExample.guideRows}
+          title={currentExample.title}
+        />
         <ExplorerExampleRail
           currentExampleId={currentExample.id}
           examples={examples}
