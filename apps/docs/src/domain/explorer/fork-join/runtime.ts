@@ -1,22 +1,22 @@
 import { createScope, sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
-import type { HostConcurrencyEvent } from "./trace";
+import type { ForkJoinEvent } from "./trace";
 
 const HEADER_DELAY_MS = 660;
-const HOST_STEP_DELAY_MS = 180;
+const STEP_DELAY_MS = 180;
 const SIDEBAR_DELAY_MS = 960;
 
-export interface HostConcurrencyReplay {
+export interface ForkJoinReplay {
   cancel: () => Promise<void>;
-  run: (mark: (event: HostConcurrencyEvent) => void) => Promise<HostConcurrencyResult>;
+  run: (mark: (event: ForkJoinEvent) => void) => Promise<ForkJoinResult>;
 }
 
-export interface HostConcurrencyResult {
+export interface ForkJoinResult {
   header: string;
   sidebar: string;
 }
 
-export function createHostConcurrencyReplay(): HostConcurrencyReplay {
+export function createForkJoinReplay(): ForkJoinReplay {
   const scope = createScope();
 
   return {
@@ -28,9 +28,9 @@ export function createHostConcurrencyReplay(): HostConcurrencyReplay {
   };
 }
 
-function* loadPageRitual(mark: (event: HostConcurrencyEvent) => void) {
+function* loadPageRitual(mark: (event: ForkJoinEvent) => void) {
   mark("routine");
-  yield* sleep(HOST_STEP_DELAY_MS);
+  yield* sleep(STEP_DELAY_MS);
 
   mark("spawn-header");
   const header = yield* spawn(function* loadHeader() {
@@ -49,7 +49,7 @@ function* loadPageRitual(mark: (event: HostConcurrencyEvent) => void) {
   });
 
   mark("wait");
-  yield* sleep(HOST_STEP_DELAY_MS);
+  yield* sleep(STEP_DELAY_MS);
   mark("wait-header");
   const headerValue = yield* wait(header);
   mark("wait-sidebar");

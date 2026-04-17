@@ -1,6 +1,6 @@
 import type { ArrayValues } from "type-fest";
 
-export const HOST_CONCURRENCY_CODE = [
+export const FORK_JOIN_CODE = [
   { event: "routine", text: "function* loadPage() {" },
   { event: "spawn-header", text: "  const header = yield* spawn(function* loadHeader() {" },
   { event: "header-start", text: "    yield* sleep(660);" },
@@ -17,16 +17,16 @@ export const HOST_CONCURRENCY_CODE = [
   { event: "done", text: "}" },
 ] as const;
 
-export const INITIAL_HOST_TRACE: HostTrace = {
+export const INITIAL_FORK_JOIN_TRACE: ForkJoinTrace = {
   active: "routine",
   completed: [],
   result: "pending",
 };
 
-export type HostConcurrencyEvent = ArrayValues<typeof HOST_CONCURRENCY_CODE>["event"];
+export type ForkJoinEvent = ArrayValues<typeof FORK_JOIN_CODE>["event"];
 
-export interface HostTrace {
-  active: HostConcurrencyEvent;
-  completed: readonly HostConcurrencyEvent[];
+export interface ForkJoinTrace {
+  active: ForkJoinEvent;
+  completed: readonly ForkJoinEvent[];
   result: string;
 }

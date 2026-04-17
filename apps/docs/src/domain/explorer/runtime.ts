@@ -1,6 +1,6 @@
-import type { HostConcurrencyResult } from "#/domain/explorer/host-concurrency/runtime";
+import type { ForkJoinResult } from "#/domain/explorer/fork-join/runtime";
 import type { ValueOf } from "type-fest";
-import { createHostConcurrencyReplay } from "#/domain/explorer/host-concurrency/runtime";
+import { createForkJoinReplay } from "#/domain/explorer/fork-join/runtime";
 
 export function readExplorerReplayRuntime(
   runtimeId: ExplorerReplayRuntimeId,
@@ -12,9 +12,9 @@ export type ExplorerReplayRuntimeId = keyof typeof EXPLORER_REPLAY_RUNTIMES;
 type AnyExplorerReplayRuntime = ValueOf<typeof EXPLORER_REPLAY_RUNTIMES>;
 
 const EXPLORER_REPLAY_RUNTIMES = {
-  "host-concurrency": {
-    createRunner: createHostConcurrencyReplay,
-    formatResult(result: HostConcurrencyResult): string {
+  "fork-join": {
+    createRunner: createForkJoinReplay,
+    formatResult(result: ForkJoinResult): string {
       return `${result.header} + ${result.sidebar}`;
     },
   },

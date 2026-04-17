@@ -55,9 +55,10 @@ const examples: ExplorerBodyExample[] =
 const currentExample = buildExplorerExample(exampleDefinition);
 const docsHomeHref = getRelativeLocaleUrl(I18N.locales[locale].lang);
 const localeLinks = buildExplorerLocaleLinks(currentExample.id, locale);
+const pageTitle = `${currentExample.title} · ${Astro.locals.t("explorer.home.title")}`;
 ---
 
-<ExplorerLayout locale={locale} title={Astro.locals.t("explorer.home.title")}>
+<ExplorerLayout locale={locale} title={pageTitle}>
   <div class={styles["root"]}>
     <ExplorerTopbar
       brandHref={docsHomeHref}

@@ -1,27 +1,24 @@
-import {
-  HOST_CONCURRENCY_CODE,
-  INITIAL_HOST_TRACE,
-} from "#/domain/explorer/host-concurrency/trace";
+import { FORK_JOIN_CODE, INITIAL_FORK_JOIN_TRACE } from "#/domain/explorer/fork-join/trace";
 import type { ExplorerExample } from "#/domain/explorer/contract";
-import type { HostConcurrencyEvent } from "#/domain/explorer/host-concurrency/trace";
+import type { ForkJoinEvent } from "#/domain/explorer/fork-join/trace";
 
-export const hostConcurrencyExample = {
-  descriptionKey: "explorer.examples.host-concurrency.description",
+export const forkJoinExample = {
+  descriptionKey: "explorer.examples.fork-join.description",
   guideKeys: [
-    "explorer.examples.host-concurrency.guide.scope",
-    "explorer.examples.host-concurrency.guide.spawn",
-    "explorer.examples.host-concurrency.guide.wait",
+    "explorer.examples.fork-join.guide.scope",
+    "explorer.examples.fork-join.guide.fork",
+    "explorer.examples.fork-join.guide.join",
   ],
-  id: "host-concurrency",
+  id: "fork-join",
   stage: {
-    code: HOST_CONCURRENCY_CODE,
+    code: FORK_JOIN_CODE,
     replay: {
-      initialState: INITIAL_HOST_TRACE,
+      initialState: INITIAL_FORK_JOIN_TRACE,
       replayDelayMs: 900,
-      runtimeId: "host-concurrency",
+      runtimeId: "fork-join",
     },
     scene: {
-      ariaLabel: "@shajara/host code-driven structured concurrency animation",
+      ariaLabel: "Code-driven fork-join animation",
       links: [
         {
           activeEvents: ["spawn-header"],
@@ -40,7 +37,7 @@ export const hostConcurrencyExample = {
           path: "M434 208 C494 212 526 194 574 174",
         },
       ],
-      markerId: "host-concurrency-arrow",
+      markerId: "fork-join-arrow",
       nodes: [
         {
           activeEvents: ["routine"],
@@ -114,5 +111,5 @@ export const hostConcurrencyExample = {
       viewBox: "0 0 760 330",
     },
   },
-  titleKey: "explorer.examples.host-concurrency.title",
-} as const satisfies ExplorerExample<HostConcurrencyEvent>;
+  titleKey: "explorer.examples.fork-join.title",
+} as const satisfies ExplorerExample<ForkJoinEvent>;

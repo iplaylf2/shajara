@@ -1,8 +1,8 @@
 import type { ArrayValues, Entries } from "type-fest";
 import { I18N } from "#site";
 import type { SiteLocale } from "#site";
+import { forkJoinExample } from "./examples/fork-join";
 import { getRelativeLocaleUrl } from "astro:i18n";
-import { hostConcurrencyExample } from "./examples/host-concurrency";
 
 export function buildExplorerLocaleLinks(
   currentExampleId: ExplorerExampleId | undefined,
@@ -22,7 +22,7 @@ export function buildExplorerHref(locale: SiteLocale, exampleId?: ExplorerExampl
   return getRelativeLocaleUrl(I18N.locales[locale].lang, route);
 }
 
-export const EXPLORER_EXAMPLES = [hostConcurrencyExample] as const;
+export const EXPLORER_EXAMPLES = [forkJoinExample] as const;
 
 export const EXPLORER_EXAMPLE_IDS = EXPLORER_EXAMPLES.map((example) => example.id);
 export const DEFAULT_EXPLORER_EXAMPLE_ID = readFirstExplorerExample().id;
