@@ -27,7 +27,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
     "@astrojs/solid-js": "^6.0.1",
-    "@astrojs/starlight": "patch:@astrojs/starlight@npm%3A0.38.3#~/.yarn/patches/@astrojs-starlight-npm-0.38.3-2befe38042.patch",
+    "@astrojs/starlight": "^0.38.3",
     "@shajara/presets": "workspace:^",
     "astro": "^6.1.6",
     "oxlint": "catalog:",

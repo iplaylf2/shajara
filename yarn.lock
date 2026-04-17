@@ -168,7 +168,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@astrojs/starlight@npm:0.38.3":
+"@astrojs/starlight@npm:^0.38.3":
   version: 0.38.3
   resolution: "@astrojs/starlight@npm:0.38.3"
   dependencies:
@@ -203,44 +203,6 @@ __metadata:
   peerDependencies:
     astro: ^6.0.0
   checksum: 10c0/24855fb3d3e2c3c5bce89de39d5aa26ed436a17630b5bf5b06a77f840be8cddb8cb6ff77d1b4b6d98e9da0602cf18762d94a5cfde6683f620df9130dfae42888
-  languageName: node
-  linkType: hard
-
-"@astrojs/starlight@patch:@astrojs/starlight@npm%3A0.38.3#~/.yarn/patches/@astrojs-starlight-npm-0.38.3-2befe38042.patch":
-  version: 0.38.3
-  resolution: "@astrojs/starlight@patch:@astrojs/starlight@npm%3A0.38.3#~/.yarn/patches/@astrojs-starlight-npm-0.38.3-2befe38042.patch::version=0.38.3&hash=24333b"
-  dependencies:
-    "@astrojs/markdown-remark": "npm:^7.0.0"
-    "@astrojs/mdx": "npm:^5.0.0"
-    "@astrojs/sitemap": "npm:^3.7.1"
-    "@pagefind/default-ui": "npm:^1.3.0"
-    "@types/hast": "npm:^3.0.4"
-    "@types/js-yaml": "npm:^4.0.9"
-    "@types/mdast": "npm:^4.0.4"
-    astro-expressive-code: "npm:^0.41.6"
-    bcp-47: "npm:^2.1.0"
-    hast-util-from-html: "npm:^2.0.1"
-    hast-util-select: "npm:^6.0.2"
-    hast-util-to-string: "npm:^3.0.0"
-    hastscript: "npm:^9.0.0"
-    i18next: "npm:^23.11.5"
-    js-yaml: "npm:^4.1.0"
-    klona: "npm:^2.0.6"
-    magic-string: "npm:^0.30.17"
-    mdast-util-directive: "npm:^3.0.0"
-    mdast-util-to-markdown: "npm:^2.1.0"
-    mdast-util-to-string: "npm:^4.0.0"
-    pagefind: "npm:^1.3.0"
-    rehype: "npm:^13.0.1"
-    rehype-format: "npm:^5.0.0"
-    remark-directive: "npm:^3.0.0"
-    ultrahtml: "npm:^1.6.0"
-    unified: "npm:^11.0.5"
-    unist-util-visit: "npm:^5.0.0"
-    vfile: "npm:^6.0.2"
-  peerDependencies:
-    astro: ^6.0.0
-  checksum: 10c0/75cef4fc9baab38baa54c72a6c2cab06452a2f9edfd7c93dd58d8ffeb8971fb9079b30115d1ba9125d3abd8acf6c33bbff43e248bf810eba45af452a8183e784
   languageName: node
   linkType: hard
 
@@ -3339,7 +3301,7 @@ __metadata:
   dependencies:
     "@astrojs/check": "npm:^0.9.8"
     "@astrojs/solid-js": "npm:^6.0.1"
-    "@astrojs/starlight": "patch:@astrojs/starlight@npm%3A0.38.3#~/.yarn/patches/@astrojs-starlight-npm-0.38.3-2befe38042.patch"
+    "@astrojs/starlight": "npm:^0.38.3"
     "@shajara/host": "workspace:^"
     "@shajara/presets": "workspace:^"
     astro: "npm:^6.1.6"
