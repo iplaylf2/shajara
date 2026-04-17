@@ -11,7 +11,10 @@ const { locale } = Astro.params as { locale: SiteLocale };
 const heroActions = [
   {
     icon: "right-arrow" as const,
-    link: getRelativeLocaleUrl(I18N.locales[locale].lang, "guides/getting-started"),
+    link: getRelativeLocaleUrl(
+      I18N.locales[locale].lang,
+      "guides/getting-started",
+    ),
     text: Astro.locals.t("docs.home.hero.guides"),
   },
   {

@@ -57,9 +57,11 @@ function buildExplorerStage(example: (typeof examples)[number]) {
   <section class={styles["surface"]}>
     <div class={styles["contentGrid"]}>
       <ExplorerStagePanel client:load {...stagePanelProps}>
-        {stage.kind === "host-concurrency" && (
-          <HostConcurrencyCode id={stage.codeBlockId} />
-        )}
+        {
+          stage.kind === "host-concurrency" && (
+            <HostConcurrencyCode id={stage.codeBlockId} />
+          )
+        }
       </ExplorerStagePanel>
       <ExplorerExampleRail
         currentExampleId={currentExample.id}
