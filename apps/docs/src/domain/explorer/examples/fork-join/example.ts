@@ -1,8 +1,8 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
-import { createForkJoinReplay, formatForkJoinResult } from "./runtime";
 import { forkJoinCode, initialForkJoinTrace } from "./trace";
 import type { ForkJoinEvent } from "./trace";
 import type { ForkJoinResult } from "./runtime";
+import { createForkJoinReplay } from "./runtime";
 
 export const forkJoinExample = {
   descriptionKey: "explorer.examples.fork-join.description",
@@ -20,7 +20,6 @@ export const forkJoinExample = {
       replayDelayMs: 1400,
       runtime: {
         createRunner: createForkJoinReplay,
-        formatResult: formatForkJoinResult,
       },
     },
   },
@@ -66,7 +65,7 @@ function createForkJoinFlow(): ExplorerFlowGraph<ForkJoinEvent> {
         doneEvents: ["done"],
         id: "routine",
         kind: "parent",
-        label: "root routine",
+        label: "page routine",
       },
       {
         activeEvents: [
@@ -79,7 +78,7 @@ function createForkJoinFlow(): ExplorerFlowGraph<ForkJoinEvent> {
         doneEvents: ["header-return"],
         id: "header",
         kind: "branch",
-        label: "loadHeader",
+        label: "header task",
       },
       {
         activeEvents: [
@@ -92,26 +91,24 @@ function createForkJoinFlow(): ExplorerFlowGraph<ForkJoinEvent> {
         doneEvents: ["sidebar-return"],
         id: "sidebar",
         kind: "branch",
-        label: "loadSidebar",
+        label: "sidebar task",
       },
       {
         activeEvents: ["wait-open", "wait-header", "wait-sidebar", "wait-close"],
         doneEvents: ["done"],
         id: "join",
         kind: "join",
-        label: "wait results",
+        label: "join",
       },
     ],
-    resultLabel: "result",
-    scopeLabel: "function* loadPage()",
     ticks: [
       {
-        label: "done",
+        label: "ready",
         nodeId: "header",
         visibleEvents: ["header-return"],
       },
       {
-        label: "done",
+        label: "ready",
         nodeId: "sidebar",
         visibleEvents: ["sidebar-return"],
       },

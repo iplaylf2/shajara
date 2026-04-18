@@ -26,10 +26,6 @@ export function createForkJoinReplay(): ForkJoinReplay {
   };
 }
 
-export function formatForkJoinResult(result: ForkJoinResult): string {
-  return `${result.header} + ${result.sidebar}`;
-}
-
 function* loadPageRitual(mark: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
   const emit = createReplayEmitter(mark);
 

@@ -14,10 +14,9 @@ export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): J
           viewBox={props.scene.viewBox}
         >
           <FlowArrowMarker markerId={props.scene.markerId} />
-          <FlowScope scene={props.scene} />
           <FlowNodes scene={props.scene} state={props.state} />
           <FlowLinks scene={props.scene} state={props.state} />
-          <FlowStatus scene={props.scene} state={props.state} />
+          <FlowTicks scene={props.scene} state={props.state} />
         </svg>
         {props.code}
       </div>
@@ -50,30 +49,6 @@ function FlowArrowMarker(props: { markerId: string }): JSX.Element {
         <path d="M0 0 L8 4 L0 8 Z" fill="#526a86" />
       </marker>
     </defs>
-  );
-}
-
-function FlowScope<TEvent extends string>(props: {
-  scene: ExplorerFlowScene<TEvent>;
-}): JSX.Element {
-  return (
-    <>
-      <rect
-        class={styles["flowScope"]}
-        height={props.scene.scope.height}
-        rx={props.scene.scope.radius}
-        width={props.scene.scope.width}
-        x={props.scene.scope.left}
-        y={props.scene.scope.top}
-      />
-      <text
-        class={styles["flowScopeLabel"]}
-        x={props.scene.scope.labelLeft}
-        y={props.scene.scope.labelTop}
-      >
-        {props.scene.scope.label}
-      </text>
-    </>
   );
 }
 
@@ -146,7 +121,7 @@ function FlowLinks<TEvent extends string>(props: {
   );
 }
 
-function FlowStatus<TEvent extends string>(props: {
+function FlowTicks<TEvent extends string>(props: {
   scene: ExplorerFlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
@@ -164,21 +139,6 @@ function FlowStatus<TEvent extends string>(props: {
           {tick.label}
         </text>
       ))}
-      <g class={styles["flowResult"]}>
-        <text x={props.scene.result.labelLeft} y={props.scene.result.labelTop}>
-          {props.scene.result.label}
-        </text>
-        <rect
-          height={props.scene.result.height}
-          rx={props.scene.result.radius}
-          width={props.scene.result.width}
-          x={props.scene.result.left}
-          y={props.scene.result.top}
-        />
-        <text x={props.scene.result.valueLeft} y={props.scene.result.valueTop}>
-          {props.state.result}
-        </text>
-      </g>
     </>
   );
 }

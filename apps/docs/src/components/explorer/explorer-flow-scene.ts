@@ -18,11 +18,6 @@ export function resolveExplorerFlowScene<TEvent extends string>(
     links: graph.links.map((link) => createFlowLink(link, nodePositions)),
     markerId: defaultLayout.markerId,
     nodes,
-    result: createFlowResult(graph.resultLabel),
-    scope: {
-      ...defaultLayout.scope,
-      label: graph.scopeLabel,
-    },
     ticks: graph.ticks.map((tick) => createFlowTick(tick, nodePositions)),
     viewBox: defaultLayout.viewBox,
   };
@@ -43,39 +38,13 @@ export interface ExplorerFlowNode<TEvent extends string = string> {
   variant: "branch" | "join" | "parent";
 }
 
-export interface ExplorerFlowResult {
-  height: number;
-  label: string;
-  labelLeft: number;
-  labelTop: number;
-  left: number;
-  radius: number;
-  top: number;
-  valueLeft: number;
-  valueTop: number;
-  width: number;
-}
-
 export interface ExplorerFlowScene<TEvent extends string = string> {
   ariaLabel: string;
   links: readonly ExplorerFlowLink<TEvent>[];
   markerId: string;
   nodes: readonly ExplorerFlowNode<TEvent>[];
-  result: ExplorerFlowResult;
-  scope: ExplorerFlowScope;
   ticks: readonly ExplorerFlowTick<TEvent>[];
   viewBox: string;
-}
-
-export interface ExplorerFlowScope {
-  height: number;
-  label: string;
-  labelLeft: number;
-  labelTop: number;
-  left: number;
-  radius: number;
-  top: number;
-  width: number;
 }
 
 export interface ExplorerFlowTick<TEvent extends string = string> {
@@ -89,30 +58,6 @@ const defaultLayout = {
   columns: [98, 322, 574],
   lanes: [96, 138, 188],
   markerId: "explorer-flow-arrow",
-  result: {
-    height: 28,
-    left: 148,
-    radius: 8,
-    top: 258,
-    width: 186,
-  },
-  resultLabelOffset: {
-    left: -52,
-    top: 19,
-  },
-  resultValueOffset: {
-    left: 18,
-    top: 19,
-  },
-  scope: {
-    height: 252,
-    labelLeft: 86,
-    labelTop: 72,
-    left: 62,
-    radius: 16,
-    top: 38,
-    width: 638,
-  },
   tickOffset: {
     left: 56,
     top: 80,
@@ -195,17 +140,6 @@ function createFlowTick<TEvent extends string>(
     left: node.left + defaultLayout.tickOffset.left,
     top: node.top + defaultLayout.tickOffset.top,
     visibleEvents: tick.visibleEvents,
-  };
-}
-
-function createFlowResult(label: string): ExplorerFlowResult {
-  return {
-    ...defaultLayout.result,
-    label,
-    labelLeft: defaultLayout.result.left + defaultLayout.resultLabelOffset.left,
-    labelTop: defaultLayout.result.top + defaultLayout.resultLabelOffset.top,
-    valueLeft: defaultLayout.result.left + defaultLayout.resultValueOffset.left,
-    valueTop: defaultLayout.result.top + defaultLayout.resultValueOffset.top,
   };
 }
 

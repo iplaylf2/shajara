@@ -82,7 +82,7 @@ function startReplay(
       return;
     }
 
-    setState((current) => ({ ...current, result: "error" }));
+    setState(stage.replay.initialState);
   }
 
   function scheduleReplay(): void {
@@ -121,12 +121,11 @@ function createStateUpdater(
     }
 
     syncCodeLines(codeLines, frame.cursors, frame.completed);
-    setState((current) => ({
+    setState({
       active: frame.active,
       completed: frame.completed,
       cursors: frame.cursors,
-      result: current.result,
-    }));
+    });
   };
 }
 
@@ -163,16 +162,12 @@ async function runReplayCycle(context: ReplayCycleContext): Promise<void> {
     context.stage.replay.initialState.completed,
   );
 
-  const result = await playReplaySession(context);
+  await playReplaySession(context);
 
   if (!context.isMounted()) {
     return;
   }
 
-  context.setState((current) => ({
-    ...current,
-    result: context.replaySession.runtime.formatResult(result),
-  }));
   context.replaySession.reset();
 }
 

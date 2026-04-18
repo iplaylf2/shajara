@@ -31,8 +31,6 @@ export interface ExplorerExampleStage<TEvent extends string = string, TResult = 
 export interface ExplorerFlowGraph<TEvent extends string = string> {
   links: readonly ExplorerFlowGraphLink<TEvent>[];
   nodes: readonly ExplorerFlowGraphNode<TEvent>[];
-  resultLabel: string;
-  scopeLabel: string;
   ticks: readonly ExplorerFlowGraphTick<TEvent>[];
 }
 
@@ -75,12 +73,10 @@ export interface ExplorerReplayRunner<TEvent extends string = string, TResult = 
 
 export interface ExplorerReplayRuntime<TEvent extends string = string, TResult = unknown> {
   createRunner: () => ExplorerReplayRunner<TEvent, TResult>;
-  formatResult: (result: TResult) => string;
 }
 
 export interface ExplorerReplayState<TEvent extends string = string> {
   active: readonly TEvent[];
   completed: readonly TEvent[];
   cursors: readonly ExplorerReplayCursor<TEvent>[];
-  result: string;
 }

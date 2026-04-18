@@ -97,5 +97,4 @@ export const initialForkJoinTrace = {
   active: ["routine"],
   completed: [],
   cursors: [{ event: "routine", mode: "running", routineId: "root" }],
-  result: "pending",
 } as const satisfies ExplorerReplayState<ForkJoinEvent>;
