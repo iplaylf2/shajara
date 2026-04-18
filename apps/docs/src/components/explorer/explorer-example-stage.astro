@@ -2,17 +2,17 @@
 import ExplorerCodeBlock from "./explorer-code-block.astro";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
 import { ExplorerReplayDemo } from "./explorer-replay-demo";
+import { resolveExplorerFlowScene } from "./explorer-flow-scene";
 import styles from "./explorer.module.css";
 
 const { description, example, guideRows, title } = Astro.props;
 const codeBlockId = `explorer-${example.id}-code`;
 const stage = {
-  code: example.stage.code,
   replay: {
     initialState: example.stage.replay.initialState,
     replayDelayMs: example.stage.replay.replayDelayMs,
   },
-  scene: example.stage.scene,
+  scene: resolveExplorerFlowScene(example.stage.flow, `${title} flow`),
 };
 
 interface Props {

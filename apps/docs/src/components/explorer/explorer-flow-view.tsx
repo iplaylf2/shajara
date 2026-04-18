@@ -1,8 +1,5 @@
-import type {
-  ExplorerFlowNode,
-  ExplorerFlowScene,
-  ExplorerReplayState,
-} from "#/domain/explorer/contract";
+import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-scene";
+import type { ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 

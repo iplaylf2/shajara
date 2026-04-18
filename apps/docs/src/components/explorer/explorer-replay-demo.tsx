@@ -1,5 +1,4 @@
 import type {
-  ExplorerExampleStageSnapshot,
   ExplorerReplayRunner,
   ExplorerReplayRuntime,
   ExplorerReplayState,
@@ -7,6 +6,7 @@ import type {
 import type { JSX, Setter } from "solid-js";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import type { ExplorerExampleId } from "#/domain/explorer/examples";
+import type { ExplorerFlowScene } from "./explorer-flow-scene";
 import { ExplorerFlowView } from "./explorer-flow-view";
 import { readExplorerExample } from "#/domain/explorer/examples";
 import styles from "./explorer.module.css";
@@ -24,7 +24,7 @@ export function ExplorerReplayDemo(props: Props): JSX.Element {
 function startReplay(
   setState: Setter<ExplorerReplayState>,
   codeBlockId: string,
-  stage: ExplorerExampleStageSnapshot,
+  stage: ExplorerReplayStage,
   exampleId: ExplorerExampleId,
 ): () => void {
   let isMounted = true;
@@ -83,20 +83,16 @@ function startReplay(
 
 function createReplaySession(exampleId: ExplorerExampleId): ExplorerReplaySession {
   const runtime = readExplorerExample(exampleId).stage.replay.runtime as ExplorerReplayRuntime;
-  let replay: ExplorerReplayRunner | null = runtime.createRunner();
+  let replay: ExplorerReplayRunner = runtime.createRunner();
 
   return {
     cancel() {
-      return replay?.cancel() ?? Promise.resolve();
+      return replay.cancel();
     },
     reset() {
       replay = runtime.createRunner();
     },
     run(mark: (event: string) => void): Promise<unknown> {
-      if (replay === null) {
-        replay = runtime.createRunner();
-      }
-
       return replay.run(mark);
     },
     runtime,
@@ -170,7 +166,7 @@ interface Props {
   children?: JSX.Element;
   codeBlockId: string;
   exampleId: ExplorerExampleId;
-  stage: ExplorerExampleStageSnapshot<string>;
+  stage: ExplorerReplayStage;
 }
 
 interface ExplorerReplaySession {
@@ -178,4 +174,12 @@ interface ExplorerReplaySession {
   reset: () => void;
   run: (mark: (event: string) => void) => Promise<unknown>;
   runtime: ExplorerReplayRuntime;
+}
+
+interface ExplorerReplayStage {
+  replay: {
+    initialState: ExplorerReplayState<string>;
+    replayDelayMs: number;
+  };
+  scene: ExplorerFlowScene<string>;
 }
