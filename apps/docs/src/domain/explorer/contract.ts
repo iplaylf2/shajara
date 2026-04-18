@@ -11,7 +11,8 @@ export interface ExplorerExample<
 }
 
 export interface ExplorerExampleCodeLine<TEvent extends string = string> {
-  event?: TEvent;
+  cursorEvents?: readonly TEvent[];
+  doneEvents?: readonly TEvent[];
   text: string;
 }
 
@@ -55,9 +56,21 @@ export interface ExplorerFlowGraphTick<TEvent extends string = string> {
   visibleEvents: readonly TEvent[];
 }
 
+export interface ExplorerReplayFrame<TEvent extends string = string> {
+  active: readonly TEvent[];
+  completed: readonly TEvent[];
+  cursors: readonly ExplorerReplayCursor<TEvent>[];
+}
+
+export interface ExplorerReplayCursor<TEvent extends string = string> {
+  event: TEvent;
+  mode: "blocked" | "running";
+  routineId: string;
+}
+
 export interface ExplorerReplayRunner<TEvent extends string = string, TResult = unknown> {
   cancel: () => Promise<void>;
-  run: (mark: (event: TEvent) => void) => Promise<TResult>;
+  run: (mark: (frame: ExplorerReplayFrame<TEvent>) => void) => Promise<TResult>;
 }
 
 export interface ExplorerReplayRuntime<TEvent extends string = string, TResult = unknown> {
@@ -66,7 +79,8 @@ export interface ExplorerReplayRuntime<TEvent extends string = string, TResult =
 }
 
 export interface ExplorerReplayState<TEvent extends string = string> {
-  active: TEvent;
+  active: readonly TEvent[];
   completed: readonly TEvent[];
+  cursors: readonly ExplorerReplayCursor<TEvent>[];
   result: string;
 }

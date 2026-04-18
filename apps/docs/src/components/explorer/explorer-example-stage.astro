@@ -38,7 +38,11 @@ interface Props {
     exampleId={example.id}
     stage={stage}
   >
-    <ExplorerCodeBlock code={example.stage.code} id={codeBlockId} />
+    <ExplorerCodeBlock
+      code={example.stage.code}
+      id={codeBlockId}
+      initialState={example.stage.replay.initialState}
+    />
   </ExplorerReplayDemo>
 
   <div class={styles["guideList"]}>

@@ -25,14 +25,14 @@ export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): J
   );
 }
 
-const EMPTY_LENGTH = 0;
-const NODE_TEXT_OFFSET_X = 56;
-const NODE_TEXT_OFFSET_Y = 32;
+const emptyLength = 0;
+const nodeTextOffsetX = 56;
+const nodeTextOffsetY = 32;
 
-const FLOW_NODE_CLASSES = {
-  branch: style("flowNodeBranch"),
-  join: style("flowNodeJoin"),
-  parent: style("flowNodeParent"),
+const flowNodeClasses = {
+  branch: styles["flowNodeBranch"]!,
+  join: styles["flowNodeJoin"]!,
+  parent: styles["flowNodeParent"]!,
 } as const;
 
 function FlowArrowMarker(props: { markerId: string }): JSX.Element {
@@ -85,7 +85,7 @@ function FlowNodes<TEvent extends string>(props: {
     <>
       {props.scene.nodes.map((node) => (
         <FlowNode
-          isActive={hasEvent(node.activeEvents, props.state.active)}
+          isActive={includesAny(props.state.active, node.activeEvents)}
           isDone={includesAny(props.state.completed, node.doneEvents)}
           node={node}
         />
@@ -102,9 +102,9 @@ function FlowNode<TEvent extends string>(props: {
   return (
     <g
       class={classes(
-        FLOW_NODE_CLASSES[props.node.variant],
-        props.isActive && style("flowNodeActive"),
-        props.isDone && style("flowNodeDone"),
+        flowNodeClasses[props.node.variant],
+        props.isActive && styles["flowNodeActive"]!,
+        props.isDone && styles["flowNodeDone"]!,
       )}
     >
       <rect
@@ -117,8 +117,8 @@ function FlowNode<TEvent extends string>(props: {
       />
       <text
         class={styles["flowNodeText"]}
-        x={offset(props.node.left, NODE_TEXT_OFFSET_X)}
-        y={offset(props.node.top, NODE_TEXT_OFFSET_Y)}
+        x={offset(props.node.left, nodeTextOffsetX)}
+        y={offset(props.node.top, nodeTextOffsetY)}
       >
         {props.node.label}
       </text>
@@ -135,8 +135,8 @@ function FlowLinks<TEvent extends string>(props: {
       {props.scene.links.map((link) => (
         <path
           class={classes(
-            style("flowLink"),
-            includesAny(props.state.completed, link.activeEvents) && style("flowLinkActive"),
+            styles["flowLink"]!,
+            includesAny(props.state.active, link.activeEvents) && styles["flowLinkActive"]!,
           )}
           d={link.path}
           marker-end={`url(#${props.scene.markerId})`}
@@ -155,8 +155,8 @@ function FlowStatus<TEvent extends string>(props: {
       {props.scene.ticks.map((tick) => (
         <text
           class={classes(
-            style("flowTick"),
-            includesAny(props.state.completed, tick.visibleEvents) && style("flowTickVisible"),
+            styles["flowTick"]!,
+            includesAny(props.state.completed, tick.visibleEvents) && styles["flowTickVisible"]!,
           )}
           x={tick.left}
           y={tick.top}
@@ -183,10 +183,6 @@ function FlowStatus<TEvent extends string>(props: {
   );
 }
 
-function hasEvent<TEvent extends string>(events: readonly TEvent[], activeEvent: TEvent): boolean {
-  return events.includes(activeEvent);
-}
-
 function includesAny<TEvent extends string>(
   completedEvents: readonly TEvent[],
   targetEvents: readonly TEvent[],
@@ -198,22 +194,12 @@ function offset(value: number, amount: number): string {
   return String(value + amount);
 }
 
-function style(name: string): string {
-  const className = styles[name];
-
-  if (!className) {
-    throw new Error(`Missing explorer style: ${name}`);
-  }
-
-  return className;
-}
-
 function classes(...values: Array<string | false>): string {
   return values.filter(isClassName).join(" ");
 }
 
 function isClassName(value: string | false): value is string {
-  return typeof value === "string" && value.length > EMPTY_LENGTH;
+  return typeof value === "string" && value.length > emptyLength;
 }
 
 interface Props<TEvent extends string> {

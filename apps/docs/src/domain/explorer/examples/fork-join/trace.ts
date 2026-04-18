@@ -1,32 +1,101 @@
-import type { ArrayValues } from "type-fest";
+import type { ExplorerExampleCodeLine, ExplorerReplayState } from "#/domain/explorer/contract";
 
-export const forkJoinCode = [
-  { event: "routine", text: "function* loadPage() {" },
-  { event: "spawn-header", text: "  const header = yield* spawn(function* loadHeader() {" },
-  { event: "header-start", text: "    yield* sleep(660);" },
-  { event: "header-done", text: '    return "header";' },
-  { event: "header-done", text: "  });" },
-  { event: "spawn-sidebar", text: "  const sidebar = yield* spawn(function* loadSidebar() {" },
-  { event: "sidebar-start", text: "    yield* sleep(960);" },
-  { event: "sidebar-done", text: '    return "sidebar";' },
-  { event: "sidebar-done", text: "  });" },
-  { event: "wait", text: "  return {" },
-  { event: "wait-header", text: "    header: yield* wait(header)," },
-  { event: "wait-sidebar", text: "    sidebar: yield* wait(sidebar)," },
-  { event: "done", text: "  };" },
-  { event: "done", text: "}" },
+export const headerDelayMs = 420;
+export const sidebarDelayMs = 640;
+
+export const forkJoinEvents = [
+  "routine",
+  "spawn-header",
+  "header-enter",
+  "header-sleep",
+  "header-return",
+  "spawn-sidebar",
+  "sidebar-enter",
+  "sidebar-sleep",
+  "sidebar-return",
+  "wait-open",
+  "wait-header",
+  "wait-sidebar",
+  "wait-close",
+  "done",
 ] as const;
 
-export const initialForkJoinTrace: ForkJoinTrace = {
-  active: "routine",
+export type ForkJoinEvent = (typeof forkJoinEvents)[number];
+
+export const forkJoinCode = [
+  {
+    cursorEvents: ["routine"],
+    doneEvents: ["done"],
+    text: "function* loadPage() {",
+  },
+  {
+    cursorEvents: ["spawn-header", "header-enter"],
+    doneEvents: ["header-return"],
+    text: "  const header = yield* spawn(function* loadHeader() {",
+  },
+  {
+    cursorEvents: ["header-sleep"],
+    doneEvents: ["header-return"],
+    text: `    yield* sleep(${headerDelayMs});`,
+  },
+  {
+    cursorEvents: ["header-return"],
+    doneEvents: ["header-return"],
+    text: '    return "header";',
+  },
+  {
+    doneEvents: ["header-return"],
+    text: "  });",
+  },
+  {
+    cursorEvents: ["spawn-sidebar", "sidebar-enter"],
+    doneEvents: ["sidebar-return"],
+    text: "  const sidebar = yield* spawn(function* loadSidebar() {",
+  },
+  {
+    cursorEvents: ["sidebar-sleep"],
+    doneEvents: ["sidebar-return"],
+    text: `    yield* sleep(${sidebarDelayMs});`,
+  },
+  {
+    cursorEvents: ["sidebar-return"],
+    doneEvents: ["sidebar-return"],
+    text: '    return "sidebar";',
+  },
+  {
+    doneEvents: ["sidebar-return"],
+    text: "  });",
+  },
+  {
+    cursorEvents: ["wait-open"],
+    doneEvents: ["done"],
+    text: "  return {",
+  },
+  {
+    cursorEvents: ["wait-header"],
+    doneEvents: ["wait-header"],
+    text: "    header: yield* wait(header),",
+  },
+  {
+    cursorEvents: ["wait-sidebar"],
+    doneEvents: ["wait-sidebar"],
+    text: "    sidebar: yield* wait(sidebar),",
+  },
+  {
+    cursorEvents: ["wait-close"],
+    doneEvents: ["wait-close"],
+    text: "  };",
+  },
+  {
+    cursorEvents: ["done"],
+    doneEvents: ["done"],
+    text: "}",
+  },
+] as const satisfies readonly ExplorerExampleCodeLine<ForkJoinEvent>[];
+
+export const initialForkJoinTrace = {
+  active: ["routine"],
   completed: [],
+  cursors: [{ event: "routine", mode: "running", routineId: "root" }],
   result: "pending",
-};
-
-export type ForkJoinEvent = ArrayValues<typeof forkJoinCode>["event"];
-
-export interface ForkJoinTrace {
-  active: ForkJoinEvent;
-  completed: readonly ForkJoinEvent[];
-  result: string;
-}
+} as const satisfies ExplorerReplayState<ForkJoinEvent>;
