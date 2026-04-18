@@ -1,16 +1,16 @@
 ---
 import {
   EXPLORER_EXAMPLES,
-  buildExplorerHref,
-  buildExplorerLocaleLinks,
   readExplorerExample,
-} from "#/pages-kit/explorer";
-import type {
-  ExplorerBodyExample,
-  ExplorerExampleDefinition,
-} from "#/pages-kit/explorer";
+} from "#/domain/explorer/examples";
 import { ExplorerExampleRail, ExplorerTopbar } from "#/components/explorer";
 import { I18N, SITE_LOCALES } from "#site";
+import {
+  buildExplorerHref,
+  buildExplorerLocaleLinks,
+} from "#/pages-kit/explorer";
+import type { ExplorerBodyExample } from "#/pages-kit/explorer";
+import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
 import ExplorerExampleStage from "#/components/explorer/explorer-example-stage.astro";
 import ExplorerLayout from "#/layouts/explorer-layout.astro";
 import type { SiteLocale } from "#site";

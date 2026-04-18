@@ -1,7 +1,7 @@
-import type { ArrayValues, Entries } from "type-fest";
+import type { Entries } from "type-fest";
+import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import { I18N } from "#site";
 import type { SiteLocale } from "#site";
-import { forkJoinExample } from "./examples/fork-join";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 export function buildExplorerLocaleLinks(
@@ -22,14 +22,6 @@ export function buildExplorerHref(locale: SiteLocale, exampleId?: ExplorerExampl
   return getRelativeLocaleUrl(I18N.locales[locale].lang, route);
 }
 
-export const EXPLORER_EXAMPLES = [forkJoinExample] as const;
-
-export const EXPLORER_EXAMPLE_IDS = EXPLORER_EXAMPLES.map((example) => example.id);
-export const DEFAULT_EXPLORER_EXAMPLE_ID = readFirstExplorerExample().id;
-
-export type ExplorerExampleId = (typeof EXPLORER_EXAMPLE_IDS)[number];
-export type ExplorerExampleDefinition = ArrayValues<typeof EXPLORER_EXAMPLES>;
-
 export interface ExplorerBodyExample {
   description: string;
   guideRows: readonly string[];
@@ -43,26 +35,6 @@ export interface ExplorerBodyLocaleLink {
   hreflang: string;
   isCurrent: boolean;
   label: string;
-}
-
-export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
-  const example = EXPLORER_EXAMPLES.find((entry) => entry.id === exampleId);
-
-  if (!example) {
-    throw new Error(`Unknown explorer example: ${exampleId}`);
-  }
-
-  return example;
-}
-
-function readFirstExplorerExample(): ExplorerExampleDefinition {
-  const [firstExplorerExample] = EXPLORER_EXAMPLES;
-
-  if (!firstExplorerExample) {
-    throw new Error("Explorer requires at least one example.");
-  }
-
-  return firstExplorerExample;
 }
 
 const EXPLORER_ROUTE_SEGMENT = "explorer";

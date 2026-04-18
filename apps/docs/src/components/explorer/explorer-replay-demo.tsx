@@ -1,20 +1,21 @@
 import type {
-  ExplorerExampleStage,
+  ExplorerExampleStageSnapshot,
   ExplorerReplayRunner,
   ExplorerReplayRuntime,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
 import { createSignal, onCleanup, onMount } from "solid-js";
+import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import { ExplorerFlowView } from "./explorer-flow-view";
-import { readExplorerReplayRuntime } from "#/domain/explorer/runtime";
+import { readExplorerExample } from "#/domain/explorer/examples";
 import styles from "./explorer.module.css";
 
 export function ExplorerReplayDemo(props: Props): JSX.Element {
   const [state, setState] = createSignal<ExplorerReplayState>(props.stage.replay.initialState);
 
   onMount(function mountExplorerReplayDemo() {
-    onCleanup(startReplay(setState, props.codeBlockId, props.stage));
+    onCleanup(startReplay(setState, props.codeBlockId, props.stage, props.exampleId));
   });
 
   return <ExplorerFlowView code={props.children} scene={props.stage.scene} state={state()} />;
@@ -23,11 +24,12 @@ export function ExplorerReplayDemo(props: Props): JSX.Element {
 function startReplay(
   setState: Setter<ExplorerReplayState>,
   codeBlockId: string,
-  stage: ExplorerExampleStage,
+  stage: ExplorerExampleStageSnapshot,
+  exampleId: ExplorerExampleId,
 ): () => void {
   let isMounted = true;
   let replayTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
-  const replaySession = createReplaySession(stage);
+  const replaySession = createReplaySession(exampleId);
   const codeLines = readCodeLines(codeBlockId);
   const completedEvents: string[] = [];
   const updateState = createStateUpdater(setState, codeLines, completedEvents, () => isMounted);
@@ -79,8 +81,8 @@ function startReplay(
   };
 }
 
-function createReplaySession(stage: ExplorerExampleStage): ExplorerReplaySession {
-  const runtime = readExplorerReplayRuntime(stage.replay.runtimeId) as ExplorerReplayRuntime;
+function createReplaySession(exampleId: ExplorerExampleId): ExplorerReplaySession {
+  const runtime = readExplorerExample(exampleId).stage.replay.runtime as ExplorerReplayRuntime;
   let replay: ExplorerReplayRunner | null = runtime.createRunner();
 
   return {
@@ -167,7 +169,8 @@ function style(name: string): string {
 interface Props {
   children?: JSX.Element;
   codeBlockId: string;
-  stage: ExplorerExampleStage;
+  exampleId: ExplorerExampleId;
+  stage: ExplorerExampleStageSnapshot<string>;
 }
 
 interface ExplorerReplaySession {

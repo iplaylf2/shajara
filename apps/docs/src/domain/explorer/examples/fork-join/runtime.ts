@@ -28,6 +28,10 @@ export function createForkJoinReplay(): ForkJoinReplay {
   };
 }
 
+export function formatForkJoinResult(result: ForkJoinResult): string {
+  return `${result.header} + ${result.sidebar}`;
+}
+
 function* loadPageRitual(mark: (event: ForkJoinEvent) => void) {
   mark("routine");
   yield* sleep(STEP_DELAY_MS);

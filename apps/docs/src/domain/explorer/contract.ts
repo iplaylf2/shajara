@@ -1,13 +1,12 @@
-import type { ExplorerReplayRuntimeId } from "./runtime";
-
 export interface ExplorerExample<
   TEvent extends string = string,
   TTranslationKey extends string = string,
+  TResult = unknown,
 > {
   descriptionKey: TTranslationKey;
   guideKeys: readonly TTranslationKey[];
   id: string;
-  stage: ExplorerExampleStage<TEvent>;
+  stage: ExplorerExampleStage<TEvent, TResult>;
   titleKey: TTranslationKey;
 }
 
@@ -16,15 +15,26 @@ export interface ExplorerExampleCodeLine<TEvent extends string = string> {
   text: string;
 }
 
-export interface ExplorerExampleReplay<TEvent extends string = string> {
+export interface ExplorerExampleReplay<TEvent extends string = string, TResult = unknown> {
   initialState: ExplorerReplayState<TEvent>;
   replayDelayMs: number;
-  runtimeId: ExplorerReplayRuntimeId;
+  runtime: ExplorerReplayRuntime<TEvent, TResult>;
 }
 
-export interface ExplorerExampleStage<TEvent extends string = string> {
+export interface ExplorerExampleReplayPlan<TEvent extends string = string> {
+  initialState: ExplorerReplayState<TEvent>;
+  replayDelayMs: number;
+}
+
+export interface ExplorerExampleStage<TEvent extends string = string, TResult = unknown> {
   code: readonly ExplorerExampleCodeLine<TEvent>[];
-  replay: ExplorerExampleReplay<TEvent>;
+  replay: ExplorerExampleReplay<TEvent, TResult>;
+  scene: ExplorerFlowScene<TEvent>;
+}
+
+export interface ExplorerExampleStageSnapshot<TEvent extends string = string> {
+  code: readonly ExplorerExampleCodeLine<TEvent>[];
+  replay: ExplorerExampleReplayPlan<TEvent>;
   scene: ExplorerFlowScene<TEvent>;
 }
 

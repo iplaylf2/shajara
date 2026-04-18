@@ -1,6 +1,8 @@
-import { FORK_JOIN_CODE, INITIAL_FORK_JOIN_TRACE } from "#/domain/explorer/fork-join/trace";
+import { FORK_JOIN_CODE, INITIAL_FORK_JOIN_TRACE } from "./trace";
+import { createForkJoinReplay, formatForkJoinResult } from "./runtime";
 import type { ExplorerExample } from "#/domain/explorer/contract";
-import type { ForkJoinEvent } from "#/domain/explorer/fork-join/trace";
+import type { ForkJoinEvent } from "./trace";
+import type { ForkJoinResult } from "./runtime";
 
 export const forkJoinExample = {
   descriptionKey: "explorer.examples.fork-join.description",
@@ -15,7 +17,10 @@ export const forkJoinExample = {
     replay: {
       initialState: INITIAL_FORK_JOIN_TRACE,
       replayDelayMs: 900,
-      runtimeId: "fork-join",
+      runtime: {
+        createRunner: createForkJoinReplay,
+        formatResult: formatForkJoinResult,
+      },
     },
     scene: {
       ariaLabel: "Code-driven fork-join animation",
@@ -112,4 +117,4 @@ export const forkJoinExample = {
     },
   },
   titleKey: "explorer.examples.fork-join.title",
-} as const satisfies ExplorerExample<ForkJoinEvent>;
+} as const satisfies ExplorerExample<ForkJoinEvent, string, ForkJoinResult>;

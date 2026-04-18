@@ -1,15 +1,23 @@
 ---
 import ExplorerCodeBlock from "./explorer-code-block.astro";
-import type { ExplorerExample } from "#/domain/explorer/contract";
+import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
 import { ExplorerReplayDemo } from "./explorer-replay-demo";
 import styles from "./explorer.module.css";
 
 const { description, example, guideRows, title } = Astro.props;
 const codeBlockId = `explorer-${example.id}-code`;
+const stage = {
+  code: example.stage.code,
+  replay: {
+    initialState: example.stage.replay.initialState,
+    replayDelayMs: example.stage.replay.replayDelayMs,
+  },
+  scene: example.stage.scene,
+};
 
 interface Props {
   description: string;
-  example: ExplorerExample<string, string>;
+  example: ExplorerExampleDefinition;
   guideRows: readonly string[];
   title: string;
 }
@@ -27,7 +35,8 @@ interface Props {
   <ExplorerReplayDemo
     client:load
     codeBlockId={codeBlockId}
-    stage={example.stage}
+    exampleId={example.id}
+    stage={stage}
   >
     <ExplorerCodeBlock code={example.stage.code} id={codeBlockId} />
   </ExplorerReplayDemo>
