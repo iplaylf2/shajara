@@ -4,19 +4,14 @@ import type {
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
 
-export interface ReplayEventStream<TEvent extends string> {
+export interface ReplayFrameStream<TEvent extends string> {
   finish: () => void;
-  next: () => Promise<RecordedReplayEvent<TEvent> | null>;
+  next: () => Promise<ExplorerReplayFrame<TEvent> | null>;
   record: (frame: ExplorerReplayFrame<TEvent>) => void;
 }
 
-interface RecordedReplayEvent<TEvent extends string> {
-  frame: ExplorerReplayFrame<TEvent>;
-  timestampMs: number;
-}
-
-export function createReplayEventStream<TEvent extends string>(): ReplayEventStream<TEvent> {
-  const queue: RecordedReplayEvent<TEvent>[] = [];
+export function createReplayFrameStream<TEvent extends string>(): ReplayFrameStream<TEvent> {
+  const queue: ExplorerReplayFrame<TEvent>[] = [];
   let isFinished = false;
   let wake: (() => void) | null = null;
 
@@ -34,28 +29,25 @@ export function createReplayEventStream<TEvent extends string>(): ReplayEventStr
         return Promise.resolve(null);
       }
 
-      return new Promise<RecordedReplayEvent<TEvent> | null>((resolve) => {
+      return new Promise<ExplorerReplayFrame<TEvent> | null>((resolve) => {
         wake = function resolveNextEvent() {
           resolve(queue.shift() ?? null);
         };
       });
     },
     record(frame) {
-      queue.push({
-        frame,
-        timestampMs: globalThis.performance.now(),
-      });
+      queue.push(frame);
       wake?.();
       wake = null;
     },
   };
 }
 
-export async function playbackRecordedEvents<TEvent extends string>(
-  stream: ReplayEventStream<TEvent>,
+export async function playbackReplayFrames<TEvent extends string>(
+  stream: ReplayFrameStream<TEvent>,
   context: PlaybackContext<TEvent>,
 ): Promise<void> {
-  await playbackNextEvent(stream, null, context);
+  await playbackNextFrame(stream, null, context);
 }
 
 function isSameReplayFrame<TEvent extends string>(
@@ -69,36 +61,34 @@ function isSameReplayFrame<TEvent extends string>(
   );
 }
 
-async function playbackNextEvent<TEvent extends string>(
-  stream: ReplayEventStream<TEvent>,
-  previousTimestampMs: number | null,
+async function playbackNextFrame<TEvent extends string>(
+  stream: ReplayFrameStream<TEvent>,
+  previousRenderTimestampMs: number | null,
   context: PlaybackContext<TEvent>,
 ): Promise<void> {
   if (!context.isMounted()) {
     return;
   }
 
-  const entry = await stream.next();
+  const frame = await stream.next();
 
-  if (!entry) {
+  if (!frame) {
     return;
   }
 
-  if (previousTimestampMs === null && isSameReplayFrame(entry.frame, context.initialState)) {
-    await playbackNextEvent(stream, entry.timestampMs, context);
+  if (previousRenderTimestampMs === null && isSameReplayFrame(frame, context.initialState)) {
+    await playbackNextFrame(stream, previousRenderTimestampMs, context);
     return;
   }
 
-  const runtimeGapMs =
-    previousTimestampMs === null ? context.minRenderGapMs : entry.timestampMs - previousTimestampMs;
-  await sleepForPlayback(Math.max(runtimeGapMs, context.minRenderGapMs));
+  await waitForRenderSlot(previousRenderTimestampMs, context.minRenderGapMs);
 
   if (!context.isMounted()) {
     return;
   }
 
-  context.updateState(entry.frame);
-  await playbackNextEvent(stream, entry.timestampMs, context);
+  context.updateState(frame);
+  await playbackNextFrame(stream, globalThis.performance.now(), context);
 }
 
 function sameCursors<TEvent extends string>(
@@ -134,6 +124,22 @@ function sleepForPlayback(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     globalThis.setTimeout(resolve, milliseconds);
   });
+}
+
+function waitForRenderSlot(
+  previousRenderTimestampMs: number | null,
+  minRenderGapMs: number,
+): Promise<void> {
+  if (previousRenderTimestampMs === null) {
+    return sleepForPlayback(minRenderGapMs);
+  }
+
+  const elapsedRenderGapMs = globalThis.performance.now() - previousRenderTimestampMs;
+  const remainingRenderGapMs = minRenderGapMs - elapsedRenderGapMs;
+
+  return remainingRenderGapMs > emptyLength
+    ? sleepForPlayback(remainingRenderGapMs)
+    : Promise.resolve();
 }
 
 interface PlaybackContext<TEvent extends string> {

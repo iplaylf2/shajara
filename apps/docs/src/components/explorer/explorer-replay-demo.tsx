@@ -6,7 +6,7 @@ import type {
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
-import { createReplayEventStream, playbackRecordedEvents } from "./explorer-replay-stream";
+import { createReplayFrameStream, playbackReplayFrames } from "./explorer-replay-stream";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import type { ExplorerFlowScene } from "./explorer-flow-scene";
@@ -193,8 +193,8 @@ function syncCodeLines(
 }
 
 async function playReplaySession(context: ReplayCycleContext): Promise<unknown> {
-  const eventStream = createReplayEventStream<string>();
-  const playback = playbackRecordedEvents(eventStream, {
+  const frameStream = createReplayFrameStream<string>();
+  const playback = playbackReplayFrames(frameStream, {
     initialState: context.stage.replay.initialState,
     isMounted: context.isMounted,
     minRenderGapMs,
@@ -202,9 +202,9 @@ async function playReplaySession(context: ReplayCycleContext): Promise<unknown> 
   });
 
   try {
-    return await context.replaySession.run(eventStream.record);
+    return await context.replaySession.run(frameStream.record);
   } finally {
-    eventStream.finish();
+    frameStream.finish();
     await playback;
   }
 }
