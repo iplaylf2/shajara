@@ -1,5 +1,4 @@
 {
-  "extends": ["astro/tsconfigs/strict", "@shajara/presets/tsconfig.shared.json"],
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
@@ -8,6 +7,7 @@
       "#site": ["./site/index.ts"]
     }
   },
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  "exclude": ["dist"],
+  "extends": ["astro/tsconfigs/strict", "@shajara/presets/tsconfig.shared.json"],
+  "include": [".astro/types.d.ts", "**/*"]
 }

@@ -1,9 +1,10 @@
-import { SITE, STARLIGHT_LOCALES } from "./site";
+import { I18N, SITE, STARLIGHT_LOCALES } from "./site";
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 export const docsConfig = {
-  defaultLocale: "en",
+  defaultLocale: I18N.defaultLocale,
   description: SITE.description,
+  disable404Route: true,
   locales: STARLIGHT_LOCALES,
   sidebar: [
     {

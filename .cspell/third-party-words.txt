@@ -2,6 +2,7 @@ astrojs
 bimap
 depcruise
 effection
+frontmatter
 knip
 labelledby
 mktemp

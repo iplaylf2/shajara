@@ -1,8 +1,12 @@
 ---
 import { I18N } from "#site";
+import type { SiteLocale } from "#site";
 
-const { title } = Astro.props;
-const lang = Astro.currentLocale ?? I18N.locales[I18N.defaultLocale].lang;
+const { locale, title } = Astro.props as {
+  locale: SiteLocale;
+  title: string;
+};
+const { lang } = I18N.locales[locale];
 const dir = Astro.locals.t.dir();
 ---
 

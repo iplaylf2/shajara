@@ -1,9 +1,5 @@
 ---
-import {
-  DEFAULT_EXPLORER_EXAMPLE_ID,
-  ExplorerBody,
-} from "#/pages-kit/explorer";
-import ExplorerLayout from "#/layouts/explorer-layout.astro";
+import { DEFAULT_EXPLORER_EXAMPLE_ID } from "#/domain/explorer/examples";
 import { SITE_LOCALES } from "#site";
 import type { SiteLocale } from "#site";
 
@@ -12,11 +8,11 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.params as { locale: SiteLocale };
----
 
-<ExplorerLayout title={Astro.locals.t("explorer.home.title")}>
-  <ExplorerBody
-    currentExampleId={DEFAULT_EXPLORER_EXAMPLE_ID}
-    locale={locale}
-  />
-</ExplorerLayout>
+const rewritePath = `/${locale}/explorer/${DEFAULT_EXPLORER_EXAMPLE_ID}`;
+
+// oxlint-disable-next-line no-void
+void rewritePath;
+
+return Astro.rewrite(rewritePath);
+---

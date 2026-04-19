@@ -1,0 +1,67 @@
+---
+import type {
+  ExplorerExampleCodeLine,
+  ExplorerReplayState,
+} from "#/domain/explorer/contract";
+import { Code } from "astro/components";
+import styles from "./explorer.module.css";
+
+const { code, id, initialState } = Astro.props;
+const source = code.map((line) => line.text).join("\n");
+const emptyLength = 0;
+const firstLine = 1;
+const lineTransformer = {
+  line(node: { properties?: Record<string, unknown> }, lineNumber: number) {
+    const line = code.at(lineNumber - firstLine);
+
+    if (!line) {
+      return;
+    }
+
+    const cursorEvents = line.cursorEvents ?? [];
+    const doneEvents = line.doneEvents ?? [];
+
+    if (
+      cursorEvents.length === emptyLength &&
+      doneEvents.length === emptyLength
+    ) {
+      return;
+    }
+
+    const className = [styles["explorerCodeLine"]];
+
+    if (
+      cursorEvents.some((event) =>
+        initialState.cursors.some((cursor) => cursor.event === event),
+      )
+    ) {
+      className.push(styles["explorerCodeLineActive"]);
+    }
+    if (doneEvents.some((event) => initialState.completed.includes(event))) {
+      className.push(styles["explorerCodeLineDone"]);
+    }
+
+    node.properties ??= {};
+    node.properties["class"] = className.join(" ");
+    node.properties["data-explorer-cursor-events"] = cursorEvents.join(" ");
+    node.properties["data-explorer-done-events"] = doneEvents.join(" ");
+  },
+  name: "explorer-code-lines",
+};
+
+interface Props {
+  code: readonly ExplorerExampleCodeLine[];
+  id: string;
+  initialState: ExplorerReplayState<string>;
+}
+---
+
+<Code
+  code={source}
+  class={styles["explorerCode"]}
+  data-explorer-code
+  id={id}
+  lang="ts"
+  theme="css-variables"
+  transformers={[lineTransformer]}
+/>

@@ -3302,10 +3302,12 @@ __metadata:
     "@astrojs/check": "npm:^0.9.8"
     "@astrojs/solid-js": "npm:^6.0.1"
     "@astrojs/starlight": "npm:^0.38.3"
+    "@shajara/host": "workspace:^"
     "@shajara/presets": "workspace:^"
-    astro: "npm:^6.1.6"
+    astro: "npm:^6.1.7"
     oxlint: "catalog:"
     solid-js: "npm:^1.9.12"
+    type-fest: "catalog:"
     typescript: "catalog:"
   dependenciesMeta:
     "@astrojs/check":
@@ -3329,7 +3331,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@shajara/host@workspace:packages/host":
+"@shajara/host@workspace:^, @shajara/host@workspace:packages/host":
   version: 0.0.0-use.local
   resolution: "@shajara/host@workspace:packages/host"
   dependencies:
@@ -4243,9 +4245,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"astro@npm:^6.1.6":
-  version: 6.1.6
-  resolution: "astro@npm:6.1.6"
+"astro@npm:^6.1.7":
+  version: 6.1.7
+  resolution: "astro@npm:6.1.7"
   dependencies:
     "@astrojs/compiler": "npm:^3.0.1"
     "@astrojs/internal-helpers": "npm:0.8.0"
@@ -4307,7 +4309,7 @@ __metadata:
       optional: true
   bin:
     astro: bin/astro.mjs
-  checksum: 10c0/4db747ce47fe236a5c7c702ab12ece224c0b38a83422c3872e24fbf7a7d0ba2dbc263a0cd5fc35ba13b59945b27e40aaca2d2fa84b8003c18f715a3110f453ff
+  checksum: 10c0/4f635d4ee61a202342ac328d6266ea80a98c91358ebc58e0c204cf30920691904a0eb95c1d6ceb284567484c7a5b22c366b54384b9101d9e8cddc05e458c5bbb
   languageName: node
   linkType: hard
 
@@ -10085,13 +10087,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^6.0.2":
-  version: 6.0.2
-  resolution: "typescript@npm:6.0.2"
+"typescript@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "typescript@npm:6.0.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/4b860b0bf87cc0fee0f66d8ef2640b5a8a8a8c74d1129adb82e389e5f97124383823c47946bef8a73ede371461143a3aa8544399d2133c7b2e4f07e81860af7f
+  checksum: 10c0/4a25ff5045b984370f48f196b3a0120779b1b343d40b9a68d114ea5e5fff099809b2bb777576991a63a5cd59cf7bffd96ff6fe10afcefbcb8bd6fb96ad4b6606
   languageName: node
   linkType: hard
 
@@ -10105,13 +10107,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^6.0.2#optional!builtin<compat/typescript>":
-  version: 6.0.2
-  resolution: "typescript@patch:typescript@npm%3A6.0.2#optional!builtin<compat/typescript>::version=6.0.2&hash=5786d5"
+"typescript@patch:typescript@npm%3A^6.0.3#optional!builtin<compat/typescript>":
+  version: 6.0.3
+  resolution: "typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>::version=6.0.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/49f0b84fc6ca55653e77752b8a61beabc09ee3dae5d965c31596225aa6ef213c5727b1d2e895b900416dc603854ba0872ac4a812c2a4ed6793a601f9c675de02
+  checksum: 10c0/2f25c74e65663c248fa1ade2b8459d9ce5372ff9dad07067310f132966ebec1d93f6c42f0baf77a6b6a7a91460463f708e6887013aaade22111037457c6b25df
   languageName: node
   linkType: hard
 
