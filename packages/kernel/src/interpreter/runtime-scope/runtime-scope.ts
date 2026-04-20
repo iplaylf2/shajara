@@ -307,6 +307,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (control.propagateFailure) {
       yield this.#syncScope(this.parentScope, () => this.parentScope.#enterFailingByChild(this));
     }
+    yield* this.#tryFailed(draft);
   }
 
   *#tryCompleted(): RuntimeSync<void> {
