@@ -22,6 +22,7 @@ import type {
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
 import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils/index";
+import { RuntimeScope, RuntimeScopeReconciler } from "./runtime-scope";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option } from "fp-ts";
 import {
@@ -35,7 +36,7 @@ import type { Disposer } from "#/utils/index";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
-import { RuntimeScope } from "./runtime-scope";
+import type { RuntimeSync } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { unreachable } from "#/utils/index";
@@ -71,10 +72,9 @@ export class Interpreter {
         try {
           next = runner.stateAs(runner.status).next();
         } catch (error) {
-          halt(
-            this.#resolve(handle.scopeRef),
-            handle.keeper(),
-            interruptedFailure(error),
+          this.#reconcile(
+            handle.scopeRef,
+            halt(this.#resolve(handle.scopeRef), handle.keeper(), interruptedFailure(error)),
             suppressor,
           );
 
@@ -90,7 +90,11 @@ export class Interpreter {
           }
           case "relic": {
             const scope = this.#resolve(handle.scopeRef);
-            scope.complete(handle.keeper(), next.relic, suppressor);
+            this.#reconcile(
+              handle.scopeRef,
+              scope.complete(handle.keeper(), next.relic),
+              suppressor,
+            );
             return processExitedStep(either.right(next.relic));
           }
         }
@@ -103,11 +107,11 @@ export class Interpreter {
     worker: Ritual<Relic>,
     suppressor: Suppressor,
   ): ProcessRef<Relic> {
-    return this.#resolve(scope).spawn(
-      this.#provideProcess(worker),
-      {
+    return this.#reconcile(
+      scope,
+      spawn(this.#resolve(scope), this.#provideProcess(worker), {
         completionMode: "structural",
-      },
+      }),
       suppressor,
     );
   }
@@ -133,7 +137,7 @@ export class Interpreter {
   }
 
   public forceFailed(scope: ScopeRef<unknown>, failure: Failure, suppressor: Suppressor): void {
-    this.#resolve(scope).forceFailed(failure, suppressor);
+    this.#reconcile(scope, this.#resolve(scope).forceFailed(failure), suppressor);
   }
 
   public scopeState(scope: ScopeRef<unknown>): ScopeState {
@@ -206,11 +210,9 @@ export class Interpreter {
     zone: ScopeZone,
     suppressor: Suppressor,
   ): ScopeRef<unknown> {
-    const childScope = branch(
-      this.#resolve(scope),
-      this.#provideProcess(entry),
-      descriptor,
-      zone,
+    const childScope = this.#reconcile(
+      scope,
+      branch(this.#resolve(scope), this.#provideProcess(entry), descriptor, zone),
       suppressor,
     );
     this.#touch(childScope);
@@ -219,10 +221,13 @@ export class Interpreter {
 
   protected initialize(): void {
     // oxlint-disable-next-line no-explicit-any
-    (this as any).#scopeRoot = RuntimeScope.root(
-      this.#provideProcess(this.entry),
-      { failureMode: "contain" },
-      this.zoneRoot,
+    (this as any).#scopeRoot = this.#reconcile(
+      null as unknown as ScopeRef<unknown>,
+      RuntimeScope.root(
+        this.#provideProcess(this.entry),
+        { failureMode: "contain" },
+        this.zoneRoot,
+      ),
       { capture: unreachable },
     );
 
@@ -265,13 +270,11 @@ export class Interpreter {
         return processCededStep();
       }
       case "cancel": {
-        cancel(scope, suppressor);
+        this.#reconcile(process.scopeRef, cancel(scope), suppressor);
         return processExitedStep(either.left(canceledFailure));
       }
       case "defer": {
-        defer(runner, (spawnCleanup) => {
-          spawnCleanup(this.#provideProcess(sigil.cleanup));
-        });
+        defer(runner, (spawnCleanup) => spawnCleanup(this.#provideProcess(sigil.cleanup)));
 
         accept(VOID);
         return processInterpretedStep();
@@ -284,7 +287,11 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "halt": {
-        halt(scope, process.keeper(), sigil.failure as Failure, suppressor);
+        this.#reconcile(
+          process.scopeRef,
+          halt(scope, process.keeper(), sigil.failure as Failure),
+          suppressor,
+        );
         return processExitedStep(either.left(runner.stateAs("failed").failure));
       }
       case "lookup": {
@@ -305,10 +312,9 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "spawn": {
-        const spawnedProcess = spawn(
-          scope,
-          this.#provideProcess(sigil.worker),
-          sigil.descriptor,
+        const spawnedProcess = this.#reconcile(
+          process.scopeRef,
+          spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor),
           suppressor,
         );
 
@@ -329,7 +335,7 @@ export class Interpreter {
           return processInterpretedStep();
         }
 
-        wait(scope, process.keeper(), future, suppressor);
+        this.#reconcile(process.scopeRef, wait(scope, process.keeper(), future), suppressor);
         return processWaitingStep();
       }
       case "receive": {
@@ -340,15 +346,31 @@ export class Interpreter {
           return processInterpretedStep();
         }
 
-        receive(scope, process.keeper(), sigil.messageKey, suppressor);
+        this.#reconcile(
+          process.scopeRef,
+          receive(scope, process.keeper(), sigil.messageKey),
+          suppressor,
+        );
         return processWaitingStep();
       }
       case "send": {
-        send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value, suppressor);
+        this.#reconcile(
+          process.scopeRef,
+          send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value),
+          suppressor,
+        );
         accept(VOID);
         return processInterpretedStep();
       }
     }
+  }
+
+  #reconcile<Result>(
+    scope: ScopeRef<unknown>,
+    sync: RuntimeSync<Result>,
+    suppressor: Suppressor,
+  ): Result {
+    return this.#scopeReconciler.reconcile(scope, sync, suppressor);
   }
 
   #provideProcess<Relic>(worker: Ritual<Relic>): ProvideRuntimeProcess {
@@ -375,6 +397,7 @@ export class Interpreter {
   }
 
   readonly #scopeRoot!: RuntimeScope;
+  readonly #scopeReconciler = new RuntimeScopeReconciler();
 }
 
 export type ScopeState = TaggedUnion<
@@ -411,23 +434,21 @@ function bind<Value>(scope: RuntimeScope, key: ContextKey<Value>, value: Value):
   scope.bind(key, value);
 }
 
-// oxlint-disable-next-line max-params
 function branch(
   scope: RuntimeScope,
   provideProcess: ProvideRuntimeProcess,
   descriptor: ScopeDescriptor,
   zone: ScopeZone,
-  suppressor: Suppressor,
-): RuntimeScope {
-  return scope.branch(provideProcess, descriptor, zone, suppressor);
+): RuntimeSync<RuntimeScope> {
+  return scope.branch(provideProcess, descriptor, zone);
 }
 
 function defer(process: RuntimeProcessRunner<unknown>, cleanup: CleanupTask): void {
   process.defer(cleanup);
 }
 
-function cancel(scope: RuntimeScope, suppressor: Suppressor): void {
-  scope.cancel(suppressor);
+function cancel(scope: RuntimeScope): RuntimeSync<void> {
+  return scope.cancel();
 }
 
 function createFuture(scope: RuntimeScope): RuntimeFuture<unknown> {
@@ -438,9 +459,8 @@ function halt(
   scope: RuntimeScope,
   process: RuntimeProcessKeeper,
   failure: Failure,
-  suppressor: Suppressor,
-): void {
-  scope.halt(process, failure, suppressor);
+): RuntimeSync<void> {
+  return scope.halt(process, failure);
 }
 
 function settle<Result>(
@@ -455,9 +475,8 @@ function spawn<Relic>(
   scope: RuntimeScope,
   provideProcess: ProvideRuntimeProcess,
   descriptor: ProcessDescriptor,
-  suppressor: Suppressor,
-): ProcessRef<Relic> {
-  return scope.spawn(provideProcess, descriptor, suppressor);
+): RuntimeSync<ProcessRef<Relic>> {
+  return scope.spawn(provideProcess, descriptor);
 }
 
 function lookup<Value>(scope: RuntimeScope, key: ContextKey<Value>): option.Option<Value> {
@@ -480,9 +499,8 @@ function wait(
   scope: RuntimeScope,
   process: RuntimeProcessKeeper,
   future: RuntimeFuture<unknown>,
-  suppressor: Suppressor,
-): void {
-  scope.wait(process, future, suppressor);
+): RuntimeSync<void> {
+  return scope.wait(process, future);
 }
 
 function unbind(scope: RuntimeScope, key: ContextKey<unknown>): void {
@@ -500,20 +518,17 @@ function receive(
   scope: RuntimeScope,
   process: RuntimeProcessKeeper,
   messageKey: MessageKey<unknown>,
-  suppressor: Suppressor,
-): void {
-  scope.receive(process, messageKey, suppressor);
+): RuntimeSync<void> {
+  return scope.receive(process, messageKey);
 }
 
-// oxlint-disable-next-line max-params
 function send<Value>(
   scope: RuntimeScope,
   targetScope: RuntimeScope,
   messageKey: MessageKey<Value>,
   value: Value,
-  suppressor: Suppressor,
-): void {
-  scope.send(targetScope, messageKey, value, suppressor);
+): RuntimeSync<void> {
+  return scope.send(targetScope, messageKey, value);
 }
 
 function scopeInfo(scope: RuntimeScope): ScopeInfo {

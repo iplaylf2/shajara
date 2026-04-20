@@ -1,6 +1,5 @@
 // oxlint-disable max-lines
 import type {
-  CleanupSpawner,
   CleanupTask,
   ProvideRuntimeProcess,
   RuntimeProcessKeeper,
@@ -17,100 +16,96 @@ import type {
 } from "#/contracts";
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
 import { either, option, readonlySet } from "fp-ts";
-import { iife, noop, unreachable } from "#/utils/index";
 import type { Failure } from "#/failures";
-import type { FutureNotification } from "#/interpreter/runtime-future";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { canceledFailure } from "#/failures";
+import { unreachable } from "#/utils/index";
 
 export class RuntimeScope implements ScopeRef<unknown> {
-  public static root(
+  public static *root(
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: ScopeZone,
-    suppressor: Suppressor,
-  ): RuntimeScope {
+  ): RuntimeSync<RuntimeScope> {
     const scope = new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
-    zone.trackProcess(scope.entryProcess, suppressor);
-    zone.trackScope(scope, suppressor);
+
+    yield scope.#trackProcess(scope.entryProcess);
+    yield scope.#trackScope(scope);
+
     return scope;
   }
 
-  public complete(process: RuntimeProcessKeeper, result: unknown, suppressor: Suppressor): void {
+  public *complete(process: RuntimeProcessKeeper, result: unknown): RuntimeSync<void> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
-    this.#triggerCleanup(closure.cleanups, suppressor);
-    this.scopeZone.trackProcess(process, suppressor);
-    this.#advanceClosing([closure.notification], suppressor);
+
+    yield this.#notify(closure.notification);
+    yield* this.#triggerCleanup(closure.cleanups);
+    yield this.#trackProcess(process);
+    yield* this.#advanceClosing();
   }
 
-  public halt(process: RuntimeProcessKeeper, failure: Failure, suppressor: Suppressor): void {
+  public *halt(process: RuntimeProcessKeeper, failure: Failure): RuntimeSync<void> {
     const failed = "failed";
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
-    const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups, suppressor);
-    this.scopeZone.trackProcess(process, suppressor);
 
-    const notifications = [closure.notification];
+    yield this.#notify(closure.notification);
+    yield this.#trackProcess(process);
+
+    const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
     const state = this.#state;
     if (state.status === "failing") {
-      iife(() => {
-        state.draft.capture(process.stateAs(failed).failure);
-        this.#enterFailing(
-          state.draft,
-          cleanupTrigger,
-          notifications,
-          { propagateFailure: this.#propagatesFailure },
-          suppressor,
-        );
+      state.draft.capture(process.stateAs(failed).failure);
+      yield* this.#enterFailing(state.draft, cleanupTrigger, {
+        propagateFailure: this.#propagatesFailure,
       });
+
       return;
     }
 
-    this.#enterFailing(
+    yield* this.#enterFailing(
       new ScopeFailureDraft({ kind: "process", process }, () => process.stateAs(failed).failure),
       cleanupTrigger,
-      notifications,
       { propagateFailure: this.#propagatesFailure },
-      suppressor,
     );
   }
 
-  public cancel(suppressor: Suppressor): void {
+  public *cancel(): RuntimeSync<void> {
     if (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, noop, [], { propagateFailure: false }, suppressor);
+      yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
     } else {
-      this.#enterCanceling(suppressor);
+      yield* this.#enterCanceling();
     }
   }
 
-  public branch(
+  public *branch(
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: ScopeZone,
-    suppressor: Suppressor,
-  ): RuntimeScope {
+  ): RuntimeSync<RuntimeScope> {
     const child = new RuntimeScope(entry, descriptor, this, zone);
     this.#children.add(child);
-    zone.trackProcess(child.entryProcess, suppressor);
-    zone.trackScope(child, suppressor);
+
+    yield child.#trackProcess(child.entryProcess);
+    yield child.#trackScope(child);
 
     return child;
   }
 
-  public spawn<Relic>(
+  public *spawn<Relic>(
     provideProcess: ProvideRuntimeProcess,
     descriptor: ProcessDescriptor,
-    suppressor: Suppressor,
-  ): ProcessRef<Relic> {
+  ): RuntimeSync<ProcessRef<Relic>> {
     const process = provideProcess(this, descriptor);
 
     this.#processContainerFor(process).add(process);
-    this.scopeZone.trackProcess(process, suppressor);
+
+    yield this.#trackProcess(process);
 
     return process as ProcessRef<Relic>;
   }
@@ -127,41 +122,38 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return future;
   }
 
-  public wait(
-    process: RuntimeProcessKeeper,
-    future: RuntimeFuture<unknown>,
-    suppressor: Suppressor,
-  ): void {
-    const unsubscribe = future.wait((result, suppressor2) => {
+  public *wait(process: RuntimeProcessKeeper, future: RuntimeFuture<unknown>): RuntimeSync<void> {
+    const unsubscribe = future.wait((result, suppressor) => {
       process.resume(result);
-      this.scopeZone.trackProcess(process, suppressor2);
+
+      this.scopeZone.trackProcess(process, suppressor);
     });
 
     process.wait(unsubscribe);
-    this.scopeZone.trackProcess(process, suppressor);
+
+    yield this.#trackProcess(process);
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  public send<Value>(
+  public *send<Value>(
     targetScope: RuntimeScope,
     messageKey: MessageKey<Value>,
     value: Value,
-    suppressor: Suppressor,
-  ): void {
-    targetScope.#acceptMessage(messageKey, value, suppressor);
+  ): RuntimeSync<void> {
+    yield* targetScope.#acceptMessage(messageKey, value);
   }
 
-  public receive(
+  public *receive(
     process: RuntimeProcessKeeper,
     messageKey: MessageKey<unknown>,
-    suppressor: Suppressor,
-  ): void {
+  ): RuntimeSync<void> {
     this.#mailbox.enqueueReceiver(process, messageKey);
 
     process.wait(() => {
       this.#mailbox.cancelReceiver(process);
     });
-    this.scopeZone.trackProcess(process, suppressor);
+
+    yield this.#trackProcess(process);
   }
 
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
@@ -188,16 +180,16 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#bindings.delete(contextKey);
   }
 
-  public forceFailed(failure: Failure, suppressor: Suppressor): void {
+  public *forceFailed(failure: Failure): RuntimeSync<void> {
     const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
     if (this.#state.status === "failing") {
       draft.capture(this.#state.draft.build());
     }
 
-    this.#enterFailing(draft, noop, [], { propagateFailure: this.#propagatesFailure }, suppressor);
+    yield* this.#enterFailing(draft, noopSync, { propagateFailure: this.#propagatesFailure });
 
     while (this.#state.status === "failing") {
-      this.#enterFailing(this.#state.draft, noop, [], { propagateFailure: false }, suppressor);
+      yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
     }
   }
 
@@ -262,22 +254,22 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#entryProcess = entryProcess;
   }
 
-  #advanceClosing(notifications: FutureNotification[], suppressor: Suppressor): void {
+  *#advanceClosing(): RuntimeSync<void> {
     switch (this.#state.status) {
       case "running": {
-        this.#tryClosing(notifications, suppressor);
+        yield* this.#tryClosing();
         return;
       }
       case "closing": {
-        this.#tryCompleted(notifications, suppressor);
+        yield* this.#tryCompleted();
         return;
       }
       case "canceling": {
-        this.#tryCanceled(notifications, suppressor);
+        yield* this.#tryCanceled();
         return;
       }
       case "failing": {
-        this.#tryFailed(this.#state.draft, notifications, suppressor);
+        yield* this.#tryFailed(this.#state.draft);
         return;
       }
       case "canceled":
@@ -288,168 +280,130 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  #tryClosing(notifications: FutureNotification[], suppressor: Suppressor): void {
+  *#tryClosing(): RuntimeSync<void> {
     if (this.#isQuiet) {
-      this.#enterClosing(notifications, suppressor);
-      return;
+      yield* this.#enterClosing();
     }
-
-    flushNotifications(notifications, suppressor);
   }
 
-  #enterClosing(notifications: FutureNotification[], suppressor: Suppressor): void {
-    using _ = this.#reconcile();
-
-    this.#transitionTo({ status: "closing" }, notifications, suppressor);
-    this.#tryCompleted([], suppressor);
+  *#enterClosing(): RuntimeSync<void> {
+    yield* this.#transitionTo({ status: "closing" });
+    yield* this.#tryCompleted();
   }
 
-  #enterCanceling(suppressor: Suppressor): void {
-    using _ = this.#reconcile();
-
-    this.#transitionTo({ status: "canceling" }, [], suppressor);
-    this.#tryCanceled([], suppressor);
+  *#enterCanceling(): RuntimeSync<void> {
+    yield* this.#transitionTo({ status: "canceling" });
+    yield* this.#tryCanceled();
   }
 
   // oxlint-disable-next-line max-params
-  #enterFailing(
+  *#enterFailing(
     draft: ScopeFailureDraft,
-    failingDefer: () => void,
-    notifications: FutureNotification[],
+    failingDefer: () => RuntimeSync<void>,
     control: FailingControl,
-    suppressor: Suppressor,
-  ): void {
-    using _ = this.#reconcile();
-
-    this.#transitionTo({ draft, status: "failing" }, notifications, suppressor);
-    failingDefer();
-    if (control.propagateFailure && this.parentScope.#notReconciledFor(isFailing)) {
-      this.parentScope.#enterFailingByChild(this, suppressor);
+  ): RuntimeSync<void> {
+    yield* this.#transitionTo({ draft, status: "failing" });
+    yield* failingDefer();
+    if (control.propagateFailure) {
+      yield this.#syncScope(this.parentScope, () => this.parentScope.#enterFailingByChild(this));
     }
-    this.#tryFailed(draft, [], suppressor);
   }
 
-  #tryCompleted(notifications: FutureNotification[], suppressor: Suppressor): void {
+  *#tryCompleted(): RuntimeSync<void> {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
-      this.#transitionTo({ result, status: "completed" }, notifications, suppressor);
-      if (!this.#isRoot && this.parentScope.#notReconciledFor(isAnyStatus)) {
-        this.parentScope.#advanceClosing([], suppressor);
-      }
-      return;
-    }
 
-    flushNotifications(notifications, suppressor);
+      yield* this.#transitionTo({ result, status: "completed" });
+      if (!this.#isRoot) {
+        yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
+      }
+    }
   }
 
-  #tryCanceled(notifications: FutureNotification[], suppressor: Suppressor): void {
+  *#tryCanceled(): RuntimeSync<void> {
     if (this.#isIdle) {
-      this.#transitionTo({ status: "canceled" }, notifications, suppressor);
-      if (!this.#isRoot && this.parentScope.#notReconciledFor(isAnyStatus)) {
-        this.parentScope.#advanceClosing([], suppressor);
+      yield* this.#transitionTo({ status: "canceled" });
+      if (!this.#isRoot) {
+        yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
       }
-      return;
     }
-
-    flushNotifications(notifications, suppressor);
   }
 
-  #tryFailed(
-    draft: ScopeFailureDraft,
-    notifications: FutureNotification[],
-    suppressor: Suppressor,
-  ): void {
+  *#tryFailed(draft: ScopeFailureDraft): RuntimeSync<void> {
     if (this.#isIdle) {
-      this.#transitionTo({ failure: draft.build(), status: "failed" }, notifications, suppressor);
-      if (!this.#isRoot && this.parentScope.#notReconciledFor(isAnyStatus)) {
-        this.parentScope.#advanceClosing([], suppressor);
+      yield* this.#transitionTo({ failure: draft.build(), status: "failed" });
+      if (!this.#isRoot) {
+        yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
       }
-      return;
     }
-
-    flushNotifications(notifications, suppressor);
   }
 
-  #transitionTo(
-    state: RuntimeScopeState,
-    notifications: FutureNotification[],
-    suppressor: Suppressor,
-  ): void {
+  *#transitionTo(state: RuntimeScopeState): RuntimeSync<void> {
     this.#state = state;
     switch (state.status) {
       case "running": {
         return unreachable();
       }
       case "closing": {
-        notifications.push(...this.#cancelDetached(suppressor));
+        yield* this.#cancelDetached();
         break;
       }
       case "canceling":
       case "failing": {
-        notifications.push(...this.#cancelManaged(suppressor));
+        yield* this.#cancelManaged();
         break;
       }
       case "canceled": {
-        notifications.push(...this.#settleClosed(either.left(canceledFailure)));
+        yield* this.#settleClosed(either.left(canceledFailure));
         break;
       }
       case "completed": {
-        notifications.push(...this.#settleClosed(either.right(state.result)));
+        yield* this.#settleClosed(either.right(state.result));
         break;
       }
       case "failed": {
-        notifications.push(...this.#settleClosed(either.left(state.failure)));
+        yield* this.#settleClosed(either.left(state.failure));
         break;
       }
     }
 
-    flushNotifications(notifications, suppressor);
-
-    this.scopeZone.trackScope(this, suppressor);
+    yield* this.#afterTransition();
   }
 
-  #cancelManaged(suppressor: Suppressor): FutureNotification[] {
+  *#cancelManaged(): RuntimeSync<void> {
     const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];
 
     this.#structuralProcesses.clear();
     this.#detachedProcesses.clear();
 
-    const notifications: FutureNotification[] = [];
     for (const process of processes) {
       const closure = process.cancel();
-      this.#triggerCleanup(closure.cleanups, suppressor);
-      this.scopeZone.trackProcess(process, suppressor);
 
-      notifications.push(closure.notification);
+      yield this.#notify(closure.notification);
+      yield* this.#triggerCleanup(closure.cleanups);
+      yield this.#trackProcess(process);
     }
 
     for (const child of children) {
-      if (child.#notReconciledFor(isCancelingOrFailing)) {
-        child.cancel(suppressor);
-      }
+      yield this.#syncScope(child, () => child.cancel());
     }
-
-    return notifications;
   }
 
-  #cancelDetached(suppressor: Suppressor): FutureNotification[] {
+  *#cancelDetached(): RuntimeSync<void> {
     const processes = [...this.#detachedProcesses];
     this.#detachedProcesses.clear();
-    const notifications: FutureNotification[] = [];
 
     for (const process of processes) {
       const closure = process.cancel();
-      this.#triggerCleanup(closure.cleanups, suppressor);
-      this.scopeZone.trackProcess(process, suppressor);
 
-      notifications.push(closure.notification);
+      yield this.#notify(closure.notification);
+      yield* this.#triggerCleanup(closure.cleanups);
+      yield this.#trackProcess(process);
     }
-
-    return notifications;
   }
 
-  #settleClosed(result: FutureResult<unknown>): FutureNotification[] {
+  *#settleClosed(result: FutureResult<unknown>): RuntimeSync<void> {
     if (!this.#isRoot) {
       this.parentScope.#removeChild(this);
     }
@@ -457,19 +411,86 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#mailbox.clear();
 
     const canceled = either.left(canceledFailure);
-    return [
+
+    for (const notification of [
       ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)),
       this.#exitFuture.settle(result),
-    ];
+    ]) {
+      yield this.#notify(notification);
+    }
   }
 
-  #acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value, suppressor: Suppressor): void {
+  *#acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): RuntimeSync<void> {
     const process = this.#mailbox.send(messageKey, value);
 
     if (process) {
       process.resume(value);
-      this.scopeZone.trackProcess(process, suppressor);
+
+      yield this.#trackProcess(process);
     }
+  }
+
+  *#triggerCleanup(cleanups: readonly CleanupTask[]): RuntimeSync<void> {
+    const spawn = (prepare: ProvideRuntimeProcess) =>
+      this.spawn(prepare, { completionMode: "structural" });
+
+    for (const cleanup of cleanups) {
+      yield* cleanup(spawn);
+    }
+  }
+
+  *#enterFailingByChild(child: RuntimeScope): RuntimeSync<void> {
+    if (this.#state.status === "failing") {
+      yield* this.#enterFailing(this.#state.draft, noopSync, {
+        propagateFailure: this.#propagatesFailure,
+      });
+      return;
+    }
+
+    yield* this.#enterFailing(
+      new ScopeFailureDraft(
+        { kind: "scope", scope: child },
+        () => child.#stateAs("failed").failure,
+      ),
+      noopSync,
+      { propagateFailure: this.#propagatesFailure },
+    );
+  }
+
+  #trackProcess(process: ProcessRef<unknown>): RuntimeSyncStep {
+    return {
+      kind: "track",
+      task: (suppressor: Suppressor) => this.scopeZone.trackProcess(process, suppressor),
+    };
+  }
+
+  #trackScope(scope: ScopeRef<unknown>): RuntimeSyncStep {
+    return {
+      kind: "track",
+      task: (suppressor: Suppressor) => this.scopeZone.trackScope(scope, suppressor),
+    };
+  }
+
+  // oxlint-disable-next-line class-methods-use-this
+  #notify(notification: RuntimeSyncNotification): RuntimeSyncStep {
+    return {
+      kind: "notify",
+      notification,
+    };
+  }
+
+  // oxlint-disable-next-line class-methods-use-this
+  #syncScope(scope: ScopeRef<unknown>, sync: () => RuntimeSync<void>): RuntimeSyncStep {
+    return {
+      kind: "sync-scope",
+      scope,
+      sync,
+    };
+  }
+
+  *#afterTransition(): RuntimeSync<void> {
+    yield { kind: "flush" } satisfies RuntimeSyncStep;
+    yield this.#trackScope(this);
   }
 
   #processContainerFor(process: RuntimeProcessKeeper): Set<RuntimeProcessKeeper> {
@@ -477,40 +498,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
       return this.#structuralProcesses;
     }
     return this.#detachedProcesses;
-  }
-
-  #triggerCleanup(cleanups: readonly CleanupTask[], suppressor: Suppressor): void {
-    const spawn: CleanupSpawner = (prepare) => {
-      this.spawn(prepare, { completionMode: "structural" }, suppressor);
-    };
-
-    for (const cleanup of cleanups) {
-      cleanup(spawn);
-    }
-  }
-
-  #enterFailingByChild(child: RuntimeScope, suppressor: Suppressor): void {
-    if (this.#state.status === "failing") {
-      this.#enterFailing(
-        this.#state.draft,
-        noop,
-        [],
-        { propagateFailure: this.#propagatesFailure },
-        suppressor,
-      );
-      return;
-    }
-
-    this.#enterFailing(
-      new ScopeFailureDraft(
-        { kind: "scope", scope: child },
-        () => child.#stateAs("failed").failure,
-      ),
-      noop,
-      [],
-      { propagateFailure: this.#propagatesFailure },
-      suppressor,
-    );
   }
 
   #removeChild(child: RuntimeScope): void {
@@ -527,20 +514,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
     return this.#state as RuntimeScopeStateOf<Status>;
-  }
-
-  #reconcile(): Disposable {
-    const wasReconciling = this.#isReconciling;
-    this.#isReconciling = true;
-    return {
-      [Symbol.dispose]: () => {
-        this.#isReconciling = wasReconciling;
-      },
-    };
-  }
-
-  #notReconciledFor(isExpectedStatus: (status: RuntimeScopeStatus) => boolean): boolean {
-    return !this.#isReconciling || !isExpectedStatus(this.status);
   }
 
   get #isQuiet(): boolean {
@@ -561,22 +534,44 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   static readonly #sentinel = null as unknown as RuntimeScope;
 
+  #state: RuntimeScopeState = { status: "running" };
   readonly #exitFuture: RuntimeFuture<unknown>;
   readonly #entryProcess: RuntimeProcessKeeper;
-  #state: RuntimeScopeState = { status: "running" };
-  #isReconciling = false;
   readonly #children = new Set<RuntimeScope>();
   readonly #mailbox = new RuntimeMailbox<RuntimeProcessKeeper>();
-
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
-
   readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
-
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
+export type RuntimeSync<Result> = Generator<RuntimeSyncStep, Result, void>;
+
+export type RuntimeSyncNotification = (suppressor: Suppressor) => void;
+export type RuntimeSyncTrack = (suppressor: Suppressor) => void;
+
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
+
+export type RuntimeSyncStep = TaggedUnion<
+  "kind",
+  {
+    flush: {};
+    notify: {
+      readonly notification: RuntimeSyncNotification;
+    };
+    "sync-scope": {
+      readonly scope: ScopeRef<unknown>;
+      readonly sync: () => RuntimeSync<void>;
+    };
+    track: {
+      readonly task: RuntimeSyncTrack;
+    };
+  }
+>;
+
+function* noopSync(): RuntimeSync<void> {
+  // Noop
+}
 
 type RuntimeScopeState = TaggedUnion<
   "status",
@@ -598,22 +593,4 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
 
 interface FailingControl {
   readonly propagateFailure: boolean;
-}
-
-function flushNotifications(notifications: FutureNotification[], suppressor: Suppressor): void {
-  for (const notification of notifications) {
-    notification(suppressor);
-  }
-}
-
-function isFailing(status: RuntimeScopeStatus): boolean {
-  return status === "failing";
-}
-
-function isAnyStatus(_status: RuntimeScopeStatus): boolean {
-  return true;
-}
-
-function isCancelingOrFailing(status: RuntimeScopeStatus): boolean {
-  return status === "canceling" || status === "failing";
 }
