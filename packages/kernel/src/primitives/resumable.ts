@@ -1,10 +1,10 @@
 import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
 import { branch, future, halt, lookup, send, spawn, wait } from "#/sigils/index";
 import { flow, pipe } from "fp-ts/function";
-import { resumableDelegateKey, resumableFailureKey } from "#/primitives-kit";
 import { wisp, wispEither } from "#/internal/fp";
 import type { ScopeFailure } from "#/failures";
 import { either } from "fp-ts";
+import { recoveryChannelKey } from "#/primitives-kit";
 
 export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
@@ -22,13 +22,13 @@ function resumeAttempt<Relic>(entryFuture: FutureKey<Relic>) {
       wisp.liftF,
       wispEither.orElse((failure) =>
         pipe(
-          lookup(resumableDelegateKey),
+          lookup(recoveryChannelKey),
           wisp.liftF,
           wisp.map(either.fromOption(() => failure)),
-          wispEither.map((delegateScope) => ({ delegateScope })),
+          wispEither.map((recoveryChannel) => ({ recoveryChannel })),
           wispEither.bindF("resolver", () => future<Relic>()),
-          wispEither.chainFirstF(({ resolver: [, recoverySettle], delegateScope }) =>
-            send(delegateScope, resumableFailureKey, {
+          wispEither.chainFirstF(({ resolver: [, recoverySettle], recoveryChannel }) =>
+            send(recoveryChannel, {
               failure: failure as ScopeFailure,
               recoverySettle,
             }),

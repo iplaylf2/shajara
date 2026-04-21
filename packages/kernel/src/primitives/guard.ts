@@ -1,8 +1,9 @@
 import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
-import { bind, branch, receive, self, settle, spawn } from "#/sigils/index";
-import { resumableDelegateKey, resumableFailureKey } from "#/primitives-kit";
+import { bind, branch, channel, settle, spawn } from "#/sigils/index";
+import { receiveInBand, recoveryChannelKey } from "#/primitives-kit";
+import type { ChannelReceiver } from "#/sigils/index";
 import type { Either } from "#/utils/index";
-import type { ResumableRecoveryRequest } from "#/primitives-kit";
+import type { RecoveryRequest } from "#/primitives-kit";
 import type { ScopeFailure } from "#/failures";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -20,26 +21,27 @@ export type RecoveryHandler = (failure: ScopeFailure) => Wisp<Either<FailureShap
 function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
   return () =>
     pipe(
-      self(),
+      channel<RecoveryRequest>(Infinity),
       wisp.liftF,
-      wisp.chainF(({ scope }) => bind(resumableDelegateKey, scope)),
-      wisp.chainF(() => spawn(recoveryWorker(recover), { completionMode: "detached" })),
+      wisp.chainFirstF(([, sender]) => bind(recoveryChannelKey, sender)),
+      wisp.chainF(([receiver]) =>
+        spawn(recoveryWorker(recover, receiver), { completionMode: "detached" }),
+      ),
       wisp.chain(entry),
     );
 }
 
-function recoveryWorker(recover: RecoveryHandler) {
+function recoveryWorker(recover: RecoveryHandler, receiver: ChannelReceiver<RecoveryRequest>) {
   return function loop(): Wisp<never> {
     return pipe(
-      receive(resumableFailureKey),
-      wisp.liftF,
+      receiveInBand(receiver),
       wisp.chainF((value) => spawn(recoveryAttempt(value, recover))),
       wisp.chain(loop),
     );
   };
 }
 
-function recoveryAttempt(request: ResumableRecoveryRequest<unknown>, recover: RecoveryHandler) {
+function recoveryAttempt(request: RecoveryRequest, recover: RecoveryHandler) {
   return () =>
     pipe(
       recover(request.failure),

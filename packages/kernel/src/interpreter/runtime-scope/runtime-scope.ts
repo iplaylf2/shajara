@@ -8,7 +8,6 @@ import type {
   ContextKey,
   FutureKey,
   FutureResult,
-  MessageKey,
   ProcessRef,
   REF_TOKEN,
   ScopeRef,
@@ -18,7 +17,6 @@ import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
-import { RuntimeMailbox } from "./runtime-mailbox";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
@@ -132,29 +130,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     process.wait(unsubscribe);
 
     yield this.#trackProcessEffect(process);
-  }
-
-  // oxlint-disable-next-line class-methods-use-this
-  public *send<Value>(
-    targetScope: RuntimeScope,
-    messageKey: MessageKey<Value>,
-    value: Value,
-  ): ScopeSync<void> {
-    yield* targetScope.#acceptMessage(messageKey, value);
-  }
-
-  public *receive(process: RuntimeProcessKeeper, messageKey: MessageKey<unknown>): ScopeSync<void> {
-    this.#mailbox.enqueueReceiver(process, messageKey);
-
-    process.wait(() => {
-      this.#mailbox.cancelReceiver(process);
-    });
-
-    yield this.#trackProcessEffect(process);
-  }
-
-  public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
-    return this.#mailbox.tryReceive(messageKey);
   }
 
   public lookup<Value>(contextKey: ContextKey<Value>): option.Option<Value> {
@@ -417,8 +392,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.parentScope.#removeChild(this);
     }
 
-    this.#mailbox.clear();
-
     const canceled = either.left(canceledFailure);
 
     for (const notification of [
@@ -426,16 +399,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.#exitFuture.settle(result),
     ]) {
       yield this.#notifyEffect(notification);
-    }
-  }
-
-  *#acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): ScopeSync<void> {
-    const process = this.#mailbox.send(messageKey, value);
-
-    if (process) {
-      process.resume(value);
-
-      yield this.#trackProcessEffect(process);
     }
   }
 
@@ -547,7 +510,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #exitFuture: RuntimeFuture<unknown>;
   readonly #entryProcess: RuntimeProcessKeeper;
   readonly #children = new Set<RuntimeScope>();
-  readonly #mailbox = new RuntimeMailbox<RuntimeProcessKeeper>();
   readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
   readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
