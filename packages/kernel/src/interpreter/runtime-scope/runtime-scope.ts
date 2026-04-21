@@ -30,32 +30,32 @@ export class RuntimeScope implements ScopeRef<unknown> {
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: ScopeZone,
-  ): RuntimeSync<RuntimeScope> {
+  ): ScopeSync<RuntimeScope> {
     const scope = new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
 
-    yield scope.#trackProcess(scope.entryProcess);
-    yield scope.#trackScope(scope);
+    yield scope.#trackProcessEffect(scope.entryProcess);
+    yield scope.#trackScopeEffect(scope);
 
     return scope;
   }
 
-  public *complete(process: RuntimeProcessKeeper, result: unknown): RuntimeSync<void> {
+  public *complete(process: RuntimeProcessKeeper, result: unknown): ScopeSync<void> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#notify(closure.notification);
+    yield this.#notifyEffect(closure.notification);
     yield* this.#triggerCleanup(closure.cleanups);
-    yield this.#trackProcess(process);
+    yield this.#trackProcessEffect(process);
     yield* this.#advanceClosing();
   }
 
-  public *halt(process: RuntimeProcessKeeper, failure: Failure): RuntimeSync<void> {
+  public *halt(process: RuntimeProcessKeeper, failure: Failure): ScopeSync<void> {
     const failed = "failed";
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#notify(closure.notification);
-    yield this.#trackProcess(process);
+    yield this.#notifyEffect(closure.notification);
+    yield this.#trackProcessEffect(process);
 
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
     const state = this.#state;
@@ -75,7 +75,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     );
   }
 
-  public *cancel(): RuntimeSync<void> {
+  public *cancel(): ScopeSync<void> {
     if (this.#state.status === "failing") {
       yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
     } else {
@@ -87,12 +87,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     entry: ProvideRuntimeProcess,
     descriptor: ScopeDescriptor,
     zone: ScopeZone,
-  ): RuntimeSync<RuntimeScope> {
+  ): ScopeSync<RuntimeScope> {
     const child = new RuntimeScope(entry, descriptor, this, zone);
     this.#children.add(child);
 
-    yield child.#trackProcess(child.entryProcess);
-    yield child.#trackScope(child);
+    yield child.#trackProcessEffect(child.entryProcess);
+    yield child.#trackScopeEffect(child);
 
     return child;
   }
@@ -100,12 +100,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public *spawn<Relic>(
     provideProcess: ProvideRuntimeProcess,
     descriptor: ProcessDescriptor,
-  ): RuntimeSync<ProcessRef<Relic>> {
+  ): ScopeSync<ProcessRef<Relic>> {
     const process = provideProcess(this, descriptor);
 
     this.#processContainerFor(process).add(process);
 
-    yield this.#trackProcess(process);
+    yield this.#trackProcessEffect(process);
 
     return process as ProcessRef<Relic>;
   }
@@ -122,7 +122,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return future;
   }
 
-  public *wait(process: RuntimeProcessKeeper, future: RuntimeFuture<unknown>): RuntimeSync<void> {
+  public *wait(process: RuntimeProcessKeeper, future: RuntimeFuture<unknown>): ScopeSync<void> {
     const unsubscribe = future.wait((result, suppressor) => {
       process.resume(result);
 
@@ -131,7 +131,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     process.wait(unsubscribe);
 
-    yield this.#trackProcess(process);
+    yield this.#trackProcessEffect(process);
   }
 
   // oxlint-disable-next-line class-methods-use-this
@@ -139,21 +139,18 @@ export class RuntimeScope implements ScopeRef<unknown> {
     targetScope: RuntimeScope,
     messageKey: MessageKey<Value>,
     value: Value,
-  ): RuntimeSync<void> {
+  ): ScopeSync<void> {
     yield* targetScope.#acceptMessage(messageKey, value);
   }
 
-  public *receive(
-    process: RuntimeProcessKeeper,
-    messageKey: MessageKey<unknown>,
-  ): RuntimeSync<void> {
+  public *receive(process: RuntimeProcessKeeper, messageKey: MessageKey<unknown>): ScopeSync<void> {
     this.#mailbox.enqueueReceiver(process, messageKey);
 
     process.wait(() => {
       this.#mailbox.cancelReceiver(process);
     });
 
-    yield this.#trackProcess(process);
+    yield this.#trackProcessEffect(process);
   }
 
   public tryReceive<Value>(messageKey: MessageKey<Value>): option.Option<Value> {
@@ -180,7 +177,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#bindings.delete(contextKey);
   }
 
-  public *forceFailed(failure: Failure): RuntimeSync<void> {
+  public *forceFailed(failure: Failure): ScopeSync<void> {
     const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
     if (this.#state.status === "failing") {
       draft.capture(this.#state.draft.build());
@@ -254,7 +251,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#entryProcess = entryProcess;
   }
 
-  *#advanceClosing(): RuntimeSync<void> {
+  *#advanceClosing(): ScopeSync<void> {
     switch (this.#state.status) {
       case "running": {
         yield* this.#tryClosing();
@@ -280,20 +277,20 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  *#tryClosing(): RuntimeSync<void> {
+  *#tryClosing(): ScopeSync<void> {
     if (this.#isQuiet) {
       yield* this.#enterClosing();
     } else {
-      yield this.#flush();
+      yield this.#flushEffect();
     }
   }
 
-  *#enterClosing(): RuntimeSync<void> {
+  *#enterClosing(): ScopeSync<void> {
     yield* this.#transitionTo({ status: "closing" });
     yield* this.#tryCompleted();
   }
 
-  *#enterCanceling(): RuntimeSync<void> {
+  *#enterCanceling(): ScopeSync<void> {
     yield* this.#transitionTo({ status: "canceling" });
     yield* this.#tryCanceled();
   }
@@ -301,53 +298,55 @@ export class RuntimeScope implements ScopeRef<unknown> {
   // oxlint-disable-next-line max-params
   *#enterFailing(
     draft: ScopeFailureDraft,
-    failingDefer: () => RuntimeSync<void>,
+    failingDefer: () => ScopeSync<void>,
     control: FailingControl,
-  ): RuntimeSync<void> {
+  ): ScopeSync<void> {
     yield* this.#transitionTo({ draft, status: "failing" });
     yield* failingDefer();
     if (control.propagateFailure) {
-      yield this.#syncScope(this.parentScope, () => this.parentScope.#enterFailingByChild(this));
+      yield this.#syncScopeEffect(this.parentScope, () =>
+        this.parentScope.#enterFailingByChild(this),
+      );
     }
     yield* this.#tryFailed(draft);
   }
 
-  *#tryCompleted(): RuntimeSync<void> {
+  *#tryCompleted(): ScopeSync<void> {
     if (this.#isIdle) {
       const { result } = this.#entryProcess.stateAs("completed");
 
       yield* this.#transitionTo({ result, status: "completed" });
       if (!this.#isRoot) {
-        yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#syncScopeEffect(this.parentScope, () => this.parentScope.#advanceClosing());
       }
     } else {
-      yield this.#flush();
+      yield this.#flushEffect();
     }
   }
 
-  *#tryCanceled(): RuntimeSync<void> {
+  *#tryCanceled(): ScopeSync<void> {
     if (this.#isIdle) {
       yield* this.#transitionTo({ status: "canceled" });
       if (!this.#isRoot) {
-        yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#syncScopeEffect(this.parentScope, () => this.parentScope.#advanceClosing());
       }
     } else {
-      yield this.#flush();
+      yield this.#flushEffect();
     }
   }
 
-  *#tryFailed(draft: ScopeFailureDraft): RuntimeSync<void> {
+  *#tryFailed(draft: ScopeFailureDraft): ScopeSync<void> {
     if (this.#isIdle) {
       yield* this.#transitionTo({ failure: draft.build(), status: "failed" });
       if (!this.#isRoot) {
-        yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#syncScopeEffect(this.parentScope, () => this.parentScope.#advanceClosing());
       }
     } else {
-      yield this.#flush();
+      yield this.#flushEffect();
     }
   }
 
-  *#transitionTo(state: RuntimeScopeState): RuntimeSync<void> {
+  *#transitionTo(state: RuntimeScopeState): ScopeSync<void> {
     this.#state = state;
     switch (state.status) {
       case "running": {
@@ -376,11 +375,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
       }
     }
 
-    yield this.#flush();
-    yield this.#trackScope(this);
+    yield this.#flushEffect();
+    yield this.#trackScopeEffect(this);
   }
 
-  *#cancelManaged(): RuntimeSync<void> {
+  *#cancelManaged(): ScopeSync<void> {
     const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];
 
@@ -390,30 +389,30 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#notify(closure.notification);
+      yield this.#notifyEffect(closure.notification);
       yield* this.#triggerCleanup(closure.cleanups);
-      yield this.#trackProcess(process);
+      yield this.#trackProcessEffect(process);
     }
 
     for (const child of children) {
-      yield this.#syncScope(child, () => child.cancel());
+      yield this.#syncScopeEffect(child, () => child.cancel());
     }
   }
 
-  *#cancelDetached(): RuntimeSync<void> {
+  *#cancelDetached(): ScopeSync<void> {
     const processes = [...this.#detachedProcesses];
     this.#detachedProcesses.clear();
 
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#notify(closure.notification);
+      yield this.#notifyEffect(closure.notification);
       yield* this.#triggerCleanup(closure.cleanups);
-      yield this.#trackProcess(process);
+      yield this.#trackProcessEffect(process);
     }
   }
 
-  *#settleClosed(result: FutureResult<unknown>): RuntimeSync<void> {
+  *#settleClosed(result: FutureResult<unknown>): ScopeSync<void> {
     if (!this.#isRoot) {
       this.parentScope.#removeChild(this);
     }
@@ -426,21 +425,21 @@ export class RuntimeScope implements ScopeRef<unknown> {
       ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)),
       this.#exitFuture.settle(result),
     ]) {
-      yield this.#notify(notification);
+      yield this.#notifyEffect(notification);
     }
   }
 
-  *#acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): RuntimeSync<void> {
+  *#acceptMessage<Value>(messageKey: MessageKey<Value>, value: Value): ScopeSync<void> {
     const process = this.#mailbox.send(messageKey, value);
 
     if (process) {
       process.resume(value);
 
-      yield this.#trackProcess(process);
+      yield this.#trackProcessEffect(process);
     }
   }
 
-  *#triggerCleanup(cleanups: readonly CleanupTask[]): RuntimeSync<void> {
+  *#triggerCleanup(cleanups: readonly CleanupTask[]): ScopeSync<void> {
     const spawn = (prepare: ProvideRuntimeProcess) =>
       this.spawn(prepare, { completionMode: "structural" });
 
@@ -449,7 +448,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  *#enterFailingByChild(child: RuntimeScope): RuntimeSync<void> {
+  *#enterFailingByChild(child: RuntimeScope): ScopeSync<void> {
     if (this.#state.status === "failing") {
       yield* this.#enterFailing(this.#state.draft, noopSync, {
         propagateFailure: this.#propagatesFailure,
@@ -467,14 +466,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
     );
   }
 
-  #trackProcess(process: ProcessRef<unknown>): RuntimeSyncStep {
+  #trackProcessEffect(process: ProcessRef<unknown>): ScopeSyncEffect {
     return {
       kind: "track",
       task: (suppressor: Suppressor) => this.scopeZone.trackProcess(process, suppressor),
     };
   }
 
-  #trackScope(scope: ScopeRef<unknown>): RuntimeSyncStep {
+  #trackScopeEffect(scope: ScopeRef<unknown>): ScopeSyncEffect {
     return {
       kind: "track",
       task: (suppressor: Suppressor) => this.scopeZone.trackScope(scope, suppressor),
@@ -482,7 +481,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #notify(notification: RuntimeSyncNotification): RuntimeSyncStep {
+  #notifyEffect(notification: ScopeSyncNotification): ScopeSyncEffect {
     return {
       kind: "notify",
       notification,
@@ -490,14 +489,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #flush(): RuntimeSyncStep {
+  #flushEffect(): ScopeSyncEffect {
     return { kind: "flush" };
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #syncScope(scope: ScopeRef<unknown>, sync: () => RuntimeSync<void>): RuntimeSyncStep {
+  #syncScopeEffect(scope: ScopeRef<unknown>, sync: () => ScopeSync<void>): ScopeSyncEffect {
     return {
-      kind: "sync-scope",
+      kind: "syncScope",
       scope,
       sync,
     };
@@ -555,31 +554,31 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
-export type RuntimeSync<Result> = Generator<RuntimeSyncStep, Result, void>;
+export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
 
-export type RuntimeSyncNotification = (suppressor: Suppressor) => void;
-export type RuntimeSyncTrack = (suppressor: Suppressor) => void;
+export type ScopeSyncNotification = (suppressor: Suppressor) => void;
+export type ScopeTrackTask = (suppressor: Suppressor) => void;
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
 
-export type RuntimeSyncStep = TaggedUnion<
+export type ScopeSyncEffect = TaggedUnion<
   "kind",
   {
     flush: {};
     notify: {
-      readonly notification: RuntimeSyncNotification;
+      readonly notification: ScopeSyncNotification;
     };
-    "sync-scope": {
+    syncScope: {
       readonly scope: ScopeRef<unknown>;
-      readonly sync: () => RuntimeSync<void>;
+      readonly sync: () => ScopeSync<void>;
     };
     track: {
-      readonly task: RuntimeSyncTrack;
+      readonly task: ScopeTrackTask;
     };
   }
 >;
 
-function* noopSync(): RuntimeSync<void> {
+function* noopSync(): ScopeSync<void> {
   // Noop
 }
 

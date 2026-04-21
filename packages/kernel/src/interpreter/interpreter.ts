@@ -36,7 +36,7 @@ import type { Disposer } from "#/utils/index";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
 import { RuntimeProcess } from "./runtime-process";
-import type { RuntimeSync } from "./runtime-scope";
+import type { ScopeSync } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { unreachable } from "#/utils/index";
@@ -367,7 +367,7 @@ export class Interpreter {
 
   #reconcile<Result>(
     scope: ScopeRef<unknown>,
-    sync: RuntimeSync<Result>,
+    sync: ScopeSync<Result>,
     suppressor: Suppressor,
   ): Result {
     return this.#scopeReconciler.reconcile(scope, sync, suppressor);
@@ -439,7 +439,7 @@ function branch(
   provideProcess: ProvideRuntimeProcess,
   descriptor: ScopeDescriptor,
   zone: ScopeZone,
-): RuntimeSync<RuntimeScope> {
+): ScopeSync<RuntimeScope> {
   return scope.branch(provideProcess, descriptor, zone);
 }
 
@@ -447,7 +447,7 @@ function defer(process: RuntimeProcessRunner<unknown>, cleanup: CleanupTask): vo
   process.defer(cleanup);
 }
 
-function cancel(scope: RuntimeScope): RuntimeSync<void> {
+function cancel(scope: RuntimeScope): ScopeSync<void> {
   return scope.cancel();
 }
 
@@ -459,7 +459,7 @@ function halt(
   scope: RuntimeScope,
   process: RuntimeProcessKeeper,
   failure: Failure,
-): RuntimeSync<void> {
+): ScopeSync<void> {
   return scope.halt(process, failure);
 }
 
@@ -475,7 +475,7 @@ function spawn<Relic>(
   scope: RuntimeScope,
   provideProcess: ProvideRuntimeProcess,
   descriptor: ProcessDescriptor,
-): RuntimeSync<ProcessRef<Relic>> {
+): ScopeSync<ProcessRef<Relic>> {
   return scope.spawn(provideProcess, descriptor);
 }
 
@@ -499,7 +499,7 @@ function wait(
   scope: RuntimeScope,
   process: RuntimeProcessKeeper,
   future: RuntimeFuture<unknown>,
-): RuntimeSync<void> {
+): ScopeSync<void> {
   return scope.wait(process, future);
 }
 
@@ -518,7 +518,7 @@ function receive(
   scope: RuntimeScope,
   process: RuntimeProcessKeeper,
   messageKey: MessageKey<unknown>,
-): RuntimeSync<void> {
+): ScopeSync<void> {
   return scope.receive(process, messageKey);
 }
 
@@ -527,7 +527,7 @@ function send<Value>(
   targetScope: RuntimeScope,
   messageKey: MessageKey<Value>,
   value: Value,
-): RuntimeSync<void> {
+): ScopeSync<void> {
   return scope.send(targetScope, messageKey, value);
 }
 

@@ -1,14 +1,14 @@
 // oxlint-disable no-magic-numbers
-import type { RuntimeSync, RuntimeSyncNotification, RuntimeSyncStep } from "./runtime-scope";
 import type { ScopeRef, Suppressor } from "#/contracts";
+import type { ScopeSync, ScopeSyncEffect, ScopeSyncNotification } from "./runtime-scope";
 
 export class RuntimeScopeReconciler {
   public reconcile<Result>(
     scope: ScopeRef<unknown>,
-    sync: RuntimeSync<Result>,
+    sync: ScopeSync<Result>,
     suppressor: Suppressor,
   ): Result {
-    const call = runtimeSyncCall(scope, sync, suppressor);
+    const call = createScopeSyncCall(scope, sync, suppressor);
 
     this.#pendingCalls.push(call);
     this.#takeOverUntil(call);
@@ -16,13 +16,13 @@ export class RuntimeScopeReconciler {
     return call.result! as Result;
   }
 
-  #takeOverUntil(target: RuntimeSyncCall): void {
+  #takeOverUntil(target: ScopeSyncCall): void {
     while (this.#isQueued(target)) {
       this.#drive(this.#nextPendingCall());
     }
   }
 
-  #drive(call: RuntimeSyncCall): void {
+  #drive(call: ScopeSyncCall): void {
     this.#drivingCall = call;
 
     while (this.#drivingCall === call) {
@@ -36,7 +36,7 @@ export class RuntimeScopeReconciler {
     }
   }
 
-  #applyStep(call: RuntimeSyncCall, step: RuntimeSyncStep): void {
+  #applyStep(call: ScopeSyncCall, step: ScopeSyncEffect): void {
     switch (step.kind) {
       case "flush": {
         this.#handoff(call, () => this.#flushNotifications(call));
@@ -46,13 +46,13 @@ export class RuntimeScopeReconciler {
         call.notifications.push(step.notification);
         break;
       }
-      case "sync-scope": {
-        if (this.#hasPendingCall(step.scope)) {
+      case "syncScope": {
+        if (this.#hasPendingSyncFor(step.scope)) {
           break;
         }
 
         this.#handoff(call, () => {
-          this.#syncScope(call, step.scope, step.sync());
+          this.#inlineScopeSync(call, step.scope, step.sync());
         });
         break;
       }
@@ -65,7 +65,7 @@ export class RuntimeScopeReconciler {
     }
   }
 
-  #handoff(call: RuntimeSyncCall, effect: () => void): void {
+  #handoff(call: ScopeSyncCall, effect: () => void): void {
     this.#drivingCall = null;
     effect();
 
@@ -76,22 +76,22 @@ export class RuntimeScopeReconciler {
     this.#drivingCall = call;
   }
 
-  #syncScope(parent: RuntimeSyncCall, scope: ScopeRef<unknown>, sync: RuntimeSync<void>): void {
-    const call = runtimeSyncCall(scope, sync, parent.suppressor);
+  #inlineScopeSync(parent: ScopeSyncCall, scope: ScopeRef<unknown>, sync: ScopeSync<void>): void {
+    const call = createScopeSyncCall(scope, sync, parent.suppressor);
     const parentIndex = this.#pendingCalls.indexOf(parent);
 
     this.#pendingCalls.splice(parentIndex, 0, call);
     this.#takeOverUntil(call);
   }
 
-  #finish(call: RuntimeSyncCall, result: unknown): void {
+  #finish(call: ScopeSyncCall, result: unknown): void {
     call.result = result;
     this.#drivingCall = null;
     this.#dequeue(call);
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #flushNotifications(call: RuntimeSyncCall): void {
+  #flushNotifications(call: ScopeSyncCall): void {
     const { notifications } = call;
     call.notifications = [];
 
@@ -100,36 +100,36 @@ export class RuntimeScopeReconciler {
     }
   }
 
-  #nextPendingCall(): RuntimeSyncCall {
+  #nextPendingCall(): ScopeSyncCall {
     return this.#pendingCalls.find((call) => call !== this.#drivingCall)!;
   }
 
-  #isQueued(target: RuntimeSyncCall): boolean {
+  #isQueued(target: ScopeSyncCall): boolean {
     return this.#pendingCalls.includes(target);
   }
 
-  #hasPendingCall(scope: ScopeRef<unknown>): boolean {
+  #hasPendingSyncFor(scope: ScopeRef<unknown>): boolean {
     return this.#pendingCalls.some((call) => call.scope === scope);
   }
 
-  #dequeue(target: RuntimeSyncCall): void {
+  #dequeue(target: ScopeSyncCall): void {
     const index = this.#pendingCalls.indexOf(target);
     if (index >= 0) {
       this.#pendingCalls.splice(index, 1);
     }
   }
 
-  readonly #pendingCalls: RuntimeSyncCall[] = [];
-  #drivingCall: RuntimeSyncCall | null = null;
+  readonly #pendingCalls: ScopeSyncCall[] = [];
+  #drivingCall: ScopeSyncCall | null = null;
 }
 
-function runtimeSyncCall<Result>(
+function createScopeSyncCall<Result>(
   scope: ScopeRef<unknown>,
-  sync: RuntimeSync<Result>,
+  sync: ScopeSync<Result>,
   suppressor: Suppressor,
-): RuntimeSyncCall {
+): ScopeSyncCall {
   return {
-    next: () => sync.next() as IteratorResult<RuntimeSyncStep, unknown>,
+    next: () => sync.next() as IteratorResult<ScopeSyncEffect, unknown>,
     notifications: [],
     result: null,
     scope,
@@ -137,10 +137,10 @@ function runtimeSyncCall<Result>(
   };
 }
 
-interface RuntimeSyncCall {
-  notifications: RuntimeSyncNotification[];
+interface ScopeSyncCall {
+  notifications: ScopeSyncNotification[];
   result: unknown | null;
   readonly scope: ScopeRef<unknown>;
-  next(): IteratorResult<RuntimeSyncStep, unknown>;
+  next(): IteratorResult<ScopeSyncEffect, unknown>;
   readonly suppressor: Suppressor;
 }
