@@ -283,6 +283,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   *#tryClosing(): RuntimeSync<void> {
     if (this.#isQuiet) {
       yield* this.#enterClosing();
+    } else {
+      yield this.#flush();
     }
   }
 
@@ -318,6 +320,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
       if (!this.#isRoot) {
         yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
       }
+    } else {
+      yield this.#flush();
     }
   }
 
@@ -327,6 +331,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
       if (!this.#isRoot) {
         yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
       }
+    } else {
+      yield this.#flush();
     }
   }
 
@@ -336,6 +342,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
       if (!this.#isRoot) {
         yield this.#syncScope(this.parentScope, () => this.parentScope.#advanceClosing());
       }
+    } else {
+      yield this.#flush();
     }
   }
 
@@ -368,7 +376,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
       }
     }
 
-    yield* this.#afterTransition();
+    yield this.#flush();
+    yield this.#trackScope(this);
   }
 
   *#cancelManaged(): RuntimeSync<void> {
@@ -481,17 +490,17 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
+  #flush(): RuntimeSyncStep {
+    return { kind: "flush" };
+  }
+
+  // oxlint-disable-next-line class-methods-use-this
   #syncScope(scope: ScopeRef<unknown>, sync: () => RuntimeSync<void>): RuntimeSyncStep {
     return {
       kind: "sync-scope",
       scope,
       sync,
     };
-  }
-
-  *#afterTransition(): RuntimeSync<void> {
-    yield { kind: "flush" } satisfies RuntimeSyncStep;
-    yield this.#trackScope(this);
   }
 
   #processContainerFor(process: RuntimeProcessKeeper): Set<RuntimeProcessKeeper> {

@@ -8,18 +8,10 @@ export class RuntimeScopeReconciler {
     sync: RuntimeSync<Result>,
     suppressor: Suppressor,
   ): Result {
-    const call: RuntimeSyncCall = {
-      next: () => sync.next() as IteratorResult<RuntimeSyncStep, unknown>,
-      notifications: [],
-      result: null,
-      scope,
-      suppressor,
-    };
+    const call = runtimeSyncCall(scope, sync, suppressor);
 
     this.#pendingCalls.push(call);
-    this.#reconcileScopes.push(scope);
     this.#takeOverUntil(call);
-    this.#reconcileScopes.pop();
 
     return call.result! as Result;
   }
@@ -55,12 +47,12 @@ export class RuntimeScopeReconciler {
         break;
       }
       case "sync-scope": {
-        if (this.#reconcileScopes.includes(step.scope)) {
+        if (this.#hasPendingCall(step.scope)) {
           break;
         }
 
         this.#handoff(call, () => {
-          this.reconcile(step.scope, step.sync(), call.suppressor);
+          this.#syncScope(call, step.scope, step.sync());
         });
         break;
       }
@@ -84,6 +76,20 @@ export class RuntimeScopeReconciler {
     this.#drivingCall = call;
   }
 
+  #syncScope(parent: RuntimeSyncCall, scope: ScopeRef<unknown>, sync: RuntimeSync<void>): void {
+    const call = runtimeSyncCall(scope, sync, parent.suppressor);
+    const parentIndex = this.#pendingCalls.indexOf(parent);
+
+    this.#pendingCalls.splice(parentIndex, 0, call);
+    this.#takeOverUntil(call);
+  }
+
+  #finish(call: RuntimeSyncCall, result: unknown): void {
+    call.result = result;
+    this.#drivingCall = null;
+    this.#dequeue(call);
+  }
+
   // oxlint-disable-next-line class-methods-use-this
   #flushNotifications(call: RuntimeSyncCall): void {
     const { notifications } = call;
@@ -102,10 +108,8 @@ export class RuntimeScopeReconciler {
     return this.#pendingCalls.includes(target);
   }
 
-  #finish(call: RuntimeSyncCall, result: unknown): void {
-    call.result = result;
-    this.#drivingCall = null;
-    this.#dequeue(call);
+  #hasPendingCall(scope: ScopeRef<unknown>): boolean {
+    return this.#pendingCalls.some((call) => call.scope === scope);
   }
 
   #dequeue(target: RuntimeSyncCall): void {
@@ -117,7 +121,20 @@ export class RuntimeScopeReconciler {
 
   readonly #pendingCalls: RuntimeSyncCall[] = [];
   #drivingCall: RuntimeSyncCall | null = null;
-  readonly #reconcileScopes: ScopeRef<unknown>[] = [];
+}
+
+function runtimeSyncCall<Result>(
+  scope: ScopeRef<unknown>,
+  sync: RuntimeSync<Result>,
+  suppressor: Suppressor,
+): RuntimeSyncCall {
+  return {
+    next: () => sync.next() as IteratorResult<RuntimeSyncStep, unknown>,
+    notifications: [],
+    result: null,
+    scope,
+    suppressor,
+  };
 }
 
 interface RuntimeSyncCall {
