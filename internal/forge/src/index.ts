@@ -1,3 +1,7 @@
+import { enableCompileCache } from "node:module";
+
+enableCompileCache();
+
 const argv = process.argv.slice(2);
 const [command, ...commandArgs] = argv;
 
