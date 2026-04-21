@@ -41,9 +41,11 @@ export type RuntimeProcessKeeperState = TaggedUnion<
 
 export type RuntimeProcessKeeperStatus = RuntimeProcessKeeperState["status"];
 
-export type CleanupTask = (spawn: CleanupSpawner) => void;
+// oxlint-disable-next-line id-length
+export type CleanupTask = <T>(spawn: CleanupSpawner<T>) => T;
 
-export type CleanupSpawner = (provideProcess: ProvideRuntimeProcess) => void;
+// oxlint-disable-next-line id-length
+export type CleanupSpawner<T> = (provideProcess: ProvideRuntimeProcess) => T;
 
 export type ProvideRuntimeProcess = (
   scopeRef: ScopeRef<unknown>,
