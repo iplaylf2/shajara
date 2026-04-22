@@ -41,6 +41,12 @@ Typical rewrites include:
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
 - host `enclose(ritual)` returns `T` and throws on failure
 
+- kernel `send(sender, value)` returns a terminal channel state when the channel is closed or revoked
+- host `send(sender, value)` returns `void` and throws on closed or revoked channels
+
+- kernel `receive(receiver)` returns a value or terminal channel state
+- host `receive(receiver)` returns the value and throws on closed or revoked channels
+
 As a result, `Future`, `Scope`, and `Failure` are exposed on the host side primarily as user-visible results.
 
 ## Error Mapping
@@ -61,6 +67,7 @@ The following entries rewrite host-side errors into kernel failures:
 The host layer uses `fromFailure(...)` for unified mapping:
 
 - `canceled` -> `CanceledError`
+- `channel` -> `ChannelError`
 - `interrupted` -> `InterruptedError`
 - `scope` -> `ScopeError`
 - `external` -> the original `Error` or `ExternalError`

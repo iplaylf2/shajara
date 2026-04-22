@@ -20,7 +20,7 @@ It is responsible for packaging runtime entries, host operations, concurrency pr
 
 - runtime entries: `run`, `createScope`
 - host operations: `action`, `sleep`, `until`
-- concurrency and lifecycle primitives: `@shajara/host/primitives`
+- concurrency, communication, and lifecycle primitives: `@shajara/host/primitives`
 - boundary mapping between JavaScript error objects and lower-level failure results
 
 ## Example

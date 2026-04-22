@@ -16,7 +16,7 @@ Names available from the root entry include:
 
 - runtime entries: `run`, `createScope`
 - host operations: `action`, `sleep`, `until`
-- error types: `ShajaraError`, `CanceledError`, `ExternalError`, `InterruptedError`, `ScopeError`
+- error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
 - other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
@@ -25,6 +25,7 @@ The subpath `@shajara/host/primitives` exposes:
 
 - concurrency and boundaries: `all`, `autonomy`, `enclose`, `guard`, `race`, `resource`, `resumable`, `spawn`
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
+- channel operations: `channel`, `close`, `send`, `receive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
 - control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
 
@@ -153,6 +154,15 @@ yield * until(thunk);
 | `settle`      | `void`                                 |
 | `settleError` | `void`                                 |
 | `wait`        | `T`                                    |
+
+### Channel primitives
+
+| Primitive | Return value                             |
+| --------- | ---------------------------------------- |
+| `channel` | `[ChannelReceiver<T>, ChannelSender<T>]` |
+| `send`    | `void`                                   |
+| `receive` | `T`                                      |
+| `close`   | `void`                                   |
 
 ### Context, control, and lifecycle
 
