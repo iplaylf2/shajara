@@ -16,6 +16,7 @@ import type {
 import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
+import { RuntimeChannel } from "#/interpreter/runtime-channel";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
@@ -108,6 +109,66 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return process as ProcessRef<Relic>;
   }
 
+  public *wait(future: RuntimeFuture<unknown>, process: RuntimeProcessKeeper): ScopeSync<void> {
+    const unsubscribe = future.wait((result, suppressor) => {
+      process.resume(result);
+
+      this.scopeZone.trackProcess(process, suppressor);
+    });
+
+    process.wait(unsubscribe);
+
+    yield this.#trackProcessEffect(process);
+  }
+
+  public *receive(
+    channel: RuntimeChannel<unknown>,
+    process: RuntimeProcessKeeper,
+  ): ScopeSync<void> {
+    channel.enqueueReceiver(process, (result, suppressor) => {
+      process.resume(result);
+
+      this.scopeZone.trackProcess(process, suppressor);
+    });
+
+    process.wait(() => channel.discardReceiver(process));
+
+    yield this.#trackProcessEffect(process);
+  }
+
+  public *send<Value>(
+    channel: RuntimeChannel<Value>,
+    value: Value,
+    process: RuntimeProcessKeeper,
+  ): ScopeSync<void> {
+    channel.enqueueSender(
+      process,
+      (result, suppressor) => {
+        process.resume(result);
+
+        this.scopeZone.trackProcess(process, suppressor);
+      },
+      value,
+    );
+
+    process.wait(() => channel.discardSender(process));
+
+    yield this.#trackProcessEffect(process);
+  }
+
+  public *forceFailed(failure: Failure): ScopeSync<void> {
+    const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
+    if (this.#state.status === "failing") {
+      draft.capture(this.#state.draft.build());
+    }
+
+    yield* this.#enterFailing(draft, noopSync, { propagateFailure: this.#propagatesFailure });
+
+    while (this.#state.status === "failing") {
+      yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
+    }
+  }
+
   public createFuture<Result>(): RuntimeFuture<Result> {
     const future = new RuntimeFuture<Result>();
 
@@ -120,16 +181,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return future;
   }
 
-  public *wait(process: RuntimeProcessKeeper, future: RuntimeFuture<unknown>): ScopeSync<void> {
-    const unsubscribe = future.wait((result, suppressor) => {
-      process.resume(result);
+  public createChannel<Value>(capacity: number): RuntimeChannel<Value> {
+    const channel = new RuntimeChannel<Value>(capacity, () => this.#channels.delete(channel));
 
-      this.scopeZone.trackProcess(process, suppressor);
-    });
+    this.#channels.add(channel);
 
-    process.wait(unsubscribe);
-
-    yield this.#trackProcessEffect(process);
+    return channel;
   }
 
   public lookup<Value>(contextKey: ContextKey<Value>): option.Option<Value> {
@@ -150,19 +207,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   public unbind(contextKey: ContextKey<unknown>): void {
     this.#bindings.delete(contextKey);
-  }
-
-  public *forceFailed(failure: Failure): ScopeSync<void> {
-    const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
-    if (this.#state.status === "failing") {
-      draft.capture(this.#state.draft.build());
-    }
-
-    yield* this.#enterFailing(draft, noopSync, { propagateFailure: this.#propagatesFailure });
-
-    while (this.#state.status === "failing") {
-      yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
-    }
   }
 
   public get descriptor(): ScopeDescriptor {
@@ -392,14 +436,22 @@ export class RuntimeScope implements ScopeRef<unknown> {
       this.parentScope.#removeChild(this);
     }
 
-    const canceled = either.left(canceledFailure);
+    for (const channel of this.#channels) {
+      const notification = channel.revoke();
 
-    for (const notification of [
-      ...Array.from(this.#derivedFutures, (future) => future.settle(canceled)),
-      this.#exitFuture.settle(result),
-    ]) {
       yield this.#notifyEffect(notification);
     }
+
+    const canceled = either.left(canceledFailure);
+    for (const future of this.#derivedFutures) {
+      const notification = future.settle(canceled);
+
+      yield this.#notifyEffect(notification);
+    }
+
+    const notification = this.#exitFuture.settle(result);
+
+    yield this.#notifyEffect(notification);
   }
 
   *#triggerCleanup(cleanups: readonly CleanupTask[]): ScopeSync<void> {
@@ -510,9 +562,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #exitFuture: RuntimeFuture<unknown>;
   readonly #entryProcess: RuntimeProcessKeeper;
   readonly #children = new Set<RuntimeScope>();
-  readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
   readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
+  readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
+  readonly #channels = new Set<RuntimeChannel<unknown>>();
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 

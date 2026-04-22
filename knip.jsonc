@@ -18,6 +18,6 @@
     "interface": true,
     "type": true,
   },
-  "ignoreFiles": [".dependency-cruiser.mjs"],
+  "ignoreFiles": [".yarn/**", ".dependency-cruiser.mjs"],
   "tags": ["-preserveSurface"],
 }
