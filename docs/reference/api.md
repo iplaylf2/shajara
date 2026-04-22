@@ -39,7 +39,7 @@ This package is intended for lower-level integrations. Its root entry re-exports
 
 Names available from the root entry include:
 
-- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `MessageKey`, `contextKey`, `messageKey`
+- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
 - failures: `Failure`, `canceledFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
 - executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
 - primitives: the corresponding `Wisp` primitives
@@ -48,6 +48,15 @@ Public subpaths:
 
 - `@shajara/kernel/sigils`
 - `@shajara/kernel/utils`
+
+The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
+
+- context: `bind`, `lookup`, `unbind`
+- lifecycle: `cancel`, `cede`, `defer`, `halt`
+- concurrency: `branch`, `spawn`
+- future: `future`, `poll`, `settle`, `wait`
+- channel: `channel`, `close`, `send`, `receive`
+- introspection: `self`
 
 ## Host Runtime Entries
 

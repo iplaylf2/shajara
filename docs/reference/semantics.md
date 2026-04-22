@@ -27,7 +27,7 @@ The public sigil kinds include:
 - lifecycle: `cancel`, `cede`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
-- message: `send`, `receive`
+- channel: `channel`, `close`, `send`, `receive`
 - introspection: `self`
 
 ## Structural Objects
@@ -65,9 +65,9 @@ type CompletionMode = "structural" | "detached";
 ```
 
 - `structural`: participates in completion for its enclosing scope
-- `detached`: does not participate in completion for its enclosing scope
+- `detached`: is excluded from completion for its enclosing scope
 
-## Future, Context, and Message
+## Future, Context, and Channel
 
 ### `Future`
 
@@ -88,17 +88,37 @@ When the owner scope finishes, any unfinished futures converge uniformly as `can
 
 `ContextKey<T>` is used for binding and lookup along the scope chain. Bindings are recorded on the current scope, and lookups remain visible along the ancestor chain.
 
-### `MessageKey`
+### `Channel`
 
-`MessageKey<T>` is used by the scope-local mailbox protocol.
+`channel<T>(capacity)` creates a channel owned by the current scope and returns a `ChannelHandle<T>`:
 
-The message channel is:
+```ts
+type ChannelHandle<T> = readonly [receiver: ChannelReceiver<T>, sender: ChannelSender<T>];
+```
 
-- scope-local
+The two endpoints separate read and write authority:
+
+- `ChannelReceiver<T>` is accepted by `receive(receiver)`
+- `ChannelSender<T>` is accepted by `send(sender, value)`
+- either endpoint is accepted by `close(endpoint)`
+
+The capacity controls the buffering model:
+
+- `0`: rendezvous channel; send and receive synchronize directly
+- finite positive number: bounded channel with that many buffered values
+- `Infinity`: unbounded channel
+
+Channel delivery is:
+
 - FIFO
-- single-delivery per message
+- single-delivery per value
+- blocking until the channel is ready for the requested operation
 
-`send(scope, key, value)` appends a message to the target scope. `receive(key)` reads from the current scope and blocks when no message is available.
+`send(sender, value)` blocks until the value is accepted, then returns `{ kind: "sent" }`. A terminal channel returns `{ kind: "closed" }` or `{ kind: "revoked" }`.
+
+`receive(receiver)` blocks until a value or terminal channel state is available. It returns `{ kind: "value", value }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`.
+
+`close(endpoint)` closes the channel explicitly. A scope that finishes while it still owns open channels revokes them. Closing and revocation both wake blocked senders and receivers; close represents an explicit channel operation, while revoke represents owner-scope disposal.
 
 ## Failure
 
@@ -169,6 +189,6 @@ The minimal execution model is stepwise progression. Repeated interpretation of 
 - `waiting`
 - `exited`
 
-`cede` means cooperative yielding. `waiting` means waiting on a future, message, or another blocking condition.
+`cede` means cooperative yielding. `waiting` means waiting on a future, channel operation, or another blocking condition.
 
 The FIFO queue is the default minimal scheduling loop. More advanced schedulers build on top of these semantics.

@@ -26,9 +26,9 @@ type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 
 In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
 
-## Result Channels
+## Result Model
 
-The primary difference between host and kernel is not the set of capabilities, but the result channel.
+The host layer adapts kernel result values into application-facing values and exceptions.
 
 Typical rewrites include:
 
@@ -65,7 +65,7 @@ The host layer uses `fromFailure(...)` for unified mapping:
 - `scope` -> `ScopeError`
 - `external` -> the original `Error` or `ExternalError`
 
-Here, `ScopeError` means that the caller is no longer observing a single raw exception, but the structural fact that a scope converged as a failure with that cause.
+Here, `ScopeError` means the caller observes the structural fact that a scope converged as a failure with that cause.
 
 The original cause lives at:
 
@@ -94,7 +94,7 @@ Result semantics:
 - `status`
 - `closed`
 
-The focus here is the host-side runtime boundary, not a second explanation of kernel scope internals.
+The focus here is the host-side runtime boundary. Kernel scope internals remain in the semantic baseline.
 
 Closing semantics:
 
@@ -120,7 +120,7 @@ Closing semantics:
 
 `until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
 
-Together, these three entries reconnect browser or JavaScript host objects back into convergence channels the `Executor` can consume.
+Together, these three entries translate browser or JavaScript host effects into future convergence the `Executor` can observe.
 
 ## Host Form of Autonomous Governance
 

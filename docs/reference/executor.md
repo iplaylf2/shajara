@@ -21,7 +21,7 @@ const executor = createExecutor(bindTurn);
 
 The executor introduces `ExecutionScopeRef` on top of `ScopeRef`.
 
-It is not a new semantic object. It is a scope reference that can serve as an execution entry and an external control target. What matters here is not what a scope is, but which scopes the `Executor` registers and exposes as entries that can be `launch`ed and `cancel`ed.
+It is a scope reference that can serve as an execution entry and an external control target. The `Executor` registers selected scopes as entries that can be `launch`ed and `cancel`ed.
 
 The executor itself exposes one long-lived root entry:
 
@@ -48,7 +48,7 @@ interface Executor extends LaunchHandle<never> {
 
 `launch(...)` creates a new entry computation under a given `ExecutionScopeRef` and returns its `LaunchHandle`.
 
-If the target scope is no longer valid or no longer open, it returns `none`.
+If the target scope is invalid or closed, it returns `none`.
 
 Each `launch` first establishes an entry scope with `failureMode: "contain"`, then runs the target `ritual` within that boundary. `LaunchHandle.scope` refers to that entry scope.
 
@@ -85,14 +85,14 @@ The executor itself is also the `LaunchHandle` view of the root scope, so it exp
 `settle(futureSettle, result)` writes a result into a running `future` from outside the execution environment.
 
 - returns `true`: the injection was accepted
-- returns `false`: the `future` already converged, or the environment can no longer accept this injection
+- returns `false`: the `future` already converged, or the environment rejects the injection
 
 ### scope cancellation
 
 `cancel(scope)` requests cancellation for an execution-entry scope from outside the execution environment.
 
 - returns `true`: the cancellation request was accepted
-- returns `false`: the scope is invalid, unregistered, or no longer open
+- returns `false`: the scope is invalid, unregistered, or closed
 
 ## Slice Progression
 
@@ -123,7 +123,7 @@ interface Slice {
 
 ## Autonomy
 
-`autonomy` adds governance capabilities to selected scopes within the `Executor`. It does not rewrite the basic semantics of `Scope`; it only changes who schedules a scope and when additional adjudication is needed to reclaim a closing scope.
+`autonomy` adds governance capabilities to selected scopes within the `Executor`. Scope semantics still come from the semantic baseline; autonomy governs scheduling ownership and adjudication for closing scopes.
 
 ### `scheduler`
 
@@ -145,7 +145,7 @@ interface Reaper {
 }
 ```
 
-When a `closing` scope cannot converge naturally in time, the `Executor` can submit it to a `reaper` for adjudication:
+When natural convergence stalls for a `closing` scope, the `Executor` can submit it to a `reaper` for adjudication:
 
 - return `none`: keep waiting for natural convergence
 - return `some(failure)`: initiate failure convergence for the target scope with that failure
