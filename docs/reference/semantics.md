@@ -27,7 +27,7 @@ The public sigil kinds include:
 - lifecycle: `cancel`, `cede`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
-- channel: `channel`, `close`, `send`, `receive`
+- channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - introspection: `self`
 
 ## Structural Objects
@@ -90,7 +90,7 @@ When the owner scope finishes, any unfinished futures converge uniformly as `can
 
 ### `Channel`
 
-`channel<T>(capacity)` creates a channel owned by the current scope and returns a `ChannelHandle<T>`:
+`channel<T>(capacity, overloadRewrite?)` creates a channel owned by the current scope and returns a `ChannelHandle<T>`:
 
 ```ts
 type ChannelHandle<T> = readonly [receiver: ChannelReceiver<T>, sender: ChannelSender<T>];
@@ -98,8 +98,8 @@ type ChannelHandle<T> = readonly [receiver: ChannelReceiver<T>, sender: ChannelS
 
 The two endpoints separate read and write authority:
 
-- `ChannelReceiver<T>` is accepted by `receive(receiver)`
-- `ChannelSender<T>` is accepted by `send(sender, value)`
+- `ChannelReceiver<T>` is accepted by `receive(receiver)` and `tryReceive(receiver)`
+- `ChannelSender<T>` is accepted by `send(sender, value)` and `trySend(sender, value)`
 - either endpoint is accepted by `close(endpoint)`
 
 Valid capacities define the buffering model:
@@ -110,15 +110,30 @@ Valid capacities define the buffering model:
 
 A negative or `NaN` capacity is invalid and halts with a `channel` failure.
 
-Channel delivery is:
+On an overloaded finite channel, `overloadRewrite` may rewrite the current buffer before
+the incoming value is accepted:
+
+```ts
+type OverloadRewrite<T> = (buffer: readonly T[], incoming: T) => readonly T[];
+```
+
+The incoming value is always appended after the rewrite if capacity remains available. The
+default rewrite returns `buffer`, which preserves the normal blocking behavior.
+
+Channel delivery remains:
 
 - FIFO
 - single-delivery per value
-- blocking until the channel is ready for the requested operation
 
-`send(sender, value)` blocks until the value is accepted, then returns `{ kind: "sent" }`. A terminal channel returns `{ kind: "closed" }` or `{ kind: "revoked" }`.
+Send and receive operations each have blocking and non-blocking forms:
 
-`receive(receiver)` blocks until a value or terminal channel state is available. It returns `{ kind: "value", value }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`.
+- `send(sender, value)` blocks until the value is accepted, then returns `{ kind: "sent" }`
+- `trySend(sender, value)` never blocks; it returns `some({ kind: "sent" })`, `none`, or a terminal state wrapped in `some`
+- `receive(receiver)` blocks until a value or terminal channel state is available
+- `tryReceive(receiver)` never blocks; it returns `some({ kind: "value", value })`, `none`, or a terminal state wrapped in `some`
+
+Terminal channel states are `{ kind: "closed" }` and `{ kind: "revoked" }`. A successful
+receive returns `{ kind: "value", value }`.
 
 `close(endpoint)` closes the channel explicitly. A scope that finishes while it still owns open channels revokes them. Closing and revocation both wake blocked senders and receivers; close represents an explicit channel operation, while revoke represents owner-scope disposal.
 

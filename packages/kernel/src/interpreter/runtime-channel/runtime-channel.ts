@@ -2,14 +2,17 @@ import type {
   ChannelHandle,
   ChannelReceiver,
   ChannelSender,
+  OverloadRewrite,
   ReceiveResult,
   SendResult,
 } from "#/sigils/index";
 import type { KEY_TOKEN, Suppressor } from "#/contracts";
+import { option } from "fp-ts";
 
 export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSender<Value> {
   public constructor(
     private readonly capacity: number,
+    private readonly overloadRewrite: OverloadRewrite<Value>,
     private readonly onDisposed: () => void,
   ) {
     this.#kind = channelKindOf(capacity);
@@ -27,23 +30,27 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
     this.#dispose("closed", suppressor);
   }
 
-  public receiveNonBlock(suppressor: Suppressor): ReceiveResult<Value> {
+  public tryReceive(suppressor: Suppressor): option.Option<ReceiveResult<Value>> {
     if (this.#buffer.length > EMPTY_SIZE) {
       const value = this.#buffer.shift()!;
 
       this.#fillAvailableBuffer(suppressor);
 
-      return { kind: "value", value };
+      return option.some({ kind: "value", value });
     }
 
     const sender = takeFirst(this.#senders);
     if (sender) {
       sender.settle({ kind: "sent" }, suppressor);
 
-      return { kind: "value", value: sender.value! };
+      return option.some({ kind: "value", value: sender.value! });
     }
 
-    return { kind: this.#status } as ReceiveResult<Value>;
+    if (this.#status === "open") {
+      return option.none;
+    }
+
+    return option.some({ kind: this.#status });
   }
 
   public enqueueReceiver(receiver: unknown, settle: ChannelSettler<ReceiveResult<Value>>): void {
@@ -54,21 +61,29 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
     this.#receivers.delete(receiver);
   }
 
-  public sendNonBlock(value: Value, suppressor: Suppressor): SendResult {
+  public trySend(value: Value, suppressor: Suppressor): option.Option<SendResult> {
     if (this.#status !== "open") {
-      return { kind: this.#status };
+      return option.some({ kind: this.#status });
     }
 
     const receiver = takeFirst(this.#receivers);
     if (receiver) {
       receiver({ kind: "value", value }, suppressor);
 
-      return { kind: "sent" };
+      return option.some({ kind: "sent" });
     }
 
-    this.#buffer.push(value);
+    if (this.#buffer.length < this.capacity) {
+      this.#buffer.push(value);
 
-    return { kind: "sent" };
+      return option.some({ kind: "sent" });
+    }
+
+    if (this.#tryAcceptOverload(value, suppressor)) {
+      return option.some({ kind: "sent" });
+    }
+
+    return option.none;
   }
 
   public enqueueSender(sender: unknown, settle: ChannelSettler<SendResult>, value: Value): void {
@@ -89,14 +104,6 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
     };
   }
 
-  public get isReceiveReady(): boolean {
-    return this.#status !== "open" || this.#isReadable;
-  }
-
-  public get isSendReady(): boolean {
-    return this.#status !== "open" || this.#isWritable;
-  }
-
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: ChannelReceiver<Value>[typeof KEY_TOKEN] &
     ChannelSender<Value>[typeof KEY_TOKEN];
@@ -106,11 +113,35 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
       return;
     }
 
-    const sender = takeFirst(this.#senders);
-    if (sender) {
+    while (this.#buffer.length < this.capacity && EMPTY_SIZE < this.#senders.size) {
+      const sender = takeFirst(this.#senders)!;
       this.#buffer.push(sender.value);
       sender.settle({ kind: "sent" }, suppressor);
     }
+  }
+
+  #tryAcceptOverload(value: Value, suppressor: Suppressor): boolean {
+    const buffer = this.overloadRewrite(this.#buffer, value);
+
+    if (buffer.length > this.capacity) {
+      return false;
+    }
+
+    this.#buffer = buffer as Value[];
+
+    if (this.#buffer.length === this.capacity) {
+      return false;
+    }
+
+    this.#fillAvailableBuffer(suppressor);
+
+    if (this.#buffer.length < this.capacity) {
+      this.#buffer.push(value);
+
+      return true;
+    }
+
+    return this.#tryAcceptOverload(value, suppressor);
   }
 
   #dispose(status: Exclude<ChannelStatus, "open">, suppressor: Suppressor): void {
@@ -138,14 +169,6 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
 
     this.#receivers.clear();
     this.#senders.clear();
-  }
-
-  get #isReadable(): boolean {
-    return this.#buffer.length + this.#senders.size > EMPTY_SIZE;
-  }
-
-  get #isWritable(): boolean {
-    return this.capacity - this.#buffer.length + this.#receivers.size > EMPTY_SIZE;
   }
 
   readonly #kind: ChannelKind;

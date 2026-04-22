@@ -51,10 +51,6 @@ export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey
     return [this, this];
   }
 
-  public get isSettled(): boolean {
-    return this.#result !== null;
-  }
-
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: FutureKey<Result>[typeof KEY_TOKEN] &
     FutureSettleKey<Result>[typeof KEY_TOKEN];

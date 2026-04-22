@@ -56,7 +56,7 @@ The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
 - lifecycle: `cancel`, `cede`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
-- channel: `channel`, `close`, `send`, `receive`
+- channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - introspection: `self`
 
 ## Host Runtime Entries
@@ -185,9 +185,11 @@ Kernel primitives keep failure and terminal states in explicit return values:
 - kernel `wait(future)` returns `Either<FailureShape, T>`
 - kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
-- kernel `channel(capacity)` returns `[ChannelReceiver<T>, ChannelSender<T>]`
+- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T>, ChannelSender<T>]`
 - kernel `send(sender, value)` returns `{ kind: "sent" | "closed" | "revoked" }`
 - kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`
+- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" | "closed" | "revoked" }>`
+- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed" } | { kind: "revoked" }>`
 - kernel `close(endpoint)` returns `void`
 
 When consuming kernel directly, callers handle those values in band.

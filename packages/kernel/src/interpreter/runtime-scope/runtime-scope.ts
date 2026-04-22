@@ -13,7 +13,7 @@ import type {
   ScopeRef,
   Suppressor,
 } from "#/contracts";
-import type { ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
+import type { OverloadRewrite, ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
@@ -181,8 +181,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return future;
   }
 
-  public createChannel<Value>(capacity: number): RuntimeChannel<Value> {
-    const channel = new RuntimeChannel<Value>(capacity, () => this.#channels.delete(channel));
+  public createChannel<Value>(
+    capacity: number,
+    overloadRewrite: OverloadRewrite<Value>,
+  ): RuntimeChannel<Value> {
+    const channel = new RuntimeChannel<Value>(capacity, overloadRewrite, () =>
+      this.#channels.delete(channel),
+    );
 
     this.#channels.add(channel);
 

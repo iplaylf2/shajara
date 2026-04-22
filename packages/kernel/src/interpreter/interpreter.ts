@@ -2,6 +2,7 @@
 import type {
   ChannelReceiver,
   ChannelSender,
+  OverloadRewrite,
   ProcessDescriptor,
   ReceiveResult,
   ScopeDescriptor,
@@ -282,7 +283,7 @@ export class Interpreter {
         return processCededStep();
       }
       case "channel": {
-        const runtimeChannel = channel(scope, sigil.capacity);
+        const runtimeChannel = channel(scope, sigil.capacity, sigil.overloadRewrite);
         this.#touch(runtimeChannel);
 
         accept(runtimeChannel.handle());
@@ -321,11 +322,9 @@ export class Interpreter {
       }
       case "receive": {
         const runtimeChannel = this.#resolve(sigil.receiver);
-
-        if (runtimeChannel.isReceiveReady) {
-          const result = receiveNonBlock(runtimeChannel, suppressor);
-
-          accept(result);
+        const result = tryReceive(runtimeChannel, suppressor);
+        if (option.isSome(result)) {
+          accept(result.value);
           return processInterpretedStep();
         }
 
@@ -338,11 +337,9 @@ export class Interpreter {
       }
       case "send": {
         const runtimeChannel = this.#resolve(sigil.sender);
-
-        if (runtimeChannel.isSendReady) {
-          const result = sendNonBlock(runtimeChannel, sigil.value, suppressor);
-
-          accept(result);
+        const result = trySend(runtimeChannel, sigil.value, suppressor);
+        if (option.isSome(result)) {
+          accept(result.value);
           return processInterpretedStep();
         }
 
@@ -369,18 +366,31 @@ export class Interpreter {
         accept(spawnedProcess);
         return processInterpretedStep();
       }
+      case "tryReceive": {
+        const runtimeChannel = this.#resolve(sigil.receiver);
+        const result = tryReceive(runtimeChannel, suppressor);
+
+        accept(result);
+        return processInterpretedStep();
+      }
+      case "trySend": {
+        const runtimeChannel = this.#resolve(sigil.sender);
+        const result = trySend(runtimeChannel, sigil.value, suppressor);
+
+        accept(result);
+        return processInterpretedStep();
+      }
       case "unbind": {
         unbind(scope, sigil.key);
+
         accept(VOID);
         return processInterpretedStep();
       }
       case "wait": {
         const runtimeFuture = this.#resolve(sigil.future);
-
-        if (runtimeFuture.isSettled) {
-          const result = waitNonBlock(runtimeFuture);
-
-          accept(result);
+        const result = poll(runtimeFuture);
+        if (option.isSome(result)) {
+          accept(result.value);
           return processInterpretedStep();
         }
 
@@ -483,8 +493,12 @@ function cancel(scope: RuntimeScope): ScopeSync<void> {
   return scope.cancel();
 }
 
-function channel<Value>(scope: RuntimeScope, capacity: number): RuntimeChannel<Value> {
-  return scope.createChannel<Value>(capacity);
+function channel<Value>(
+  scope: RuntimeScope,
+  capacity: number,
+  overloadRewrite: OverloadRewrite<Value>,
+): RuntimeChannel<Value> {
+  return scope.createChannel<Value>(capacity, overloadRewrite);
 }
 
 function close(runtimeChannel: RuntimeChannel<unknown>, suppressor: Suppressor): void {
@@ -527,13 +541,6 @@ function poll<Result>(runtimeFuture: RuntimeFuture<Result>): option.Option<Futur
   return runtimeFuture.poll();
 }
 
-function receiveNonBlock<Value>(
-  runtimeChannel: RuntimeChannel<Value>,
-  suppressor: Suppressor,
-): ReceiveResult<Value> {
-  return runtimeChannel.receiveNonBlock(suppressor);
-}
-
 function receive(
   scope: RuntimeScope,
   runtimeChannel: RuntimeChannel<unknown>,
@@ -546,14 +553,6 @@ function self(process: RuntimeProcessRunner<unknown>): SelfHandle {
   return process.selfHandle();
 }
 
-function sendNonBlock<Value>(
-  runtimeChannel: RuntimeChannel<Value>,
-  value: Value,
-  suppressor: Suppressor,
-): SendResult {
-  return runtimeChannel.sendNonBlock(value, suppressor);
-}
-
 function send<Value>(
   scope: RuntimeScope,
   runtimeChannel: RuntimeChannel<Value>,
@@ -563,10 +562,19 @@ function send<Value>(
   return scope.send(runtimeChannel, value, process);
 }
 
-function waitNonBlock<Result>(runtimeFuture: RuntimeFuture<Result>): FutureResult<Result> {
-  const pollResult = runtimeFuture.poll() as option.Some<FutureResult<Result>>;
+function tryReceive<Value>(
+  runtimeChannel: RuntimeChannel<Value>,
+  suppressor: Suppressor,
+): option.Option<ReceiveResult<Value>> {
+  return runtimeChannel.tryReceive(suppressor);
+}
 
-  return pollResult.value;
+function trySend<Value>(
+  runtimeChannel: RuntimeChannel<Value>,
+  value: Value,
+  suppressor: Suppressor,
+): option.Option<SendResult> {
+  return runtimeChannel.trySend(value, suppressor);
 }
 
 function wait(
