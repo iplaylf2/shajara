@@ -102,11 +102,13 @@ The two endpoints separate read and write authority:
 - `ChannelSender<T>` is accepted by `send(sender, value)`
 - either endpoint is accepted by `close(endpoint)`
 
-The capacity controls the buffering model:
+Valid capacities define the buffering model:
 
 - `0`: rendezvous channel; send and receive synchronize directly
 - finite positive number: bounded channel with that many buffered values
 - `Infinity`: unbounded channel
+
+A negative or `NaN` capacity is invalid and halts with a `channel` failure.
 
 Channel delivery is:
 
@@ -122,9 +124,10 @@ Channel delivery is:
 
 ## Failure
 
-There are four failure kinds:
+There are five failure kinds:
 
 - `canceled`
+- `channel`
 - `external`
 - `interrupted`
 - `scope`
@@ -132,6 +135,7 @@ There are four failure kinds:
 Their meanings are:
 
 - `canceled`: convergence along the cancellation path
+- `channel`: a channel primitive rejected an invalid operation before submitting it to the runtime
 - `external`: an external exception or rejected value mapped into a failure result
 - `interrupted`: an out-of-band failure in scheduling or governance interrupted progression
 - `scope`: a scope converged structurally as a failure during `closing`

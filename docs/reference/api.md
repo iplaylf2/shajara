@@ -40,9 +40,9 @@ This package is intended for lower-level integrations. Its root entry re-exports
 Names available from the root entry include:
 
 - contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
-- failures: `Failure`, `canceledFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
+- failures: `Failure`, `canceledFailure`, `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
 - executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
-- primitives: the corresponding `Wisp` primitives
+- primitives: `Wisp` primitives for concurrency, futures, channels, context, lifecycle, and introspection
 
 Public subpaths:
 
@@ -170,10 +170,14 @@ yield * until(thunk);
 
 ## Kernel Primitive Result Model
 
-The main interface difference between `@shajara/kernel` and host lies in the result model:
+Kernel primitives keep failure and terminal states in explicit return values:
 
 - kernel `wait(future)` returns `Either<FailureShape, T>`
 - kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
+- kernel `channel(capacity)` returns `[ChannelReceiver<T>, ChannelSender<T>]`
+- kernel `send(sender, value)` returns `{ kind: "sent" | "closed" | "revoked" }`
+- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`
+- kernel `close(endpoint)` returns `void`
 
-When consuming kernel directly, these explicit result values are the result model.
+When consuming kernel directly, callers handle those values in band.
