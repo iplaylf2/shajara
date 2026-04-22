@@ -1,4 +1,3 @@
-// oxlint-disable class-methods-use-this
 import type {
   ChannelHandle,
   ChannelReceiver,
@@ -7,75 +6,192 @@ import type {
   SendResult,
 } from "#/sigils/index";
 import type { KEY_TOKEN, Suppressor } from "#/contracts";
-import type { RuntimeProcessKeeper } from "#/interpreter/runtime-process";
 
 export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSender<Value> {
   public constructor(
     private readonly capacity: number,
-    private readonly dispose: () => void,
+    private readonly onDisposed: () => void,
   ) {
-    // oxlint-disable-next-line no-void
-    void this.capacity;
+    this.#kind = channelKindOf(capacity);
   }
 
   public handle(): ChannelHandle<Value> {
     return [this, this];
   }
 
-  public close(_suppressor: Suppressor): void {
-    throw new Error("Channel runtime is not implemented yet.");
+  public close(suppressor: Suppressor): void {
+    if (this.#status !== "open") {
+      return;
+    }
+
+    this.#dispose("closed", suppressor);
   }
 
-  public receiveNonBlock(_suppressor: Suppressor): ReceiveResult<Value> {
-    throw new Error("Channel runtime is not implemented yet.");
+  public receiveNonBlock(suppressor: Suppressor): ReceiveResult<Value> {
+    if (this.#buffer.length > EMPTY_SIZE) {
+      const value = this.#buffer.shift()!;
+
+      this.#fillAvailableBuffer(suppressor);
+
+      return { kind: "value", value };
+    }
+
+    const sender = takeFirst(this.#senders);
+    if (sender) {
+      sender.settle({ kind: "sent" }, suppressor);
+
+      return { kind: "value", value: sender.value! };
+    }
+
+    return { kind: this.#status } as ReceiveResult<Value>;
   }
 
-  public sendNonBlock(_value: Value, _suppressor: Suppressor): SendResult {
-    throw new Error("Channel runtime is not implemented yet.");
+  public enqueueReceiver(receiver: unknown, settle: ChannelSettler<ReceiveResult<Value>>): void {
+    this.#receivers.set(receiver, settle);
   }
 
-  public enqueueReceiver(
-    _process: RuntimeProcessKeeper,
-    _settle: ChannelSettler<ReceiveResult<Value>>,
-  ): void {
-    throw new Error("Channel runtime is not implemented yet.");
+  public discardReceiver(receiver: unknown): void {
+    this.#receivers.delete(receiver);
   }
 
-  public discardReceiver(_process: RuntimeProcessKeeper): void {
-    throw new Error("Channel runtime is not implemented yet.");
+  public sendNonBlock(value: Value, suppressor: Suppressor): SendResult {
+    if (this.#status !== "open") {
+      return { kind: this.#status };
+    }
+
+    const receiver = takeFirst(this.#receivers);
+    if (receiver) {
+      receiver({ kind: "value", value }, suppressor);
+
+      return { kind: "sent" };
+    }
+
+    this.#buffer.push(value);
+
+    return { kind: "sent" };
   }
 
-  public enqueueSender(
-    _process: RuntimeProcessKeeper,
-    _settle: ChannelSettler<SendResult>,
-    _value: Value,
-  ): void {
-    throw new Error("Channel runtime is not implemented yet.");
+  public enqueueSender(sender: unknown, settle: ChannelSettler<SendResult>, value: Value): void {
+    this.#senders.set(sender, { settle, value });
   }
 
-  public discardSender(_process: RuntimeProcessKeeper): void {
-    throw new Error("Channel runtime is not implemented yet.");
+  public discardSender(sender: unknown): void {
+    this.#senders.delete(sender);
   }
 
   public revoke(): ChannelNotification {
-    this.dispose();
+    if (this.#status !== "open") {
+      return () => [];
+    }
 
-    throw new Error("Channel runtime is not implemented yet.");
+    return (suppressor) => {
+      this.#dispose("revoked", suppressor);
+    };
   }
 
-  public get isReadable(): boolean {
-    throw new Error("Channel runtime is not implemented yet.");
+  public get isReceiveReady(): boolean {
+    return this.#status !== "open" || this.#isReadable;
   }
 
-  public get isWritable(): boolean {
-    throw new Error("Channel runtime is not implemented yet.");
+  public get isSendReady(): boolean {
+    return this.#status !== "open" || this.#isWritable;
   }
 
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: ChannelReceiver<Value>[typeof KEY_TOKEN] &
     ChannelSender<Value>[typeof KEY_TOKEN];
+
+  #fillAvailableBuffer(suppressor: Suppressor): void {
+    if (this.#kind !== "bounded") {
+      return;
+    }
+
+    const sender = takeFirst(this.#senders);
+    if (sender) {
+      this.#buffer.push(sender.value);
+      sender.settle({ kind: "sent" }, suppressor);
+    }
+  }
+
+  #dispose(status: Exclude<ChannelStatus, "open">, suppressor: Suppressor): void {
+    this.#status = status;
+
+    this.#flush(status, suppressor);
+    this.onDisposed();
+  }
+
+  #flush(status: Exclude<ChannelStatus, "open">, suppressor: Suppressor): void {
+    while (this.#receivers.size > EMPTY_SIZE && this.#buffer.length > EMPTY_SIZE) {
+      const receiver = takeFirst(this.#receivers)!;
+      const value = this.#buffer.shift()!;
+
+      receiver({ kind: "value", value }, suppressor);
+    }
+
+    for (const settle of this.#receivers.values()) {
+      settle({ kind: status }, suppressor);
+    }
+
+    for (const { settle } of this.#senders.values()) {
+      settle({ kind: status }, suppressor);
+    }
+
+    this.#receivers.clear();
+    this.#senders.clear();
+  }
+
+  get #isReadable(): boolean {
+    return this.#buffer.length + this.#senders.size > EMPTY_SIZE;
+  }
+
+  get #isWritable(): boolean {
+    return this.capacity - this.#buffer.length + this.#receivers.size > EMPTY_SIZE;
+  }
+
+  readonly #kind: ChannelKind;
+  #status: ChannelStatus = "open";
+  #buffer: Value[] = [];
+  // ECMAScript Map preserves insertion order; waiter maps are FIFO queues keyed for discard.
+  readonly #receivers = new Map<unknown, ChannelSettler<ReceiveResult<Value>>>();
+  readonly #senders = new Map<unknown, ChannelSenderWaiter<Value>>();
 }
 
 export type ChannelSettler<Result> = (result: Result, suppressor: Suppressor) => void;
 
 export type ChannelNotification = (suppressor: Suppressor) => void;
+
+function channelKindOf(capacity: number): ChannelKind {
+  switch (capacity) {
+    case RENDEZVOUS_CAPACITY:
+      return "rendezvous";
+    case Infinity:
+      return "unbounded";
+    default:
+      return "bounded";
+  }
+}
+
+function takeFirst<Key, Value>(items: Map<Key, Value>): Value | null {
+  const [first] = items;
+
+  if (first) {
+    const [key, value] = first;
+    items.delete(key);
+
+    return value;
+  }
+
+  return null;
+}
+
+const EMPTY_SIZE = 0;
+const RENDEZVOUS_CAPACITY = 0;
+
+interface ChannelSenderWaiter<out Value> {
+  readonly settle: ChannelSettler<SendResult>;
+  readonly value: Value;
+}
+
+type ChannelKind = "bounded" | "rendezvous" | "unbounded";
+
+type ChannelStatus = "closed" | "open" | "revoked";

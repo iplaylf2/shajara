@@ -564,8 +564,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #children = new Set<RuntimeScope>();
   readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
-  readonly #derivedFutures = new Set<RuntimeFuture<unknown>>();
-  readonly #channels = new Set<RuntimeChannel<unknown>>();
+  readonly #derivedFutures = new Set<RuntimeFuture<any>>();
+  readonly #channels = new Set<RuntimeChannel<any>>();
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 

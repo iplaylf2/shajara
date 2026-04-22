@@ -253,6 +253,7 @@ export class Interpreter {
     switch (kind) {
       case "bind": {
         bind(scope, sigil.key, sigil.value);
+
         accept(VOID);
         return processInterpretedStep();
       }
@@ -265,6 +266,7 @@ export class Interpreter {
           suppressor,
         );
         const childScope = this.#resolve(child);
+
         accept({
           process: childScope.entryProcess,
           scope: childScope,
@@ -320,7 +322,7 @@ export class Interpreter {
       case "receive": {
         const runtimeChannel = this.#resolve(sigil.receiver);
 
-        if (runtimeChannel.isReadable) {
+        if (runtimeChannel.isReceiveReady) {
           const result = receiveNonBlock(runtimeChannel, suppressor);
 
           accept(result);
@@ -337,7 +339,7 @@ export class Interpreter {
       case "send": {
         const runtimeChannel = this.#resolve(sigil.sender);
 
-        if (runtimeChannel.isWritable) {
+        if (runtimeChannel.isSendReady) {
           const result = sendNonBlock(runtimeChannel, sigil.value, suppressor);
 
           accept(result);
@@ -353,6 +355,7 @@ export class Interpreter {
       }
       case "settle": {
         settle(this.#resolve(sigil.futureSettle), sigil.result, suppressor);
+
         accept(VOID);
         return processInterpretedStep();
       }
@@ -531,9 +534,9 @@ function receiveNonBlock<Value>(
   return runtimeChannel.receiveNonBlock(suppressor);
 }
 
-function receive<Value>(
+function receive(
   scope: RuntimeScope,
-  runtimeChannel: RuntimeChannel<Value>,
+  runtimeChannel: RuntimeChannel<unknown>,
   process: RuntimeProcessKeeper,
 ): ScopeSync<void> {
   return scope.receive(runtimeChannel, process);

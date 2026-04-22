@@ -10,7 +10,7 @@ import type { Disposer } from "#/utils/index";
 import { option } from "fp-ts";
 import { unreachable } from "#/utils/index";
 
-export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettleKey<Result> {
+export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): option.Option<FutureResult<Result>> {
     if (this.#result) {
       return option.some(this.#result);
@@ -62,9 +62,6 @@ export class RuntimeFuture<out Result> implements FutureKey<Result>, FutureSettl
   #result: FutureResult<Result> | null = null;
 }
 
-export type FutureSettler<out Result> = (
-  result: FutureResult<Result>,
-  suppressor: Suppressor,
-) => void;
+export type FutureSettler<Result> = (result: FutureResult<Result>, suppressor: Suppressor) => void;
 
 export type FutureNotification = (suppressor: Suppressor) => void;
