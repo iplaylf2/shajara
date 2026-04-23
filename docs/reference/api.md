@@ -16,8 +16,8 @@ Names available from the root entry include:
 
 - runtime entries: `run`, `createScope`
 - host operations: `action`, `sleep`, `until`
-- error types: `ShajaraError`, `CanceledError`, `ExternalError`, `InterruptedError`, `ScopeError`
-- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`
+- error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
+- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
 - other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
@@ -25,6 +25,7 @@ The subpath `@shajara/host/primitives` exposes:
 
 - concurrency and boundaries: `all`, `autonomy`, `enclose`, `guard`, `race`, `resource`, `resumable`, `spawn`
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
+- channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
 - control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
 
@@ -39,15 +40,24 @@ This package is intended for lower-level integrations. Its root entry re-exports
 
 Names available from the root entry include:
 
-- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `MessageKey`, `contextKey`, `messageKey`
-- failures: `Failure`, `canceledFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
+- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
+- failures: `Failure`, `canceledFailure`, `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
 - executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
-- primitives: the corresponding `Wisp` primitives
+- primitives: `Wisp` primitives for concurrency, futures, channels, context, lifecycle, and introspection
 
 Public subpaths:
 
 - `@shajara/kernel/sigils`
 - `@shajara/kernel/utils`
+
+The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
+
+- context: `bind`, `lookup`, `unbind`
+- lifecycle: `cancel`, `cede`, `defer`, `halt`
+- concurrency: `branch`, `spawn`
+- future: `future`, `poll`, `settle`, `wait`
+- channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
+- introspection: `self`
 
 ## Host Runtime Entries
 
@@ -122,6 +132,8 @@ yield * until(thunk);
 
 ## Host Primitive Return Values
 
+A `Presence<T>` return value is `[true, value]` when a value is present and `[false]` when no value is present.
+
 ### Concurrency and boundaries
 
 | Primitive   | Return value       |
@@ -140,31 +152,48 @@ yield * until(thunk);
 | Primitive     | Return value                           |
 | ------------- | -------------------------------------- |
 | `future`      | `[RiteFuture<T>, RiteFutureSettle<T>]` |
-| `poll`        | `T \| undefined`                       |
+| `poll`        | `Presence<T>`                          |
 | `settle`      | `void`                                 |
 | `settleError` | `void`                                 |
 | `wait`        | `T`                                    |
 
+### Channel primitives
+
+| Primitive    | Return value                             |
+| ------------ | ---------------------------------------- |
+| `channel`    | `[ChannelReceiver<T>, ChannelSender<T>]` |
+| `send`       | `void`                                   |
+| `receive`    | `T`                                      |
+| `trySend`    | `boolean`                                |
+| `tryReceive` | `Presence<T>`                            |
+| `close`      | `void`                                   |
+
 ### Context, control, and lifecycle
 
-| Primitive | Return value     |
-| --------- | ---------------- |
-| `bind`    | `void`           |
-| `lookup`  | `T \| undefined` |
-| `unbind`  | `void`           |
-| `self`    | `SelfHandle`     |
-| `halt`    | `never`          |
-| `cancel`  | `never`          |
-| `cede`    | `void`           |
-| `defer`   | `void`           |
-| `park`    | `never`          |
+| Primitive | Return value  |
+| --------- | ------------- |
+| `bind`    | `void`        |
+| `lookup`  | `Presence<T>` |
+| `unbind`  | `void`        |
+| `self`    | `SelfHandle`  |
+| `halt`    | `never`       |
+| `cancel`  | `never`       |
+| `cede`    | `void`        |
+| `defer`   | `void`        |
+| `park`    | `never`       |
 
 ## Kernel Primitive Result Model
 
-The main interface difference between `@shajara/kernel` and host lies in the result model:
+Kernel primitives keep failure and terminal states in explicit return values:
 
 - kernel `wait(future)` returns `Either<FailureShape, T>`
 - kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
+- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T>, ChannelSender<T>]`
+- kernel `send(sender, value)` returns `{ kind: "sent" | "closed" | "revoked" }`
+- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`
+- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" | "closed" | "revoked" }>`
+- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed" } | { kind: "revoked" }>`
+- kernel `close(endpoint)` returns `void`
 
-When consuming kernel directly, these explicit result values are the result model.
+When consuming kernel directly, callers handle those values in band.

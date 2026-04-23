@@ -1,2 +1,3 @@
+export * from "./channel";
 export * from "./process";
-export * from "./resumable";
+export * from "./recovery";

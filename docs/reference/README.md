@@ -2,12 +2,12 @@
 
 ## Reference Roles
 
-| Document                     | Role                                                                                                     |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [semantics.md](semantics.md) | Semantic baseline. Defines `Wisp`, `Sigil`, `Scope`, `Process`, `Future`, failure, and convergence.      |
-| [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, `launch(...)`, `Pacer`, and autonomy.     |
-| [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, error mapping, and host integration. |
-| [api.md](api.md)             | Public interface reference. Covers exports, import paths, result shapes, and public entry points.        |
+| Document                     | Role                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [semantics.md](semantics.md) | Semantic baseline. Defines `Wisp`, `Sigil`, `Scope`, `Process`, `Future`, channel, failure, and convergence. |
+| [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, `launch(...)`, `Pacer`, and autonomy.         |
+| [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, error mapping, and host integration.     |
+| [api.md](api.md)             | Public interface reference. Covers exports, import paths, result shapes, and public entry points.            |
 
 ## Dependency Direction
 
@@ -22,13 +22,6 @@ semantics -> executor -> host -> api
 - [host.md](host.md) builds on `semantics.md` and `executor.md`.
 - [api.md](api.md) summarizes public interfaces and observable results.
 
-## Reading Order
-
-1. [semantics.md](semantics.md)
-2. [executor.md](executor.md)
-3. [host.md](host.md)
-4. [api.md](api.md)
-
 ## Concept Placement
 
 The same concept appears in different documents from different angles:
@@ -40,11 +33,27 @@ The same concept appears in different documents from different angles:
 
 ## Core Terms
 
-The following terms distinguish concepts that are close to each other but not identical:
+The glossary is grouped by the model layer that owns each term.
+
+### Runtime Boundary
 
 - "Entry" means a runnable boundary that can be started from the outside, such as `launch(...)`, `run(...)`, or `createScope().run(...)`.
+
+### Communication
+
+- "Channel" means an explicit runtime communication object with receiver and sender endpoints.
+
+### Convergence and Lifecycle
+
 - "Convergence" means a future or scope reaching its final result.
-- "Closing" is only used for scope lifecycle and the `open`, `closing`, and `closed` states.
-- "Failure" means a failure result or failure convergence. "Forced failure" only means directly pushing a scope into failure convergence.
-- "Cancellation" only refers to the `canceled` path.
-- "Adjudication" only refers to the governance decision a `reaper` makes over a scope in the `closing` state.
+- "Closing" names the scope lifecycle path that moves from `open` through `closing` to `closed`.
+
+### Failure
+
+- "Failure" means a failure result or failure convergence.
+- "Forced failure" means directly pushing a scope into failure convergence.
+- "Cancellation" names convergence along the `canceled` path.
+
+### Governance
+
+- "Adjudication" means the governance decision a `reaper` makes over a scope in the `closing` state.

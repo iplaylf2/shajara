@@ -1,23 +1,20 @@
-import type { ECHO_TOKEN, MessageKey, ScopeRef, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts";
+import type { ChannelSender } from "./channel";
+import type { TaggedUnion } from "type-fest";
 
-export function send<Value>(
-  scope: ScopeRef<unknown>,
-  messageKey: MessageKey<Value>,
-  value: Value,
-): SendSigil<Value> {
+export function send<Value>(sender: ChannelSender<Value>, value: Value): SendSigil<Value> {
   return {
     kind: "send",
-    messageKey,
-    scope,
+    sender,
     value,
   };
 }
 
 export interface SendSigil<Value> extends SigilShape {
   readonly kind: "send";
-  readonly scope: ScopeRef<unknown>;
-  readonly messageKey: MessageKey<Value>;
+  readonly sender: ChannelSender<Value>;
   readonly value: Value;
-  // oxlint-disable-next-line no-invalid-void-type
-  readonly [ECHO_TOKEN]?: readonly [void];
+  readonly [ECHO_TOKEN]?: readonly [SendResult];
 }
+
+export type SendResult = TaggedUnion<"kind", { sent: {}; closed: {}; revoked: {} }>;

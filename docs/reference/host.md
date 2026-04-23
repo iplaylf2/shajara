@@ -26,9 +26,11 @@ type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 
 In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
 
-## Result Channels
+## Result Model
 
-The primary difference between host and kernel is not the set of capabilities, but the result channel.
+The host layer adapts kernel result values into application-facing values and exceptions.
+
+The host layer represents optional results as `Presence<T>`: `[true, value]` when a value is present and `[false]` when no value is present.
 
 Typical rewrites include:
 
@@ -36,10 +38,25 @@ Typical rewrites include:
 - host `wait(future)` returns `T` and throws on failure
 
 - kernel `lookup(key)` returns `Option<T>`
-- host `lookup(key)` returns `T | undefined`
+- host `lookup(key)` returns `Presence<T>`
+
+- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
+- host `poll(future)` returns `Presence<T>` and throws when the settled future holds a failure
 
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
 - host `enclose(ritual)` returns `T` and throws on failure
+
+- kernel `send(sender, value)` returns a terminal channel state when the channel is closed or revoked
+- host `send(sender, value)` returns `void` and throws on closed or revoked channels
+
+- kernel `receive(receiver)` returns a value or terminal channel state
+- host `receive(receiver)` returns the value and throws on closed or revoked channels
+
+- kernel `trySend(sender, value)` returns an optional channel send state
+- host `trySend(sender, value)` returns `true` when the value is accepted, `false` when the channel is not ready, and throws on closed or revoked channels
+
+- kernel `tryReceive(receiver)` returns an optional channel receive state
+- host `tryReceive(receiver)` returns `Presence<T>` and throws on closed or revoked channels
 
 As a result, `Future`, `Scope`, and `Failure` are exposed on the host side primarily as user-visible results.
 
@@ -61,11 +78,12 @@ The following entries rewrite host-side errors into kernel failures:
 The host layer uses `fromFailure(...)` for unified mapping:
 
 - `canceled` -> `CanceledError`
+- `channel` -> `ChannelError`
 - `interrupted` -> `InterruptedError`
 - `scope` -> `ScopeError`
 - `external` -> the original `Error` or `ExternalError`
 
-Here, `ScopeError` means that the caller is no longer observing a single raw exception, but the structural fact that a scope converged as a failure with that cause.
+Here, `ScopeError` means the caller observes the structural fact that a scope converged as a failure with that cause.
 
 The original cause lives at:
 
@@ -94,7 +112,7 @@ Result semantics:
 - `status`
 - `closed`
 
-The focus here is the host-side runtime boundary, not a second explanation of kernel scope internals.
+The focus here is the host-side runtime boundary. Kernel scope internals remain in the semantic baseline.
 
 Closing semantics:
 
@@ -120,7 +138,7 @@ Closing semantics:
 
 `until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
 
-Together, these three entries reconnect browser or JavaScript host objects back into convergence channels the `Executor` can consume.
+Together, these three entries translate browser or JavaScript host effects into future convergence the `Executor` can observe.
 
 ## Host Form of Autonomous Governance
 

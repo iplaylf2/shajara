@@ -1,16 +1,16 @@
-import type { Failure, RiteCoroutine, RiteFuture } from "#/contracts";
+import type { Failure, Presence, RiteCoroutine, RiteFuture } from "#/contracts";
 import { encodeRitual, unwrapEither, unwrapOption } from "#/boundary";
 import type { Either } from "@shajara/kernel/utils";
-import type { Optional } from "type-fest";
 import { poll as kernelPoll } from "@shajara/kernel";
 
-export function* poll<Result>(future: RiteFuture<Result>): RiteCoroutine<Optional<Result>> {
+export function* poll<Result>(future: RiteFuture<Result>): RiteCoroutine<Presence<Result>> {
   const outcome = yield* encodeRitual(() => kernelPoll(future))();
-  const settled = unwrapOption(outcome);
+  const result = unwrapOption(outcome);
+  const [isSettled, settled] = result;
 
-  if (settled) {
-    return unwrapEither(settled as Either<Failure, Result>) as Optional<Result>;
+  if (!isSettled) {
+    return result;
   }
 
-  return settled;
+  return [true, unwrapEither(settled as Either<Failure, Result>)];
 }

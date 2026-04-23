@@ -49,7 +49,7 @@ export class RuntimeProcess<Relic>
   public resume(input: unknown): void {
     const current = this.stateAs("waiting");
     const runner = current.stepper.current() as RuntimeProcessNextEcho<Sigil>;
-    runner.accept(input);
+    runner.accept(input as never);
     this.#state = createRunningState(current.stepper);
   }
 

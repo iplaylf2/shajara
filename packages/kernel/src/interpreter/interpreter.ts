@@ -1,12 +1,22 @@
 // oxlint-disable max-lines
 import type {
+  ChannelReceiver,
+  ChannelSender,
+  OverloadRewrite,
+  ProcessDescriptor,
+  ReceiveResult,
+  ScopeDescriptor,
+  SelfHandle,
+  SendResult,
+  Sigil,
+} from "#/sigils/index";
+import type {
   CleanupTask,
   ProvideRuntimeProcess,
   RuntimeProcessHandle,
   RuntimeProcessKeeper,
   RuntimeProcessNextEcho,
   RuntimeProcessRunner,
-  RuntimeProcessRunnerNext,
 } from "./runtime-process";
 import type {
   ContextKey,
@@ -14,14 +24,12 @@ import type {
   FutureKey,
   FutureResult,
   FutureSettleKey,
-  MessageKey,
   ProcessRef,
   Ritual,
   ScopeRef,
   Suppressor,
 } from "#/contracts";
 import type { FutureSettler, RuntimeFuture } from "./runtime-future";
-import type { ProcessDescriptor, ScopeDescriptor, SelfHandle, Sigil } from "#/sigils/index";
 import { RuntimeScope, RuntimeScopeReconciler } from "./runtime-scope";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option } from "fp-ts";
@@ -35,10 +43,12 @@ import {
 import type { Disposer } from "#/utils/index";
 import type { Failure } from "#/failures";
 import type { ProcessStep } from "./process-step";
+import type { RuntimeChannelHandle } from "./runtime-channel";
 import { RuntimeProcess } from "./runtime-process";
 import type { ScopeSync } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
+import { identity } from "fp-ts/function";
 import { unreachable } from "#/utils/index";
 
 export class Interpreter {
@@ -66,20 +76,21 @@ export class Interpreter {
         return processExitedStep(either.left(runner.stateAs(runner.status).failure));
       }
       case "running": {
-        // oxlint-disable-next-line init-declarations
-        let next: RuntimeProcessRunnerNext<Relic, Sigil>;
+        const running = runner.stateAs(runner.status);
+        const nextResult = either.tryCatch(() => running.next(), identity);
 
-        try {
-          next = runner.stateAs(runner.status).next();
-        } catch (error) {
+        if (either.isLeft(nextResult)) {
+          const scope = this.#resolve(handle.scopeRef);
           this.#reconcile(
-            handle.scopeRef,
-            halt(this.#resolve(handle.scopeRef), handle.keeper(), interruptedFailure(error)),
+            scope,
+            halt(scope, handle.keeper(), interruptedFailure(nextResult.left)),
             suppressor,
           );
 
           return processExitedStep(either.left(runner.stateAs("failed").failure));
         }
+
+        const next = nextResult.right;
 
         switch (next.kind) {
           case "echo": {
@@ -90,11 +101,7 @@ export class Interpreter {
           }
           case "relic": {
             const scope = this.#resolve(handle.scopeRef);
-            this.#reconcile(
-              handle.scopeRef,
-              scope.complete(handle.keeper(), next.relic),
-              suppressor,
-            );
+            this.#reconcile(scope, scope.complete(handle.keeper(), next.relic), suppressor);
             return processExitedStep(either.right(next.relic));
           }
         }
@@ -124,16 +131,16 @@ export class Interpreter {
   }
 
   public poll<Result>(
-    future: FutureKey<Result> | FutureSettleKey<Result>,
+    futureKey: FutureKey<Result> | FutureSettleKey<Result>,
   ): option.Option<FutureResult<Result>> {
-    return this.#resolve(future).poll();
+    return option.fromNullable(this.#resolve(futureKey).poll());
   }
 
   public wait<Result>(
-    future: FutureKey<Result> | FutureSettleKey<Result>,
+    futureKey: FutureKey<Result> | FutureSettleKey<Result>,
     onSettled: FutureSettler<Result>,
   ): Disposer {
-    return this.#resolve(future).wait(onSettled);
+    return this.#resolve(futureKey).wait(onSettled);
   }
 
   public forceFailed(scope: ScopeRef<unknown>, failure: Failure, suppressor: Suppressor): void {
@@ -234,7 +241,7 @@ export class Interpreter {
     this.#touch(this.#scopeRoot);
   }
 
-  // oxlint-disable-next-line max-lines-per-function, max-statements
+  // oxlint-disable-next-line complexity,max-lines-per-function, max-statements
   #interpret<Relic>(
     process: RuntimeProcessHandle<Relic>,
     next: RuntimeProcessNextEcho<Sigil>,
@@ -247,6 +254,7 @@ export class Interpreter {
     switch (kind) {
       case "bind": {
         bind(scope, sigil.key, sigil.value);
+
         accept(VOID);
         return processInterpretedStep();
       }
@@ -259,19 +267,35 @@ export class Interpreter {
           suppressor,
         );
         const childScope = this.#resolve(child);
+
         accept({
           process: childScope.entryProcess,
           scope: childScope,
         });
         return processInterpretedStep();
       }
+      case "cancel": {
+        this.#reconcile(scope, cancel(scope), suppressor);
+        return processExitedStep(either.left(canceledFailure));
+      }
       case "cede": {
         accept(VOID);
         return processCededStep();
       }
-      case "cancel": {
-        this.#reconcile(process.scopeRef, cancel(scope), suppressor);
-        return processExitedStep(either.left(canceledFailure));
+      case "channel": {
+        const channelHandle = channel(scope, sigil.capacity, sigil.overloadRewrite);
+        this.#touch(channelHandle);
+
+        accept(channelHandle.handle());
+        return processInterpretedStep();
+      }
+      case "close": {
+        const channelHandle = this.#resolve(sigil.endpoint);
+        const channelScope = this.#resolve(channelHandle.scope);
+        this.#reconcile(channelScope, close(channelScope, channelHandle), suppressor);
+
+        accept(VOID);
+        return processInterpretedStep();
       }
       case "defer": {
         defer(runner, (spawnCleanup) => spawnCleanup(this.#provideProcess(sigil.cleanup)));
@@ -280,18 +304,14 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "future": {
-        const future = createFuture(scope);
-        this.#touch(future);
+        const runtimeFuture = future(scope);
+        this.#touch(runtimeFuture);
 
-        accept(future.handle());
+        accept(runtimeFuture.handle());
         return processInterpretedStep();
       }
       case "halt": {
-        this.#reconcile(
-          process.scopeRef,
-          halt(scope, process.keeper(), sigil.failure as Failure),
-          suppressor,
-        );
+        this.#reconcile(scope, halt(scope, process.keeper(), sigil.failure as Failure), suppressor);
         return processExitedStep(either.left(runner.stateAs("failed").failure));
       }
       case "lookup": {
@@ -299,21 +319,58 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "poll": {
-        accept(poll(this.#resolve(sigil.future)));
+        accept(option.fromNullable(poll(this.#resolve(sigil.future))));
         return processInterpretedStep();
+      }
+      case "receive": {
+        const channelHandle = this.#resolve(sigil.receiver);
+        const channelScope = this.#resolve(channelHandle.scope);
+        const result = this.#reconcile(
+          channelScope,
+          tryReceive(channelScope, channelHandle),
+          suppressor,
+        );
+        if (result) {
+          accept(result);
+          return processInterpretedStep();
+        }
+
+        this.#reconcile(scope, receive(scope, channelHandle, process.keeper()), suppressor);
+        return processWaitingStep();
       }
       case "self": {
         accept(self(runner));
         return processInterpretedStep();
       }
+      case "send": {
+        const channelHandle = this.#resolve(sigil.sender);
+        const channelScope = this.#resolve(channelHandle.scope);
+        const result = this.#reconcile(
+          channelScope,
+          trySend(channelScope, channelHandle, sigil.value),
+          suppressor,
+        );
+        if (result) {
+          accept(result);
+          return processInterpretedStep();
+        }
+
+        this.#reconcile(
+          scope,
+          send(scope, channelHandle, sigil.value, process.keeper()),
+          suppressor,
+        );
+        return processWaitingStep();
+      }
       case "settle": {
         settle(this.#resolve(sigil.futureSettle), sigil.result, suppressor);
+
         accept(VOID);
         return processInterpretedStep();
       }
       case "spawn": {
         const spawnedProcess = this.#reconcile(
-          process.scopeRef,
+          scope,
           spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor),
           suppressor,
         );
@@ -321,46 +378,46 @@ export class Interpreter {
         accept(spawnedProcess);
         return processInterpretedStep();
       }
+      case "tryReceive": {
+        const channelHandle = this.#resolve(sigil.receiver);
+        const channelScope = this.#resolve(channelHandle.scope);
+        const result = this.#reconcile(
+          channelScope,
+          tryReceive(channelScope, channelHandle),
+          suppressor,
+        );
+
+        accept(option.fromNullable(result));
+        return processInterpretedStep();
+      }
+      case "trySend": {
+        const channelHandle = this.#resolve(sigil.sender);
+        const channelScope = this.#resolve(channelHandle.scope);
+        const result = this.#reconcile(
+          channelScope,
+          trySend(channelScope, channelHandle, sigil.value),
+          suppressor,
+        );
+
+        accept(option.fromNullable(result));
+        return processInterpretedStep();
+      }
       case "unbind": {
         unbind(scope, sigil.key);
+
         accept(VOID);
         return processInterpretedStep();
       }
       case "wait": {
-        const future = this.#resolve(sigil.future);
-
-        const settled = tryWait(future);
-        if (option.isSome(settled)) {
-          accept(settled.value);
+        const runtimeFuture = this.#resolve(sigil.future);
+        const result = poll(runtimeFuture);
+        if (result) {
+          accept(result);
           return processInterpretedStep();
         }
 
-        this.#reconcile(process.scopeRef, wait(scope, process.keeper(), future), suppressor);
+        this.#reconcile(scope, wait(scope, runtimeFuture, process.keeper()), suppressor);
         return processWaitingStep();
-      }
-      case "receive": {
-        const received = tryReceive(scope, sigil.messageKey);
-
-        if (option.isSome(received)) {
-          accept(received.value);
-          return processInterpretedStep();
-        }
-
-        this.#reconcile(
-          process.scopeRef,
-          receive(scope, process.keeper(), sigil.messageKey),
-          suppressor,
-        );
-        return processWaitingStep();
-      }
-      case "send": {
-        this.#reconcile(
-          process.scopeRef,
-          send(scope, this.#resolve(sigil.scope), sigil.messageKey, sigil.value),
-          suppressor,
-        );
-        accept(VOID);
-        return processInterpretedStep();
       }
     }
   }
@@ -384,13 +441,22 @@ export class Interpreter {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #touch(_token: RuntimeScope | RuntimeProcessHandle<unknown> | RuntimeFuture<unknown>): void {
+  #touch(
+    _token:
+      | RuntimeScope
+      | RuntimeProcessHandle<unknown>
+      | RuntimeFuture<unknown>
+      | RuntimeChannelHandle<unknown>,
+  ): void {
     // Do nothing
   }
 
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
   #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcessHandle<Relic>;
   #resolve<Result>(futureKey: FutureKey<Result> | FutureSettleKey<Result>): RuntimeFuture<Result>;
+  #resolve<Value>(
+    channel: ChannelReceiver<Value> | ChannelSender<Value>,
+  ): RuntimeChannelHandle<Value>;
   // oxlint-disable-next-line class-methods-use-this
   #resolve(token: unknown): unknown {
     return token;
@@ -451,7 +517,19 @@ function cancel(scope: RuntimeScope): ScopeSync<void> {
   return scope.cancel();
 }
 
-function createFuture(scope: RuntimeScope): RuntimeFuture<unknown> {
+function channel<Value>(
+  scope: RuntimeScope,
+  capacity: number,
+  overloadRewrite: OverloadRewrite<Value>,
+): RuntimeChannelHandle<Value> {
+  return scope.createChannel<Value>(capacity, overloadRewrite);
+}
+
+function close(scope: RuntimeScope, channelHandle: RuntimeChannelHandle<unknown>): ScopeSync<void> {
+  return scope.close(channelHandle);
+}
+
+function future(scope: RuntimeScope): RuntimeFuture<unknown> {
   return scope.createFuture();
 }
 
@@ -464,11 +542,11 @@ function halt(
 }
 
 function settle<Result>(
-  future: RuntimeFuture<Result>,
+  runtimeFuture: RuntimeFuture<Result>,
   result: FutureResult<Result>,
   suppressor: Suppressor,
 ): void {
-  future.settle(result)(suppressor);
+  runtimeFuture.settle(result)(suppressor);
 }
 
 function spawn<Relic>(
@@ -483,52 +561,56 @@ function lookup<Value>(scope: RuntimeScope, key: ContextKey<Value>): option.Opti
   return scope.lookup(key);
 }
 
-function poll<Result>(future: RuntimeFuture<Result>): option.Option<FutureResult<Result>> {
-  return future.poll();
+function poll<Result>(runtimeFuture: RuntimeFuture<Result>): FutureResult<Result> | null {
+  return runtimeFuture.poll();
+}
+
+function receive(
+  scope: RuntimeScope,
+  channelHandle: RuntimeChannelHandle<unknown>,
+  process: RuntimeProcessKeeper,
+): ScopeSync<void> {
+  return scope.receive(channelHandle, process);
 }
 
 function self(process: RuntimeProcessRunner<unknown>): SelfHandle {
   return process.selfHandle();
 }
 
-function tryWait<Result>(future: RuntimeFuture<Result>): option.Option<FutureResult<Result>> {
-  return future.poll();
-}
-
-function wait(
+function send<Value>(
   scope: RuntimeScope,
+  channelHandle: RuntimeChannelHandle<Value>,
+  value: Value,
   process: RuntimeProcessKeeper,
-  future: RuntimeFuture<unknown>,
 ): ScopeSync<void> {
-  return scope.wait(process, future);
-}
-
-function unbind(scope: RuntimeScope, key: ContextKey<unknown>): void {
-  scope.unbind(key);
+  return scope.send(channelHandle, value, process);
 }
 
 function tryReceive<Value>(
   scope: RuntimeScope,
-  messageKey: MessageKey<Value>,
-): option.Option<Value> {
-  return scope.tryReceive(messageKey);
+  channelHandle: RuntimeChannelHandle<Value>,
+): ScopeSync<ReceiveResult<Value> | null> {
+  return scope.tryReceive(channelHandle);
 }
 
-function receive(
+function trySend<Value>(
   scope: RuntimeScope,
-  process: RuntimeProcessKeeper,
-  messageKey: MessageKey<unknown>,
-): ScopeSync<void> {
-  return scope.receive(process, messageKey);
-}
-
-function send<Value>(
-  scope: RuntimeScope,
-  targetScope: RuntimeScope,
-  messageKey: MessageKey<Value>,
+  channelHandle: RuntimeChannelHandle<Value>,
   value: Value,
+): ScopeSync<SendResult | null> {
+  return scope.trySend(channelHandle, value);
+}
+
+function wait(
+  scope: RuntimeScope,
+  runtimeFuture: RuntimeFuture<unknown>,
+  process: RuntimeProcessKeeper,
 ): ScopeSync<void> {
-  return scope.send(targetScope, messageKey, value);
+  return scope.wait(runtimeFuture, process);
+}
+
+function unbind(scope: RuntimeScope, key: ContextKey<unknown>): void {
+  scope.unbind(key);
 }
 
 function scopeInfo(scope: RuntimeScope): ScopeInfo {

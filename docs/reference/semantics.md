@@ -27,7 +27,7 @@ The public sigil kinds include:
 - lifecycle: `cancel`, `cede`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
-- message: `send`, `receive`
+- channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - introspection: `self`
 
 ## Structural Objects
@@ -65,9 +65,9 @@ type CompletionMode = "structural" | "detached";
 ```
 
 - `structural`: participates in completion for its enclosing scope
-- `detached`: does not participate in completion for its enclosing scope
+- `detached`: is excluded from completion for its enclosing scope
 
-## Future, Context, and Message
+## Future, Context, and Channel
 
 ### `Future`
 
@@ -88,23 +88,63 @@ When the owner scope finishes, any unfinished futures converge uniformly as `can
 
 `ContextKey<T>` is used for binding and lookup along the scope chain. Bindings are recorded on the current scope, and lookups remain visible along the ancestor chain.
 
-### `MessageKey`
+### `Channel`
 
-`MessageKey<T>` is used by the scope-local mailbox protocol.
+`channel<T>(capacity, overloadRewrite?)` creates a channel owned by the current scope and returns a `ChannelHandle<T>`:
 
-The message channel is:
+```ts
+type ChannelHandle<T> = readonly [receiver: ChannelReceiver<T>, sender: ChannelSender<T>];
+```
 
-- scope-local
+The two endpoints separate read and write authority:
+
+- `ChannelReceiver<T>` is accepted by `receive(receiver)` and `tryReceive(receiver)`
+- `ChannelSender<T>` is accepted by `send(sender, value)` and `trySend(sender, value)`
+- either endpoint is accepted by `close(endpoint)`
+
+Valid capacities define the buffering model:
+
+- `0`: rendezvous channel; send and receive synchronize directly
+- finite positive number: bounded channel with that many buffered values
+- `Infinity`: unbounded channel
+
+A negative or `NaN` capacity is invalid and halts with a `channel` failure.
+
+On an overloaded finite channel, `overloadRewrite` may rewrite the current buffer before
+the incoming value is accepted:
+
+```ts
+type OverloadRewrite<T> = (buffer: readonly T[], incoming: T) => readonly T[];
+```
+
+The incoming value is accepted only if capacity remains available after the rewrite. The
+default rewrite returns `buffer`, which preserves the normal blocking behavior. If
+`overloadRewrite` throws, the channel is revoked, the incoming value is not accepted, and
+the owning scope enters the failure path with a `channel` failure.
+
+Channel delivery remains:
+
 - FIFO
-- single-delivery per message
+- single-delivery per value
 
-`send(scope, key, value)` appends a message to the target scope. `receive(key)` reads from the current scope and blocks when no message is available.
+Send and receive operations each have blocking and non-blocking forms:
+
+- `send(sender, value)` blocks until the value is accepted, then returns `{ kind: "sent" }`
+- `trySend(sender, value)` never blocks; it returns `some({ kind: "sent" })`, `none`, or a terminal state wrapped in `some`
+- `receive(receiver)` blocks until a value or terminal channel state is available
+- `tryReceive(receiver)` never blocks; it returns `some({ kind: "value", value })`, `none`, or a terminal state wrapped in `some`
+
+Terminal channel states are `{ kind: "closed" }` and `{ kind: "revoked" }`. A successful
+receive returns `{ kind: "value", value }`.
+
+`close(endpoint)` closes the channel explicitly. A scope that finishes while it still owns open channels revokes them. Closing and revocation both wake blocked senders and receivers; close represents an explicit channel operation, while revoke represents owner-scope disposal.
 
 ## Failure
 
-There are four failure kinds:
+There are five failure kinds:
 
 - `canceled`
+- `channel`
 - `external`
 - `interrupted`
 - `scope`
@@ -112,6 +152,7 @@ There are four failure kinds:
 Their meanings are:
 
 - `canceled`: convergence along the cancellation path
+- `channel`: a channel primitive rejected invalid input, or a runtime channel operation failed
 - `external`: an external exception or rejected value mapped into a failure result
 - `interrupted`: an out-of-band failure in scheduling or governance interrupted progression
 - `scope`: a scope converged structurally as a failure during `closing`
@@ -169,6 +210,6 @@ The minimal execution model is stepwise progression. Repeated interpretation of 
 - `waiting`
 - `exited`
 
-`cede` means cooperative yielding. `waiting` means waiting on a future, message, or another blocking condition.
+`cede` means cooperative yielding. `waiting` means waiting on a future, channel operation, or another blocking condition.
 
 The FIFO queue is the default minimal scheduling loop. More advanced schedulers build on top of these semantics.

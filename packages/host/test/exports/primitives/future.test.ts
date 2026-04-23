@@ -6,11 +6,11 @@ describe("/ primitives: future, poll, wait", () => {
   test.for([
     {
       given: [false] as const,
-      outcome: undefined,
+      outcome: [false],
     },
     {
       given: [true] as const,
-      outcome: "ready",
+      outcome: [true, "ready"],
     },
   ])(
     "returns the visible future state for the current settlement state",
@@ -25,9 +25,34 @@ describe("/ primitives: future, poll, wait", () => {
         return yield* poll(futureKey);
       });
 
-      await expect(settled).resolves.toBe(outcome);
+      await expect(settled).resolves.toEqual(outcome);
     },
   );
+
+  test.for([
+    {
+      given: [0] as const,
+      outcome: [true, 0],
+    },
+    {
+      given: [false] as const,
+      outcome: [true, false],
+    },
+    {
+      given: [""] as const,
+      outcome: [true, ""],
+    },
+  ])("poll preserves settled falsy values", async ({ given: [value], outcome }) => {
+    const settled = run(function* inspectFalsyFutureState() {
+      const [futureKey, futureSettle] = yield* future<typeof value>();
+
+      yield* settle(futureSettle, value);
+
+      return yield* poll(futureKey);
+    });
+
+    await expect(settled).resolves.toEqual(outcome);
+  });
 
   test.for([
     {

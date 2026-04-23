@@ -1,11 +1,11 @@
 import type { Option } from "@shajara/kernel/utils";
-import type { Optional } from "type-fest";
+import type { Presence } from "#/contracts";
 import { isNone } from "@shajara/kernel/utils";
 
-export function unwrapOption<Return>(option: Option<Return>): Optional<Return> {
+export function unwrapOption<Return>(option: Option<Return>): Presence<Return> {
   if (isNone(option)) {
-    return;
+    return [false];
   }
 
-  return option.value as Optional<Return>;
+  return [true, option.value];
 }
