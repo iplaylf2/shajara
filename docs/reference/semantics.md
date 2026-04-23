@@ -117,8 +117,10 @@ the incoming value is accepted:
 type OverloadRewrite<T> = (buffer: readonly T[], incoming: T) => readonly T[];
 ```
 
-The incoming value is always appended after the rewrite if capacity remains available. The
-default rewrite returns `buffer`, which preserves the normal blocking behavior.
+The incoming value is accepted only if capacity remains available after the rewrite. The
+default rewrite returns `buffer`, which preserves the normal blocking behavior. If
+`overloadRewrite` throws, the channel is revoked, the incoming value is not accepted, and
+the owning scope enters the failure path with a `channel` failure.
 
 Channel delivery remains:
 
@@ -150,7 +152,7 @@ There are five failure kinds:
 Their meanings are:
 
 - `canceled`: convergence along the cancellation path
-- `channel`: a channel primitive rejected an invalid operation before submitting it to the runtime
+- `channel`: a channel primitive rejected invalid input, or a runtime channel operation failed
 - `external`: an external exception or rejected value mapped into a failure result
 - `interrupted`: an out-of-band failure in scheduling or governance interrupted progression
 - `scope`: a scope converged structurally as a failure during `closing`

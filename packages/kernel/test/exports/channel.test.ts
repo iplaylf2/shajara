@@ -1,7 +1,19 @@
-import { cede, channel, close, receive, send, spawn, tryReceive, trySend, wait } from "#/index";
+import {
+  cede,
+  channel,
+  close,
+  enclose,
+  receive,
+  send,
+  spawn,
+  tryReceive,
+  trySend,
+  wait,
+} from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExited, unwrapExitedSucceeded } from "#test/harness";
 import { left, none, right, some } from "#/utils";
+import type { ChannelSender } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -217,13 +229,13 @@ describe("/ primitives: channel, close, send, receive", () => {
   test.for([
     {
       given: [1, "old-value", "incoming-value", new Error("rewrite failed")] as const,
-      outcome: {
-        receiveResult: { kind: "value", value: "old-value" },
-        sendResult: none,
-      },
+      outcome: left({
+        kind: "canceled",
+        message: "Canceled before completion",
+      }),
     },
   ])(
-    "captures an overload rewrite failure without accepting the incoming value",
+    "cancels the entry process when overload rewrite fails",
     async ({ given: [capacity, oldValue, incomingValue, failure], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
@@ -238,10 +250,72 @@ describe("/ primitives: channel, close, send, receive", () => {
         ),
       );
       const step = ritual.driveSync();
+      const actual = unwrapExited(step);
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  const revokedFailure = new Error("rewrite failed");
+
+  test.for([
+    {
+      given: [1, "old-value", "incoming-value", "after-revoke", revokedFailure] as const,
+      outcome: {
+        enclosedResult: left(
+          expect.objectContaining({
+            cause: expect.objectContaining({
+              failure: expect.objectContaining({
+                cause: revokedFailure,
+                kind: "channel",
+              }),
+            }),
+            kind: "scope",
+          }),
+        ),
+        sendResultAfterRevoked: some({ kind: "revoked" }),
+      },
+    },
+  ])(
+    "returns revoked for subsequent sends after overload rewrite failure",
+    async ({ given: [capacity, oldValue, incomingValue, afterRevokeValue, failure], outcome }) => {
+      let senderAfterFailure: ChannelSender<string> | null = null;
+
+      await using ritual = interpretRitual(() =>
+        pipe(
+          enclose(() =>
+            pipe(
+              channel<string>(capacity, () => {
+                throw failure;
+              }),
+              wisp.map(([, sender]) => ({ sender })),
+              wisp.chainFirst(({ sender }) =>
+                wisp.fromIO(() => {
+                  senderAfterFailure = sender;
+                }),
+              ),
+              wisp.chainFirst(({ sender }) => send(sender, oldValue)),
+              wisp.chainFirst(({ sender }) => trySend(sender, incomingValue)),
+            ),
+          ),
+          wisp.map((enclosedResult) => ({ enclosedResult })),
+          wisp.bind("sendResultAfterRevoked", () => {
+            if (!senderAfterFailure) {
+              throw new Error("Expected sender to be captured before channel failure");
+            }
+
+            return trySend(senderAfterFailure, afterRevokeValue);
+          }),
+          wisp.map(({ enclosedResult, sendResultAfterRevoked }) => ({
+            enclosedResult,
+            sendResultAfterRevoked,
+          })),
+        ),
+      );
+      const step = ritual.driveSync();
       const actual = unwrapExitedSucceeded(step);
 
       expect(actual).toEqual(outcome);
-      expect(ritual.suppressorErrors).toEqual([failure]);
     },
   );
 

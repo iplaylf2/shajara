@@ -6,15 +6,17 @@ import type {
   ReceiveResult,
   SendResult,
 } from "#/sigils/index";
-import type { KEY_TOKEN, Suppressor } from "#/contracts";
-import { either, option } from "fp-ts";
-import { identity } from "fp-ts/lib/function";
+import type { KEY_TOKEN, ScopeRef } from "#/contracts";
+import type { Disposer } from "#/utils";
+import type { RuntimeChannelHandle } from "./handle";
+import { either } from "fp-ts";
+import { identity } from "fp-ts/function";
 
-export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSender<Value> {
+export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value> {
   public constructor(
     private readonly capacity: number,
     private readonly overloadRewrite: OverloadRewrite<Value>,
-    private readonly onDisposed: () => void,
+    public readonly scope: ScopeRef<unknown>,
   ) {
     this.#kind = channelKindOf(capacity);
   }
@@ -23,175 +25,130 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
     return [this, this];
   }
 
-  public close(suppressor: Suppressor): void {
-    if (this.#status !== "open") {
-      return;
-    }
-
-    this.#dispose("closed", suppressor);
+  public close(): RuntimeChannelWaiters<Waiter> {
+    return this.#dispose("closed");
   }
 
-  public tryReceive(suppressor: Suppressor): option.Option<ReceiveResult<Value>> {
+  public tryTake(): RuntimeChannelTake<Waiter, Value> | null {
     if (this.#buffer.length > EMPTY_SIZE) {
       const value = this.#buffer.shift()!;
+      const sender = this.tryFill();
 
-      this.#fillAvailableBuffer(suppressor);
-
-      return option.some({ kind: "value", value });
+      return { result: { kind: "value", value }, sender };
     }
 
-    const sender = takeFirst(this.#senders);
+    const sender = takeFirstSender(this.#senders);
     if (sender) {
-      sender.settle({ kind: "sent" }, suppressor);
-
-      return option.some({ kind: "value", value: sender.value! });
+      return {
+        result: { kind: "value", value: sender.value },
+        sender: sender.waiter,
+      };
     }
 
     if (this.#status === "open") {
-      return option.none;
+      return null;
     }
 
-    return option.some({ kind: this.#status });
+    return { result: { kind: this.#status }, sender: null };
   }
 
-  public enqueueReceiver(receiver: unknown, settle: ChannelSettler<ReceiveResult<Value>>): void {
-    this.#receivers.set(receiver, settle);
+  public enqueueReceiver(receiver: Waiter): Disposer {
+    this.#receivers.add(receiver);
+
+    return () => {
+      this.#receivers.delete(receiver);
+    };
   }
 
-  public discardReceiver(receiver: unknown): void {
-    this.#receivers.delete(receiver);
-  }
-
-  public trySend(value: Value, suppressor: Suppressor): option.Option<SendResult> {
+  public tryPut(value: Value): RuntimeChannelPut<Waiter> | null {
     if (this.#status !== "open") {
-      return option.some({ kind: this.#status });
+      return { receiver: null, result: { kind: this.#status } };
     }
 
-    const receiver = takeFirst(this.#receivers);
+    const receiver = takeFirstWaiter(this.#receivers);
     if (receiver) {
-      receiver({ kind: "value", value }, suppressor);
-
-      return option.some({ kind: "sent" });
+      return { receiver, result: { kind: "sent" } };
     }
 
     if (this.#buffer.length < this.capacity) {
       this.#buffer.push(value);
 
-      return option.some({ kind: "sent" });
+      return { receiver: null, result: { kind: "sent" } };
     }
 
-    if (this.#tryAcceptOverload(value, suppressor)) {
-      return option.some({ kind: "sent" });
-    }
-
-    return option.none;
+    return null;
   }
 
-  public enqueueSender(sender: unknown, settle: ChannelSettler<SendResult>, value: Value): void {
-    this.#senders.set(sender, { settle, value });
-  }
+  public enqueueSender(sender: Waiter, value: Value): Disposer {
+    this.#senders.set(sender, { value, waiter: sender });
 
-  public discardSender(sender: unknown): void {
-    this.#senders.delete(sender);
-  }
-
-  public revoke(): ChannelNotification {
-    if (this.#status !== "open") {
-      return () => [];
-    }
-
-    return (suppressor) => {
-      this.#dispose("revoked", suppressor);
+    return () => {
+      this.#senders.delete(sender);
     };
+  }
+
+  public tryOverloadRewrite(value: Value): either.Either<unknown, boolean> {
+    const rewriting = either.tryCatch(() => this.overloadRewrite(this.#buffer, value), identity);
+    if (either.isLeft(rewriting)) {
+      return rewriting;
+    }
+
+    const buffer = rewriting.right;
+    if (buffer.length > this.capacity) {
+      return either.right(true);
+    }
+
+    this.#buffer = buffer as Value[];
+
+    return either.right(this.#buffer.length === this.capacity);
+  }
+
+  public tryFill(): Waiter | null {
+    if (this.#kind !== "bounded" || this.capacity === this.#buffer.length) {
+      return null;
+    }
+
+    const sender = takeFirstSender(this.#senders);
+    if (!sender) {
+      return null;
+    }
+
+    this.#buffer.push(sender.value);
+
+    return sender.waiter;
+  }
+
+  public revoke(): RuntimeChannelWaiters<Waiter> {
+    return this.#dispose("revoked");
   }
 
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: ChannelReceiver<Value>[typeof KEY_TOKEN] &
     ChannelSender<Value>[typeof KEY_TOKEN];
 
-  #fillAvailableBuffer(suppressor: Suppressor): void {
-    if (this.#kind !== "bounded") {
-      return;
+  #dispose(status: Exclude<ChannelStatus, "open">): RuntimeChannelWaiters<Waiter> {
+    if (this.#status !== "open") {
+      return { receivers: [], senders: [] };
     }
 
-    while (this.#buffer.length < this.capacity && EMPTY_SIZE < this.#senders.size) {
-      const sender = takeFirst(this.#senders)!;
-      this.#buffer.push(sender.value);
-      sender.settle({ kind: "sent" }, suppressor);
-    }
-  }
-
-  #tryAcceptOverload(value: Value, suppressor: Suppressor): boolean {
-    const rewriteResult = either.tryCatch(
-      () => this.overloadRewrite(this.#buffer, value),
-      identity,
-    );
-
-    if (either.isLeft(rewriteResult)) {
-      suppressor.capture(rewriteResult.left);
-      return false;
-    }
-
-    const buffer = rewriteResult.right;
-    if (buffer.length > this.capacity) {
-      return false;
-    }
-
-    this.#buffer = buffer as Value[];
-
-    if (this.#buffer.length === this.capacity) {
-      return false;
-    }
-
-    this.#fillAvailableBuffer(suppressor);
-
-    if (this.#buffer.length < this.capacity) {
-      this.#buffer.push(value);
-
-      return true;
-    }
-
-    return this.#tryAcceptOverload(value, suppressor);
-  }
-
-  #dispose(status: Exclude<ChannelStatus, "open">, suppressor: Suppressor): void {
     this.#status = status;
+    this.#buffer = [];
 
-    this.#flush(status, suppressor);
-    this.onDisposed();
-  }
-
-  #flush(status: Exclude<ChannelStatus, "open">, suppressor: Suppressor): void {
-    while (this.#receivers.size > EMPTY_SIZE && this.#buffer.length > EMPTY_SIZE) {
-      const receiver = takeFirst(this.#receivers)!;
-      const value = this.#buffer.shift()!;
-
-      receiver({ kind: "value", value }, suppressor);
-    }
-
-    for (const settle of this.#receivers.values()) {
-      settle({ kind: status }, suppressor);
-    }
-
-    for (const { settle } of this.#senders.values()) {
-      settle({ kind: status }, suppressor);
-    }
-
+    const receivers = [...this.#receivers];
+    const senders = Array.from(this.#senders.values(), ({ waiter }) => waiter);
     this.#receivers.clear();
     this.#senders.clear();
+
+    return { receivers, senders };
   }
 
   readonly #kind: ChannelKind;
   #status: ChannelStatus = "open";
   #buffer: Value[] = [];
-  // ECMAScript Map preserves insertion order; waiter maps are FIFO queues keyed for discard.
-  readonly #receivers = new Map<unknown, ChannelSettler<ReceiveResult<Value>>>();
-  readonly #senders = new Map<unknown, ChannelSenderWaiter<Value>>();
+  // ECMAScript Set/Map preserve insertion order; waiter collections are FIFO queues.
+  readonly #receivers = new Set<Waiter>();
+  readonly #senders = new Map<unknown, RuntimeChannelSender<Waiter, Value>>();
 }
-
-export type ChannelSettler<Result> = (result: Result, suppressor: Suppressor) => void;
-
-export type ChannelNotification = (suppressor: Suppressor) => void;
 
 function channelKindOf(capacity: number): ChannelKind {
   switch (capacity) {
@@ -204,25 +161,54 @@ function channelKindOf(capacity: number): ChannelKind {
   }
 }
 
-function takeFirst<Key, Value>(items: Map<Key, Value>): Value | null {
-  const [first] = items;
+function takeFirstWaiter<Waiter>(waiters: Set<Waiter>): Waiter | null {
+  const [waiter] = waiters;
 
-  if (first) {
-    const [key, value] = first;
-    items.delete(key);
-
-    return value;
+  if (!waiter) {
+    return null;
   }
 
-  return null;
+  waiters.delete(waiter);
+
+  return waiter;
 }
 
-const EMPTY_SIZE = 0;
-const RENDEZVOUS_CAPACITY = 0;
+function takeFirstSender<Waiter, Value>(
+  senders: Map<unknown, RuntimeChannelSender<Waiter, Value>>,
+): RuntimeChannelSender<Waiter, Value> | null {
+  const [first] = senders;
 
-interface ChannelSenderWaiter<out Value> {
-  readonly settle: ChannelSettler<SendResult>;
+  if (!first) {
+    return null;
+  }
+
+  const [key, value] = first;
+  senders.delete(key);
+
+  return value;
+}
+
+const RENDEZVOUS_CAPACITY = 0;
+const EMPTY_SIZE = 0;
+
+interface RuntimeChannelSender<Waiter, Value> {
   readonly value: Value;
+  readonly waiter: Waiter;
+}
+
+interface RuntimeChannelTake<Waiter, Value> {
+  readonly result: ReceiveResult<Value>;
+  readonly sender: Waiter | null;
+}
+
+interface RuntimeChannelPut<Waiter> {
+  readonly result: SendResult;
+  readonly receiver: Waiter | null;
+}
+
+interface RuntimeChannelWaiters<Waiter> {
+  readonly receivers: readonly Waiter[];
+  readonly senders: readonly Waiter[];
 }
 
 type ChannelKind = "bounded" | "rendezvous" | "unbounded";

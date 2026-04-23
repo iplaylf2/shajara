@@ -13,15 +13,22 @@ import type {
   ScopeRef,
   Suppressor,
 } from "#/contracts";
-import type { OverloadRewrite, ProcessDescriptor, ScopeDescriptor } from "#/sigils/index";
+import type {
+  OverloadRewrite,
+  ProcessDescriptor,
+  ReceiveResult,
+  ScopeDescriptor,
+  SendResult,
+} from "#/sigils/index";
+import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
+import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
-import { canceledFailure } from "#/failures";
 import { unreachable } from "#/utils/index";
 
 export class RuntimeScope implements ScopeRef<unknown> {
@@ -110,50 +117,107 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public *wait(future: RuntimeFuture<unknown>, process: RuntimeProcessKeeper): ScopeSync<void> {
-    const unsubscribe = future.wait((result, suppressor) => {
+    const discard = future.wait((result, suppressor) => {
       process.resume(result);
 
       this.scopeZone.trackProcess(process, suppressor);
     });
 
-    process.wait(unsubscribe);
+    process.wait(discard);
 
     yield this.#trackProcessEffect(process);
+  }
+
+  public *tryReceive<Value>(
+    channelHandle: RuntimeChannelHandle<Value>,
+  ): ScopeSync<ReceiveResult<Value> | null> {
+    const channel = this.#resolve(channelHandle);
+    const take = channel.tryTake();
+    if (!take) {
+      return take;
+    }
+
+    const { result, sender } = take;
+
+    if (sender) {
+      yield* sender.scope.#resumeSender(sender.process, { kind: "sent" });
+    }
+
+    return result;
   }
 
   public *receive(
-    channel: RuntimeChannel<unknown>,
+    channelHandle: RuntimeChannelHandle<unknown>,
     process: RuntimeProcessKeeper,
   ): ScopeSync<void> {
-    channel.enqueueReceiver(process, (result, suppressor) => {
-      process.resume(result);
-
-      this.scopeZone.trackProcess(process, suppressor);
-    });
-
-    process.wait(() => channel.discardReceiver(process));
+    const channel = this.#resolve(channelHandle);
+    const receiver: RuntimeChannelWaiter = { process, scope: this };
+    const discard = channel.enqueueReceiver(receiver);
+    process.wait(discard);
 
     yield this.#trackProcessEffect(process);
   }
 
+  // oxlint-disable-next-line max-statements
+  public *trySend<Value>(
+    channelHandle: RuntimeChannelHandle<Value>,
+    value: Value,
+  ): ScopeSync<SendResult | null> {
+    const channel = this.#resolve(channelHandle);
+    const put = channel.tryPut(value);
+    if (!put) {
+      const rewriteAttempt = channel.tryOverloadRewrite(value);
+
+      if (either.isLeft(rewriteAttempt)) {
+        yield* this.#revokeChannelWithFailure(channel, rewriteAttempt.left);
+
+        return { kind: "revoked" };
+      }
+
+      const stillOverload = rewriteAttempt.right;
+      if (stillOverload) {
+        return null;
+      }
+
+      while (true) {
+        const sender = channel.tryFill();
+        if (!sender) {
+          break;
+        }
+
+        yield* sender.scope.#resumeSender(sender.process, { kind: "sent" });
+      }
+
+      return yield* this.trySend(channel, value);
+    }
+
+    const { result, receiver } = put;
+    if (receiver) {
+      yield* receiver.scope.#resumeReceiver(receiver.process, { kind: "value", value });
+    }
+
+    return result;
+  }
+
   public *send<Value>(
-    channel: RuntimeChannel<Value>,
+    channelHandle: RuntimeChannelHandle<Value>,
     value: Value,
     process: RuntimeProcessKeeper,
   ): ScopeSync<void> {
-    channel.enqueueSender(
-      process,
-      (result, suppressor) => {
-        process.resume(result);
-
-        this.scopeZone.trackProcess(process, suppressor);
-      },
-      value,
-    );
-
-    process.wait(() => channel.discardSender(process));
+    const channel = this.#resolve(channelHandle);
+    const sender: RuntimeChannelWaiter = { process, scope: this };
+    const discard = channel.enqueueSender(sender, value);
+    process.wait(discard);
 
     yield this.#trackProcessEffect(process);
+  }
+
+  public *close(channelHandle: RuntimeChannelHandle<unknown>): ScopeSync<void> {
+    const channel = this.#resolve(channelHandle);
+    const waiters = channel.close();
+    this.#channels.delete(channel);
+
+    yield* this.#resumeChannelWaiters(waiters, { kind: "closed" });
   }
 
   public *forceFailed(failure: Failure): ScopeSync<void> {
@@ -184,11 +248,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
   public createChannel<Value>(
     capacity: number,
     overloadRewrite: OverloadRewrite<Value>,
-  ): RuntimeChannel<Value> {
-    const channel = new RuntimeChannel<Value>(capacity, overloadRewrite, () =>
-      this.#channels.delete(channel),
+  ): RuntimeChannelHandle<Value> {
+    const channel = new RuntimeChannel<RuntimeChannelWaiter, Value>(
+      capacity,
+      overloadRewrite,
+      this,
     );
-
+    this.#touch(channel);
     this.#channels.add(channel);
 
     return channel;
@@ -442,9 +508,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
 
     for (const channel of this.#channels) {
-      const notification = channel.revoke();
-
-      yield this.#notifyEffect(notification);
+      yield* this.#revoke(channel);
     }
 
     const canceled = either.left(canceledFailure);
@@ -484,6 +548,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
       noopSync,
       { propagateFailure: this.#propagatesFailure },
     );
+  }
+
+  *#revoke(channel: RuntimeChannel<RuntimeChannelWaiter, unknown>): ScopeSync<void> {
+    const waiters = channel.revoke();
+
+    this.#channels.delete(channel);
+
+    yield* this.#resumeChannelWaiters(waiters, { kind: "revoked" });
   }
 
   #trackProcessEffect(process: ProcessRef<unknown>): ScopeSyncEffect {
@@ -545,6 +617,60 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return this.#state as RuntimeScopeStateOf<Status>;
   }
 
+  // oxlint-disable-next-line class-methods-use-this
+  *#resumeChannelWaiters(
+    waiters: RuntimeChannelWaiters,
+    result: ChannelClosedResult,
+  ): ScopeSync<void> {
+    for (const receiver of waiters.receivers) {
+      yield* receiver.scope.#resumeReceiver(receiver.process, result);
+    }
+
+    for (const sender of waiters.senders) {
+      yield* sender.scope.#resumeSender(sender.process, result);
+    }
+  }
+
+  *#resumeReceiver<Value>(
+    process: RuntimeProcessKeeper,
+    result: ReceiveResult<Value>,
+  ): ScopeSync<void> {
+    process.resume(result);
+
+    yield this.#trackProcessEffect(process);
+  }
+
+  *#resumeSender(process: RuntimeProcessKeeper, result: SendResult): ScopeSync<void> {
+    process.resume(result);
+
+    yield this.#trackProcessEffect(process);
+  }
+
+  *#revokeChannelWithFailure(
+    channel: RuntimeChannel<RuntimeChannelWaiter, any>,
+    cause: unknown,
+  ): ScopeSync<void> {
+    yield* this.#revoke(channel);
+    yield* this.#enterFailing(
+      new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
+        channelFailure(cause, "Channel operation failed"),
+      ),
+      noopSync,
+      { propagateFailure: this.#propagatesFailure },
+    );
+  }
+
+  // oxlint-disable-next-line class-methods-use-this
+  #touch(_token: RuntimeChannel<RuntimeChannelWaiter, any>): void {
+    // Do nothing
+  }
+
+  #resolve<Value>(token: RuntimeChannelHandle<Value>): RuntimeChannel<RuntimeChannelWaiter, Value>;
+  // oxlint-disable-next-line class-methods-use-this
+  #resolve(token: unknown): unknown {
+    return token;
+  }
+
   get #isQuiet(): boolean {
     return readonlySet.isEmpty(this.#structuralProcesses) && readonlySet.isEmpty(this.#children);
   }
@@ -570,7 +696,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
   readonly #derivedFutures = new Set<RuntimeFuture<any>>();
-  readonly #channels = new Set<RuntimeChannel<any>>();
+  readonly #channels = new Set<RuntimeChannel<RuntimeChannelWaiter, any>>();
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
@@ -614,6 +740,20 @@ type RuntimeScopeState = TaggedUnion<
     running: {};
   }
 >;
+
+interface RuntimeChannelWaiter {
+  readonly scope: RuntimeScope;
+  readonly process: RuntimeProcessKeeper;
+}
+
+interface RuntimeChannelWaiters {
+  readonly receivers: readonly RuntimeChannelWaiter[];
+  readonly senders: readonly RuntimeChannelWaiter[];
+}
+
+type ChannelClosedResult =
+  | Exclude<ReceiveResult<unknown>, { readonly kind: "value" }>
+  | Exclude<SendResult, { readonly kind: "sent" }>;
 
 type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,

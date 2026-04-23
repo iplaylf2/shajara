@@ -7,16 +7,15 @@ import type {
   Suppressor,
 } from "#/contracts";
 import type { Disposer } from "#/utils/index";
-import { option } from "fp-ts";
 import { unreachable } from "#/utils/index";
 
 export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey<Result> {
-  public poll(): option.Option<FutureResult<Result>> {
+  public poll(): FutureResult<Result> | null {
     if (this.#result) {
-      return option.some(this.#result);
+      return this.#result;
     }
 
-    return option.none;
+    return null;
   }
 
   public wait(onSettled: FutureSettler<Result>): Disposer {
