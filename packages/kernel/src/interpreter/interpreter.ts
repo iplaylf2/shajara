@@ -241,7 +241,7 @@ export class Interpreter {
     this.#touch(this.#scopeRoot);
   }
 
-  // oxlint-disable-next-line complexity,max-lines-per-function, max-statements
+  // oxlint-disable-next-line complexity, max-lines-per-function, max-statements
   #interpret<Relic>(
     process: RuntimeProcessHandle<Relic>,
     next: RuntimeProcessNextEcho<Sigil>,

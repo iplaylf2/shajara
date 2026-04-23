@@ -156,7 +156,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackProcessEffect(process);
   }
 
-  // oxlint-disable-next-line max-statements
   public *trySend<Value>(
     channelHandle: RuntimeChannelHandle<Value>,
     value: Value,
@@ -383,7 +382,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield* this.#tryCanceled();
   }
 
-  // oxlint-disable-next-line max-params
   *#enterFailing(
     draft: ScopeFailureDraft,
     failingDefer: () => ScopeSync<void>,

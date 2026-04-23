@@ -2,11 +2,12 @@
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   "exclude": ["namespaceMembers"],
   "ignoreBinaries": [
-    "astro",
     "astro-check",
+    "astro",
     "changeset",
     "cspell-cli",
     "knip",
+    "oxfmt",
     "oxlint",
     "shajara-forge",
     "tsc",
