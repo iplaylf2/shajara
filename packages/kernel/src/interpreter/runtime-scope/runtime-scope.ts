@@ -82,11 +82,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public *cancel(): ScopeSync<void> {
-    if (this.#state.status === "failing") {
-      yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
-    } else {
-      yield* this.#enterCanceling();
-    }
+    yield* this.#state.status === "failing"
+      ? this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false })
+      : this.#enterCanceling();
   }
 
   public *branch(
@@ -158,7 +156,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackProcessEffect(process);
   }
 
-  // oxlint-disable-next-line max-statements
   public *trySend<Value>(
     channelHandle: RuntimeChannelHandle<Value>,
     value: Value,
@@ -385,7 +382,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield* this.#tryCanceled();
   }
 
-  // oxlint-disable-next-line max-params
   *#enterFailing(
     draft: ScopeFailureDraft,
     failingDefer: () => ScopeSync<void>,
@@ -646,10 +642,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackProcessEffect(process);
   }
 
-  *#revokeChannelWithFailure(
-    channel: RuntimeChannel<RuntimeChannelWaiter, any>,
-    cause: unknown,
-  ): ScopeSync<void> {
+  *#revokeChannelWithFailure(channel: AnyRuntimeChannel, cause: unknown): ScopeSync<void> {
     yield* this.#revoke(channel);
     yield* this.#enterFailing(
       new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
@@ -661,7 +654,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #touch(_token: RuntimeChannel<RuntimeChannelWaiter, any>): void {
+  #touch(_token: AnyRuntimeChannel): void {
     // Do nothing
   }
 
@@ -695,8 +688,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #children = new Set<RuntimeScope>();
   readonly #structuralProcesses = new Set<RuntimeProcessKeeper>();
   readonly #detachedProcesses = new Set<RuntimeProcessKeeper>();
-  readonly #derivedFutures = new Set<RuntimeFuture<any>>();
-  readonly #channels = new Set<RuntimeChannel<RuntimeChannelWaiter, any>>();
+  readonly #derivedFutures = new Set<AnyRuntimeFuture>();
+  readonly #channels = new Set<AnyRuntimeChannel>();
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
@@ -706,6 +699,12 @@ export type ScopeSyncNotification = (suppressor: Suppressor) => void;
 export type ScopeTrackTask = (suppressor: Suppressor) => void;
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
+
+// Heterogeneous runtime registries preserve each entry's value type at creation sites.
+// oxlint-disable-next-line no-explicit-any
+type AnyRuntimeFuture = RuntimeFuture<any>;
+// oxlint-disable-next-line no-explicit-any
+type AnyRuntimeChannel = RuntimeChannel<RuntimeChannelWaiter, any>;
 
 export type ScopeSyncEffect = TaggedUnion<
   "kind",

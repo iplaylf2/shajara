@@ -3,8 +3,8 @@ import type { FutureHandle, FutureSettleKey } from "@shajara/kernel";
 import type { Sigil } from "@shajara/kernel/sigils";
 
 export abstract class ShajaraError extends Error implements FailureShape {
-  abstract readonly kind: string;
-  override readonly name: string = "ShajaraError";
+  public abstract readonly kind: string;
+  public override readonly name: string = "ShajaraError";
 }
 
 export type RiteRoutine<Return> = () => RiteCoroutine<Return>;

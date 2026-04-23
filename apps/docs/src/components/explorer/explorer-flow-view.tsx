@@ -154,7 +154,7 @@ function offset(value: number, amount: number): string {
   return String(value + amount);
 }
 
-function classes(...values: Array<string | false>): string {
+function classes(...values: (string | false)[]): string {
   return values.filter(isClassName).join(" ");
 }
 

@@ -11,6 +11,7 @@ export default defineConfig({
         "import/consistent-type-specifier-style": "off",
         "import/unambiguous": "off",
         "typescript/explicit-module-boundary-types": "off",
+        "unicorn/prefer-module": "off",
       },
     },
   ],

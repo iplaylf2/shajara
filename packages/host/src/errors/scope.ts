@@ -2,14 +2,14 @@ import type { FailureShape, ScopeFailure, ScopeFailureCause } from "@shajara/ker
 import { ShajaraError } from "#/contracts";
 
 export class ScopeError extends ShajaraError implements ScopeFailure {
-  override readonly name = "ScopeError";
-  readonly kind = "scope" as const;
-  override readonly cause: ScopeFailureCause;
-  readonly suppressed: readonly FailureShape[];
-
-  constructor(failure: ScopeFailure) {
+  public constructor(failure: ScopeFailure) {
     super(failure.message);
     this.cause = failure.cause;
     this.suppressed = failure.suppressed;
   }
+
+  public override readonly name = "ScopeError";
+  public readonly kind = "scope" as const;
+  public override readonly cause: ScopeFailureCause;
+  public readonly suppressed: readonly FailureShape[];
 }

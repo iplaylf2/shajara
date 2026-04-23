@@ -3304,7 +3304,7 @@ __metadata:
   resolution: "@shajara/forge@workspace:internal/forge"
   dependencies:
     "@shajara/presets": "workspace:^"
-    "@types/node": "npm:^25.6.0"
+    "@types/node": "catalog:"
     dependency-cruiser: "npm:^17.3.10"
     oxlint: "catalog:"
     typescript: "catalog:"
@@ -9459,6 +9459,7 @@ __metadata:
     "@changesets/cli": "npm:^2.31.0"
     "@shajara/forge": "workspace:^"
     "@shajara/presets": "workspace:^"
+    "@types/node": "catalog:"
     cspell-cli: "npm:^10.0.0"
     knip: "npm:^6.6.1"
     oxfmt: "npm:^0.46.0"

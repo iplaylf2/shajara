@@ -180,7 +180,7 @@ function readColumn(column: number): number {
   const left = defaultLayout.columns[column];
 
   if (typeof left !== "number") {
-    throw new Error(`Unknown flow column: ${String(column)}`);
+    throw new TypeError(`Unknown flow column: ${String(column)}`);
   }
 
   return left;
@@ -190,7 +190,7 @@ function readLane(lane: number): number {
   const top = defaultLayout.lanes[lane];
 
   if (typeof top !== "number") {
-    throw new Error(`Unknown flow lane: ${String(lane)}`);
+    throw new TypeError(`Unknown flow lane: ${String(lane)}`);
   }
 
   return top;

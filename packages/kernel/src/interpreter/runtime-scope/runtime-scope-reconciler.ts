@@ -114,7 +114,7 @@ export class RuntimeScopeReconciler {
 
   #dequeue(target: ScopeSyncCall): void {
     const index = this.#pendingCalls.indexOf(target);
-    if (index >= 0) {
+    if (index !== -1) {
       this.#pendingCalls.splice(index, 1);
     }
   }

@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@shajara/presets": "workspace:^",
-    "@types/node": "^25.6.0",
+    "@types/node": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   }

@@ -6,9 +6,11 @@ export type TerminalChannelResult =
 
 export function messageOf(result: TerminalChannelResult): string {
   switch (result.kind) {
-    case "closed":
+    case "closed": {
       return "Channel is closed";
-    case "revoked":
+    }
+    case "revoked": {
       return "Channel is revoked";
+    }
   }
 }
