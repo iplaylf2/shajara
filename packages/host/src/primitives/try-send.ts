@@ -17,10 +17,12 @@ export function* trySend<Value>(
   }
 
   switch (result.value.kind) {
-    case "sent":
+    case "sent": {
       return true;
+    }
     case "closed":
-    case "revoked":
+    case "revoked": {
       throw new ChannelError(result.value, messageOf(result.value));
+    }
   }
 }

@@ -16,10 +16,12 @@ export function* tryReceive<Value>(
   }
 
   switch (result.value.kind) {
-    case "value":
+    case "value": {
       return [true, result.value.value];
+    }
     case "closed":
-    case "revoked":
+    case "revoked": {
       throw new ChannelError(result.value, messageOf(result.value));
+    }
   }
 }

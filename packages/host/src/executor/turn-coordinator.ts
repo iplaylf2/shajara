@@ -4,7 +4,7 @@ import type { Disposer } from "@shajara/kernel/utils";
 export class TurnCoordinator implements Disposable {
   public constructor(
     flushTurn: () => void,
-    readonly turnIntervalMs: number,
+    public readonly turnIntervalMs: number,
   ) {
     this.#flushTurn = flushTurn;
     const flushTurnAt = now();

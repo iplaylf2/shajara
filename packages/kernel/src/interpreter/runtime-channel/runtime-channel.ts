@@ -152,12 +152,15 @@ export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value
 
 function channelKindOf(capacity: number): ChannelKind {
   switch (capacity) {
-    case RENDEZVOUS_CAPACITY:
+    case RENDEZVOUS_CAPACITY: {
       return "rendezvous";
-    case Infinity:
+    }
+    case Infinity: {
       return "unbounded";
-    default:
+    }
+    default: {
       return "bounded";
+    }
   }
 }
 

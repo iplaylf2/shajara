@@ -146,12 +146,12 @@ function cleanupReplaySession(
 }
 
 function readCodeLines(codeBlockId: string): HTMLElement[] {
-  return Array.from(
-    globalThis.document.querySelectorAll<HTMLElement>(
+  return [
+    ...globalThis.document.querySelectorAll<HTMLElement>(
       `#${globalThis.CSS.escape(codeBlockId)} [data-explorer-cursor-events], ` +
         `#${globalThis.CSS.escape(codeBlockId)} [data-explorer-done-events]`,
     ),
-  );
+  ];
 }
 
 async function runReplayCycle(context: ReplayCycleContext): Promise<void> {

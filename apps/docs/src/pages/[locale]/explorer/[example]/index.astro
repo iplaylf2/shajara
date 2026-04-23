@@ -18,13 +18,10 @@ import { getRelativeLocaleUrl } from "astro:i18n";
 import styles from "#/components/explorer/explorer.module.css";
 
 export function getStaticPaths() {
-  return SITE_LOCALES.flatMap(
-    (locale) =>
-      EXPLORER_EXAMPLES.map((exampleDefinition) => ({
-        params: { example: exampleDefinition.id, locale },
-      })),
-    // oxlint-disable-next-line no-magic-numbers
-    1,
+  return SITE_LOCALES.flatMap((locale) =>
+    EXPLORER_EXAMPLES.map((exampleDefinition) => ({
+      params: { example: exampleDefinition.id, locale },
+    })),
   );
 }
 

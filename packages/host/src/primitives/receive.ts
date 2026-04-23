@@ -9,10 +9,12 @@ export function* receive<Value>(receiver: ChannelReceiver<Value>): RiteCoroutine
   const result = yield* encodeRitual(() => kernelReceive(receiver))();
 
   switch (result.kind) {
-    case "value":
+    case "value": {
       return result.value;
+    }
     case "closed":
-    case "revoked":
+    case "revoked": {
       throw new ChannelError(result, messageOf(result));
+    }
   }
 }

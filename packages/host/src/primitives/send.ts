@@ -9,10 +9,12 @@ export function* send<Value>(sender: ChannelSender<Value>, value: Value): RiteCo
   const result = yield* encodeRitual(() => kernelSend(sender, value))();
 
   switch (result.kind) {
-    case "sent":
+    case "sent": {
       return;
+    }
     case "closed":
-    case "revoked":
+    case "revoked": {
       throw new ChannelError(result, messageOf(result));
+    }
   }
 }

@@ -1,11 +1,11 @@
 import type { Slice } from "@shajara/kernel";
 
 export class TimeSlice implements Slice {
-  shouldYield(): boolean {
+  public shouldYield(): boolean {
     return now() >= this.#deadline;
   }
 
-  constructor(quantumMs: number) {
+  public constructor(quantumMs: number) {
     this.#deadline = now() + quantumMs;
   }
 

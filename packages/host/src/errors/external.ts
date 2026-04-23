@@ -2,11 +2,8 @@ import type { ExternalFailure } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 
 export class ExternalError extends ShajaraError implements ExternalFailure {
-  override readonly name = "ExternalError";
-  readonly kind = "external" as const;
-
-  constructor(
-    readonly raw: unknown,
+  public constructor(
+    public readonly raw: unknown,
     message: string,
   ) {
     super(message);
@@ -15,4 +12,7 @@ export class ExternalError extends ShajaraError implements ExternalFailure {
       this.cause = raw;
     }
   }
+
+  public override readonly name = "ExternalError";
+  public readonly kind = "external" as const;
 }
