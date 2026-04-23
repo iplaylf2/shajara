@@ -7,7 +7,8 @@ import type {
   SendResult,
 } from "#/sigils/index";
 import type { KEY_TOKEN, Suppressor } from "#/contracts";
-import { option } from "fp-ts";
+import { either, option } from "fp-ts";
+import { identity } from "fp-ts/lib/function";
 
 export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSender<Value> {
   public constructor(
@@ -121,8 +122,17 @@ export class RuntimeChannel<Value> implements ChannelReceiver<Value>, ChannelSen
   }
 
   #tryAcceptOverload(value: Value, suppressor: Suppressor): boolean {
-    const buffer = this.overloadRewrite(this.#buffer, value);
+    const rewriteResult = either.tryCatch(
+      () => this.overloadRewrite(this.#buffer, value),
+      identity,
+    );
 
+    if (either.isLeft(rewriteResult)) {
+      suppressor.capture(rewriteResult.left);
+      return false;
+    }
+
+    const buffer = rewriteResult.right;
     if (buffer.length > this.capacity) {
       return false;
     }

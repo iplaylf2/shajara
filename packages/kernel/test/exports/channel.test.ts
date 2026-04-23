@@ -216,6 +216,37 @@ describe("/ primitives: channel, close, send, receive", () => {
 
   test.for([
     {
+      given: [1, "old-value", "incoming-value", new Error("rewrite failed")] as const,
+      outcome: {
+        receiveResult: { kind: "value", value: "old-value" },
+        sendResult: none,
+      },
+    },
+  ])(
+    "captures an overload rewrite failure without accepting the incoming value",
+    async ({ given: [capacity, oldValue, incomingValue, failure], outcome }) => {
+      await using ritual = interpretRitual(() =>
+        pipe(
+          channel<string>(capacity, () => {
+            throw failure;
+          }),
+          wisp.map(([receiver, sender]) => ({ receiver, sender })),
+          wisp.chainFirst(({ sender }) => send(sender, oldValue)),
+          wisp.bind("sendResult", ({ sender }) => trySend(sender, incomingValue)),
+          wisp.bind("receiveResult", ({ receiver }) => receive(receiver)),
+          wisp.map(({ receiveResult, sendResult }) => ({ receiveResult, sendResult })),
+        ),
+      );
+      const step = ritual.driveSync();
+      const actual = unwrapExitedSucceeded(step);
+
+      expect(actual).toEqual(outcome);
+      expect(ritual.suppressorErrors).toEqual([failure]);
+    },
+  );
+
+  test.for([
+    {
       given: [1, "old-value", "waiting-value", "incoming-value"] as const,
       outcome: {
         incomingSendResult: none,

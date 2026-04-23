@@ -17,7 +17,6 @@ import type {
   RuntimeProcessKeeper,
   RuntimeProcessNextEcho,
   RuntimeProcessRunner,
-  RuntimeProcessRunnerNext,
 } from "./runtime-process";
 import type {
   ContextKey,
@@ -49,6 +48,7 @@ import { RuntimeProcess } from "./runtime-process";
 import type { ScopeSync } from "./runtime-scope";
 import type { ScopeZone } from "./scope-zone";
 import type { TaggedUnion } from "type-fest";
+import { identity } from "fp-ts/lib/function";
 import { unreachable } from "#/utils/index";
 
 export class Interpreter {
@@ -76,21 +76,21 @@ export class Interpreter {
         return processExitedStep(either.left(runner.stateAs(runner.status).failure));
       }
       case "running": {
-        // oxlint-disable-next-line init-declarations
-        let next: RuntimeProcessRunnerNext<Relic, Sigil>;
+        const running = runner.stateAs(runner.status);
+        const nextResult = either.tryCatch(() => running.next(), identity);
 
-        try {
-          next = runner.stateAs(runner.status).next();
-        } catch (error) {
+        if (either.isLeft(nextResult)) {
           const scope = this.#resolve(handle.scopeRef);
           this.#reconcile(
             scope,
-            halt(scope, handle.keeper(), interruptedFailure(error)),
+            halt(scope, handle.keeper(), interruptedFailure(nextResult.left)),
             suppressor,
           );
 
           return processExitedStep(either.left(runner.stateAs("failed").failure));
         }
+
+        const next = nextResult.right;
 
         switch (next.kind) {
           case "echo": {
