@@ -30,13 +30,18 @@ In the host layer, `Ritual` means "how application code expresses the same compu
 
 The host layer adapts kernel result values into application-facing values and exceptions.
 
+The host layer represents optional results as `Presence<T>`: `[true, value]` when a value is present and `[false]` when no value is present.
+
 Typical rewrites include:
 
 - kernel `wait(future)` returns `Either<FailureShape, T>`
 - host `wait(future)` returns `T` and throws on failure
 
 - kernel `lookup(key)` returns `Option<T>`
-- host `lookup(key)` returns `T | undefined`
+- host `lookup(key)` returns `Presence<T>`
+
+- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
+- host `poll(future)` returns `Presence<T>` and throws when the settled future holds a failure
 
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
 - host `enclose(ritual)` returns `T` and throws on failure
@@ -46,6 +51,12 @@ Typical rewrites include:
 
 - kernel `receive(receiver)` returns a value or terminal channel state
 - host `receive(receiver)` returns the value and throws on closed or revoked channels
+
+- kernel `trySend(sender, value)` returns an optional channel send state
+- host `trySend(sender, value)` returns `true` when the value is accepted, `false` when the channel is not ready, and throws on closed or revoked channels
+
+- kernel `tryReceive(receiver)` returns an optional channel receive state
+- host `tryReceive(receiver)` returns `Presence<T>` and throws on closed or revoked channels
 
 As a result, `Future`, `Scope`, and `Failure` are exposed on the host side primarily as user-visible results.
 

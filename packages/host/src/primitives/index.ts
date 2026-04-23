@@ -8,6 +8,8 @@ export * from "./receive";
 export * from "./settle";
 export * from "./settle-error";
 export * from "./send";
+export * from "./try-receive";
+export * from "./try-send";
 export * from "./wait";
 export * from "./bind";
 export * from "./cede";

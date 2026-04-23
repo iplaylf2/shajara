@@ -17,7 +17,7 @@ Names available from the root entry include:
 - runtime entries: `run`, `createScope`
 - host operations: `action`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
-- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`
+- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
 - other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
@@ -25,7 +25,7 @@ The subpath `@shajara/host/primitives` exposes:
 
 - concurrency and boundaries: `all`, `autonomy`, `enclose`, `guard`, `race`, `resource`, `resumable`, `spawn`
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
-- channel operations: `channel`, `close`, `send`, `receive`
+- channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
 - control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
 
@@ -132,6 +132,8 @@ yield * until(thunk);
 
 ## Host Primitive Return Values
 
+A `Presence<T>` return value is `[true, value]` when a value is present and `[false]` when no value is present.
+
 ### Concurrency and boundaries
 
 | Primitive   | Return value       |
@@ -150,33 +152,35 @@ yield * until(thunk);
 | Primitive     | Return value                           |
 | ------------- | -------------------------------------- |
 | `future`      | `[RiteFuture<T>, RiteFutureSettle<T>]` |
-| `poll`        | `T \| undefined`                       |
+| `poll`        | `Presence<T>`                          |
 | `settle`      | `void`                                 |
 | `settleError` | `void`                                 |
 | `wait`        | `T`                                    |
 
 ### Channel primitives
 
-| Primitive | Return value                             |
-| --------- | ---------------------------------------- |
-| `channel` | `[ChannelReceiver<T>, ChannelSender<T>]` |
-| `send`    | `void`                                   |
-| `receive` | `T`                                      |
-| `close`   | `void`                                   |
+| Primitive    | Return value                             |
+| ------------ | ---------------------------------------- |
+| `channel`    | `[ChannelReceiver<T>, ChannelSender<T>]` |
+| `send`       | `void`                                   |
+| `receive`    | `T`                                      |
+| `trySend`    | `boolean`                                |
+| `tryReceive` | `Presence<T>`                            |
+| `close`      | `void`                                   |
 
 ### Context, control, and lifecycle
 
-| Primitive | Return value     |
-| --------- | ---------------- |
-| `bind`    | `void`           |
-| `lookup`  | `T \| undefined` |
-| `unbind`  | `void`           |
-| `self`    | `SelfHandle`     |
-| `halt`    | `never`          |
-| `cancel`  | `never`          |
-| `cede`    | `void`           |
-| `defer`   | `void`           |
-| `park`    | `never`          |
+| Primitive | Return value  |
+| --------- | ------------- |
+| `bind`    | `void`        |
+| `lookup`  | `Presence<T>` |
+| `unbind`  | `void`        |
+| `self`    | `SelfHandle`  |
+| `halt`    | `never`       |
+| `cancel`  | `never`       |
+| `cede`    | `void`        |
+| `defer`   | `void`        |
+| `park`    | `never`       |
 
 ## Kernel Primitive Result Model
 

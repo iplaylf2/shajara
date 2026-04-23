@@ -1,8 +1,9 @@
-import type { ChannelReceiver, ReceiveResult } from "@shajara/kernel";
 import { ChannelError } from "#/errors";
+import type { ChannelReceiver } from "@shajara/kernel";
 import type { RiteCoroutine } from "#/contracts";
 import { encodeRitual } from "#/boundary";
 import { receive as kernelReceive } from "@shajara/kernel";
+import { messageOf } from "#/primitives-kit";
 
 export function* receive<Value>(receiver: ChannelReceiver<Value>): RiteCoroutine<Value> {
   const result = yield* encodeRitual(() => kernelReceive(receiver))();
@@ -13,14 +14,5 @@ export function* receive<Value>(receiver: ChannelReceiver<Value>): RiteCoroutine
     case "closed":
     case "revoked":
       throw new ChannelError(result, messageOf(result));
-  }
-}
-
-function messageOf(result: Exclude<ReceiveResult<unknown>, { kind: "value" }>): string {
-  switch (result.kind) {
-    case "closed":
-      return "Channel is closed";
-    case "revoked":
-      return "Channel is revoked";
   }
 }
