@@ -14,8 +14,8 @@
   "scripts": {
     "build": "yarn workspaces foreach -At run build",
     "depcruise": "shajara-forge depcruise",
-    "format": "yarn run oxfmt --write .",
-    "lint": "oxlint",
+    "format": "oxfmt --write .",
+    "lint": "yarn workspaces foreach -Ap exec -- oxlint --config oxlint.config.ts",
     "pack:license": "shajara-forge pack:license",
     "release": "yarn workspaces foreach -At --no-private npm publish --access public --provenance --tolerate-republish",
     "spellcheck": "cspell-cli .",
@@ -27,6 +27,7 @@
     "@changesets/cli": "^2.31.0",
     "@shajara/forge": "workspace:^",
     "@shajara/presets": "workspace:^",
+    "@types/node": "catalog:",
     "cspell-cli": "^10.0.0",
     "knip": "^6.6.1",
     "oxfmt": "^0.46.0",
