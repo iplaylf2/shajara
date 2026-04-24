@@ -1,8 +1,6 @@
 import type { Processor, ProcessorTask } from "./processor";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
-import type { ProcessRef } from "#/contracts";
-import type { ProcessStep } from "#/interpreter/index";
 import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {
@@ -10,27 +8,7 @@ export class ExecutorDriver {
     this.#isStopped = true;
   }
 
-  public driveSyncUnsafely<Result>(process: ProcessRef<Result>): ProcessStep<Result> {
-    while (true) {
-      const step = this.stepProcess(process);
-      switch (step.disposition) {
-        case "interpreted":
-        case "resonated": {
-          continue;
-        }
-        case "ceded":
-        case "waiting":
-        case "exited": {
-          return step;
-        }
-      }
-    }
-  }
-
-  public constructor(
-    private readonly pacer: Pacer,
-    private readonly stepProcess: <Result>(process: ProcessRef<Result>) => ProcessStep<Result>,
-  ) {}
+  public constructor(private readonly pacer: Pacer) {}
 
   public get processor(): Processor {
     return this.#processor;

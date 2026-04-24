@@ -1,5 +1,6 @@
 // oxlint-disable max-lines
 import type {
+  BranchHandle,
   ChannelEndpoint,
   ChannelReceiver,
   ChannelSender,
@@ -128,6 +129,21 @@ export class Interpreter {
       spawn(this.#resolve(scope), this.#provideProcess(worker), descriptor),
       suppressor,
     );
+  }
+
+  public branch<Relic>(
+    scope: ScopeRef<unknown>,
+    entry: Ritual<Relic>,
+    descriptor: ScopeDescriptor,
+    suppressor: Suppressor,
+  ): BranchHandle<Relic> {
+    const child = this.scopeBranch(scope, entry, descriptor, this.#resolve(scope).zone, suppressor);
+    const childScope = this.#resolve(child);
+
+    return {
+      process: childScope.entryProcess as ProcessRef<Relic>,
+      scope: childScope as ScopeRef<Relic>,
+    };
   }
 
   public cancel(scope: ScopeRef<unknown>, suppressor: Suppressor): void {

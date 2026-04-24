@@ -12,13 +12,6 @@ export type ProcessStep<Relic> = TaggedUnion<
   }
 >;
 
-export type ProcessStepDisposition = ProcessStep<unknown>["disposition"];
-
-export type ProcessStepOf<Relic, Disposition extends ProcessStepDisposition> = Extract<
-  ProcessStep<Relic>,
-  { readonly disposition: Disposition }
->;
-
 export function processWaitingStep<Relic>(): ProcessStepOf<Relic, "waiting"> {
   return { disposition: "waiting" };
 }
@@ -40,3 +33,8 @@ export function processExitedStep<Relic>(
 ): ProcessStepOf<Relic, "exited"> {
   return { disposition: "exited", result };
 }
+
+type ProcessStepOf<Relic, Disposition extends ProcessStep<unknown>["disposition"]> = Extract<
+  ProcessStep<Relic>,
+  { readonly disposition: Disposition }
+>;
