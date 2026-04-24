@@ -1,5 +1,45 @@
 # @shajara/host
 
+## 0.2.0
+
+### Minor Changes
+
+- bd357f9: Align host callback bridges with channel control semantics.
+
+  The host package now exposes `feed(capacity, overloadRewrite?)` for
+  callback-driven inputs. It returns a receiver for coroutine code and host-side
+  `trySend` and `close` callbacks that use the executor's external channel control
+  path.
+
+  Host channel primitives now follow the explicit close-outcome semantics. Closed
+  or revoked channel conditions are preserved on `ChannelError.detail`, `action`
+  callbacks remain safe to destructure before passing to callback APIs, and scope
+  cancellation now reflects whether a ritual had started before cancellation won.
+
+- 2f51241: Add channel primitives and `Presence<T>` results to the host API.
+
+  The host package now exposes `channel`, `send`, `receive`, `trySend`,
+  `tryReceive`, and `close` for channel-based communication. Closed or revoked
+  channels now surface as `ChannelError`.
+
+  Optional host results now use `Presence<T>` tuples. `lookup`, `poll`, and
+  `tryReceive` return `[true, value]` when a value is present and `[false]` when
+  no value is available.
+
+### Patch Changes
+
+- 0f7c29a: Simplify launched scope branching.
+
+  Launched scopes now enter the runtime through the interpreter's direct branch
+  path. This removes an extra internal worker from launch setup and keeps branch
+  creation aligned with the rest of the scope-control path, while preserving the
+  public launch API and result semantics.
+
+- Updated dependencies [2f51241]
+- Updated dependencies [bd357f9]
+- Updated dependencies [0f7c29a]
+  - @shajara/kernel@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
