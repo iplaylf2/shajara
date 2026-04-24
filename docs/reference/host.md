@@ -6,7 +6,7 @@
 
 The host layer is responsible for three things:
 
-- providing application-facing runtime entries: `run`, `createScope`, `action`, `sleep`, `until`
+- providing application-facing runtime entries: `run`, `createScope`, `action`, `feed`, `sleep`, `until`
 - providing generator-style primitives: `@shajara/host/primitives`
 - mapping kernel failures into JavaScript error objects
 

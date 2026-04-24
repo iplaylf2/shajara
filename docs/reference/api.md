@@ -15,11 +15,11 @@ This package is intended for application code. Its root entry re-exports:
 Names available from the root entry include:
 
 - runtime entries: `run`, `createScope`
-- host operations: `action`, `sleep`, `until`
+- host operations: `action`, `feed`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
+- other root-level types: `Action`, `Feed`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
@@ -117,6 +117,18 @@ Returns:
 - `future`
 - `resolve(value)`
 - `reject(error)`
+
+### `feed`
+
+```ts
+yield * feed<Value, Outcome>(capacity, overloadRewrite?);
+```
+
+Returns:
+
+- `receiver`
+- `trySend(value)`
+- `close(outcome)`
 
 ### `sleep`
 
