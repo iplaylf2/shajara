@@ -1,8 +1,15 @@
-import type { ExecutionScopeRef, FutureSettleKey } from "#/index";
-import { cancel, defer, future, halt, park, settle, spawn, wait } from "#/index";
+import type {
+  ChannelSender,
+  ExecutionScopeRef,
+  Executor,
+  FutureSettleKey,
+  LaunchHandle,
+  ReceiveResult,
+} from "#/index";
+import { cancel, channel, defer, future, halt, park, receive, settle, spawn, wait } from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { iife, isSome, left, right } from "#/utils";
+import { iife, isSome, left, right, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -400,6 +407,65 @@ describe("/ interfaces: Executor", () => {
 
     test.for([
       {
+        given: ["external-value"] as const,
+        outcome: {
+          sendResult: some({ kind: "sent" }),
+          settled: {
+            kind: "success",
+            result: { kind: "value", value: "external-value" },
+          },
+          settledStatus: "closed",
+        },
+      },
+    ])(
+      "trySend injects a channel value into the launched execution environment",
+      async ({ given: [value], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+        const { handle, sender } = await launchReceivingChannel(executor);
+
+        const actual = {
+          sendResult: executor.trySend(sender, value),
+          settled: await waitForSettled(handle),
+          settledStatus: handle.status,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
+
+    test.for([
+      {
+        given: ["closed-outcome", "late-value"] as const,
+        outcome: {
+          lateSendResult: some({ kind: "closed", outcome: "closed-outcome" }),
+          settled: {
+            kind: "success",
+            result: { kind: "closed", outcome: "closed-outcome" },
+          },
+          settledStatus: "closed",
+        },
+      },
+    ])(
+      "close injects a terminal channel result into the launched execution environment",
+      async ({ given: [closeOutcome, lateValue], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+        const { handle, sender } = await launchReceivingChannel(executor);
+
+        executor.close(sender, closeOutcome);
+        const actual = {
+          lateSendResult: executor.trySend(sender, lateValue),
+          settled: await waitForSettled(handle),
+          settledStatus: handle.status,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
+
+    test.for([
+      {
         given: [
           {
             kind: "halted",
@@ -734,3 +800,32 @@ describe("/ interfaces: Executor", () => {
     );
   });
 });
+
+async function launchReceivingChannel(
+  executor: Executor,
+): Promise<LaunchedChannelReceiver<string, string>> {
+  const sender = Promise.withResolvers<ChannelSender<string, string>>();
+  const handle = unwrapSome(
+    executor.launch(executor.scope, () =>
+      pipe(
+        channel<string, string>(1),
+        wisp.chain(([receiver, nextSender]) =>
+          pipe(
+            wisp.fromIO(() => {
+              sender.resolve(nextSender);
+              return receiver;
+            }),
+            wisp.chain(receive),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  return { handle, sender: await sender.promise };
+}
+
+interface LaunchedChannelReceiver<Value, Outcome> {
+  readonly handle: LaunchHandle<ReceiveResult<Value, Outcome>>;
+  readonly sender: ChannelSender<Value, Outcome>;
+}

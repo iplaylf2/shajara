@@ -5,7 +5,7 @@
 | Document                     | Role                                                                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | [semantics.md](semantics.md) | Semantic baseline. Defines `Wisp`, `Sigil`, `Scope`, `Process`, `Future`, channel, failure, and convergence. |
-| [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, `launch(...)`, `Pacer`, and autonomy.         |
+| [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, external control, `Pacer`, and autonomy.      |
 | [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, error mapping, and host integration.     |
 | [api.md](api.md)             | Public interface reference. Covers exports, import paths, result shapes, and public entry points.            |
 

@@ -1,4 +1,5 @@
 // oxlint-disable max-dependencies
+import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
 import type { Disposer, Option } from "#/utils/index";
 import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
@@ -31,6 +32,11 @@ export interface Executor extends LaunchHandle<never> {
     ritual: Ritual<Result>,
   ): Option<LaunchHandle<Result>>;
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
+  trySend<Value, Outcome>(
+    sender: ChannelSender<Value, Outcome>,
+    value: Value,
+  ): Option<SendResult<Outcome>>;
+  close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
@@ -95,6 +101,19 @@ class RuntimeExecutor implements Executor {
   ): boolean {
     using fault = new FaultSink("Out-of-band failures occurred while settling a future");
     return this.#interpreter.settle(futureSettle, result, fault);
+  }
+
+  public trySend<Value, Outcome>(
+    sender: ChannelSender<Value, Outcome>,
+    value: Value,
+  ): Option<SendResult<Outcome>> {
+    using fault = new FaultSink("Out-of-band failures occurred while sending to a channel");
+    return this.#interpreter.trySend(sender, value, fault);
+  }
+
+  public close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void {
+    using fault = new FaultSink("Out-of-band failures occurred while closing a channel");
+    this.#interpreter.close(endpoint, outcome, fault);
   }
 
   public cancel(scope: ExecutionScopeRef<unknown>): void {
