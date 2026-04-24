@@ -83,6 +83,11 @@ The host layer uses `fromFailure(...)` for unified mapping:
 - `scope` -> `ScopeError`
 - `external` -> the original `Error` or `ExternalError`
 
+Separately, host channel primitives throw `ChannelError` when a kernel channel operation
+returns a closed or revoked terminal state. In that case, `ChannelError.detail` is
+`{ kind: "condition", condition }` and `cause` is `null`. Kernel channel failures use
+`{ kind: "cause", cause }`.
+
 Here, `ScopeError` means the caller observes the structural fact that a scope converged as a failure with that cause.
 
 The original cause lives at:

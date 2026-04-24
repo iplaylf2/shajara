@@ -90,17 +90,19 @@ When the owner scope finishes, any unfinished futures converge uniformly as `can
 
 ### `Channel`
 
-`channel<T>(capacity, overloadRewrite?)` creates a channel owned by the current scope and returns a `ChannelHandle<T>`:
+`channel<T, O>(capacity, overloadRewrite?)` creates a channel owned by the current scope and returns a `ChannelHandle<T, O>`:
 
 ```ts
-type ChannelHandle<T> = readonly [receiver: ChannelReceiver<T>, sender: ChannelSender<T>];
+type ChannelHandle<T, O> = readonly [receiver: ChannelReceiver<T, O>, sender: ChannelSender<T, O>];
 ```
+
+The `T` parameter is the value type. The `O` parameter is the explicit close outcome type.
 
 The two endpoints separate read and write authority:
 
-- `ChannelReceiver<T>` is accepted by `receive(receiver)` and `tryReceive(receiver)`
-- `ChannelSender<T>` is accepted by `send(sender, value)` and `trySend(sender, value)`
-- either endpoint is accepted by `close(endpoint)`
+- `ChannelReceiver<T, O>` is accepted by `receive(receiver)` and `tryReceive(receiver)`
+- `ChannelSender<T, O>` is accepted by `send(sender, value)` and `trySend(sender, value)`
+- either endpoint is accepted by `close(endpoint, outcome)`
 
 Valid capacities define the buffering model:
 
@@ -134,10 +136,13 @@ Send and receive operations each have blocking and non-blocking forms:
 - `receive(receiver)` blocks until a value or terminal channel state is available
 - `tryReceive(receiver)` never blocks; it returns `some({ kind: "value", value })`, `none`, or a terminal state wrapped in `some`
 
-Terminal channel states are `{ kind: "closed" }` and `{ kind: "revoked" }`. A successful
-receive returns `{ kind: "value", value }`.
+Terminal channel states are `{ kind: "closed", outcome }` and `{ kind: "revoked" }`.
+A successful receive returns `{ kind: "value", value }`.
 
-`close(endpoint)` closes the channel explicitly. A scope that finishes while it still owns open channels revokes them. Closing and revocation both wake blocked senders and receivers; close represents an explicit channel operation, while revoke represents owner-scope disposal.
+`close(endpoint, outcome)` closes the channel explicitly. Closed channel results carry
+that outcome. A scope that finishes while it still owns open channels
+revokes them. Closing and revocation both wake blocked senders and receivers; close
+represents an explicit channel operation, while revoke represents owner-scope disposal.
 
 ## Failure
 

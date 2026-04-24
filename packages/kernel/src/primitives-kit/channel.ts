@@ -5,11 +5,13 @@ import { pipe } from "fp-ts/lib/function";
 import { receive } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
-export function receiveInBand<Value>(channel: ChannelReceiver<Value>): Wisp<Value> {
+export function receiveInBand<Value, Outcome>(
+  channel: ChannelReceiver<Value, Outcome>,
+): Wisp<Value> {
   return pipe(
     receive(channel),
     wisp.liftF,
-    wisp.map(narrowAs<Extract<ReceiveResult<Value>, { kind: "value" }>>()),
+    wisp.map(narrowAs<Extract<ReceiveResult<Value, Outcome>, { kind: "value" }>>()),
     wisp.map(({ value }) => value),
   );
 }

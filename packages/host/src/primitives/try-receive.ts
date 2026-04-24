@@ -1,13 +1,12 @@
 import type { Presence, RiteCoroutine } from "#/contracts";
-import { ChannelError } from "#/errors";
 import type { ChannelReceiver } from "@shajara/kernel";
+import { channelErrorOf } from "#/primitives-kit";
 import { encodeRitual } from "#/boundary";
 import { isNone } from "@shajara/kernel/utils";
 import { tryReceive as kernelTryReceive } from "@shajara/kernel";
-import { messageOf } from "#/primitives-kit";
 
-export function* tryReceive<Value>(
-  receiver: ChannelReceiver<Value>,
+export function* tryReceive<Value, Outcome>(
+  receiver: ChannelReceiver<Value, Outcome>,
 ): RiteCoroutine<Presence<Value>> {
   const result = yield* encodeRitual(() => kernelTryReceive(receiver))();
 
@@ -21,7 +20,7 @@ export function* tryReceive<Value>(
     }
     case "closed":
     case "revoked": {
-      throw new ChannelError(result.value, messageOf(result.value));
+      throw channelErrorOf(result.value);
     }
   }
 }

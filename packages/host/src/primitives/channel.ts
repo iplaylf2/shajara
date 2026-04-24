@@ -4,21 +4,22 @@ import type { RiteCoroutine } from "#/contracts";
 import { encodeRitual } from "#/boundary";
 import { channel as kernelChannel } from "@shajara/kernel";
 
-export function channel<Value>(
+export function channel<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,
-): RiteCoroutine<ChannelHandle<Value>> {
+): RiteCoroutine<ChannelHandle<Value, Outcome>> {
   if (capacity < MINIMUM_CAPACITY || Number.isNaN(capacity)) {
     throw new ChannelError(
-      { capacity, kind: "invalid-capacity" },
+      { cause: { capacity, kind: "invalid-capacity" }, kind: "cause" },
       `Channel capacity must be a non-negative number: ${capacity}`,
     );
   }
 
-  return encodeRitual(() => kernelChannel<Value>(capacity, overloadRewrite))();
+  return encodeRitual(() => kernelChannel<Value, Outcome>(capacity, overloadRewrite))();
 }
 
 export type {
+  ChannelEndpoint,
   ChannelHandle,
   ChannelReceiver,
   ChannelSender,

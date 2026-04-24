@@ -159,14 +159,16 @@ A `Presence<T>` return value is `[true, value]` when a value is present and `[fa
 
 ### Channel primitives
 
-| Primitive    | Return value                             |
-| ------------ | ---------------------------------------- |
-| `channel`    | `[ChannelReceiver<T>, ChannelSender<T>]` |
-| `send`       | `void`                                   |
-| `receive`    | `T`                                      |
-| `trySend`    | `boolean`                                |
-| `tryReceive` | `Presence<T>`                            |
-| `close`      | `void`                                   |
+| Primitive    | Return value                                   |
+| ------------ | ---------------------------------------------- |
+| `channel`    | `[ChannelReceiver<T, O>, ChannelSender<T, O>]` |
+| `send`       | `void`                                         |
+| `receive`    | `T`                                            |
+| `trySend`    | `boolean`                                      |
+| `tryReceive` | `Presence<T>`                                  |
+| `close`      | `void`                                         |
+
+For channels, `T` is the value type and `O` is the close outcome type.
 
 ### Context, control, and lifecycle
 
@@ -189,11 +191,11 @@ Kernel primitives keep failure and terminal states in explicit return values:
 - kernel `wait(future)` returns `Either<FailureShape, T>`
 - kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
-- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T>, ChannelSender<T>]`
-- kernel `send(sender, value)` returns `{ kind: "sent" | "closed" | "revoked" }`
-- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`
-- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" | "closed" | "revoked" }>`
-- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed" } | { kind: "revoked" }>`
-- kernel `close(endpoint)` returns `void`
+- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T, O>, ChannelSender<T, O>]`
+- kernel `send(sender, value)` returns `{ kind: "sent" }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
+- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
+- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
+- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
+- kernel `close(endpoint, outcome)` returns `void`
 
 When consuming kernel directly, callers handle those values in band.

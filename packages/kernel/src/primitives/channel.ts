@@ -5,10 +5,10 @@ import { channel as channelSigil } from "#/sigils/index";
 import { halt } from "./halt";
 import { wisp } from "#/internal/fp";
 
-export function channel<Value>(
+export function channel<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,
-): Wisp<ChannelHandle<Value>> {
+): Wisp<ChannelHandle<Value, Outcome>> {
   if (capacity < MINIMUM_CAPACITY || Number.isNaN(capacity)) {
     return halt(
       channelFailure(
@@ -18,11 +18,12 @@ export function channel<Value>(
     );
   }
 
-  return wisp.liftF(channelSigil<Value>(capacity, overloadRewrite));
+  return wisp.liftF(channelSigil<Value, Outcome>(capacity, overloadRewrite));
 }
 
 export type {
   ChannelHandle,
+  ChannelEndpoint,
   ChannelReceiver,
   ChannelSender,
   OverloadRewrite,

@@ -1,5 +1,6 @@
 // oxlint-disable max-lines
 import type {
+  ChannelEndpoint,
   ChannelReceiver,
   ChannelSender,
   OverloadRewrite,
@@ -162,10 +163,10 @@ export class Interpreter {
     return settle(this.#resolve(futureSettle), result, suppressor);
   }
 
-  public tryReceive<Value>(
-    receiver: ChannelReceiver<Value>,
+  public tryReceive<Value, Outcome>(
+    receiver: ChannelReceiver<Value, Outcome>,
     suppressor: Suppressor,
-  ): option.Option<ReceiveResult<Value>> {
+  ): option.Option<ReceiveResult<Value, Outcome>> {
     const channelHandle = this.#resolve(receiver);
     const channelScope = this.#resolve(channelHandle.scope);
     const result = this.#reconcile(
@@ -177,11 +178,11 @@ export class Interpreter {
     return option.fromNullable(result);
   }
 
-  public trySend<Value>(
-    sender: ChannelSender<Value>,
+  public trySend<Value, Outcome>(
+    sender: ChannelSender<Value, Outcome>,
     value: Value,
     suppressor: Suppressor,
-  ): option.Option<SendResult> {
+  ): option.Option<SendResult<Outcome>> {
     const channelHandle = this.#resolve(sender);
     const channelScope = this.#resolve(channelHandle.scope);
     const result = this.#reconcile(
@@ -193,13 +194,14 @@ export class Interpreter {
     return option.fromNullable(result);
   }
 
-  public close(
-    endpoint: ChannelReceiver<unknown> | ChannelSender<unknown>,
+  public close<Outcome>(
+    endpoint: ChannelEndpoint<unknown, Outcome>,
+    outcome: Outcome,
     suppressor: Suppressor,
   ): void {
     const channelHandle = this.#resolve(endpoint);
     const channelScope = this.#resolve(channelHandle.scope);
-    this.#reconcile(channelScope, close(channelScope, channelHandle), suppressor);
+    this.#reconcile(channelScope, close(channelScope, channelHandle, outcome), suppressor);
   }
 
   public forceFailed(scope: ScopeRef<unknown>, failure: Failure, suppressor: Suppressor): void {
@@ -351,7 +353,11 @@ export class Interpreter {
       case "close": {
         const channelHandle = this.#resolve(sigil.endpoint);
         const channelScope = this.#resolve(channelHandle.scope);
-        this.#reconcile(channelScope, close(channelScope, channelHandle), suppressor);
+        this.#reconcile(
+          channelScope,
+          close(channelScope, channelHandle, sigil.outcome),
+          suppressor,
+        );
 
         accept(VOID);
         return processInterpretedStep();
@@ -505,7 +511,7 @@ export class Interpreter {
       | RuntimeScope
       | RuntimeProcessHandle<unknown>
       | RuntimeFuture<unknown>
-      | RuntimeChannelHandle<unknown>,
+      | RuntimeChannelHandle<unknown, unknown>,
   ): void {
     // Do nothing
   }
@@ -513,9 +519,9 @@ export class Interpreter {
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
   #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcessHandle<Relic>;
   #resolve<Result>(futureKey: FutureKey<Result> | FutureSettleKey<Result>): RuntimeFuture<Result>;
-  #resolve<Value>(
-    channel: ChannelReceiver<Value> | ChannelSender<Value>,
-  ): RuntimeChannelHandle<Value>;
+  #resolve<Value, Outcome>(
+    channel: ChannelEndpoint<Value, Outcome>,
+  ): RuntimeChannelHandle<Value, Outcome>;
   // oxlint-disable-next-line class-methods-use-this
   #resolve(token: unknown): unknown {
     return token;
@@ -580,12 +586,16 @@ function channel<Value>(
   scope: RuntimeScope,
   capacity: number,
   overloadRewrite: OverloadRewrite<Value>,
-): RuntimeChannelHandle<Value> {
-  return scope.createChannel<Value>(capacity, overloadRewrite);
+): RuntimeChannelHandle<Value, unknown> {
+  return scope.createChannel<Value, unknown>(capacity, overloadRewrite);
 }
 
-function close(scope: RuntimeScope, channelHandle: RuntimeChannelHandle<unknown>): ScopeSync<void> {
-  return scope.close(channelHandle);
+function close<Outcome>(
+  scope: RuntimeScope,
+  channelHandle: RuntimeChannelHandle<unknown, Outcome>,
+  outcome: Outcome,
+): ScopeSync<void> {
+  return scope.close(channelHandle, outcome);
 }
 
 function future(scope: RuntimeScope): RuntimeFuture<unknown> {
@@ -626,7 +636,7 @@ function poll<Result>(runtimeFuture: RuntimeFuture<Result>): FutureResult<Result
 
 function receive(
   scope: RuntimeScope,
-  channelHandle: RuntimeChannelHandle<unknown>,
+  channelHandle: RuntimeChannelHandle<unknown, unknown>,
   process: RuntimeProcessKeeper,
 ): ScopeSync<void> {
   return scope.receive(channelHandle, process);
@@ -636,27 +646,27 @@ function self(process: RuntimeProcessRunner<unknown>): SelfHandle {
   return process.selfHandle();
 }
 
-function send<Value>(
+function send<Value, Outcome>(
   scope: RuntimeScope,
-  channelHandle: RuntimeChannelHandle<Value>,
+  channelHandle: RuntimeChannelHandle<Value, Outcome>,
   value: Value,
   process: RuntimeProcessKeeper,
 ): ScopeSync<void> {
   return scope.send(channelHandle, value, process);
 }
 
-function tryReceive<Value>(
+function tryReceive<Value, Outcome>(
   scope: RuntimeScope,
-  channelHandle: RuntimeChannelHandle<Value>,
-): ScopeSync<ReceiveResult<Value> | null> {
+  channelHandle: RuntimeChannelHandle<Value, Outcome>,
+): ScopeSync<ReceiveResult<Value, Outcome> | null> {
   return scope.tryReceive(channelHandle);
 }
 
-function trySend<Value>(
+function trySend<Value, Outcome>(
   scope: RuntimeScope,
-  channelHandle: RuntimeChannelHandle<Value>,
+  channelHandle: RuntimeChannelHandle<Value, Outcome>,
   value: Value,
-): ScopeSync<SendResult | null> {
+): ScopeSync<SendResult<Outcome> | null> {
   return scope.trySend(channelHandle, value);
 }
 

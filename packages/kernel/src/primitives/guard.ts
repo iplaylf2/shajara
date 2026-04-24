@@ -21,7 +21,7 @@ export type RecoveryHandler = (failure: ScopeFailure) => Wisp<Either<FailureShap
 function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
   return () =>
     pipe(
-      channel<RecoveryRequest>(Infinity),
+      channel<RecoveryRequest, unknown>(Infinity),
       wisp.liftF,
       wisp.chainFirstF(([, sender]) => bind(recoveryChannelKey, sender)),
       wisp.chainF(([receiver]) =>
@@ -31,7 +31,10 @@ function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
     );
 }
 
-function recoveryWorker(recover: RecoveryHandler, receiver: ChannelReceiver<RecoveryRequest>) {
+function recoveryWorker(
+  recover: RecoveryHandler,
+  receiver: ChannelReceiver<RecoveryRequest, unknown>,
+) {
   return function loop(): Wisp<never> {
     return pipe(
       receiveInBand(receiver),

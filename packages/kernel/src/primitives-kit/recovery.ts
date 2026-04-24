@@ -3,7 +3,7 @@ import type { FutureSettleKey } from "#/contracts";
 import type { ScopeFailure } from "#/failures";
 import { contextKey } from "#/contracts";
 
-export const recoveryChannelKey = contextKey<ChannelSender<RecoveryRequest>>();
+export const recoveryChannelKey = contextKey<ChannelSender<RecoveryRequest, unknown>>();
 
 export interface RecoveryRequest {
   readonly failure: ScopeFailure;

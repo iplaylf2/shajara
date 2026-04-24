@@ -3,7 +3,10 @@ import type { Wisp } from "#/contracts";
 import { send as sendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
-export function send<Value>(sender: ChannelSender<Value>, value: Value): Wisp<SendResult> {
+export function send<Value, Outcome>(
+  sender: ChannelSender<Value, Outcome>,
+  value: Value,
+): Wisp<SendResult<Outcome>> {
   return wisp.liftF(sendSigil(sender, value));
 }
 

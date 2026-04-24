@@ -4,8 +4,8 @@ import type { Wisp } from "#/contracts";
 import { tryReceive as tryReceiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
-export function tryReceive<Value>(
-  receiver: ChannelReceiver<Value>,
-): Wisp<Option<ReceiveResult<Value>>> {
+export function tryReceive<Value, Outcome>(
+  receiver: ChannelReceiver<Value, Outcome>,
+): Wisp<Option<ReceiveResult<Value, Outcome>>> {
   return wisp.liftF(tryReceiveSigil(receiver));
 }
