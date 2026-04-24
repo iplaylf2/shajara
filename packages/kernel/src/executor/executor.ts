@@ -6,19 +6,16 @@ import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, io, option } from "fp-ts";
 import { halt, park } from "#/primitives/index";
-import { noop, unreachable } from "#/utils/index";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
 import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
-import type { ProcessStepOf } from "#/interpreter/index";
 import { RoundLimitReaper } from "./round-limit-reaper";
 import { RuntimeLaunchHandle } from "./launch-handle";
-import { branch } from "#/sigils/index";
+import { noop } from "#/utils/index";
 import { pipe } from "fp-ts/function";
-import { wisp } from "#/internal/fp";
 
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
@@ -45,9 +42,7 @@ class RuntimeExecutor implements Executor {
     const pacer = bindTurn(() => {
       this.#startReaperRound();
     });
-    this.#driver = new ExecutorDriver(pacer, (process) =>
-      this.#interpreter.step(process, { capture: unreachable }),
-    );
+    this.#driver = new ExecutorDriver(pacer);
     this.#interpreter = DomainInterpreter.createByAutonomy(park, {
       reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
       scheduler: { assign: () => this.#driver.processor },
@@ -66,13 +61,8 @@ class RuntimeExecutor implements Executor {
       return option.none;
     }
 
-    using fault = new FaultSink("Out-of-band failures occurred while spawning a launched scope");
-    const process = this.#interpreter.spawn(
-      scope,
-      createLaunchWorker(ritual),
-      { completionMode: "structural" },
-      fault,
-    );
+    using fault = new FaultSink("Out-of-band failures occurred while branching a launched scope");
+    const launched = this.#interpreter.branch(scope, ritual, { failureMode: "contain" }, fault);
     const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);
@@ -80,12 +70,7 @@ class RuntimeExecutor implements Executor {
       return option.none;
     }
 
-    const launchStep = this.#driver.driveSyncUnsafely(process) as ProcessStepOf<
-      ScopeRef<Result>,
-      "exited"
-    >;
-    const launchedScope = (launchStep.result as either.Right<ScopeRef<Result>>).right;
-    const executionScope = this.#registerScope(launchedScope);
+    const executionScope = this.#registerScope(launched.scope);
 
     return option.some(
       new RuntimeLaunchHandle(executionScope, {
@@ -213,17 +198,6 @@ class RuntimeExecutor implements Executor {
   readonly #interpreter: DomainInterpreter;
   readonly #rootScope: ExecutionScopeRef<never>;
   readonly #scopeRegistry = new WeakSet<ScopeRef<unknown>>();
-}
-
-function createLaunchWorker<Result>(ritual: Ritual<Result>): Ritual<ScopeRef<Result>> {
-  return () =>
-    pipe(
-      branch(ritual, {
-        failureMode: "contain",
-      }),
-      wisp.liftF,
-      wisp.map(({ scope }) => scope),
-    );
 }
 
 function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Result> {
