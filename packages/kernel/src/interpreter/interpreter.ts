@@ -109,6 +109,13 @@ export class Interpreter {
     }
   }
 
+  public onSettled<Result>(
+    futureKey: FutureKey<Result> | FutureSettleKey<Result>,
+    onSettled: FutureSettler<Result>,
+  ): Disposer {
+    return this.#resolve(futureKey).wait(onSettled);
+  }
+
   public spawn<Relic>(
     scope: ScopeRef<unknown>,
     worker: Ritual<Relic>,
@@ -120,6 +127,10 @@ export class Interpreter {
       spawn(this.#resolve(scope), this.#provideProcess(worker), descriptor),
       suppressor,
     );
+  }
+
+  public cancel(scope: ScopeRef<unknown>, suppressor: Suppressor): void {
+    this.#reconcile(scope, cancel(this.#resolve(scope)), suppressor);
   }
 
   public bind<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>, value: Value): void {
@@ -143,23 +154,12 @@ export class Interpreter {
     return option.fromNullable(poll(this.#resolve(futureKey)));
   }
 
-  public wait<Result>(
-    futureKey: FutureKey<Result> | FutureSettleKey<Result>,
-    onSettled: FutureSettler<Result>,
-  ): Disposer {
-    return this.#resolve(futureKey).wait(onSettled);
-  }
-
   public settle<Result>(
     futureSettle: FutureSettleKey<Result>,
     result: FutureResult<Result>,
     suppressor: Suppressor,
   ): boolean {
     return settle(this.#resolve(futureSettle), result, suppressor);
-  }
-
-  public cancel(scope: ScopeRef<unknown>, suppressor: Suppressor): void {
-    this.#reconcile(scope, cancel(this.#resolve(scope)), suppressor);
   }
 
   public tryReceive<Value>(

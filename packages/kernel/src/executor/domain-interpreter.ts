@@ -127,7 +127,7 @@ export class DomainInterpreter extends Interpreter {
     }
 
     childReaperDomain.setScopeRoot(childScope);
-    this.wait(childScope.exitFuture, () => {
+    this.onSettled(childScope.exitFuture, () => {
       childReaperDomain.close();
       this.#tryRestoreReaperLeaf(reaperDomain, scope);
     });
@@ -140,7 +140,7 @@ export class DomainInterpreter extends Interpreter {
   ): void {
     reaperDomain.removeLeafScope(scope);
     reaperDomain.addLeafScope(childScope);
-    this.wait(childScope.exitFuture, () => {
+    this.onSettled(childScope.exitFuture, () => {
       reaperDomain.removeLeafScope(childScope);
       this.#tryRestoreReaperLeaf(reaperDomain, scope);
     });
@@ -155,7 +155,7 @@ export class DomainInterpreter extends Interpreter {
       return;
     }
 
-    this.wait(childScope.exitFuture, () => {
+    this.onSettled(childScope.exitFuture, () => {
       childSchedulerDomain.close();
     });
   }

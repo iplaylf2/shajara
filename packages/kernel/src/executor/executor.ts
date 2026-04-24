@@ -47,7 +47,7 @@ class RuntimeExecutor implements Executor {
       scheduler: { assign: () => this.#driver.processor },
     });
     this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot as never);
-    this.#interpreter.wait(this.#rootScope.exitFuture, () => {
+    this.#interpreter.onSettled(this.#rootScope.exitFuture, () => {
       this.#driver.stop();
     });
   }
@@ -121,7 +121,7 @@ class RuntimeExecutor implements Executor {
   #startReaperRound(): void {
     using faultSink = new FaultSink("Out-of-band failures occurred while starting a reaper round");
     for (const [scope, process] of this.#interpreter.startReaperTasks(faultSink)) {
-      this.#interpreter.wait(process.exitFuture, (result, suppressor) => {
+      this.#interpreter.onSettled(process.exitFuture, (result, suppressor) => {
         if (this.#interpreter.scopeState(scope).status === "closed") {
           return;
         }
@@ -168,7 +168,7 @@ class RuntimeExecutor implements Executor {
       return noop;
     }
 
-    return this.#interpreter.wait(scope.exitFuture, (result, suppressor) => {
+    return this.#interpreter.onSettled(scope.exitFuture, (result, suppressor) => {
       try {
         listener(toLaunchResult(result));
       } catch (error) {
