@@ -142,7 +142,7 @@ export class RuntimeProcess<Relic>
 
     return {
       cleanups,
-      notification: this.#exitFuture.settle(result),
+      settlement: this.#exitFuture.settle(result),
     };
   }
 

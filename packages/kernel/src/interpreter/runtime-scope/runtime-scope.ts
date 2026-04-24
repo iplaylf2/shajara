@@ -23,6 +23,7 @@ import type {
 import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
+import type { FutureSettlement } from "#/interpreter/runtime-future";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
 import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
@@ -49,7 +50,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#notifyEffect(closure.notification);
+    yield this.#settleEffect(closure.settlement);
     yield* this.#triggerCleanup(closure.cleanups);
     yield this.#trackProcessEffect(process);
     yield* this.#advanceClosing();
@@ -60,7 +61,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#notifyEffect(closure.notification);
+    yield this.#settleEffect(closure.settlement);
     yield this.#trackProcessEffect(process);
 
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
@@ -475,7 +476,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#notifyEffect(closure.notification);
+      yield this.#settleEffect(closure.settlement);
       yield* this.#triggerCleanup(closure.cleanups);
       yield this.#trackProcessEffect(process);
     }
@@ -492,7 +493,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#notifyEffect(closure.notification);
+      yield this.#settleEffect(closure.settlement);
       yield* this.#triggerCleanup(closure.cleanups);
       yield this.#trackProcessEffect(process);
     }
@@ -509,14 +510,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     const canceled = either.left(canceledFailure);
     for (const future of this.#derivedFutures) {
-      const notification = future.settle(canceled);
+      const settlement = future.settle(canceled);
 
-      yield this.#notifyEffect(notification);
+      yield this.#settleEffect(settlement);
     }
 
-    const notification = this.#exitFuture.settle(result);
+    const settlement = this.#exitFuture.settle(result);
 
-    yield this.#notifyEffect(notification);
+    yield this.#settleEffect(settlement);
   }
 
   *#triggerCleanup(cleanups: readonly CleanupTask[]): ScopeSync<void> {
@@ -569,10 +570,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #notifyEffect(notification: ScopeSyncNotification): ScopeSyncEffect {
+  #settleEffect(settlement: ScopeSyncSettlement): ScopeSyncEffect {
     return {
-      kind: "notify",
-      notification,
+      kind: "settle",
+      settlement,
     };
   }
 
@@ -695,7 +696,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
 export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
 
-export type ScopeSyncNotification = (suppressor: Suppressor) => void;
+export type ScopeSyncSettlement = FutureSettlement;
 export type ScopeTrackTask = (suppressor: Suppressor) => void;
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
@@ -710,8 +711,8 @@ export type ScopeSyncEffect = TaggedUnion<
   "kind",
   {
     flush: {};
-    notify: {
-      readonly notification: ScopeSyncNotification;
+    settle: {
+      readonly settlement: ScopeSyncSettlement;
     };
     syncScope: {
       readonly scope: ScopeRef<unknown>;
