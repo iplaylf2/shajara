@@ -3,7 +3,7 @@ import type { ExplorerExampleCodeLine, ExplorerReplayState } from "#/domain/expl
 export const headerDelayMs = 420;
 export const sidebarDelayMs = 640;
 
-export const forkJoinEvents = [
+const forkJoinEvents = [
   "routine",
   "spawn-header",
   "header-enter",
