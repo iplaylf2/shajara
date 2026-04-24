@@ -12,11 +12,10 @@ export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExamp
 }
 
 export const EXPLORER_EXAMPLES = [forkJoinExample] as const;
-export const EXPLORER_EXAMPLE_IDS = EXPLORER_EXAMPLES.map((example) => example.id);
 export const DEFAULT_EXPLORER_EXAMPLE_ID = readFirstExplorerExample().id;
 
-export type ExplorerExampleId = (typeof EXPLORER_EXAMPLE_IDS)[number];
 export type ExplorerExampleDefinition = ArrayValues<typeof EXPLORER_EXAMPLES>;
+export type ExplorerExampleId = ExplorerExampleDefinition["id"];
 
 function readFirstExplorerExample(): ExplorerExampleDefinition {
   const [firstExplorerExample] = EXPLORER_EXAMPLES;

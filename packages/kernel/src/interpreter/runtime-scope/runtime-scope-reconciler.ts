@@ -1,6 +1,6 @@
 // oxlint-disable no-magic-numbers
 import type { ScopeRef, Suppressor } from "#/contracts";
-import type { ScopeSync, ScopeSyncEffect, ScopeSyncNotification } from "./runtime-scope";
+import type { ScopeSync, ScopeSyncEffect, ScopeSyncSettlement } from "./runtime-scope";
 
 export class RuntimeScopeReconciler {
   public reconcile<Result>(
@@ -39,11 +39,11 @@ export class RuntimeScopeReconciler {
   #applyStep(call: ScopeSyncCall, step: ScopeSyncEffect): void {
     switch (step.kind) {
       case "flush": {
-        this.#handoff(call, () => this.#flushNotifications(call));
+        this.#handoff(call, () => this.#flushSettlements(call));
         break;
       }
-      case "notify": {
-        call.notifications.push(step.notification);
+      case "settle": {
+        call.settlements.push(step.settlement);
         break;
       }
       case "syncScope": {
@@ -91,12 +91,12 @@ export class RuntimeScopeReconciler {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #flushNotifications(call: ScopeSyncCall): void {
-    const { notifications } = call;
-    call.notifications = [];
+  #flushSettlements(call: ScopeSyncCall): void {
+    const { settlements } = call;
+    call.settlements = [];
 
-    for (const notification of notifications) {
-      notification(call.suppressor);
+    for (const settlement of settlements) {
+      settlement(call.suppressor);
     }
   }
 
@@ -130,17 +130,17 @@ function createScopeSyncCall<Result>(
 ): ScopeSyncCall {
   return {
     next: () => sync.next() as IteratorResult<ScopeSyncEffect, unknown>,
-    notifications: [],
     result: null,
     scope,
+    settlements: [],
     suppressor,
   };
 }
 
 interface ScopeSyncCall {
-  notifications: ScopeSyncNotification[];
   result: unknown | null;
   readonly scope: ScopeRef<unknown>;
+  settlements: ScopeSyncSettlement[];
   next(): IteratorResult<ScopeSyncEffect, unknown>;
   readonly suppressor: Suppressor;
 }

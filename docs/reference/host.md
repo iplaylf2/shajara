@@ -6,7 +6,7 @@
 
 The host layer is responsible for three things:
 
-- providing application-facing runtime entries: `run`, `createScope`, `action`, `sleep`, `until`
+- providing application-facing runtime entries: `run`, `createScope`, `action`, `feed`, `sleep`, `until`
 - providing generator-style primitives: `@shajara/host/primitives`
 - mapping kernel failures into JavaScript error objects
 
@@ -82,6 +82,11 @@ The host layer uses `fromFailure(...)` for unified mapping:
 - `interrupted` -> `InterruptedError`
 - `scope` -> `ScopeError`
 - `external` -> the original `Error` or `ExternalError`
+
+Separately, host channel primitives throw `ChannelError` when a kernel channel operation
+returns a closed or revoked terminal state. In that case, `ChannelError.detail` is
+`{ kind: "condition", condition }` and `cause` is `null`. Kernel channel failures use
+`{ kind: "cause", cause }`.
 
 Here, `ScopeError` means the caller observes the structural fact that a scope converged as a failure with that cause.
 

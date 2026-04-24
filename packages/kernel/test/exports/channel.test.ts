@@ -32,7 +32,7 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, value], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.chainFirst(([, sender]) => send(sender, value)),
           wisp.chain(([receiver]) => receive(receiver)),
         ),
@@ -54,7 +54,7 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, value], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.chainFirst(([, sender]) => spawn(() => send(sender, value))),
           wisp.chain(([receiver]) => receive(receiver)),
         ),
@@ -79,7 +79,7 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, value], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
           wisp.bind("sendFuture", ({ sender }) => spawn(() => send(sender, value))),
           wisp.chainFirst(() => cede()),
@@ -109,7 +109,7 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, firstValue, secondValue], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
           wisp.chainFirst(({ sender }) => send(sender, firstValue)),
           wisp.bind("secondSendFuture", ({ sender }) => spawn(() => send(sender, secondValue))),
@@ -133,21 +133,21 @@ describe("/ primitives: channel, close, send, receive", () => {
 
   test.for([
     {
-      given: [1, "late-value"] as const,
+      given: [1, "late-value", "closed-outcome", "ignored-outcome"] as const,
       outcome: {
-        receiveResult: { kind: "closed" },
-        sendResult: { kind: "closed" },
+        receiveResult: { kind: "closed", outcome: "closed-outcome" },
+        sendResult: { kind: "closed", outcome: "closed-outcome" },
       },
     },
   ])(
     "returns terminal channel results after close",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, closeOutcome, nextCloseOutcome], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
-          wisp.chainFirst(({ sender }) => close(sender)),
-          wisp.chainFirst(({ sender }) => close(sender)),
+          wisp.chainFirst(({ sender }) => close(sender, closeOutcome)),
+          wisp.chainFirst(({ sender }) => close(sender, nextCloseOutcome)),
           wisp.bind("receiveResult", ({ receiver }) => receive(receiver)),
           wisp.bind("sendResult", ({ sender }) => send(sender, value)),
           wisp.map(({ receiveResult, sendResult }) => ({ receiveResult, sendResult })),
@@ -162,7 +162,7 @@ describe("/ primitives: channel, close, send, receive", () => {
 
   test.for([
     {
-      given: [1, "try-value"] as const,
+      given: [1, "try-value", "full-value"] as const,
       outcome: {
         emptyReceiveResult: none,
         firstSendResult: some({ kind: "sent" }),
@@ -172,14 +172,14 @@ describe("/ primitives: channel, close, send, receive", () => {
     },
   ])(
     "returns option states for non-blocking channel operations",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, fullValue], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
           wisp.bind("emptyReceiveResult", ({ receiver }) => tryReceive(receiver)),
           wisp.bind("firstSendResult", ({ sender }) => trySend(sender, value)),
-          wisp.bind("fullSendResult", ({ sender }) => trySend(sender, "full-value")),
+          wisp.bind("fullSendResult", ({ sender }) => trySend(sender, fullValue)),
           wisp.bind("valueReceiveResult", ({ receiver }) => tryReceive(receiver)),
           wisp.map(
             ({ emptyReceiveResult, firstSendResult, fullSendResult, valueReceiveResult }) => ({
@@ -211,7 +211,7 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, oldValue, incomingValue], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity, () => []),
+          channel<string, string>(capacity, () => []),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
           wisp.chainFirst(({ sender }) => send(sender, oldValue)),
           wisp.bind("sendResult", ({ sender }) => trySend(sender, incomingValue)),
@@ -239,7 +239,7 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, oldValue, incomingValue, failure], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity, () => {
+          channel<string, string>(capacity, () => {
             throw failure;
           }),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
@@ -279,13 +279,13 @@ describe("/ primitives: channel, close, send, receive", () => {
   ])(
     "returns revoked for subsequent sends after overload rewrite failure",
     async ({ given: [capacity, oldValue, incomingValue, afterRevokeValue, failure], outcome }) => {
-      let senderAfterFailure: ChannelSender<string> | null = null;
+      let senderAfterFailure: ChannelSender<string, string> | null = null;
 
       await using ritual = interpretRitual(() =>
         pipe(
           enclose(() =>
             pipe(
-              channel<string>(capacity, () => {
+              channel<string, string>(capacity, () => {
                 throw failure;
               }),
               wisp.map(([, sender]) => ({ sender })),
@@ -333,7 +333,9 @@ describe("/ primitives: channel, close, send, receive", () => {
     async ({ given: [capacity, oldValue, waitingValue, incomingValue], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity, (buffer) => buffer.filter((value) => value !== oldValue)),
+          channel<string, string>(capacity, (buffer) =>
+            buffer.filter((value) => value !== oldValue),
+          ),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
           wisp.chainFirst(({ sender }) => send(sender, oldValue)),
           wisp.bind("waitingSendFuture", ({ sender }) => spawn(() => send(sender, waitingValue))),
@@ -357,20 +359,20 @@ describe("/ primitives: channel, close, send, receive", () => {
 
   test.for([
     {
-      given: [1, "closed-value"] as const,
+      given: [1, "closed-value", "closed-outcome"] as const,
       outcome: {
-        receiveResult: some({ kind: "closed" }),
-        sendResult: some({ kind: "closed" }),
+        receiveResult: some({ kind: "closed", outcome: "closed-outcome" }),
+        sendResult: some({ kind: "closed", outcome: "closed-outcome" }),
       },
     },
   ])(
     "returns terminal channel states through non-blocking operations",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, closeOutcome], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
-          wisp.chainFirst(({ sender }) => close(sender)),
+          wisp.chainFirst(({ sender }) => close(sender, closeOutcome)),
           wisp.bind("receiveResult", ({ receiver }) => tryReceive(receiver)),
           wisp.bind("sendResult", ({ sender }) => trySend(sender, value)),
           wisp.map(({ receiveResult, sendResult }) => ({ receiveResult, sendResult })),
@@ -385,41 +387,44 @@ describe("/ primitives: channel, close, send, receive", () => {
 
   test.for([
     {
-      given: [0] as const,
-      outcome: right({ kind: "closed" }),
+      given: [0, "receiver-outcome"] as const,
+      outcome: right({ kind: "closed", outcome: "receiver-outcome" }),
     },
-  ])("wakes a waiting receiver when the channel closes", async ({ given: [capacity], outcome }) => {
-    await using ritual = interpretRitual(() =>
-      pipe(
-        channel<string>(capacity),
-        wisp.map(([receiver, sender]) => ({ receiver, sender })),
-        wisp.bind("receiveFuture", ({ receiver }) => spawn(() => receive(receiver))),
-        wisp.chainFirst(() => cede()),
-        wisp.chainFirst(({ sender }) => close(sender)),
-        wisp.chain(({ receiveFuture }) => wait(receiveFuture)),
-      ),
-    );
-    const step = await ritual.waitForClosed();
-    const actual = unwrapExitedSucceeded(step);
+  ])(
+    "wakes a waiting receiver when the channel closes",
+    async ({ given: [capacity, closeOutcome], outcome }) => {
+      await using ritual = interpretRitual(() =>
+        pipe(
+          channel<string, string>(capacity),
+          wisp.map(([receiver, sender]) => ({ receiver, sender })),
+          wisp.bind("receiveFuture", ({ receiver }) => spawn(() => receive(receiver))),
+          wisp.chainFirst(() => cede()),
+          wisp.chainFirst(({ sender }) => close(sender, closeOutcome)),
+          wisp.chain(({ receiveFuture }) => wait(receiveFuture)),
+        ),
+      );
+      const step = await ritual.waitForClosed();
+      const actual = unwrapExitedSucceeded(step);
 
-    expect(actual).toEqual(outcome);
-  });
+      expect(actual).toEqual(outcome);
+    },
+  );
 
   test.for([
     {
-      given: [0, "blocked-send"] as const,
-      outcome: right({ kind: "closed" }),
+      given: [0, "blocked-send", "sender-outcome"] as const,
+      outcome: right({ kind: "closed", outcome: "sender-outcome" }),
     },
   ])(
     "wakes a waiting sender when the channel closes",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, closeOutcome], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
-          channel<string>(capacity),
+          channel<string, string>(capacity),
           wisp.map(([receiver, sender]) => ({ receiver, sender })),
           wisp.bind("sendFuture", ({ sender }) => spawn(() => send(sender, value))),
           wisp.chainFirst(() => cede()),
-          wisp.chainFirst(({ receiver }) => close(receiver)),
+          wisp.chainFirst(({ receiver }) => close(receiver, closeOutcome)),
           wisp.chain(({ sendFuture }) => wait(sendFuture)),
         ),
       );

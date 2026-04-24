@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () => {
   test.for([
     {
-      given: [1, "buffered-value"] as const,
+      given: [1, "buffered-value", "closed-outcome"] as const,
       outcome: {
         closeResult: undefined,
         receiveResult: "buffered-value",
@@ -14,13 +14,13 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     },
   ])(
     "returns values for successful channel operations",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, closeOutcome], outcome }) => {
       const settled = run(function* useBufferedChannel() {
-        const [receiver, sender] = yield* channel<string>(capacity);
+        const [receiver, sender] = yield* channel<string, string>(capacity);
 
         const sendResult = yield* send(sender, value);
         const receiveResult = yield* receive(receiver);
-        const closeResult = yield* close(sender);
+        const closeResult = yield* close(sender, closeOutcome);
 
         return { closeResult, receiveResult, sendResult };
       });
@@ -42,7 +42,7 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     async ({ given: [capacity, bufferedValue, incomingValue], outcome }) => {
       const settled = run(function* useChannelWithOverloadRewrite() {
         let rewriteCalls = 0;
-        const [, sender] = yield* channel<string>(capacity, () => {
+        const [, sender] = yield* channel<string, string>(capacity, () => {
           rewriteCalls += 1;
           return [];
         });
@@ -66,6 +66,13 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
           capacity: -1,
           kind: "invalid-capacity",
         },
+        detail: {
+          cause: {
+            capacity: -1,
+            kind: "invalid-capacity",
+          },
+          kind: "cause",
+        },
         kind: "channel",
         message: "Channel capacity must be a non-negative number: -1",
       },
@@ -77,6 +84,13 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
           capacity: Number.NaN,
           kind: "invalid-capacity",
         },
+        detail: {
+          cause: {
+            capacity: Number.NaN,
+            kind: "invalid-capacity",
+          },
+          kind: "cause",
+        },
         kind: "channel",
         message: "Channel capacity must be a non-negative number: NaN",
       },
@@ -84,7 +98,7 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
   ])("throws ChannelError for invalid capacity", async ({ given: [capacity], outcome }) => {
     const settled = run(function* catchInvalidCapacity() {
       try {
-        yield* channel<string>(capacity);
+        yield* channel<string, string>(capacity);
       } catch (error) {
         return error;
       }
@@ -98,10 +112,15 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
 
   test.for([
     {
-      given: [1, "late-value"] as const,
+      given: [1, "late-value", "closed-outcome"] as const,
       outcome: {
-        cause: {
-          kind: "closed",
+        cause: null,
+        detail: {
+          condition: {
+            kind: "closed",
+            outcome: "closed-outcome",
+          },
+          kind: "condition",
         },
         kind: "channel",
         message: "Channel is closed",
@@ -109,11 +128,11 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     },
   ])(
     "throws ChannelError when sending to a closed channel",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, closeOutcome], outcome }) => {
       const settled = run(function* catchClosedSend() {
-        const [, sender] = yield* channel<string>(capacity);
+        const [, sender] = yield* channel<string, string>(capacity);
 
-        yield* close(sender);
+        yield* close(sender, closeOutcome);
 
         try {
           yield* send(sender, value);
@@ -133,8 +152,12 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     {
       given: [] as const,
       outcome: {
-        cause: {
-          kind: "revoked",
+        cause: null,
+        detail: {
+          condition: {
+            kind: "revoked",
+          },
+          kind: "condition",
         },
         kind: "channel",
         message: "Channel is revoked",
@@ -143,7 +166,7 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
   ])("throws ChannelError when receiving from a revoked channel", async ({ outcome }) => {
     const settled = run(function* catchRevokedReceive() {
       const receiver = yield* enclose(function* createOwnedReceiver() {
-        const [ownedReceiver] = yield* channel<string>(0);
+        const [ownedReceiver] = yield* channel<string, string>(0);
         return ownedReceiver;
       });
 
@@ -174,7 +197,7 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     "returns non-blocking channel operation states",
     async ({ given: [capacity, value, fullValue], outcome }) => {
       const settled = run(function* useNonBlockingChannelOperations() {
-        const [receiver, sender] = yield* channel<string>(capacity);
+        const [receiver, sender] = yield* channel<string, string>(capacity);
 
         const emptyReceiveResult = yield* tryReceive(receiver);
         const firstSendResult = yield* trySend(sender, value);
@@ -195,10 +218,15 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
 
   test.for([
     {
-      given: [1, "late-value"] as const,
+      given: [1, "late-value", "closed-outcome"] as const,
       outcome: {
-        cause: {
-          kind: "closed",
+        cause: null,
+        detail: {
+          condition: {
+            kind: "closed",
+            outcome: "closed-outcome",
+          },
+          kind: "condition",
         },
         kind: "channel",
         message: "Channel is closed",
@@ -206,11 +234,11 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     },
   ])(
     "throws ChannelError when trySending to a closed channel",
-    async ({ given: [capacity, value], outcome }) => {
+    async ({ given: [capacity, value, closeOutcome], outcome }) => {
       const settled = run(function* catchClosedTrySend() {
-        const [, sender] = yield* channel<string>(capacity);
+        const [, sender] = yield* channel<string, string>(capacity);
 
-        yield* close(sender);
+        yield* close(sender, closeOutcome);
 
         try {
           yield* trySend(sender, value);
@@ -228,10 +256,15 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
 
   test.for([
     {
-      given: [1] as const,
+      given: [1, "closed-outcome"] as const,
       outcome: {
-        cause: {
-          kind: "closed",
+        cause: null,
+        detail: {
+          condition: {
+            kind: "closed",
+            outcome: "closed-outcome",
+          },
+          kind: "condition",
         },
         kind: "channel",
         message: "Channel is closed",
@@ -239,11 +272,11 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     },
   ])(
     "throws ChannelError when tryReceiving from a closed channel",
-    async ({ given: [capacity], outcome }) => {
+    async ({ given: [capacity, closeOutcome], outcome }) => {
       const settled = run(function* catchClosedTryReceive() {
-        const [receiver, sender] = yield* channel<string>(capacity);
+        const [receiver, sender] = yield* channel<string, string>(capacity);
 
-        yield* close(sender);
+        yield* close(sender, closeOutcome);
 
         try {
           yield* tryReceive(receiver);

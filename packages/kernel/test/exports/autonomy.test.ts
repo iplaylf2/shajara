@@ -138,7 +138,7 @@ describe("/ primitives: autonomy", () => {
       given: ["autonomy-ready"] as const,
       outcome: {
         assignmentsAfterWait: 2,
-        assignmentsBeforeWait: 1,
+        assignmentsBeforeWait: 2,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -201,7 +201,7 @@ describe("/ primitives: autonomy", () => {
       given: ["autonomy-ready"] as const,
       outcome: {
         assignmentsAfterWait: 2,
-        assignmentsBeforeWait: 1,
+        assignmentsBeforeWait: 2,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -433,7 +433,7 @@ describe("/ primitives: autonomy", () => {
       outcome: {
         adjudicationCount: 1,
         assignmentsAfterSettle: 6,
-        assignmentsBeforeSettle: 1,
+        assignmentsBeforeSettle: 2,
         settled: {
           failure: expect.objectContaining({
             cause: expect.objectContaining({

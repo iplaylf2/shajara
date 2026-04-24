@@ -75,7 +75,7 @@ export interface StatefulPromise<Return> extends Promise<Return> {
 }
 
 export interface RuntimeLaunchServices {
-  cancelScope(scope: ExecutionScopeRef<unknown>): boolean;
+  cancelScope(scope: ExecutionScopeRef<unknown>): void;
   launchInScope<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,

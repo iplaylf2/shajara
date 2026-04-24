@@ -12,7 +12,10 @@ import type { RuntimeChannelHandle } from "./handle";
 import { either } from "fp-ts";
 import { identity } from "fp-ts/function";
 
-export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value> {
+export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHandle<
+  Value,
+  Outcome
+> {
   public constructor(
     private readonly capacity: number,
     private readonly overloadRewrite: OverloadRewrite<Value>,
@@ -21,15 +24,15 @@ export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value
     this.#kind = channelKindOf(capacity);
   }
 
-  public handle(): ChannelHandle<Value> {
+  public handle(): ChannelHandle<Value, Outcome> {
     return [this, this];
   }
 
-  public close(): RuntimeChannelWaiters<Waiter> {
-    return this.#dispose("closed");
+  public close(outcome: Outcome): RuntimeChannelWaiters<Waiter> {
+    return this.#dispose({ kind: "closed", outcome });
   }
 
-  public tryTake(): RuntimeChannelTake<Waiter, Value> | null {
+  public tryTake(): RuntimeChannelTake<Waiter, Value, Outcome> | null {
     if (this.#buffer.length > EMPTY_SIZE) {
       const value = this.#buffer.shift()!;
       const sender = this.tryFill();
@@ -45,11 +48,15 @@ export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value
       };
     }
 
-    if (this.#status === "open") {
-      return null;
+    switch (this.#state.kind) {
+      case "open": {
+        return null;
+      }
+      case "closed":
+      case "revoked": {
+        return { result: this.#state, sender: null };
+      }
     }
-
-    return { result: { kind: this.#status }, sender: null };
   }
 
   public enqueueReceiver(receiver: Waiter): Disposer {
@@ -60,9 +67,15 @@ export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value
     };
   }
 
-  public tryPut(value: Value): RuntimeChannelPut<Waiter> | null {
-    if (this.#status !== "open") {
-      return { receiver: null, result: { kind: this.#status } };
+  public tryPut(value: Value): RuntimeChannelPut<Waiter, Outcome> | null {
+    switch (this.#state.kind) {
+      case "closed":
+      case "revoked": {
+        return { receiver: null, result: this.#state };
+      }
+      case "open": {
+        break;
+      }
     }
 
     const receiver = takeFirstWaiter(this.#receivers);
@@ -119,19 +132,21 @@ export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value
   }
 
   public revoke(): RuntimeChannelWaiters<Waiter> {
-    return this.#dispose("revoked");
+    return this.#dispose({ kind: "revoked" });
   }
 
   // oxlint-disable-next-line no-undef
-  declare public readonly [KEY_TOKEN]: ChannelReceiver<Value>[typeof KEY_TOKEN] &
-    ChannelSender<Value>[typeof KEY_TOKEN];
+  declare public readonly [KEY_TOKEN]: ChannelReceiver<Value, Outcome>[typeof KEY_TOKEN] &
+    ChannelSender<Value, Outcome>[typeof KEY_TOKEN];
 
-  #dispose(status: Exclude<ChannelStatus, "open">): RuntimeChannelWaiters<Waiter> {
-    if (this.#status !== "open") {
+  #dispose(
+    state: Exclude<ChannelState<Outcome>, { readonly kind: "open" }>,
+  ): RuntimeChannelWaiters<Waiter> {
+    if (this.#state.kind !== "open") {
       return { receivers: [], senders: [] };
     }
 
-    this.#status = status;
+    this.#state = state;
     this.#buffer = [];
 
     const receivers = [...this.#receivers];
@@ -143,7 +158,7 @@ export class RuntimeChannel<Waiter, Value> implements RuntimeChannelHandle<Value
   }
 
   readonly #kind: ChannelKind;
-  #status: ChannelStatus = "open";
+  #state: ChannelState<Outcome> = { kind: "open" };
   #buffer: Value[] = [];
   // ECMAScript Set/Map preserve insertion order; waiter collections are FIFO queues.
   readonly #receivers = new Set<Waiter>();
@@ -199,13 +214,13 @@ interface RuntimeChannelSender<Waiter, Value> {
   readonly waiter: Waiter;
 }
 
-interface RuntimeChannelTake<Waiter, Value> {
-  readonly result: ReceiveResult<Value>;
+interface RuntimeChannelTake<Waiter, Value, Outcome> {
+  readonly result: ReceiveResult<Value, Outcome>;
   readonly sender: Waiter | null;
 }
 
-interface RuntimeChannelPut<Waiter> {
-  readonly result: SendResult;
+interface RuntimeChannelPut<Waiter, Outcome> {
+  readonly result: SendResult<Outcome>;
   readonly receiver: Waiter | null;
 }
 
@@ -216,4 +231,7 @@ interface RuntimeChannelWaiters<Waiter> {
 
 type ChannelKind = "bounded" | "rendezvous" | "unbounded";
 
-type ChannelStatus = "closed" | "open" | "revoked";
+type ChannelState<Outcome> =
+  | { readonly kind: "open" }
+  | { readonly kind: "closed"; readonly outcome: Outcome }
+  | { readonly kind: "revoked" };

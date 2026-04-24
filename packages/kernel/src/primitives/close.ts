@@ -1,8 +1,11 @@
-import type { ChannelReceiver, ChannelSender } from "#/sigils/index";
+import type { ChannelEndpoint } from "#/sigils/index";
 import type { Wisp } from "#/contracts";
 import { close as closeSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
-export function close(endpoint: ChannelReceiver<unknown> | ChannelSender<unknown>): Wisp<void> {
-  return wisp.liftF(closeSigil(endpoint));
+export function close<Outcome>(
+  endpoint: ChannelEndpoint<unknown, Outcome>,
+  outcome: Outcome,
+): Wisp<void> {
+  return wisp.liftF(closeSigil(endpoint, outcome));
 }

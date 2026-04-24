@@ -121,10 +121,10 @@ describe("/ operations: createScope", () => {
   test.for([
     {
       given: ["cleanup"] as const,
-      outcome: ["cleanup"],
+      outcome: [] as string[],
     },
   ])(
-    "runs RiteRoutine finally blocks when cancellation unwinds a suspended ritual",
+    "does not run RiteRoutine finally blocks when synchronous cancellation wins before startup",
     async ({ given: [cleanupEntry], outcome }) => {
       const events: string[] = [];
       const scope = createScope();
@@ -152,6 +152,41 @@ describe("/ operations: createScope", () => {
 
   test.for([
     {
+      given: ["cleanup"] as const,
+      outcome: ["cleanup"],
+    },
+  ])(
+    "runs RiteRoutine finally blocks when cancellation unwinds a started ritual",
+    async ({ given: [cleanupEntry], outcome }) => {
+      const events: string[] = [];
+      const started = Promise.withResolvers<null>();
+      const scope = createScope();
+
+      try {
+        const settled = scope.run(function* runWithFinallyCleanup() {
+          started.resolve(null);
+          try {
+            yield* park();
+          } finally {
+            events.push(cleanupEntry);
+          }
+        });
+
+        await started.promise;
+        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+        await expect(settled).rejects.toBeInstanceOf(CanceledError);
+        expect(events).toEqual(outcome);
+      } finally {
+        if (scope.status !== "closed") {
+          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        }
+      }
+    },
+  );
+
+  test.for([
+    {
       given: [new Error("cleanup-failed-during-close")] as const,
       outcome: {
         cause: {
@@ -164,16 +199,19 @@ describe("/ operations: createScope", () => {
       } as const,
     },
   ])(
-    "surfaces deferred cleanup exceptions through the running ritual result",
+    "surfaces deferred cleanup exceptions through a started ritual result",
     async ({ given: [cause], outcome }) => {
+      const started = Promise.withResolvers<null>();
       const scope = createScope();
       const settled = scope.run(function* runWithFailingCleanup() {
+        started.resolve(null);
         yield* defer(function* throwDuringCleanup() {
           throw cause;
         });
         yield* park();
       });
 
+      await started.promise;
       const cancelation = scope.cancel();
 
       await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
@@ -206,10 +244,12 @@ describe("/ operations: createScope", () => {
       } as const,
     },
   ])(
-    "surfaces exceptions thrown from RiteRoutine finally blocks during close",
+    "surfaces exceptions thrown from started RiteRoutine finally blocks during close",
     async ({ given: [cause], outcome }) => {
+      const started = Promise.withResolvers<null>();
       const scope = createScope();
       const settled = scope.run(function* runWithFailingFinally() {
+        started.resolve(null);
         try {
           yield* park();
         } finally {
@@ -219,6 +259,7 @@ describe("/ operations: createScope", () => {
         }
       });
 
+      await started.promise;
       const cancelation = scope.cancel();
 
       await expect(cancelation).rejects.toBeInstanceOf(CanceledError);

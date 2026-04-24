@@ -1,13 +1,12 @@
-import { ChannelError } from "#/errors";
 import type { ChannelSender } from "@shajara/kernel";
 import type { RiteCoroutine } from "#/contracts";
+import { channelErrorOf } from "#/primitives-kit";
 import { encodeRitual } from "#/boundary";
 import { isNone } from "@shajara/kernel/utils";
 import { trySend as kernelTrySend } from "@shajara/kernel";
-import { messageOf } from "#/primitives-kit";
 
-export function* trySend<Value>(
-  sender: ChannelSender<Value>,
+export function* trySend<Value, Outcome>(
+  sender: ChannelSender<Value, Outcome>,
   value: Value,
 ): RiteCoroutine<boolean> {
   const result = yield* encodeRitual(() => kernelTrySend(sender, value))();
@@ -22,7 +21,7 @@ export function* trySend<Value>(
     }
     case "closed":
     case "revoked": {
-      throw new ChannelError(result.value, messageOf(result.value));
+      throw channelErrorOf(result.value);
     }
   }
 }

@@ -15,11 +15,11 @@ This package is intended for application code. Its root entry re-exports:
 Names available from the root entry include:
 
 - runtime entries: `run`, `createScope`
-- host operations: `action`, `sleep`, `until`
+- host operations: `action`, `feed`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Action`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
+- other root-level types: `Action`, `Feed`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
@@ -118,6 +118,18 @@ Returns:
 - `resolve(value)`
 - `reject(error)`
 
+### `feed`
+
+```ts
+yield * feed<Value, Outcome>(capacity, overloadRewrite?);
+```
+
+Returns:
+
+- `receiver`
+- `trySend(value)`
+- `close(outcome)`
+
 ### `sleep`
 
 ```ts
@@ -159,14 +171,16 @@ A `Presence<T>` return value is `[true, value]` when a value is present and `[fa
 
 ### Channel primitives
 
-| Primitive    | Return value                             |
-| ------------ | ---------------------------------------- |
-| `channel`    | `[ChannelReceiver<T>, ChannelSender<T>]` |
-| `send`       | `void`                                   |
-| `receive`    | `T`                                      |
-| `trySend`    | `boolean`                                |
-| `tryReceive` | `Presence<T>`                            |
-| `close`      | `void`                                   |
+| Primitive    | Return value                                   |
+| ------------ | ---------------------------------------------- |
+| `channel`    | `[ChannelReceiver<T, O>, ChannelSender<T, O>]` |
+| `send`       | `void`                                         |
+| `receive`    | `T`                                            |
+| `trySend`    | `boolean`                                      |
+| `tryReceive` | `Presence<T>`                                  |
+| `close`      | `void`                                         |
+
+For channels, `T` is the value type and `O` is the close outcome type.
 
 ### Context, control, and lifecycle
 
@@ -189,11 +203,11 @@ Kernel primitives keep failure and terminal states in explicit return values:
 - kernel `wait(future)` returns `Either<FailureShape, T>`
 - kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
 - kernel `enclose(ritual)` returns `Either<FailureShape, T>`
-- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T>, ChannelSender<T>]`
-- kernel `send(sender, value)` returns `{ kind: "sent" | "closed" | "revoked" }`
-- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed" }`, or `{ kind: "revoked" }`
-- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" | "closed" | "revoked" }>`
-- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed" } | { kind: "revoked" }>`
-- kernel `close(endpoint)` returns `void`
+- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T, O>, ChannelSender<T, O>]`
+- kernel `send(sender, value)` returns `{ kind: "sent" }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
+- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
+- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
+- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
+- kernel `close(endpoint, outcome)` returns `void`
 
 When consuming kernel directly, callers handle those values in band.

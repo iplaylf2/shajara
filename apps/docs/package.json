@@ -27,9 +27,9 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
     "@astrojs/solid-js": "^6.0.1",
-    "@astrojs/starlight": "^0.38.3",
+    "@astrojs/starlight": "^0.38.4",
     "@shajara/presets": "workspace:^",
-    "astro": "^6.1.8",
+    "astro": "^6.1.9",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
     "typescript": "catalog:"

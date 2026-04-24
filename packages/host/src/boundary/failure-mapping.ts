@@ -30,7 +30,7 @@ export function fromFailure(failure: Failure): Error {
       return new CanceledError();
     }
     case "channel": {
-      return new ChannelError(failure.cause, failure.message);
+      return new ChannelError({ cause: failure.cause, kind: "cause" }, failure.message);
     }
     case "interrupted": {
       return new InterruptedError(failure);

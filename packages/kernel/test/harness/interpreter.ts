@@ -144,7 +144,7 @@ class RitualInterpreter<Relic> implements RitualInterpreterHandle<Relic> {
     }
 
     let result: FutureResult<Result> | null = null;
-    const dispose = this.#interpreter.wait(futureKey, (nextResult) => {
+    const dispose = this.#interpreter.onSettled(futureKey, (nextResult) => {
       result = nextResult as FutureResult<Result>;
     });
 

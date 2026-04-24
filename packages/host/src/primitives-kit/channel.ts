@@ -1,10 +1,11 @@
-import type { ReceiveResult, SendResult } from "@shajara/kernel";
+import type { ChannelCondition } from "#/errors";
+import { ChannelError } from "#/errors";
 
-export type TerminalChannelResult =
-  | Exclude<ReceiveResult<unknown>, { kind: "value" }>
-  | Exclude<SendResult, { kind: "sent" }>;
+export function channelErrorOf(condition: ChannelCondition): ChannelError {
+  return new ChannelError({ condition, kind: "condition" }, messageOf(condition));
+}
 
-export function messageOf(result: TerminalChannelResult): string {
+function messageOf(result: ChannelCondition): string {
   switch (result.kind) {
     case "closed": {
       return "Channel is closed";

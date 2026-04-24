@@ -31,9 +31,9 @@ export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey
     };
   }
 
-  public settle(result: FutureResult<Result>): FutureNotification {
+  public settle(result: FutureResult<Result>): FutureSettlement {
     if (this.#result) {
-      return () => [];
+      return () => false;
     }
 
     this.#result = result;
@@ -43,6 +43,7 @@ export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey
         waiter(result, suppressor);
       }
       this.#waiters.clear();
+      return true;
     };
   }
 
@@ -59,4 +60,4 @@ export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey
 
 export type FutureSettler<Result> = (result: FutureResult<Result>, suppressor: Suppressor) => void;
 
-export type FutureNotification = (suppressor: Suppressor) => void;
+export type FutureSettlement = (suppressor: Suppressor) => boolean;

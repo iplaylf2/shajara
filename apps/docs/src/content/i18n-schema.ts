@@ -1,6 +1,6 @@
 import { z } from "astro/zod";
 
-export const explorerUiI18nFields = {
+export const explorerUiI18nSchema = z.object({
   "docs.404.body": z.string(),
   "docs.404.description": z.string(),
   "docs.404.hero.backHome": z.string(),
@@ -30,9 +30,6 @@ export const explorerUiI18nFields = {
   "explorer.note.label": z.string(),
   "explorer.shell.backToDocs": z.string(),
   "explorer.shell.eyebrow": z.string(),
-} as const;
+});
 
-export const explorerUiI18nSchema = z.object(explorerUiI18nFields);
-
-export type ExplorerUiStringKey = keyof typeof explorerUiI18nFields;
-export type ExplorerUiStrings = Record<ExplorerUiStringKey, string>;
+export type ExplorerUiStrings = z.infer<typeof explorerUiI18nSchema>;

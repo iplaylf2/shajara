@@ -23,6 +23,7 @@ import type {
 import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
+import type { FutureSettlement } from "#/interpreter/runtime-future";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
 import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
@@ -49,7 +50,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#notifyEffect(closure.notification);
+    yield this.#settleEffect(closure.settlement);
     yield* this.#triggerCleanup(closure.cleanups);
     yield this.#trackProcessEffect(process);
     yield* this.#advanceClosing();
@@ -60,7 +61,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#notifyEffect(closure.notification);
+    yield this.#settleEffect(closure.settlement);
     yield this.#trackProcessEffect(process);
 
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
@@ -126,9 +127,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackProcessEffect(process);
   }
 
-  public *tryReceive<Value>(
-    channelHandle: RuntimeChannelHandle<Value>,
-  ): ScopeSync<ReceiveResult<Value> | null> {
+  public *tryReceive<Value, Outcome>(
+    channelHandle: RuntimeChannelHandle<Value, Outcome>,
+  ): ScopeSync<ReceiveResult<Value, Outcome> | null> {
     const channel = this.#resolve(channelHandle);
     const take = channel.tryTake();
     if (!take) {
@@ -144,8 +145,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return result;
   }
 
-  public *receive(
-    channelHandle: RuntimeChannelHandle<unknown>,
+  public *receive<Outcome>(
+    channelHandle: RuntimeChannelHandle<unknown, Outcome>,
     process: RuntimeProcessKeeper,
   ): ScopeSync<void> {
     const channel = this.#resolve(channelHandle);
@@ -156,10 +157,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackProcessEffect(process);
   }
 
-  public *trySend<Value>(
-    channelHandle: RuntimeChannelHandle<Value>,
+  public *trySend<Value, Outcome>(
+    channelHandle: RuntimeChannelHandle<Value, Outcome>,
     value: Value,
-  ): ScopeSync<SendResult | null> {
+  ): ScopeSync<SendResult<Outcome> | null> {
     const channel = this.#resolve(channelHandle);
     const put = channel.tryPut(value);
     if (!put) {
@@ -196,8 +197,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return result;
   }
 
-  public *send<Value>(
-    channelHandle: RuntimeChannelHandle<Value>,
+  public *send<Value, Outcome>(
+    channelHandle: RuntimeChannelHandle<Value, Outcome>,
     value: Value,
     process: RuntimeProcessKeeper,
   ): ScopeSync<void> {
@@ -209,12 +210,15 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackProcessEffect(process);
   }
 
-  public *close(channelHandle: RuntimeChannelHandle<unknown>): ScopeSync<void> {
+  public *close<Outcome>(
+    channelHandle: RuntimeChannelHandle<unknown, Outcome>,
+    outcome: Outcome,
+  ): ScopeSync<void> {
     const channel = this.#resolve(channelHandle);
-    const waiters = channel.close();
+    const waiters = channel.close(outcome);
     this.#channels.delete(channel);
 
-    yield* this.#resumeChannelWaiters(waiters, { kind: "closed" });
+    yield* this.#resumeChannelWaiters(waiters, { kind: "closed", outcome });
   }
 
   public *forceFailed(failure: Failure): ScopeSync<void> {
@@ -242,11 +246,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return future;
   }
 
-  public createChannel<Value>(
+  public createChannel<Value, Outcome>(
     capacity: number,
     overloadRewrite: OverloadRewrite<Value>,
-  ): RuntimeChannelHandle<Value> {
-    const channel = new RuntimeChannel<RuntimeChannelWaiter, Value>(
+  ): RuntimeChannelHandle<Value, Outcome> {
+    const channel = new RuntimeChannel<RuntimeChannelWaiter, Value, Outcome>(
       capacity,
       overloadRewrite,
       this,
@@ -475,7 +479,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#notifyEffect(closure.notification);
+      yield this.#settleEffect(closure.settlement);
       yield* this.#triggerCleanup(closure.cleanups);
       yield this.#trackProcessEffect(process);
     }
@@ -492,7 +496,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#notifyEffect(closure.notification);
+      yield this.#settleEffect(closure.settlement);
       yield* this.#triggerCleanup(closure.cleanups);
       yield this.#trackProcessEffect(process);
     }
@@ -509,14 +513,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     const canceled = either.left(canceledFailure);
     for (const future of this.#derivedFutures) {
-      const notification = future.settle(canceled);
+      const settlement = future.settle(canceled);
 
-      yield this.#notifyEffect(notification);
+      yield this.#settleEffect(settlement);
     }
 
-    const notification = this.#exitFuture.settle(result);
+    const settlement = this.#exitFuture.settle(result);
 
-    yield this.#notifyEffect(notification);
+    yield this.#settleEffect(settlement);
   }
 
   *#triggerCleanup(cleanups: readonly CleanupTask[]): ScopeSync<void> {
@@ -546,7 +550,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     );
   }
 
-  *#revoke(channel: RuntimeChannel<RuntimeChannelWaiter, unknown>): ScopeSync<void> {
+  *#revoke(channel: RuntimeChannel<RuntimeChannelWaiter, unknown, unknown>): ScopeSync<void> {
     const waiters = channel.revoke();
 
     this.#channels.delete(channel);
@@ -569,10 +573,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #notifyEffect(notification: ScopeSyncNotification): ScopeSyncEffect {
+  #settleEffect(settlement: ScopeSyncSettlement): ScopeSyncEffect {
     return {
-      kind: "notify",
-      notification,
+      kind: "settle",
+      settlement,
     };
   }
 
@@ -629,14 +633,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   *#resumeReceiver<Value>(
     process: RuntimeProcessKeeper,
-    result: ReceiveResult<Value>,
+    result: ReceiveResult<Value, unknown>,
   ): ScopeSync<void> {
     process.resume(result);
 
     yield this.#trackProcessEffect(process);
   }
 
-  *#resumeSender(process: RuntimeProcessKeeper, result: SendResult): ScopeSync<void> {
+  *#resumeSender(process: RuntimeProcessKeeper, result: SendResult<unknown>): ScopeSync<void> {
     process.resume(result);
 
     yield this.#trackProcessEffect(process);
@@ -658,7 +662,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     // Do nothing
   }
 
-  #resolve<Value>(token: RuntimeChannelHandle<Value>): RuntimeChannel<RuntimeChannelWaiter, Value>;
+  #resolve<Value, Outcome>(
+    token: RuntimeChannelHandle<Value, Outcome>,
+  ): RuntimeChannel<RuntimeChannelWaiter, Value, Outcome>;
   // oxlint-disable-next-line class-methods-use-this
   #resolve(token: unknown): unknown {
     return token;
@@ -695,7 +701,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
 export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
 
-export type ScopeSyncNotification = (suppressor: Suppressor) => void;
+export type ScopeSyncSettlement = FutureSettlement;
 export type ScopeTrackTask = (suppressor: Suppressor) => void;
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
@@ -704,14 +710,14 @@ export type RuntimeScopeStatus = RuntimeScopeState["status"];
 // oxlint-disable-next-line no-explicit-any
 type AnyRuntimeFuture = RuntimeFuture<any>;
 // oxlint-disable-next-line no-explicit-any
-type AnyRuntimeChannel = RuntimeChannel<RuntimeChannelWaiter, any>;
+type AnyRuntimeChannel = RuntimeChannel<RuntimeChannelWaiter, any, any>;
 
 export type ScopeSyncEffect = TaggedUnion<
   "kind",
   {
     flush: {};
-    notify: {
-      readonly notification: ScopeSyncNotification;
+    settle: {
+      readonly settlement: ScopeSyncSettlement;
     };
     syncScope: {
       readonly scope: ScopeRef<unknown>;
@@ -751,8 +757,8 @@ interface RuntimeChannelWaiters {
 }
 
 type ChannelClosedResult =
-  | Exclude<ReceiveResult<unknown>, { readonly kind: "value" }>
-  | Exclude<SendResult, { readonly kind: "sent" }>;
+  | Exclude<ReceiveResult<unknown, unknown>, { readonly kind: "value" }>
+  | Exclude<SendResult<unknown>, { readonly kind: "sent" }>;
 
 type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,

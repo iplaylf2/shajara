@@ -46,18 +46,18 @@ export type Sigil =
   | CancelSigil
   | CedeSigil
   | DeferSigil
-  | ChannelSigil<unknown>
-  | CloseSigil
+  | ChannelSigil<unknown, unknown>
+  | CloseSigil<unknown>
   | FutureSigil<unknown>
   | HaltSigil
   | LookupSigil<unknown>
   | PollSigil<unknown>
-  | ReceiveSigil<unknown>
+  | ReceiveSigil<unknown, unknown>
   | SelfSigil
-  | SendSigil<unknown>
+  | SendSigil<unknown, unknown>
   | SettleSigil<unknown>
   | SpawnSigil<unknown>
-  | TryReceiveSigil<unknown>
-  | TrySendSigil<unknown>
+  | TryReceiveSigil<unknown, unknown>
+  | TrySendSigil<unknown, unknown>
   | UnbindSigil
   | WaitSigil<unknown>;

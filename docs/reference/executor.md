@@ -8,8 +8,7 @@ The execution environment builds on the semantic baseline.
 
 - a stable root execution entry
 - the ability to start new entry rituals
-- the ability to inject future results from the host side
-- the ability to cancel execution-entry scopes from the host side
+- external control over future settlement, channel operations, and entry cancellation
 
 Creation:
 
@@ -42,7 +41,14 @@ interface Executor extends LaunchHandle<never> {
 
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
 
-  cancel(scope: ExecutionScopeRef<unknown>): boolean;
+  trySend<Value, Outcome>(
+    sender: ChannelSender<Value, Outcome>,
+    value: Value,
+  ): Option<SendResult<Outcome>>;
+
+  close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
+
+  cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 ```
 
@@ -78,21 +84,30 @@ It answers three questions:
 
 The executor itself is also the `LaunchHandle` view of the root scope, so it exposes `status` and `onSettled(...)` as well.
 
-## External Injection
+## External Control
 
-### `future` convergence
+### Future Settlement
 
 `settle(futureSettle, result)` writes a result into a running `future` from outside the execution environment.
 
 - returns `true`: the injection was accepted
 - returns `false`: the `future` already converged, or the environment rejects the injection
 
-### scope cancellation
+### Channel Operations
+
+`trySend(sender, value)` attempts a non-blocking channel send from outside the execution environment.
+
+- returns `some({ kind: "sent" })`: the value was accepted
+- returns `none`: the channel cannot accept the value without blocking
+- returns `some({ kind: "closed", outcome })` or `some({ kind: "revoked" })`: the channel is terminal
+
+`close(endpoint, outcome)` closes a channel from outside the execution environment. Blocked senders and receivers resume with `{ kind: "closed", outcome }`.
+
+### Scope Cancellation
 
 `cancel(scope)` requests cancellation for an execution-entry scope from outside the execution environment.
 
-- returns `true`: the cancellation request was accepted
-- returns `false`: the scope is invalid, unregistered, or closed
+If the scope is invalid, unregistered, or closed, the request is ignored.
 
 ## Slice Progression
 

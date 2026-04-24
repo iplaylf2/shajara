@@ -3,7 +3,10 @@ import type { ChannelSender } from "./channel";
 import type { Option } from "#/utils/index";
 import type { SendResult } from "./send";
 
-export function trySend<Value>(sender: ChannelSender<Value>, value: Value): TrySendSigil<Value> {
+export function trySend<Value, Outcome>(
+  sender: ChannelSender<Value, Outcome>,
+  value: Value,
+): TrySendSigil<Value, Outcome> {
   return {
     kind: "trySend",
     sender,
@@ -11,9 +14,9 @@ export function trySend<Value>(sender: ChannelSender<Value>, value: Value): TryS
   };
 }
 
-export interface TrySendSigil<Value> extends SigilShape {
+export interface TrySendSigil<Value, Outcome> extends SigilShape {
   readonly kind: "trySend";
-  readonly sender: ChannelSender<Value>;
+  readonly sender: ChannelSender<Value, Outcome>;
   readonly value: Value;
-  readonly [ECHO_TOKEN]?: readonly [Option<SendResult>];
+  readonly [ECHO_TOKEN]?: readonly [Option<SendResult<Outcome>>];
 }

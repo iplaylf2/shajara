@@ -1,10 +1,11 @@
 // oxlint-disable max-dependencies
+import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
 import type { Disposer, Option } from "#/utils/index";
 import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
-import { cancel, halt, park, settle } from "#/primitives/index";
 import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, io, option } from "fp-ts";
+import { halt, park } from "#/primitives/index";
 import { noop, unreachable } from "#/utils/index";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
@@ -31,7 +32,12 @@ export interface Executor extends LaunchHandle<never> {
     ritual: Ritual<Result>,
   ): Option<LaunchHandle<Result>>;
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
-  cancel(scope: ExecutionScopeRef<unknown>): boolean;
+  trySend<Value, Outcome>(
+    sender: ChannelSender<Value, Outcome>,
+    value: Value,
+  ): Option<SendResult<Outcome>>;
+  close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
+  cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
 class RuntimeExecutor implements Executor {
@@ -47,7 +53,7 @@ class RuntimeExecutor implements Executor {
       scheduler: { assign: () => this.#driver.processor },
     });
     this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot as never);
-    this.#interpreter.wait(this.#rootScope.exitFuture, () => {
+    this.#interpreter.onSettled(this.#rootScope.exitFuture, () => {
       this.#driver.stop();
     });
   }
@@ -61,7 +67,12 @@ class RuntimeExecutor implements Executor {
     }
 
     using fault = new FaultSink("Out-of-band failures occurred while spawning a launched scope");
-    const process = this.#interpreter.spawn(scope, createLaunchWorker(ritual), fault);
+    const process = this.#interpreter.spawn(
+      scope,
+      createLaunchWorker(ritual),
+      { completionMode: "structural" },
+      fault,
+    );
     const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);
@@ -88,34 +99,30 @@ class RuntimeExecutor implements Executor {
     futureSettle: FutureSettleKey<Result>,
     result: FutureResult<Result>,
   ): boolean {
-    if (option.isSome(this.#interpreter.poll(futureSettle))) {
-      return false;
-    }
-
-    this.#interpreter.spawn(this.scope, () => settle(futureSettle, result), {
-      capture: unreachable,
-    });
-
-    return true;
+    using fault = new FaultSink("Out-of-band failures occurred while settling a future");
+    return this.#interpreter.settle(futureSettle, result, fault);
   }
 
-  public cancel(scope: ExecutionScopeRef<unknown>): boolean {
+  public trySend<Value, Outcome>(
+    sender: ChannelSender<Value, Outcome>,
+    value: Value,
+  ): Option<SendResult<Outcome>> {
+    using fault = new FaultSink("Out-of-band failures occurred while sending to a channel");
+    return this.#interpreter.trySend(sender, value, fault);
+  }
+
+  public close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void {
+    using fault = new FaultSink("Out-of-band failures occurred while closing a channel");
+    this.#interpreter.close(endpoint, outcome, fault);
+  }
+
+  public cancel(scope: ExecutionScopeRef<unknown>): void {
     if (!this.#isOpenScope(scope)) {
-      return false;
+      return;
     }
 
-    using fault = new FaultSink(
-      "Out-of-band failures occurred while spawning a cancellation process",
-    );
-    this.#interpreter.spawn(scope, cancel, fault);
-    const cause = fault.drain();
-    if (option.isSome(cause)) {
-      this.#interruptScope(scope, cause.value);
-
-      return false;
-    }
-
-    return true;
+    using fault = new FaultSink("Out-of-band failures occurred while canceling a scope");
+    this.#interpreter.cancel(scope, fault);
   }
 
   public onSettled(listener: (result: LaunchResult<never>) => void): Disposer {
@@ -133,7 +140,7 @@ class RuntimeExecutor implements Executor {
   #startReaperRound(): void {
     using faultSink = new FaultSink("Out-of-band failures occurred while starting a reaper round");
     for (const [scope, process] of this.#interpreter.startReaperTasks(faultSink)) {
-      this.#interpreter.wait(process.exitFuture, (result, suppressor) => {
+      this.#interpreter.onSettled(process.exitFuture, (result, suppressor) => {
         if (this.#interpreter.scopeState(scope).status === "closed") {
           return;
         }
@@ -147,7 +154,12 @@ class RuntimeExecutor implements Executor {
             ),
           ),
           either.getOrElse((failure) => () => {
-            this.#interpreter.spawn(scope, () => halt(failure), suppressor);
+            this.#interpreter.spawn(
+              scope,
+              () => halt(failure),
+              { completionMode: "structural" },
+              suppressor,
+            );
           }),
           (run) => run(),
         );
@@ -175,7 +187,7 @@ class RuntimeExecutor implements Executor {
       return noop;
     }
 
-    return this.#interpreter.wait(scope.exitFuture, (result, suppressor) => {
+    return this.#interpreter.onSettled(scope.exitFuture, (result, suppressor) => {
       try {
         listener(toLaunchResult(result));
       } catch (error) {
