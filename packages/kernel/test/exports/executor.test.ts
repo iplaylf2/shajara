@@ -176,16 +176,17 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["listener-threw", "throws", "records"] as const,
         outcome: {
+          cancelError: expect.objectContaining({ message: "listener-threw" }),
           listenerCalls: ["throws", "records"],
           settled: {
             kind: "canceled",
           },
           settledStatus: "closed",
-          turnFaults: [expect.objectContaining({ message: "listener-threw" })],
+          turnFaults: [],
         },
       },
     ])(
-      "suppresses onSettled listener exceptions without blocking settlement delivery",
+      "surfaces onSettled listener exceptions through the synchronous cancel call",
       async ({ given: [causeMessage, throwingEntry, recordingEntry], outcome }) => {
         const listenerCalls: string[] = [];
         const actual = await iife(async () => {
@@ -201,8 +202,15 @@ describe("/ interfaces: Executor", () => {
             listenerCalls.push(recordingEntry);
           });
 
-          executor.cancel(handle.scope);
+          let cancelError: unknown = null;
+          try {
+            executor.cancel(handle.scope);
+          } catch (error) {
+            cancelError = error;
+          }
+
           return {
+            cancelError,
             listenerCalls,
             settled: await waitForSettled(handle),
             settledStatus: handle.status,
@@ -218,17 +226,19 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["first-listener-threw", "second-listener-threw"] as const,
         outcome: {
+          cancelErrorCount: 2,
+          cancelErrorKind: "AggregateError",
+          cancelErrorMessage: "Out-of-band failures occurred while canceling a scope",
+          cancelErrorMessages: ["first-listener-threw", "second-listener-threw"],
           settled: {
             kind: "canceled",
           },
           settledStatus: "closed",
-          turnFaultErrorCounts: [2],
-          turnFaultKinds: ["AggregateError"],
-          turnFaultMessages: ["Out-of-band failures occurred while processing executor work"],
+          turnFaults: [],
         },
       },
     ])(
-      "aggregates multiple onSettled listener exceptions raised in the same settlement turn",
+      "aggregates multiple onSettled listener exceptions raised by synchronous cancel",
       async ({ given: [firstCauseMessage, secondCauseMessage], outcome }) => {
         const actual = await iife(async () => {
           await using managed = createManagedExecutor();
@@ -242,22 +252,28 @@ describe("/ interfaces: Executor", () => {
             throw new Error(secondCauseMessage);
           });
 
-          executor.cancel(handle.scope);
+          let cancelError: unknown = null;
+          try {
+            executor.cancel(handle.scope);
+          } catch (error) {
+            cancelError = error;
+          }
           const settled = await waitForSettled(handle);
-          await new Promise<void>((resolve) => {
-            globalThis.setTimeout(resolve, 0);
-          });
 
           return {
+            cancelErrorCount: cancelError instanceof AggregateError ? cancelError.errors.length : 0,
+            cancelErrorKind: cancelError?.constructor?.name,
+            cancelErrorMessage:
+              cancelError instanceof Error ? cancelError.message : String(cancelError),
+            cancelErrorMessages:
+              cancelError instanceof AggregateError
+                ? cancelError.errors.map((error) =>
+                    error instanceof Error ? error.message : String(error),
+                  )
+                : [],
             settled,
             settledStatus: handle.status,
-            turnFaultErrorCounts: managed.turnFaults.map((fault) =>
-              fault instanceof AggregateError ? fault.errors.length : 0,
-            ),
-            turnFaultKinds: managed.turnFaults.map((fault) => fault?.constructor?.name),
-            turnFaultMessages: managed.turnFaults.map((fault) =>
-              fault instanceof Error ? fault.message : String(fault),
-            ),
+            turnFaults: managed.turnFaults,
           };
         });
 
@@ -311,8 +327,7 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["should-not-launch"] as const,
         outcome: {
-          canceled: true,
-          launchAfterClose: true,
+          launchAfterClose: false,
           settled: {
             kind: "canceled",
           },
@@ -325,8 +340,8 @@ describe("/ interfaces: Executor", () => {
         const { executor } = managed;
 
         const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+        executor.cancel(handle.scope);
         const actual = {
-          canceled: executor.cancel(handle.scope),
           launchAfterClose: isSome(executor.launch(handle.scope, () => wisp.of(entryResult))),
           settled: await waitForSettled(handle),
         };
@@ -340,7 +355,7 @@ describe("/ interfaces: Executor", () => {
         given: ["future-ready"] as const,
         outcome: {
           firstSettle: true,
-          secondSettle: true,
+          secondSettle: false,
           settled: {
             kind: "success",
             result: right("future-ready"),
@@ -491,8 +506,6 @@ describe("/ interfaces: Executor", () => {
       {
         given: [] as const,
         outcome: {
-          firstCancel: true,
-          secondCancel: true,
           settled: {
             kind: "canceled",
           },
@@ -506,9 +519,9 @@ describe("/ interfaces: Executor", () => {
         const { executor } = managed;
 
         const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+        executor.cancel(handle.scope);
+        executor.cancel(handle.scope);
         const actual = {
-          firstCancel: executor.cancel(handle.scope),
-          secondCancel: executor.cancel(handle.scope),
           settled: await waitForSettled(handle),
           settledStatus: handle.status,
         };
@@ -521,18 +534,17 @@ describe("/ interfaces: Executor", () => {
       {
         given: [{}, "unexpected"] as const,
         outcome: {
-          cancelAccepted: false,
           launchAccepted: false,
         },
       },
     ])(
-      "rejects launch and cancel requests for scopes that were not created by this executor",
+      "rejects launch requests and ignores cancel requests for scopes outside this executor",
       async ({ given: [foreignScope, entryResult], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
 
+        executor.cancel(foreignScope as ExecutionScopeRef<never>);
         const actual = {
-          cancelAccepted: executor.cancel(foreignScope as ExecutionScopeRef<never>),
           launchAccepted: isSome(
             executor.launch(foreignScope as ExecutionScopeRef<never>, () => wisp.of(entryResult)),
           ),
@@ -546,9 +558,7 @@ describe("/ interfaces: Executor", () => {
       {
         given: ["late-launch"] as const,
         outcome: {
-          cancelAfterClose: true,
-          launchAfterClose: true,
-          rootCancel: true,
+          launchAfterClose: false,
           settled: {
             kind: "canceled",
           },
@@ -560,16 +570,14 @@ describe("/ interfaces: Executor", () => {
       async ({ given: [entryResult], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
-        const rootCancel = executor.cancel(executor.scope);
+        executor.cancel(executor.scope);
         const launchAfterClose = isSome(
           executor.launch(executor.scope, () => wisp.of(entryResult)),
         );
-        const cancelAfterClose = executor.cancel(executor.scope);
+        executor.cancel(executor.scope);
 
         const actual = {
-          cancelAfterClose,
           launchAfterClose,
-          rootCancel,
           settled: await waitForSettled(executor),
           settledStatus: executor.status,
         };
