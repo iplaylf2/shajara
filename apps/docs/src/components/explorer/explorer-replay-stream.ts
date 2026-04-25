@@ -3,51 +3,70 @@ import type {
   ExplorerReplayFrame,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
+import { channel, receive, send } from "@shajara/host/primitives";
+import type { RiteCoroutine } from "@shajara/host";
+import { sleep } from "@shajara/host";
 
 export interface ReplayFrameStream<TEvent extends string> {
-  finish: () => void;
-  next: () => Promise<ExplorerReplayFrame<TEvent> | null>;
-  record: (frame: ExplorerReplayFrame<TEvent>) => void;
+  finish: () => RiteCoroutine<void>;
+  next: () => RiteCoroutine<ExplorerReplayFrame<TEvent> | null>;
+  record: (frame: ExplorerReplayFrame<TEvent>) => RiteCoroutine<void>;
 }
 
-export function createReplayFrameStream<TEvent extends string>(): ReplayFrameStream<TEvent> {
-  const queue: ExplorerReplayFrame<TEvent>[] = [];
+export function* createReplayFrameStream<TEvent extends string>(): RiteCoroutine<
+  ReplayFrameStream<TEvent>
+> {
+  const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
   let isFinished = false;
-  let wake: (() => void) | null = null;
 
   return {
-    finish() {
-      isFinished = true;
-      wake?.();
-      wake = null;
-    },
-    next() {
-      if (queue.length > emptyLength) {
-        return Promise.resolve(queue.shift() ?? null);
-      }
+    *finish() {
       if (isFinished) {
-        return Promise.resolve(null);
+        return;
       }
 
-      return new Promise<ExplorerReplayFrame<TEvent> | null>((resolve) => {
-        wake = function resolveNextEvent() {
-          resolve(queue.shift() ?? null);
-        };
-      });
+      isFinished = true;
+      yield* send(sender, null);
     },
-    record(frame) {
-      queue.push(frame);
-      wake?.();
-      wake = null;
+    next() {
+      return receive(receiver);
+    },
+    *record(frame) {
+      if (isFinished) {
+        return;
+      }
+
+      yield* send(sender, frame);
     },
   };
 }
 
-export async function playbackReplayFrames<TEvent extends string>(
+export function* playbackReplayFrames<TEvent extends string>(
   stream: ReplayFrameStream<TEvent>,
   context: PlaybackContext<TEvent>,
-): Promise<void> {
-  await playbackNextFrame(stream, null, context);
+): RiteCoroutine<void> {
+  let previousRenderTimestampMs: number | null = null;
+
+  while (context.isMounted()) {
+    const frame = yield* stream.next();
+
+    if (!frame) {
+      return;
+    }
+
+    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, context.initialState)) {
+      continue;
+    }
+
+    yield* waitForRenderSlot(previousRenderTimestampMs, context.minRenderGapMs);
+
+    if (!context.isMounted()) {
+      return;
+    }
+
+    context.updateState(frame);
+    previousRenderTimestampMs = globalThis.performance.now();
+  }
 }
 
 function isSameReplayFrame<TEvent extends string>(
@@ -59,36 +78,6 @@ function isSameReplayFrame<TEvent extends string>(
     sameEvents(frame.completed, state.completed) &&
     sameCursors(frame.cursors, state.cursors)
   );
-}
-
-async function playbackNextFrame<TEvent extends string>(
-  stream: ReplayFrameStream<TEvent>,
-  previousRenderTimestampMs: number | null,
-  context: PlaybackContext<TEvent>,
-): Promise<void> {
-  if (!context.isMounted()) {
-    return;
-  }
-
-  const frame = await stream.next();
-
-  if (!frame) {
-    return;
-  }
-
-  if (previousRenderTimestampMs === null && isSameReplayFrame(frame, context.initialState)) {
-    await playbackNextFrame(stream, previousRenderTimestampMs, context);
-    return;
-  }
-
-  await waitForRenderSlot(previousRenderTimestampMs, context.minRenderGapMs);
-
-  if (!context.isMounted()) {
-    return;
-  }
-
-  context.updateState(frame);
-  await playbackNextFrame(stream, globalThis.performance.now(), context);
 }
 
 function sameCursors<TEvent extends string>(
@@ -120,26 +109,21 @@ function sameEvents<TEvent extends string>(
   return left.length === right.length && left.every((event, index) => event === right[index]);
 }
 
-function sleepForPlayback(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => {
-    globalThis.setTimeout(resolve, milliseconds);
-  });
-}
-
-function waitForRenderSlot(
+function* waitForRenderSlot(
   previousRenderTimestampMs: number | null,
   minRenderGapMs: number,
-): Promise<void> {
+): RiteCoroutine<void> {
   if (previousRenderTimestampMs === null) {
-    return sleepForPlayback(minRenderGapMs);
+    yield* sleep(minRenderGapMs);
+    return;
   }
 
   const elapsedRenderGapMs = globalThis.performance.now() - previousRenderTimestampMs;
   const remainingRenderGapMs = minRenderGapMs - elapsedRenderGapMs;
 
-  return remainingRenderGapMs > emptyLength
-    ? sleepForPlayback(remainingRenderGapMs)
-    : Promise.resolve();
+  if (remainingRenderGapMs > emptyLength) {
+    yield* sleep(remainingRenderGapMs);
+  }
 }
 
 interface PlaybackContext<TEvent extends string> {

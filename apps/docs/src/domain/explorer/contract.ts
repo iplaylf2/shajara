@@ -1,3 +1,5 @@
+import type { RiteCoroutine } from "@shajara/host";
+
 export interface ExplorerExample<
   TEvent extends string = string,
   TTranslationKey extends string = string,
@@ -66,13 +68,16 @@ export interface ExplorerReplayCursor<TEvent extends string = string> {
   routineId: string;
 }
 
-export interface ExplorerReplayRunner<TEvent extends string = string, TResult = unknown> {
-  cancel: () => Promise<void>;
-  run: (mark: (frame: ExplorerReplayFrame<TEvent>) => void) => Promise<TResult>;
-}
+export type ExplorerReplayEmit<TEvent extends string = string> = (
+  frame: ExplorerReplayFrame<TEvent>,
+) => RiteCoroutine<void>;
+
+export type ExplorerReplayRoutine<TEvent extends string = string, TResult = unknown> = (
+  emit: ExplorerReplayEmit<TEvent>,
+) => RiteCoroutine<TResult>;
 
 export interface ExplorerReplayRuntime<TEvent extends string = string, TResult = unknown> {
-  createRunner: () => ExplorerReplayRunner<TEvent, TResult>;
+  createRoutine: () => ExplorerReplayRoutine<TEvent, TResult>;
 }
 
 export interface ExplorerReplayState<TEvent extends string = string> {

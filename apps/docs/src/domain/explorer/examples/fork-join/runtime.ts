@@ -1,41 +1,32 @@
-import type { ExplorerReplayCursor, ExplorerReplayFrame } from "#/domain/explorer/contract";
-import { createScope, sleep } from "@shajara/host";
+import type {
+  ExplorerReplayCursor,
+  ExplorerReplayEmit,
+  ExplorerReplayFrame,
+  ExplorerReplayRoutine,
+} from "#/domain/explorer/contract";
 import { headerDelayMs, sidebarDelayMs } from "./trace";
 import { spawn, wait } from "@shajara/host/primitives";
 import type { ForkJoinEvent } from "./trace";
-
-export interface ForkJoinReplay {
-  cancel: () => Promise<void>;
-  run: (mark: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) => Promise<ForkJoinResult>;
-}
+import type { RiteCoroutine } from "@shajara/host";
+import { sleep } from "@shajara/host";
 
 export interface ForkJoinResult {
   header: string;
   sidebar: string;
 }
 
-export function createForkJoinReplay(): ForkJoinReplay {
-  const scope = createScope();
-
-  return {
-    cancel: () => scope.cancel(),
-    run: (mark) =>
-      scope.run(function* loadPage() {
-        return yield* loadPageRitual(mark);
-      }),
-  };
+export function createForkJoinReplay(): ExplorerReplayRoutine<ForkJoinEvent, ForkJoinResult> {
+  return loadPageRitual;
 }
 
-function* loadPageRitual(mark: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
-  const emit = createReplayEmitter(mark);
-
+function* loadPageRitual(emit: ExplorerReplayEmit<ForkJoinEvent>): RiteCoroutine<ForkJoinResult> {
   yield* emitRootStart(emit);
   const header = yield* spawn(createHeaderRoutine(emit));
   const sidebar = yield* spawn(createSidebarRoutine(emit));
   yield* sleep(stepDelayMs);
 
   const headerValue = yield* wait(header);
-  emit(
+  yield* emit(
     frame(
       ["routine", "wait-sidebar", "sidebar-sleep"],
       ["header-return", "wait-header"],
@@ -49,9 +40,9 @@ function* loadPageRitual(mark: (frame: ExplorerReplayFrame<ForkJoinEvent>) => vo
   return { header: headerValue, sidebar: sidebarValue };
 }
 
-function createHeaderRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
-  return function* loadHeader() {
-    emit(
+function createHeaderRoutine(emit: ExplorerReplayEmit<ForkJoinEvent>) {
+  return function* loadHeader(): RiteCoroutine<string> {
+    yield* emit(
       frame(
         ["routine", "spawn-sidebar", "header-enter"],
         [],
@@ -59,7 +50,7 @@ function createHeaderRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) =
       ),
     );
     yield* sleep(stepDelayMs);
-    emit(
+    yield* emit(
       frame(
         ["routine", "wait-open", "header-sleep", "sidebar-enter"],
         [],
@@ -71,7 +62,7 @@ function createHeaderRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) =
       ),
     );
     yield* sleep(headerDelayMs);
-    emit(
+    yield* emit(
       frame(
         ["routine", "wait-header", "header-return", "sidebar-sleep"],
         ["header-return"],
@@ -88,9 +79,9 @@ function createHeaderRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) =
   };
 }
 
-function createSidebarRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
-  return function* loadSidebar() {
-    emit(
+function createSidebarRoutine(emit: ExplorerReplayEmit<ForkJoinEvent>) {
+  return function* loadSidebar(): RiteCoroutine<string> {
+    yield* emit(
       frame(
         ["routine", "wait-open", "header-enter", "sidebar-enter"],
         [],
@@ -102,7 +93,7 @@ function createSidebarRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) 
       ),
     );
     yield* sleep(stepDelayMs);
-    emit(
+    yield* emit(
       frame(
         ["routine", "wait-header", "header-sleep", "sidebar-sleep"],
         [],
@@ -114,7 +105,7 @@ function createSidebarRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) 
       ),
     );
     yield* sleep(sidebarDelayMs);
-    emit(
+    yield* emit(
       frame(
         ["routine", "wait-sidebar", "sidebar-return"],
         ["header-return", "wait-header", "sidebar-return"],
@@ -127,15 +118,15 @@ function createSidebarRoutine(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) 
   };
 }
 
-function* emitRootStart(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
-  emit(frame(["routine"], [], [cursor("root", "routine", "running")]));
+function* emitRootStart(emit: ExplorerReplayEmit<ForkJoinEvent>): RiteCoroutine<void> {
+  yield* emit(frame(["routine"], [], [cursor("root", "routine", "running")]));
   yield* sleep(transitionDelayMs);
-  emit(frame(["routine", "spawn-header"], [], [cursor("root", "spawn-header", "running")]));
+  yield* emit(frame(["routine", "spawn-header"], [], [cursor("root", "spawn-header", "running")]));
   yield* sleep(transitionDelayMs);
 }
 
-function* emitRoutineClose(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
-  emit(
+function* emitRoutineClose(emit: ExplorerReplayEmit<ForkJoinEvent>): RiteCoroutine<void> {
+  yield* emit(
     frame(
       ["routine", "wait-close"],
       ["header-return", "wait-header", "sidebar-return", "wait-sidebar"],
@@ -143,19 +134,13 @@ function* emitRoutineClose(emit: (frame: ExplorerReplayFrame<ForkJoinEvent>) => 
     ),
   );
   yield* sleep(transitionDelayMs);
-  emit(
+  yield* emit(
     frame(
       ["done"],
       ["header-return", "wait-header", "sidebar-return", "wait-sidebar", "wait-close", "done"],
       [cursor("root", "done", "running")],
     ),
   );
-}
-
-function createReplayEmitter(mark: (frame: ExplorerReplayFrame<ForkJoinEvent>) => void) {
-  return function emit(frameValue: ExplorerReplayFrame<ForkJoinEvent>): void {
-    mark(frameValue);
-  };
 }
 
 function cursor(

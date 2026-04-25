@@ -19,7 +19,7 @@ export const forkJoinExample = {
       initialState: initialForkJoinTrace,
       replayDelayMs: 1400,
       runtime: {
-        createRunner: createForkJoinReplay,
+        createRoutine: createForkJoinReplay,
       },
     },
   },

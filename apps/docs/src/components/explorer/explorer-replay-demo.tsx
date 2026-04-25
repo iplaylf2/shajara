@@ -1,17 +1,20 @@
 import type {
   ExplorerReplayCursor,
   ExplorerReplayFrame,
-  ExplorerReplayRunner,
   ExplorerReplayRuntime,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
+import type { RiteCoroutine, Scope } from "@shajara/host";
 import { createReplayFrameStream, playbackReplayFrames } from "./explorer-replay-stream";
+import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
+import { spawn, wait } from "@shajara/host/primitives";
 import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import type { ExplorerFlowScene } from "./explorer-flow-scene";
 import { ExplorerFlowView } from "./explorer-flow-view";
 import { readExplorerExample } from "#/domain/explorer/examples";
+
 import styles from "./explorer.module.css";
 
 export function ExplorerReplayDemo(props: Props): JSX.Element {
@@ -31,13 +34,6 @@ interface Props {
   stage: ExplorerReplayStage;
 }
 
-interface ExplorerReplaySession {
-  cancel: () => Promise<void>;
-  reset: () => void;
-  run: (mark: (frame: ExplorerReplayFrame<string>) => void) => Promise<unknown>;
-  runtime: ExplorerReplayRuntime;
-}
-
 interface ExplorerReplayStage {
   replay: {
     initialState: ExplorerReplayState<string>;
@@ -53,27 +49,23 @@ function startReplay(
   exampleId: ExplorerExampleId,
 ): () => void {
   let isMounted = true;
-  let replayTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
-  const replaySession = createReplaySession(exampleId);
+  const replayScope = createScope();
+  const replayRuntime = readExplorerRuntime(exampleId);
   const codeLines = readCodeLines(codeBlockId);
   const updateState = createStateUpdater(setState, codeLines, () => isMounted);
-  const cleanupReplay = cleanupReplaySession(
-    () => {
-      isMounted = false;
-    },
-    () => replayTimer,
-    replaySession,
-  );
+  const cleanupReplay = cleanupReplayScope(() => {
+    isMounted = false;
+  }, replayScope);
   const replayCycle = {
     codeLines,
     isMounted: () => isMounted,
-    replaySession,
+    replayRuntime,
     setState,
     stage,
     updateState,
   };
 
-  runReplayCycle(replayCycle).then(scheduleReplay).catch(handleReplayError);
+  replayScope.run(() => runReplayLoop(replayCycle, handleReplayError)).catch(handleReplayError);
 
   return cleanupReplay;
 
@@ -84,30 +76,35 @@ function startReplay(
 
     setState(stage.replay.initialState);
   }
+}
 
-  function scheduleReplay(): void {
-    replayTimer = globalThis.setTimeout(function replayExplorerDemo() {
-      runReplayCycle(replayCycle).then(scheduleReplay).catch(handleReplayError);
-    }, stage.replay.replayDelayMs);
+function* runReplayLoop(
+  replayCycle: ReplayCycleContext,
+  handleReplayError: () => void,
+): RiteCoroutine<void> {
+  for (;;) {
+    if (!replayCycle.isMounted()) {
+      return;
+    }
+
+    try {
+      yield* runReplayCycle(replayCycle);
+    } catch {
+      handleReplayError();
+      return;
+    }
+
+    if (replayCycle.isMounted()) {
+      yield* sleep(replayCycle.stage.replay.replayDelayMs);
+    }
   }
 }
 
-function createReplaySession(exampleId: ExplorerExampleId): ExplorerReplaySession {
-  const runtime = readExplorerExample(exampleId).stage.replay.runtime as ExplorerReplayRuntime;
-  let replay = runtime.createRunner() as ExplorerReplayRunner;
-
-  return {
-    cancel() {
-      return replay.cancel();
-    },
-    reset() {
-      replay = runtime.createRunner();
-    },
-    run(mark) {
-      return replay.run(mark);
-    },
-    runtime,
-  };
+function readExplorerRuntime(exampleId: ExplorerExampleId): ExplorerReplayRuntime<string, unknown> {
+  return readExplorerExample(exampleId).stage.replay.runtime as ExplorerReplayRuntime<
+    string,
+    unknown
+  >;
 }
 
 function createStateUpdater(
@@ -129,19 +126,10 @@ function createStateUpdater(
   };
 }
 
-function cleanupReplaySession(
-  dispose: () => void,
-  readReplayTimer: () => ReturnType<typeof globalThis.setTimeout> | null,
-  replaySession: ExplorerReplaySession,
-): () => void {
+function cleanupReplayScope(dispose: () => void, replayScope: Scope): () => void {
   return function cleanupExplorerReplay() {
     dispose();
-    const replayTimer = readReplayTimer();
-
-    if (replayTimer !== null) {
-      globalThis.clearTimeout(replayTimer);
-    }
-    replaySession.cancel().catch(() => null);
+    replayScope.cancel().catch(() => null);
   };
 }
 
@@ -154,7 +142,7 @@ function readCodeLines(codeBlockId: string): HTMLElement[] {
   ];
 }
 
-async function runReplayCycle(context: ReplayCycleContext): Promise<void> {
+function* runReplayCycle(context: ReplayCycleContext): RiteCoroutine<void> {
   context.setState(context.stage.replay.initialState);
   syncCodeLines(
     context.codeLines,
@@ -162,13 +150,7 @@ async function runReplayCycle(context: ReplayCycleContext): Promise<void> {
     context.stage.replay.initialState.completed,
   );
 
-  await playReplaySession(context);
-
-  if (!context.isMounted()) {
-    return;
-  }
-
-  context.replaySession.reset();
+  yield* playReplayRoutine(context);
 }
 
 function syncCodeLines(
@@ -192,20 +174,22 @@ function syncCodeLines(
   }
 }
 
-async function playReplaySession(context: ReplayCycleContext): Promise<unknown> {
-  const frameStream = createReplayFrameStream<string>();
-  const playback = playbackReplayFrames(frameStream, {
-    initialState: context.stage.replay.initialState,
-    isMounted: context.isMounted,
-    minRenderGapMs,
-    updateState: context.updateState,
-  });
+function* playReplayRoutine(context: ReplayCycleContext): RiteCoroutine<unknown> {
+  const frameStream = yield* createReplayFrameStream<string>();
+  const playback = yield* spawn(() =>
+    playbackReplayFrames(frameStream, {
+      initialState: context.stage.replay.initialState,
+      isMounted: context.isMounted,
+      minRenderGapMs,
+      updateState: context.updateState,
+    }),
+  );
 
   try {
-    return await context.replaySession.run(frameStream.record);
+    return yield* context.replayRuntime.createRoutine()(frameStream.record);
   } finally {
-    frameStream.finish();
-    await playback;
+    yield* frameStream.finish();
+    yield* wait(playback);
   }
 }
 
@@ -216,7 +200,7 @@ function readLineEvents(value: string | undefined): string[] {
 interface ReplayCycleContext {
   codeLines: readonly HTMLElement[];
   isMounted: () => boolean;
-  replaySession: ExplorerReplaySession;
+  replayRuntime: ExplorerReplayRuntime<string, unknown>;
   setState: Setter<ExplorerReplayState>;
   stage: ExplorerReplayStage;
   updateState: (frame: ExplorerReplayFrame<string>) => void;
