@@ -1,13 +1,13 @@
 ---
-import {
-  EXPLORER_EXAMPLES,
-  readExplorerExample,
-} from "#/domain/explorer/examples";
 import { ExplorerExampleRail, ExplorerTopbar } from "#/components/explorer";
 import {
   buildExplorerHref,
   buildExplorerLocaleLinks,
 } from "#/pages-kit/explorer";
+import {
+  explorerExamples,
+  readExplorerExample,
+} from "#/domain/explorer/examples";
 import { i18N, siteLocales } from "#site";
 import type { ExplorerBodyExample } from "#/pages-kit/explorer";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
@@ -18,7 +18,7 @@ import styles from "#/components/explorer/explorer.module.css";
 
 export function getStaticPaths() {
   return siteLocales.flatMap((locale) =>
-    EXPLORER_EXAMPLES.map((exampleDefinition) => ({
+    explorerExamples.map((exampleDefinition) => ({
       params: { example: exampleDefinition.id, locale },
     })),
   );
@@ -40,7 +40,7 @@ const { example, locale } = Astro.params;
 const exampleDefinition = readExplorerExample(example);
 
 const examples: ExplorerBodyExample[] =
-  EXPLORER_EXAMPLES.map(buildExplorerExample);
+  explorerExamples.map(buildExplorerExample);
 const currentExample = buildExplorerExample(exampleDefinition);
 const docsHomeHref = getRelativeLocaleUrl(i18N.locales[locale].lang);
 const localeLinks = buildExplorerLocaleLinks(currentExample.id);

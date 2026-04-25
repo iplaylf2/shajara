@@ -7,7 +7,7 @@ import { i18N } from "#site";
 export function buildExplorerLocaleLinks(
   currentExampleId: ExplorerExampleId,
 ): ExplorerBodyLocaleLink[] {
-  return SITE_LOCALE_ENTRIES.map(([locale, localeConfig]) => ({
+  return siteLocaleEntries.map(([locale, localeConfig]) => ({
     href: buildExplorerHref(locale, currentExampleId),
     hreflang: localeConfig.lang,
     label: localeConfig.label,
@@ -35,4 +35,4 @@ export interface ExplorerBodyLocaleLink {
 }
 
 const EXPLORER_ROUTE_SEGMENT = "explorer";
-const SITE_LOCALE_ENTRIES = Object.entries(i18N.locales) as Entries<typeof i18N.locales>;
+const siteLocaleEntries = Object.entries(i18N.locales) as Entries<typeof i18N.locales>;
