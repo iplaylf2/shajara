@@ -33,12 +33,12 @@ export interface ExplorerExampleStage<TEvent extends string = string, TResult = 
 export interface ExplorerFlowGraph<TEvent extends string = string> {
   links: readonly ExplorerFlowGraphLink<TEvent>[];
   nodes: readonly ExplorerFlowGraphNode<TEvent>[];
-  ticks: readonly ExplorerFlowGraphTick<TEvent>[];
 }
 
 export interface ExplorerFlowGraphLink<TEvent extends string = string> {
   activeEvents: readonly TEvent[];
   from: string;
+  label: string;
   to: string;
 }
 
@@ -48,12 +48,7 @@ export interface ExplorerFlowGraphNode<TEvent extends string = string> {
   id: string;
   kind: "branch" | "join" | "parent";
   label: string;
-}
-
-export interface ExplorerFlowGraphTick<TEvent extends string = string> {
-  label: string;
-  nodeId: string;
-  visibleEvents: readonly TEvent[];
+  statusRoutineIds: readonly string[];
 }
 
 export interface ExplorerReplayFrame<TEvent extends string = string> {

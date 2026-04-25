@@ -3,7 +3,6 @@ import type {
   ExplorerFlowGraph,
   ExplorerFlowGraphLink,
   ExplorerFlowGraphNode,
-  ExplorerFlowGraphTick,
 } from "#/domain/explorer/contract";
 
 export function resolveExplorerFlowScene<TEvent extends string>(
@@ -12,19 +11,22 @@ export function resolveExplorerFlowScene<TEvent extends string>(
 ): ExplorerFlowScene<TEvent> {
   const nodes = resolveNodeLayout(graph.nodes);
   const nodePositions = new Map(nodes.map((node) => [node.id, node]));
+  const links = graph.links.map((link) => createFlowLink(link, nodePositions));
 
   return {
     ariaLabel,
-    links: graph.links.map((link) => createFlowLink(link, nodePositions)),
+    links,
     markerId: defaultLayout.markerId,
     nodes,
-    ticks: graph.ticks.map((tick) => createFlowTick(tick, nodePositions)),
     viewBox: defaultLayout.viewBox,
   };
 }
 
 export interface ExplorerFlowLink<TEvent extends string = string> {
   activeEvents: readonly TEvent[];
+  label: string;
+  labelLeft: number;
+  labelTop: number;
   path: string;
 }
 
@@ -34,6 +36,7 @@ export interface ExplorerFlowNode<TEvent extends string = string> {
   id: string;
   label: string;
   left: number;
+  statusRoutineIds: readonly string[];
   top: number;
   variant: "branch" | "join" | "parent";
 }
@@ -43,26 +46,14 @@ export interface ExplorerFlowScene<TEvent extends string = string> {
   links: readonly ExplorerFlowLink<TEvent>[];
   markerId: string;
   nodes: readonly ExplorerFlowNode<TEvent>[];
-  ticks: readonly ExplorerFlowTick<TEvent>[];
   viewBox: string;
-}
-
-export interface ExplorerFlowTick<TEvent extends string = string> {
-  label: string;
-  left: number;
-  top: number;
-  visibleEvents: readonly TEvent[];
 }
 
 const defaultLayout = {
   columns: [98, 322, 574],
   lanes: [96, 138, 188],
   markerId: "explorer-flow-arrow",
-  tickOffset: {
-    left: 56,
-    top: 80,
-  },
-  viewBox: "0 0 760 330",
+  viewBox: "56 72 680 196",
 } as const;
 
 const nodeWidth = 112;
@@ -71,6 +62,7 @@ const nodeLinkAnchorY = {
   join: 18,
   parent: 18,
 } as const satisfies Record<ExplorerFlowNode["variant"], number>;
+const flowLinkLabelOffsetY = 12;
 const linkControlFromOffsetX = 38;
 const linkControlToOffsetX = 46;
 
@@ -96,13 +88,17 @@ function createFlowNode<TEvent extends string>(
   column: number,
   lane: number,
 ): ExplorerFlowNode<TEvent> {
+  const left = readColumn(column);
+  const top = readLane(lane);
+
   return {
     activeEvents: node.activeEvents,
     completedEvents: node.completedEvents,
     id: node.id,
     label: node.label,
-    left: readColumn(column),
-    top: readLane(lane),
+    left,
+    statusRoutineIds: node.statusRoutineIds,
+    top,
     variant: node.kind,
   };
 }
@@ -117,9 +113,19 @@ function createFlowLink<TEvent extends string>(
   const fromY = from.top + nodeLinkAnchorY[from.variant];
   const toX = to.left;
   const toY = to.top + nodeLinkAnchorY[to.variant];
+  const labelLeft = readCurveMidpoint(
+    fromX,
+    fromX + linkControlFromOffsetX,
+    toX - linkControlToOffsetX,
+    toX,
+  );
+  const labelTop = readCurveMidpoint(fromY, fromY, toY, toY) - flowLinkLabelOffsetY;
 
   return {
     activeEvents: link.activeEvents,
+    label: link.label,
+    labelLeft,
+    labelTop,
     path: [
       `M${fromX} ${fromY}`,
       `C${fromX + linkControlFromOffsetX} ${fromY}`,
@@ -129,18 +135,13 @@ function createFlowLink<TEvent extends string>(
   };
 }
 
-function createFlowTick<TEvent extends string>(
-  tick: ExplorerFlowGraphTick<TEvent>,
-  nodePositions: ReadonlyMap<string, ExplorerFlowNode<TEvent>>,
-): ExplorerFlowTick<TEvent> {
-  const node = readNode(nodePositions, tick.nodeId);
-
-  return {
-    label: tick.label,
-    left: node.left + defaultLayout.tickOffset.left,
-    top: node.top + defaultLayout.tickOffset.top,
-    visibleEvents: tick.visibleEvents,
-  };
+function readCurveMidpoint(
+  start: number,
+  startControl: number,
+  endControl: number,
+  end: number,
+): number {
+  return (start + 3 * startControl + 3 * endControl + end) / 8;
 }
 
 function readNode<TEvent extends string>(

@@ -177,7 +177,7 @@
 
 .flowDemo {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  grid-template-columns: minmax(0, 0.88fr) minmax(24rem, 1.12fr);
   overflow: hidden;
   border: 1px solid #c9d9e9;
   border-radius: 0.35rem;
@@ -215,6 +215,22 @@
   text-anchor: middle;
 }
 
+.flowNodeStatus {
+  fill: #52677f;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-anchor: middle;
+  text-transform: uppercase;
+}
+
+.flowNodeStatusBlocked {
+  fill: #9a5a47;
+}
+
+.flowNodeStatusDone {
+  fill: #2f8b68;
+}
+
 .flowNodeParent .flowNode {
   fill: #f7fbff;
   stroke: #7fa2c8;
@@ -239,11 +255,6 @@
   stroke: #4d9d78;
 }
 
-.flowNodeJoin.flowNodeDone .flowNode {
-  fill: #fff6f1;
-  stroke: #b0705f;
-}
-
 .flowLink {
   fill: none;
   stroke: #c8d6e6;
@@ -254,22 +265,30 @@
     stroke-dashoffset 180ms ease;
 }
 
-.flowLinkActive {
+.flowLinkGroup {
+  transform-box: fill-box;
+}
+
+.flowLinkLabel {
+  fill: #698098;
+  font-size: 0.64rem;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #f8fbff;
+  stroke-linejoin: round;
+  stroke-width: 4px;
+  text-anchor: middle;
+  transition: fill 180ms ease;
+}
+
+.flowLinkGroupActive .flowLink {
   stroke: #526a86;
   stroke-dasharray: 11 7;
   stroke-dashoffset: 18;
 }
 
-.flowTick {
-  fill: #2f8b68;
-  font-size: 0.72rem;
-  font-weight: 700;
-  opacity: 0;
-  transition: opacity 180ms ease;
-}
-
-.flowTickVisible {
-  opacity: 1;
+.flowLinkGroupActive .flowLinkLabel {
+  fill: #143044;
 }
 
 .explorerCode {

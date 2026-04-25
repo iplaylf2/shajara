@@ -3,7 +3,6 @@ import type {
   ExplorerFlowGraph,
   ExplorerFlowGraphLink,
   ExplorerFlowGraphNode,
-  ExplorerFlowGraphTick,
 } from "#/domain/explorer/contract";
 import type { LoadPageDemoEvent, LoadPageDemoResult } from "./runtime";
 import { createLoadPageDemoCode, initialLoadPageDemoTrace, loadPageDemo } from "./runtime";
@@ -34,7 +33,6 @@ function createForkJoinFlow(): ExplorerFlowGraph<LoadPageDemoEvent> {
   return {
     links: createForkJoinFlowLinks(),
     nodes: createForkJoinFlowNodes(),
-    ticks: createForkJoinFlowTicks(),
   };
 }
 
@@ -42,22 +40,26 @@ function createForkJoinFlowLinks(): readonly ExplorerFlowGraphLink<LoadPageDemoE
   return [
     {
       activeEvents: ["spawn-header"],
-      from: "routine",
+      from: "root",
+      label: "spawn header",
       to: "header",
     },
     {
       activeEvents: ["spawn-sidebar"],
-      from: "routine",
+      from: "root",
+      label: "spawn sidebar",
       to: "sidebar",
     },
     {
       activeEvents: ["wait-header"],
       from: "header",
+      label: "wait(header)",
       to: "join",
     },
     {
       activeEvents: ["wait-sidebar"],
       from: "sidebar",
+      label: "wait(sidebar)",
       to: "join",
     },
   ];
@@ -73,11 +75,13 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
         "wait-header",
         "wait-sidebar",
         "wait-close",
+        "done",
       ],
       completedEvents: ["done"],
-      id: "routine",
+      id: "root",
       kind: "parent",
       label: "page routine",
+      statusRoutineIds: ["root"],
     },
     {
       activeEvents: ["spawn-header", "header-sleep", "wait-header", "header-return"],
@@ -85,6 +89,7 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       id: "header",
       kind: "branch",
       label: "header task",
+      statusRoutineIds: ["header"],
     },
     {
       activeEvents: ["spawn-sidebar", "sidebar-sleep", "wait-sidebar", "sidebar-return"],
@@ -92,28 +97,15 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       id: "sidebar",
       kind: "branch",
       label: "sidebar task",
+      statusRoutineIds: ["sidebar"],
     },
     {
-      activeEvents: ["wait-header", "wait-sidebar", "wait-close"],
+      activeEvents: ["wait-header", "wait-sidebar", "wait-close", "done"],
       completedEvents: ["done"],
       id: "join",
       kind: "join",
       label: "join",
-    },
-  ];
-}
-
-function createForkJoinFlowTicks(): readonly ExplorerFlowGraphTick<LoadPageDemoEvent>[] {
-  return [
-    {
-      label: "ready",
-      nodeId: "header",
-      visibleEvents: ["header-return"],
-    },
-    {
-      label: "ready",
-      nodeId: "sidebar",
-      visibleEvents: ["sidebar-return"],
+      statusRoutineIds: ["root"],
     },
   ];
 }

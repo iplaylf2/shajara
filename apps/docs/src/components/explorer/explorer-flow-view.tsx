@@ -1,5 +1,5 @@
 import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-scene";
-import type { ExplorerReplayState } from "#/domain/explorer/contract";
+import type { ExplorerReplayCursor, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
@@ -14,9 +14,8 @@ export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): J
           viewBox={props.scene.viewBox}
         >
           <FlowArrowMarker markerId={props.scene.markerId} />
-          <FlowNodes scene={props.scene} state={props.state} />
           <FlowLinks scene={props.scene} state={props.state} />
-          <FlowTicks scene={props.scene} state={props.state} />
+          <FlowNodes scene={props.scene} state={props.state} />
         </svg>
         {props.code}
       </div>
@@ -26,7 +25,8 @@ export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): J
 
 const emptyLength = 0;
 const nodeTextOffsetX = 56;
-const nodeTextOffsetY = 32;
+const nodeStatusOffsetY = 41;
+const nodeTextOffsetY = 24;
 
 const flowNodeClasses = {
   branch: styles["flowNodeBranch"]!,
@@ -58,28 +58,34 @@ function FlowNodes<TEvent extends string>(props: {
 }): JSX.Element {
   return (
     <>
-      {props.scene.nodes.map((node) => (
-        <FlowNode
-          isActive={includesAny(props.state.active, node.activeEvents)}
-          isDone={includesAny(props.state.completed, node.completedEvents)}
-          node={node}
-        />
-      ))}
+      {props.scene.nodes.map((node) => {
+        const status = readNodeStatus(node, props.state);
+
+        return (
+          <FlowNode
+            isActive={status === "blocked" || status === "running"}
+            node={node}
+            status={status}
+          />
+        );
+      })}
     </>
   );
 }
 
+type FlowNodeStatus = ExplorerReplayCursor["mode"] | "done" | null;
+
 function FlowNode<TEvent extends string>(props: {
   isActive: boolean;
-  isDone: boolean;
   node: ExplorerFlowNode<TEvent>;
+  status: FlowNodeStatus;
 }): JSX.Element {
   return (
     <g
       class={classes(
         flowNodeClasses[props.node.variant],
         props.isActive && styles["flowNodeActive"]!,
-        props.isDone && styles["flowNodeDone"]!,
+        props.status === "done" && styles["flowNodeDone"]!,
       )}
     >
       <rect
@@ -97,6 +103,19 @@ function FlowNode<TEvent extends string>(props: {
       >
         {props.node.label}
       </text>
+      {props.status && (
+        <text
+          class={classes(
+            styles["flowNodeStatus"]!,
+            props.status === "blocked" && styles["flowNodeStatusBlocked"]!,
+            props.status === "done" && styles["flowNodeStatusDone"]!,
+          )}
+          x={offset(props.node.left, nodeTextOffsetX)}
+          y={offset(props.node.top, nodeStatusOffsetY)}
+        >
+          {props.status}
+        </text>
+      )}
     </g>
   );
 }
@@ -108,36 +127,21 @@ function FlowLinks<TEvent extends string>(props: {
   return (
     <>
       {props.scene.links.map((link) => (
-        <path
+        <g
           class={classes(
-            styles["flowLink"]!,
-            includesAny(props.state.active, link.activeEvents) && styles["flowLinkActive"]!,
+            styles["flowLinkGroup"]!,
+            includesAny(props.state.active, link.activeEvents) && styles["flowLinkGroupActive"]!,
           )}
-          d={link.path}
-          marker-end={`url(#${props.scene.markerId})`}
-        />
-      ))}
-    </>
-  );
-}
-
-function FlowTicks<TEvent extends string>(props: {
-  scene: ExplorerFlowScene<TEvent>;
-  state: ExplorerReplayState<TEvent>;
-}): JSX.Element {
-  return (
-    <>
-      {props.scene.ticks.map((tick) => (
-        <text
-          class={classes(
-            styles["flowTick"]!,
-            includesAny(props.state.completed, tick.visibleEvents) && styles["flowTickVisible"]!,
-          )}
-          x={tick.left}
-          y={tick.top}
         >
-          {tick.label}
-        </text>
+          <path
+            class={styles["flowLink"]}
+            d={link.path}
+            marker-end={`url(#${props.scene.markerId})`}
+          />
+          <text class={styles["flowLinkLabel"]} x={link.labelLeft} y={link.labelTop}>
+            {link.label}
+          </text>
+        </g>
       ))}
     </>
   );
@@ -148,6 +152,27 @@ function includesAny<TEvent extends string>(
   targetEvents: readonly TEvent[],
 ): boolean {
   return targetEvents.some((event) => completedEvents.includes(event));
+}
+
+function readNodeStatus<TEvent extends string>(
+  node: ExplorerFlowNode<TEvent>,
+  state: ExplorerReplayState<TEvent>,
+): FlowNodeStatus {
+  if (includesAny(state.completed, node.completedEvents)) {
+    return "done";
+  }
+
+  const activeCursor = state.cursors.find(
+    (cursor) =>
+      node.statusRoutineIds.includes(cursor.routineId) &&
+      includesAny(cursor.events, node.activeEvents),
+  );
+
+  if (activeCursor) {
+    return activeCursor.mode;
+  }
+
+  return null;
 }
 
 function offset(value: number, amount: number): string {
