@@ -8,35 +8,25 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 export interface ReplayFrameStream<TEvent extends string> {
+  emit: (frame: ExplorerReplayFrame<TEvent>) => RiteCoroutine<void>;
   finish: () => RiteCoroutine<void>;
   next: () => RiteCoroutine<ExplorerReplayFrame<TEvent> | null>;
-  record: (frame: ExplorerReplayFrame<TEvent>) => RiteCoroutine<void>;
 }
 
 export function* createReplayFrameStream<TEvent extends string>(): RiteCoroutine<
   ReplayFrameStream<TEvent>
 > {
   const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
-  let isFinished = false;
 
   return {
+    *emit(frame) {
+      yield* send(sender, frame);
+    },
     *finish() {
-      if (isFinished) {
-        return;
-      }
-
-      isFinished = true;
       yield* send(sender, null);
     },
     next() {
       return receive(receiver);
-    },
-    *record(frame) {
-      if (isFinished) {
-        return;
-      }
-
-      yield* send(sender, frame);
     },
   };
 }

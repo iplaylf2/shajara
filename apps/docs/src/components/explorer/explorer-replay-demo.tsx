@@ -5,7 +5,6 @@ import type {
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
-import type { RiteCoroutine, Scope } from "@shajara/host";
 import { createReplayFrameStream, playbackReplayFrames } from "./explorer-replay-stream";
 import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
@@ -13,6 +12,7 @@ import { spawn, wait } from "@shajara/host/primitives";
 import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import type { ExplorerFlowScene } from "./explorer-flow-scene";
 import { ExplorerFlowView } from "./explorer-flow-view";
+import type { RiteCoroutine } from "@shajara/host";
 import { readExplorerExample } from "#/domain/explorer/examples";
 
 import styles from "./explorer.module.css";
@@ -50,12 +50,10 @@ function startReplay(
 ): () => void {
   let isMounted = true;
   const replayScope = createScope();
-  const replayRuntime = readExplorerRuntime(exampleId);
+  const replayRuntime = readExplorerExample(exampleId).stage.replay
+    .runtime as ExplorerReplayRuntime<string, unknown>;
   const codeLines = readCodeLines(codeBlockId);
   const updateState = createStateUpdater(setState, codeLines, () => isMounted);
-  const cleanupReplay = cleanupReplayScope(() => {
-    isMounted = false;
-  }, replayScope);
   const replayCycle = {
     codeLines,
     isMounted: () => isMounted,
@@ -65,46 +63,34 @@ function startReplay(
     updateState,
   };
 
-  replayScope.run(() => runReplayLoop(replayCycle, handleReplayError)).catch(handleReplayError);
+  replayScope.run(() => runReplayLoop(replayCycle)).catch(handleReplayFailure);
 
-  return cleanupReplay;
+  return function cleanupExplorerReplay() {
+    isMounted = false;
+    replayScope.cancel().catch(() => null);
+  };
 
-  function handleReplayError(): void {
+  function handleReplayFailure(error: unknown): void {
     if (!isMounted) {
       return;
     }
 
-    setState(stage.replay.initialState);
+    throw error;
   }
 }
 
-function* runReplayLoop(
-  replayCycle: ReplayCycleContext,
-  handleReplayError: () => void,
-): RiteCoroutine<void> {
+function* runReplayLoop(replayCycle: ReplayCycleContext): RiteCoroutine<void> {
   for (;;) {
     if (!replayCycle.isMounted()) {
       return;
     }
 
-    try {
-      yield* runReplayCycle(replayCycle);
-    } catch {
-      handleReplayError();
-      return;
-    }
+    yield* runReplayCycle(replayCycle);
 
     if (replayCycle.isMounted()) {
       yield* sleep(replayCycle.stage.replay.replayDelayMs);
     }
   }
-}
-
-function readExplorerRuntime(exampleId: ExplorerExampleId): ExplorerReplayRuntime<string, unknown> {
-  return readExplorerExample(exampleId).stage.replay.runtime as ExplorerReplayRuntime<
-    string,
-    unknown
-  >;
 }
 
 function createStateUpdater(
@@ -123,13 +109,6 @@ function createStateUpdater(
       completed: frame.completed,
       cursors: frame.cursors,
     });
-  };
-}
-
-function cleanupReplayScope(dispose: () => void, replayScope: Scope): () => void {
-  return function cleanupExplorerReplay() {
-    dispose();
-    replayScope.cancel().catch(() => null);
   };
 }
 
@@ -176,6 +155,7 @@ function syncCodeLines(
 
 function* playReplayRoutine(context: ReplayCycleContext): RiteCoroutine<unknown> {
   const frameStream = yield* createReplayFrameStream<string>();
+  const replayRoutine = context.replayRuntime.createRoutine();
   const playback = yield* spawn(() =>
     playbackReplayFrames(frameStream, {
       initialState: context.stage.replay.initialState,
@@ -186,7 +166,7 @@ function* playReplayRoutine(context: ReplayCycleContext): RiteCoroutine<unknown>
   );
 
   try {
-    return yield* context.replayRuntime.createRoutine()(frameStream.record);
+    return yield* replayRoutine(frameStream.emit);
   } finally {
     yield* frameStream.finish();
     yield* wait(playback);
