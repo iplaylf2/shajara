@@ -1,5 +1,8 @@
 # shajara
 
+[![NPM Version](https://img.shields.io/npm/v/%40shajara%2Fhost)](https://www.npmjs.com/package/%40shajara%2Fhost)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/iplaylf2/shajara)
+
 shajara offers a style of concurrency orchestration that differs from scattered `async`/`await`, timers, and callbacks.
 
 It organizes concurrent work into a bounded tree: each start has an owner, each wait or communication point has a place, and completion, failure, and cancellation all converge through structure instead of drifting outside the call graph. Here, structured concurrency means that concurrent tasks belong to a boundary and finish, fail, or cancel with that boundary.

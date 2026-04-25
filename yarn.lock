@@ -6765,9 +6765,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"knip@npm:^6.6.2":
-  version: 6.6.2
-  resolution: "knip@npm:6.6.2"
+"knip@npm:^6.6.3":
+  version: 6.6.3
+  resolution: "knip@npm:6.6.3"
   dependencies:
     fdir: "npm:^6.5.0"
     formatly: "npm:^0.3.0"
@@ -6786,7 +6786,7 @@ __metadata:
   bin:
     knip: bin/knip.js
     knip-bun: bin/knip-bun.js
-  checksum: 10c0/632b4ed97f5ce1ded76bf00f36c6b434701e678128e22806019fe47b8c63835cfb3dfec3ad1ad24c640556ff1115ddcfd8d798b90fde5a0d65d292ba3a3415a4
+  checksum: 10c0/7722bb4bc762ec3471788b7fd48f7daf04da577b36a7d5218c703bbfbdd9d6aeedc52b69ea5f1212bd91d2fb41a284bba394659de5bdca3ad69a86cc4febfee8
   languageName: node
   linkType: hard
 
@@ -9518,7 +9518,7 @@ __metadata:
     "@shajara/presets": "workspace:^"
     "@types/node": "catalog:"
     cspell-cli: "npm:^10.0.0"
-    knip: "npm:^6.6.2"
+    knip: "npm:^6.6.3"
     oxfmt: "npm:^0.46.0"
     oxlint: "catalog:"
     typescript: "catalog:"

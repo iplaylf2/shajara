@@ -40,8 +40,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): ScopeSync<RuntimeScope> {
     const scope = new RuntimeScope(entry, descriptor, RuntimeScope.#sentinel, zone);
 
-    yield scope.#trackProcessEffect(scope.entryProcess);
-    yield scope.#trackScopeEffect(scope);
+    yield scope.#trackProcess(scope.entryProcess);
+    yield scope.#trackScope(scope);
 
     return scope;
   }
@@ -50,9 +50,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.complete(result);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#settleEffect(closure.settlement);
+    yield this.#defer(closure.settlement);
     yield* this.#triggerCleanup(closure.cleanups);
-    yield this.#trackProcessEffect(process);
+    yield this.#trackProcess(process);
     yield* this.#advanceClosing();
   }
 
@@ -61,8 +61,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
 
-    yield this.#settleEffect(closure.settlement);
-    yield this.#trackProcessEffect(process);
+    yield this.#defer(closure.settlement);
+    yield this.#trackProcess(process);
 
     const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
     const state = this.#state;
@@ -96,8 +96,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const child = new RuntimeScope(entry, descriptor, this, zone);
     this.#children.add(child);
 
-    yield child.#trackProcessEffect(child.entryProcess);
-    yield child.#trackScopeEffect(child);
+    yield child.#trackProcess(child.entryProcess);
+    yield child.#trackScope(child);
 
     return child;
   }
@@ -110,7 +110,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     this.#processContainerFor(process).add(process);
 
-    yield this.#trackProcessEffect(process);
+    yield this.#trackProcess(process);
 
     return process as ProcessRef<Relic>;
   }
@@ -124,7 +124,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
     process.wait(discard);
 
-    yield this.#trackProcessEffect(process);
+    yield this.#trackProcess(process);
   }
 
   public *tryReceive<Value, Outcome>(
@@ -154,7 +154,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const discard = channel.enqueueReceiver(receiver);
     process.wait(discard);
 
-    yield this.#trackProcessEffect(process);
+    yield this.#trackProcess(process);
   }
 
   public *trySend<Value, Outcome>(
@@ -207,7 +207,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const discard = channel.enqueueSender(sender, value);
     process.wait(discard);
 
-    yield this.#trackProcessEffect(process);
+    yield this.#trackProcess(process);
   }
 
   public *close<Outcome>(
@@ -371,8 +371,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
   *#tryClosing(): ScopeSync<void> {
     if (this.#isQuiet) {
       yield* this.#enterClosing();
-    } else {
-      yield this.#flushEffect();
     }
   }
 
@@ -394,9 +392,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield* this.#transitionTo({ draft, status: "failing" });
     yield* failingDefer();
     if (control.propagateFailure) {
-      yield this.#syncScopeEffect(this.parentScope, () =>
-        this.parentScope.#enterFailingByChild(this),
-      );
+      yield this.#signal(this.parentScope, () => this.parentScope.#enterFailingByChild(this));
     }
     yield* this.#tryFailed(draft);
   }
@@ -407,10 +403,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
       yield* this.#transitionTo({ result, status: "completed" });
       if (!this.#isRoot) {
-        yield this.#syncScopeEffect(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
       }
-    } else {
-      yield this.#flushEffect();
     }
   }
 
@@ -418,10 +412,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle) {
       yield* this.#transitionTo({ status: "canceled" });
       if (!this.#isRoot) {
-        yield this.#syncScopeEffect(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
       }
-    } else {
-      yield this.#flushEffect();
     }
   }
 
@@ -429,10 +421,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     if (this.#isIdle) {
       yield* this.#transitionTo({ failure: draft.build(), status: "failed" });
       if (!this.#isRoot) {
-        yield this.#syncScopeEffect(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
       }
-    } else {
-      yield this.#flushEffect();
     }
   }
 
@@ -465,8 +455,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       }
     }
 
-    yield this.#flushEffect();
-    yield this.#trackScopeEffect(this);
+    yield this.#trackScope(this);
   }
 
   *#cancelManaged(): ScopeSync<void> {
@@ -479,13 +468,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#settleEffect(closure.settlement);
+      yield this.#defer(closure.settlement);
       yield* this.#triggerCleanup(closure.cleanups);
-      yield this.#trackProcessEffect(process);
+      yield this.#trackProcess(process);
     }
 
     for (const child of children) {
-      yield this.#syncScopeEffect(child, () => child.cancel());
+      yield this.#signal(child, () => child.cancel());
     }
   }
 
@@ -496,9 +485,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const process of processes) {
       const closure = process.cancel();
 
-      yield this.#settleEffect(closure.settlement);
+      yield this.#defer(closure.settlement);
       yield* this.#triggerCleanup(closure.cleanups);
-      yield this.#trackProcessEffect(process);
+      yield this.#trackProcess(process);
     }
   }
 
@@ -515,12 +504,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     for (const future of this.#derivedFutures) {
       const settlement = future.settle(canceled);
 
-      yield this.#settleEffect(settlement);
+      yield this.#defer(settlement);
     }
 
     const settlement = this.#exitFuture.settle(result);
 
-    yield this.#settleEffect(settlement);
+    yield this.#defer(settlement);
   }
 
   *#triggerCleanup(cleanups: readonly CleanupTask[]): ScopeSync<void> {
@@ -550,6 +539,46 @@ export class RuntimeScope implements ScopeRef<unknown> {
     );
   }
 
+  // oxlint-disable-next-line class-methods-use-this
+  *#resumeChannelWaiters(
+    waiters: RuntimeChannelWaiters,
+    result: ChannelClosedResult,
+  ): ScopeSync<void> {
+    for (const receiver of waiters.receivers) {
+      yield* receiver.scope.#resumeReceiver(receiver.process, result);
+    }
+
+    for (const sender of waiters.senders) {
+      yield* sender.scope.#resumeSender(sender.process, result);
+    }
+  }
+
+  *#resumeReceiver<Value>(
+    process: RuntimeProcessKeeper,
+    result: ReceiveResult<Value, unknown>,
+  ): ScopeSync<void> {
+    process.resume(result);
+
+    yield this.#trackProcess(process);
+  }
+
+  *#resumeSender(process: RuntimeProcessKeeper, result: SendResult<unknown>): ScopeSync<void> {
+    process.resume(result);
+
+    yield this.#trackProcess(process);
+  }
+
+  *#revokeChannelWithFailure(channel: AnyRuntimeChannel, cause: unknown): ScopeSync<void> {
+    yield* this.#revoke(channel);
+    yield* this.#enterFailing(
+      new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
+        channelFailure(cause, "Channel operation failed"),
+      ),
+      noopSync,
+      { propagateFailure: this.#propagatesFailure },
+    );
+  }
+
   *#revoke(channel: RuntimeChannel<RuntimeChannelWaiter, unknown, unknown>): ScopeSync<void> {
     const waiters = channel.revoke();
 
@@ -558,39 +587,34 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield* this.#resumeChannelWaiters(waiters, { kind: "revoked" });
   }
 
-  #trackProcessEffect(process: ProcessRef<unknown>): ScopeSyncEffect {
+  #trackProcess(process: ProcessRef<unknown>): ScopeSyncEffect {
     return {
-      kind: "track",
+      kind: "handoff",
       task: (suppressor: Suppressor) => this.scopeZone.trackProcess(process, suppressor),
     };
   }
 
-  #trackScopeEffect(scope: ScopeRef<unknown>): ScopeSyncEffect {
+  #trackScope(scope: ScopeRef<unknown>): ScopeSyncEffect {
     return {
-      kind: "track",
+      kind: "handoff",
       task: (suppressor: Suppressor) => this.scopeZone.trackScope(scope, suppressor),
     };
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #settleEffect(settlement: ScopeSyncSettlement): ScopeSyncEffect {
+  #defer(task: ScopeReleaseTask): ScopeSyncEffect {
     return {
-      kind: "settle",
-      settlement,
+      kind: "defer",
+      task,
     };
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #flushEffect(): ScopeSyncEffect {
-    return { kind: "flush" };
-  }
-
-  // oxlint-disable-next-line class-methods-use-this
-  #syncScopeEffect(scope: ScopeRef<unknown>, sync: () => ScopeSync<void>): ScopeSyncEffect {
+  #signal(scope: ScopeRef<unknown>, run: () => ScopeSync<void>): ScopeSyncEffect {
     return {
-      kind: "syncScope",
+      kind: "signal",
+      run,
       scope,
-      sync,
     };
   }
 
@@ -615,46 +639,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
     return this.#state as RuntimeScopeStateOf<Status>;
-  }
-
-  // oxlint-disable-next-line class-methods-use-this
-  *#resumeChannelWaiters(
-    waiters: RuntimeChannelWaiters,
-    result: ChannelClosedResult,
-  ): ScopeSync<void> {
-    for (const receiver of waiters.receivers) {
-      yield* receiver.scope.#resumeReceiver(receiver.process, result);
-    }
-
-    for (const sender of waiters.senders) {
-      yield* sender.scope.#resumeSender(sender.process, result);
-    }
-  }
-
-  *#resumeReceiver<Value>(
-    process: RuntimeProcessKeeper,
-    result: ReceiveResult<Value, unknown>,
-  ): ScopeSync<void> {
-    process.resume(result);
-
-    yield this.#trackProcessEffect(process);
-  }
-
-  *#resumeSender(process: RuntimeProcessKeeper, result: SendResult<unknown>): ScopeSync<void> {
-    process.resume(result);
-
-    yield this.#trackProcessEffect(process);
-  }
-
-  *#revokeChannelWithFailure(channel: AnyRuntimeChannel, cause: unknown): ScopeSync<void> {
-    yield* this.#revoke(channel);
-    yield* this.#enterFailing(
-      new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
-        channelFailure(cause, "Channel operation failed"),
-      ),
-      noopSync,
-      { propagateFailure: this.#propagatesFailure },
-    );
   }
 
   // oxlint-disable-next-line class-methods-use-this
@@ -701,30 +685,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
 export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
 
-export type ScopeSyncSettlement = FutureSettlement;
-export type ScopeTrackTask = (suppressor: Suppressor) => void;
+export type ScopeReleaseTask = FutureSettlement;
+export type ScopeHandoffTask = (suppressor: Suppressor) => void;
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
-
-// Heterogeneous runtime registries preserve each entry's value type at creation sites.
-// oxlint-disable-next-line no-explicit-any
-type AnyRuntimeFuture = RuntimeFuture<any>;
-// oxlint-disable-next-line no-explicit-any
-type AnyRuntimeChannel = RuntimeChannel<RuntimeChannelWaiter, any, any>;
 
 export type ScopeSyncEffect = TaggedUnion<
   "kind",
   {
-    flush: {};
-    settle: {
-      readonly settlement: ScopeSyncSettlement;
+    defer: {
+      readonly task: ScopeReleaseTask;
     };
-    syncScope: {
+    handoff: {
+      readonly task: ScopeHandoffTask;
+    };
+    signal: {
+      readonly run: () => ScopeSync<void>;
       readonly scope: ScopeRef<unknown>;
-      readonly sync: () => ScopeSync<void>;
-    };
-    track: {
-      readonly task: ScopeTrackTask;
     };
   }
 >;
@@ -756,6 +733,15 @@ interface RuntimeChannelWaiters {
   readonly senders: readonly RuntimeChannelWaiter[];
 }
 
+interface FailingControl {
+  readonly propagateFailure: boolean;
+}
+
+// oxlint-disable-next-line no-explicit-any
+type AnyRuntimeFuture = RuntimeFuture<any>;
+// oxlint-disable-next-line no-explicit-any
+type AnyRuntimeChannel = RuntimeChannel<RuntimeChannelWaiter, any, any>;
+
 type ChannelClosedResult =
   | Exclude<ReceiveResult<unknown, unknown>, { readonly kind: "value" }>
   | Exclude<SendResult<unknown>, { readonly kind: "sent" }>;
@@ -764,7 +750,3 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,
   { readonly status: Status }
 >;
-
-interface FailingControl {
-  readonly propagateFailure: boolean;
-}

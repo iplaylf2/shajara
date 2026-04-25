@@ -1,6 +1,6 @@
 // oxlint-disable no-magic-numbers
 import type { ScopeRef, Suppressor } from "#/contracts";
-import type { ScopeSync, ScopeSyncEffect, ScopeSyncSettlement } from "./runtime-scope";
+import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-scope";
 
 export class RuntimeScopeReconciler {
   public reconcile<Result>(
@@ -10,7 +10,7 @@ export class RuntimeScopeReconciler {
   ): Result {
     const call = createScopeSyncCall(scope, sync, suppressor);
 
-    this.#pendingCalls.push(call);
+    this.#queuedCalls.push(call);
     this.#takeOverUntil(call);
 
     return call.result! as Result;
@@ -18,14 +18,15 @@ export class RuntimeScopeReconciler {
 
   #takeOverUntil(target: ScopeSyncCall): void {
     while (this.#isQueued(target)) {
-      this.#drive(this.#nextPendingCall());
+      this.#drive(this.#nextQueuedCall());
     }
   }
 
   #drive(call: ScopeSyncCall): void {
-    this.#drivingCall = call;
+    this.#acquire(call);
+    this.#activeCall = call;
 
-    while (this.#drivingCall === call) {
+    while (this.#activeCall === call) {
       const next = call.next();
       if (next.done) {
         this.#finish(call, next.value);
@@ -38,89 +39,111 @@ export class RuntimeScopeReconciler {
 
   #applyStep(call: ScopeSyncCall, step: ScopeSyncEffect): void {
     switch (step.kind) {
-      case "flush": {
-        this.#handoff(call, () => this.#flushSettlements(call));
+      case "defer": {
+        call.deferredTasks.push(step.task);
         break;
       }
-      case "settle": {
-        call.settlements.push(step.settlement);
-        break;
-      }
-      case "syncScope": {
-        if (this.#hasPendingSyncFor(step.scope)) {
-          break;
-        }
-
-        this.#handoff(call, () => {
-          this.#inlineScopeSync(call, step.scope, step.sync());
-        });
-        break;
-      }
-      case "track": {
+      case "handoff": {
         this.#handoff(call, () => {
           step.task(call.suppressor);
         });
         break;
       }
+      case "signal": {
+        this.#signalScope(call, step);
+        break;
+      }
     }
   }
 
+  #finish(call: ScopeSyncCall, result: unknown): void {
+    call.result = result;
+    this.#activeCall = null;
+    this.#release(call);
+    this.#dequeue(call);
+  }
+
   #handoff(call: ScopeSyncCall, effect: () => void): void {
-    this.#drivingCall = null;
+    this.#activeCall = null;
+    this.#release(call);
     effect();
 
     if (!this.#isQueued(call)) {
       return;
     }
 
-    this.#drivingCall = call;
+    this.#acquire(call);
+    this.#activeCall = call;
   }
 
-  #inlineScopeSync(parent: ScopeSyncCall, scope: ScopeRef<unknown>, sync: ScopeSync<void>): void {
-    const call = createScopeSyncCall(scope, sync, parent.suppressor);
-    const parentIndex = this.#pendingCalls.indexOf(parent);
+  #signalScope(parent: ScopeSyncCall, signal: ScopeSignalRequest): void {
+    if (this.#acquiredScopes.has(signal.scope)) {
+      return;
+    }
 
-    this.#pendingCalls.splice(parentIndex, 0, call);
+    this.#takeover(parent, () => this.#inlineScopeSignal(parent, signal.scope, signal.run));
+  }
+
+  #takeover(call: ScopeSyncCall, effect: () => void): void {
+    this.#activeCall = null;
+    effect();
+
+    if (!this.#isQueued(call)) {
+      return;
+    }
+
+    this.#activeCall = call;
+  }
+
+  #inlineScopeSignal(
+    parent: ScopeSyncCall,
+    scope: ScopeRef<unknown>,
+    run: () => ScopeSync<void>,
+  ): void {
+    const call = createScopeSyncCall(scope, run(), parent.suppressor);
+    const parentIndex = this.#queuedCalls.indexOf(parent);
+
+    this.#queuedCalls.splice(parentIndex, 0, call);
     this.#takeOverUntil(call);
   }
 
-  #finish(call: ScopeSyncCall, result: unknown): void {
-    call.result = result;
-    this.#drivingCall = null;
-    this.#dequeue(call);
+  #acquire(call: ScopeSyncCall): void {
+    this.#acquiredScopes.add(call.scope);
   }
 
-  // oxlint-disable-next-line class-methods-use-this
-  #flushSettlements(call: ScopeSyncCall): void {
-    const { settlements } = call;
-    call.settlements = [];
-
-    for (const settlement of settlements) {
-      settlement(call.suppressor);
-    }
+  #release(call: ScopeSyncCall): void {
+    this.#acquiredScopes.delete(call.scope);
+    this.#flushDeferredTasks(call);
   }
 
-  #nextPendingCall(): ScopeSyncCall {
-    return this.#pendingCalls.find((call) => call !== this.#drivingCall)!;
+  #nextQueuedCall(): ScopeSyncCall {
+    return this.#queuedCalls.find((call) => call !== this.#activeCall)!;
   }
 
   #isQueued(target: ScopeSyncCall): boolean {
-    return this.#pendingCalls.includes(target);
-  }
-
-  #hasPendingSyncFor(scope: ScopeRef<unknown>): boolean {
-    return this.#pendingCalls.some((call) => call.scope === scope);
+    return this.#queuedCalls.includes(target);
   }
 
   #dequeue(target: ScopeSyncCall): void {
-    const index = this.#pendingCalls.indexOf(target);
+    const index = this.#queuedCalls.indexOf(target);
     if (index !== -1) {
-      this.#pendingCalls.splice(index, 1);
+      this.#queuedCalls.splice(index, 1);
     }
   }
 
-  readonly #pendingCalls: ScopeSyncCall[] = [];
-  #drivingCall: ScopeSyncCall | null = null;
+  // oxlint-disable-next-line class-methods-use-this
+  #flushDeferredTasks(call: ScopeSyncCall): void {
+    const { deferredTasks } = call;
+    call.deferredTasks = [];
+
+    for (const task of deferredTasks) {
+      task(call.suppressor);
+    }
+  }
+
+  readonly #queuedCalls: ScopeSyncCall[] = [];
+  readonly #acquiredScopes = new Set<ScopeRef<unknown>>();
+  #activeCall: ScopeSyncCall | null = null;
 }
 
 function createScopeSyncCall<Result>(
@@ -129,18 +152,20 @@ function createScopeSyncCall<Result>(
   suppressor: Suppressor,
 ): ScopeSyncCall {
   return {
+    deferredTasks: [],
     next: () => sync.next() as IteratorResult<ScopeSyncEffect, unknown>,
     result: null,
     scope,
-    settlements: [],
     suppressor,
   };
 }
 
 interface ScopeSyncCall {
+  deferredTasks: ScopeReleaseTask[];
   result: unknown | null;
   readonly scope: ScopeRef<unknown>;
-  settlements: ScopeSyncSettlement[];
   next(): IteratorResult<ScopeSyncEffect, unknown>;
   readonly suppressor: Suppressor;
 }
+
+type ScopeSignalRequest = Extract<ScopeSyncEffect, { readonly kind: "signal" }>;

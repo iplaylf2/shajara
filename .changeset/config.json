@@ -4,7 +4,7 @@
   "baseBranch": "master",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [["@shajara/kernel", "@shajara/host"]],
   "ignore": [],
   "linked": [],
   "updateInternalDependencies": "patch"
