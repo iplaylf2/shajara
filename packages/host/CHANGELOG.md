@@ -1,5 +1,12 @@
 # @shajara/host
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [0d455c0]
+  - @shajara/kernel@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
