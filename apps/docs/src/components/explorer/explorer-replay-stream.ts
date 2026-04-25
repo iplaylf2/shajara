@@ -1,4 +1,5 @@
 import type {
+  ExplorerEventId,
   ExplorerReplayCursor,
   ExplorerReplayFrame,
   ExplorerReplayState,
@@ -8,13 +9,13 @@ import { channel, receive, send } from "@shajara/host/primitives";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
-export interface ReplayFrameStream<TEvent extends string> {
+export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
   emit: (trace: ExplorerReplayTrace<TEvent>) => RiteCoroutine<void>;
   finish: () => RiteCoroutine<void>;
   next: () => RiteCoroutine<ExplorerReplayFrame<TEvent> | null>;
 }
 
-export function* createReplayFrameStream<TEvent extends string>(
+export function* createReplayFrameStream<TEvent extends ExplorerEventId>(
   initialState: ExplorerReplayState<TEvent>,
 ): RiteCoroutine<ReplayFrameStream<TEvent>> {
   const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
@@ -34,7 +35,7 @@ export function* createReplayFrameStream<TEvent extends string>(
   };
 }
 
-function applyReplayTrace<TEvent extends string>(
+function applyReplayTrace<TEvent extends ExplorerEventId>(
   state: ExplorerReplayState<TEvent>,
   trace: ExplorerReplayTrace<TEvent>,
 ): ExplorerReplayFrame<TEvent> {
@@ -56,7 +57,7 @@ function applyReplayTrace<TEvent extends string>(
   };
 }
 
-function appendCompletedEvent<TEvent extends string>(
+function appendCompletedEvent<TEvent extends ExplorerEventId>(
   completed: readonly TEvent[],
   trace: ExplorerReplayTrace<TEvent>,
 ): readonly TEvent[] {
@@ -67,35 +68,37 @@ function appendCompletedEvent<TEvent extends string>(
   return [...completed, trace.completed];
 }
 
-export function* playbackReplayFrames<TEvent extends string>(
+export function* playbackReplayFrames<TEvent extends ExplorerEventId>(
   stream: ReplayFrameStream<TEvent>,
-  context: PlaybackContext<TEvent>,
+  initialState: ExplorerReplayState<TEvent>,
+  frameSink: ReplayFrameSink<TEvent>,
+  minRenderGapMs: number,
 ): RiteCoroutine<void> {
   let previousRenderTimestampMs: number | null = null;
 
-  while (context.isMounted()) {
+  while (frameSink.isOpen()) {
     const frame = yield* stream.next();
 
     if (!frame) {
       return;
     }
 
-    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, context.initialState)) {
+    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, initialState)) {
       continue;
     }
 
-    yield* waitForRenderSlot(previousRenderTimestampMs, context.minRenderGapMs);
+    yield* waitForRenderSlot(previousRenderTimestampMs, minRenderGapMs);
 
-    if (!context.isMounted()) {
+    if (!frameSink.isOpen()) {
       return;
     }
 
-    context.updateState(frame);
+    frameSink.write(frame);
     previousRenderTimestampMs = globalThis.performance.now();
   }
 }
 
-function isSameReplayFrame<TEvent extends string>(
+function isSameReplayFrame<TEvent extends ExplorerEventId>(
   frame: ExplorerReplayFrame<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): boolean {
@@ -106,18 +109,14 @@ function isSameReplayFrame<TEvent extends string>(
   );
 }
 
-function sameCursors<TEvent extends string>(
+function sameCursors<TEvent extends ExplorerEventId>(
   left: readonly ExplorerReplayCursor<TEvent>[],
   right: readonly ExplorerReplayCursor<TEvent>[],
 ): boolean {
   return (
     left.length === right.length &&
     left.every((cursor, index) => {
-      const target = right[index];
-
-      if (!target) {
-        return false;
-      }
+      const target = right[index]!;
 
       return (
         sameEvents(cursor.events, target.events) &&
@@ -128,7 +127,7 @@ function sameCursors<TEvent extends string>(
   );
 }
 
-function sameEvents<TEvent extends string>(
+function sameEvents<TEvent extends ExplorerEventId>(
   left: readonly TEvent[],
   right: readonly TEvent[],
 ): boolean {
@@ -152,11 +151,9 @@ function* waitForRenderSlot(
   }
 }
 
-interface PlaybackContext<TEvent extends string> {
-  initialState: ExplorerReplayState<TEvent>;
-  isMounted: () => boolean;
-  minRenderGapMs: number;
-  updateState: (frame: ExplorerReplayFrame<TEvent>) => void;
+interface ReplayFrameSink<TEvent extends ExplorerEventId> {
+  isOpen: () => boolean;
+  write: (frame: ExplorerReplayFrame<TEvent>) => void;
 }
 
 const emptyLength = 0;

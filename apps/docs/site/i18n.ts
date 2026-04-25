@@ -1,6 +1,4 @@
-import type { Entries } from "type-fest";
-
-export const I18N = {
+export const i18N = {
   defaultLocale: "en",
   locales: {
     en: {
@@ -14,13 +12,12 @@ export const I18N = {
   },
 } as const;
 
-export type SiteLocale = keyof typeof I18N.locales;
+export type SiteLocale = keyof typeof i18N.locales;
 
-export const SITE_LOCALES = Object.keys(I18N.locales) as SiteLocale[];
-const SITE_LOCALE_ENTRIES = Object.entries(I18N.locales) as Entries<typeof I18N.locales>;
+export const siteLocales = Object.keys(i18N.locales) as SiteLocale[];
 
-export const STARLIGHT_LOCALES = Object.fromEntries(
-  SITE_LOCALE_ENTRIES.map(([locale, config]) => [
+export const starlightLocales = Object.fromEntries(
+  Object.entries(i18N.locales).map(([locale, config]) => [
     locale,
     {
       label: config.label,
@@ -29,7 +26,7 @@ export const STARLIGHT_LOCALES = Object.fromEntries(
   ]),
 ) as {
   [Locale in SiteLocale]: {
-    label: (typeof I18N.locales)[Locale]["label"];
-    lang: (typeof I18N.locales)[Locale]["lang"];
+    label: (typeof i18N.locales)[Locale]["label"];
+    lang: (typeof i18N.locales)[Locale]["lang"];
   };
 };

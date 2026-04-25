@@ -27,7 +27,7 @@ export const forkJoinExample = {
     },
   },
   titleKey: "explorer.examples.fork-join.title",
-} as const satisfies ExplorerExample<LoadPageDemoEvent, string, LoadPageDemoResult>;
+} as const satisfies ExplorerExample<LoadPageDemoEvent, LoadPageDemoResult, string>;
 
 function createForkJoinFlow(): ExplorerFlowGraph<LoadPageDemoEvent> {
   return {

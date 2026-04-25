@@ -1,3 +1,4 @@
+import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
@@ -21,11 +22,11 @@ export function ExplorerExampleRail(props: Props): JSX.Element {
 
 interface ExplorerExampleRailItem {
   href: string;
-  id: string;
+  id: ExplorerExampleId;
   title: string;
 }
 
 interface Props {
-  currentExampleId: string;
-  examples: ExplorerExampleRailItem[];
+  currentExampleId: ExplorerExampleId;
+  examples: readonly ExplorerExampleRailItem[];
 }

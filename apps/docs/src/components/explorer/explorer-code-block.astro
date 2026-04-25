@@ -1,5 +1,6 @@
 ---
 import type {
+  ExplorerEventId,
   ExplorerExampleCodeLine,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
@@ -10,7 +11,7 @@ const { code, id, initialState } = Astro.props;
 const source = code.map((line) => line.text).join("\n");
 const firstLine = 1;
 const lineTransformer = {
-  line(node: { properties?: Record<string, unknown> }, lineNumber: number) {
+  line(node: CodeLineNode, lineNumber: number) {
     const line = code.at(lineNumber - firstLine);
 
     if (!line) {
@@ -43,9 +44,19 @@ const lineTransformer = {
 };
 
 interface Props {
-  code: readonly ExplorerExampleCodeLine[];
+  code: readonly ExplorerExampleCodeLine<ExplorerEventId>[];
   id: string;
-  initialState: ExplorerReplayState<string>;
+  initialState: ExplorerReplayState<ExplorerEventId>;
+}
+
+interface CodeLineNode {
+  properties?: CodeLineProperties;
+}
+
+interface CodeLineProperties {
+  class?: string;
+  "data-explorer-completed-events"?: string;
+  "data-explorer-line-event"?: ExplorerEventId;
 }
 ---
 

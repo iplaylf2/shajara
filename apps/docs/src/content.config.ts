@@ -3,7 +3,10 @@ import { docsSchema, i18nSchema } from "@astrojs/starlight/schema";
 import { defineCollection } from "astro:content";
 import { explorerUiI18nSchema } from "#/content/i18n-schema";
 
-export const collections: Record<string, ReturnType<typeof defineCollection>> = {
+type ContentCollectionName = "docs" | "i18n";
+type ContentCollection = ReturnType<typeof defineCollection>;
+
+export const collections: Record<ContentCollectionName, ContentCollection> = {
   docs: defineCollection({
     loader: docsLoader({ generateId: generateDocsId }),
     schema: docsSchema(),

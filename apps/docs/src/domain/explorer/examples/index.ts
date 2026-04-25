@@ -2,27 +2,26 @@ import type { ArrayValues } from "type-fest";
 import { forkJoinExample } from "./fork-join";
 
 export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
-  const example = EXPLORER_EXAMPLES.find((entry) => entry.id === exampleId);
+  return EXPLORER_EXAMPLE_DEFINITIONS[exampleId];
+}
 
-  if (!example) {
-    throw new Error(`Unknown explorer example: ${exampleId}`);
-  }
-
-  return example;
+export function readExplorerReplayRuntime(exampleId: ExplorerExampleId): ExplorerReplayRuntime {
+  return readExplorerExample(exampleId).stage.replay.runtime;
 }
 
 export const EXPLORER_EXAMPLES = [forkJoinExample] as const;
-export const DEFAULT_EXPLORER_EXAMPLE_ID = readFirstExplorerExample().id;
+export const DEFAULT_EXPLORER_EXAMPLE_ID = forkJoinExample.id;
 
 export type ExplorerExampleDefinition = ArrayValues<typeof EXPLORER_EXAMPLES>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
+export type ExplorerExampleEvent = ExplorerExampleDefinition["stage"]["code"][number]["id"];
+export type ExplorerReplayRuntime = ExplorerExampleDefinition["stage"]["replay"]["runtime"];
 
-function readFirstExplorerExample(): ExplorerExampleDefinition {
-  const [firstExplorerExample] = EXPLORER_EXAMPLES;
-
-  if (!firstExplorerExample) {
-    throw new Error("Explorer requires at least one example.");
-  }
-
-  return firstExplorerExample;
-}
+const EXPLORER_EXAMPLE_DEFINITIONS: {
+  readonly [ExampleId in ExplorerExampleId]: Extract<
+    ExplorerExampleDefinition,
+    { readonly id: ExampleId }
+  >;
+} = {
+  [forkJoinExample.id]: forkJoinExample,
+};

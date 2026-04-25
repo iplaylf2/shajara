@@ -1,9 +1,14 @@
 import type { RiteCoroutine } from "@shajara/host";
 
+export type ExplorerEventId = string;
+export type ExplorerRoutineId = string;
+export type ExplorerTranslationKey = string;
+export type ExplorerReplayCursorMode = "blocked" | "running";
+
 export interface ExplorerExample<
-  TEvent extends string = string,
-  TTranslationKey extends string = string,
-  TResult = unknown,
+  TEvent extends ExplorerEventId,
+  TResult,
+  TTranslationKey extends ExplorerTranslationKey,
 > {
   descriptionKey: TTranslationKey;
   guideKeys: readonly TTranslationKey[];
@@ -12,76 +17,76 @@ export interface ExplorerExample<
   titleKey: TTranslationKey;
 }
 
-export interface ExplorerExampleCodeLine<TEvent extends string = string> {
+export interface ExplorerExampleCodeLine<TEvent extends ExplorerEventId> {
   id: TEvent;
   completedEvents?: readonly TEvent[];
   text: string;
 }
 
-export interface ExplorerExampleReplay<TEvent extends string = string, TResult = unknown> {
+export interface ExplorerExampleReplay<TEvent extends ExplorerEventId, TResult> {
   initialState: ExplorerReplayState<TEvent>;
   replayDelayMs: number;
   runtime: ExplorerReplayRuntime<TEvent, TResult>;
 }
 
-export interface ExplorerExampleStage<TEvent extends string = string, TResult = unknown> {
+export interface ExplorerExampleStage<TEvent extends ExplorerEventId, TResult> {
   code: readonly ExplorerExampleCodeLine<TEvent>[];
   flow: ExplorerFlowGraph<TEvent>;
   replay: ExplorerExampleReplay<TEvent, TResult>;
 }
 
-export interface ExplorerFlowGraph<TEvent extends string = string> {
+export interface ExplorerFlowGraph<TEvent extends ExplorerEventId> {
   links: readonly ExplorerFlowGraphLink<TEvent>[];
   nodes: readonly ExplorerFlowGraphNode<TEvent>[];
 }
 
-export interface ExplorerFlowGraphLink<TEvent extends string = string> {
+export interface ExplorerFlowGraphLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   from: string;
   label: string;
   to: string;
 }
 
-export interface ExplorerFlowGraphNode<TEvent extends string = string> {
+export interface ExplorerFlowGraphNode<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
   id: string;
   kind: "branch" | "join" | "parent";
   label: string;
-  statusRoutineIds: readonly string[];
+  statusRoutineIds: readonly ExplorerRoutineId[];
 }
 
-export interface ExplorerReplayFrame<TEvent extends string = string> {
+export interface ExplorerReplayFrame<TEvent extends ExplorerEventId> {
   active: readonly TEvent[];
   completed: readonly TEvent[];
   cursors: readonly ExplorerReplayCursor<TEvent>[];
 }
 
-export interface ExplorerReplayCursor<TEvent extends string = string> {
+export interface ExplorerReplayCursor<TEvent extends ExplorerEventId> {
   events: readonly TEvent[];
-  mode: "blocked" | "running";
-  routineId: string;
+  mode: ExplorerReplayCursorMode;
+  routineId: ExplorerRoutineId;
 }
 
-export interface ExplorerReplayTrace<TEvent extends string = string> {
-  clearCursor?: string;
+export interface ExplorerReplayTrace<TEvent extends ExplorerEventId> {
+  clearCursor?: ExplorerRoutineId;
   completed?: TEvent;
   cursor?: ExplorerReplayCursor<TEvent>;
 }
 
-export type ExplorerReplayEmit<TEvent extends string = string> = (
+export type ExplorerReplayEmit<TEvent extends ExplorerEventId> = (
   trace: ExplorerReplayTrace<TEvent>,
 ) => RiteCoroutine<void>;
 
-export type ExplorerReplayRoutine<TEvent extends string = string, TResult = unknown> = (
+export type ExplorerReplayRoutine<TEvent extends ExplorerEventId, TResult> = (
   emit: ExplorerReplayEmit<TEvent>,
 ) => RiteCoroutine<TResult>;
 
-export interface ExplorerReplayRuntime<TEvent extends string = string, TResult = unknown> {
+export interface ExplorerReplayRuntime<TEvent extends ExplorerEventId, TResult> {
   createRoutine: () => ExplorerReplayRoutine<TEvent, TResult>;
 }
 
-export interface ExplorerReplayState<TEvent extends string = string> {
+export interface ExplorerReplayState<TEvent extends ExplorerEventId> {
   active: readonly TEvent[];
   completed: readonly TEvent[];
   cursors: readonly ExplorerReplayCursor<TEvent>[];

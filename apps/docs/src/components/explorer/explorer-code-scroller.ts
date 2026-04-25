@@ -35,7 +35,7 @@ function scrollCodeLineIntoView(line: HTMLElement): void {
   const container = line.closest<HTMLElement>("[data-explorer-code]");
 
   if (!container) {
-    return;
+    throw new Error("Explorer code line is not inside an explorer code block.");
   }
 
   const containerRect = container.getBoundingClientRect();

@@ -1,9 +1,15 @@
+import type {
+  ExplorerEventId,
+  ExplorerReplayCursorMode,
+  ExplorerReplayState,
+} from "#/domain/explorer/contract";
 import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-scene";
-import type { ExplorerReplayCursor, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
-export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): JSX.Element {
+export function ExplorerFlowView<TEvent extends ExplorerEventId>(
+  props: Props<TEvent>,
+): JSX.Element {
   return (
     <div class={styles["stageCanvas"]}>
       <div class={styles["flowDemo"]}>
@@ -77,7 +83,7 @@ function FlowNodes<TEvent extends string>(props: {
   );
 }
 
-type FlowNodeStatus = ExplorerReplayCursor["mode"] | "done" | null;
+type FlowNodeStatus = ExplorerReplayCursorMode | "done" | null;
 
 function FlowNode<TEvent extends string>(props: {
   isActive: boolean;
@@ -149,14 +155,14 @@ function FlowLinks<TEvent extends string>(props: {
   );
 }
 
-function includesAny<TEvent extends string>(
+function includesAny<TEvent extends ExplorerEventId>(
   completedEvents: readonly TEvent[],
   targetEvents: readonly TEvent[],
 ): boolean {
   return targetEvents.some((event) => completedEvents.includes(event));
 }
 
-function readNodeStatus<TEvent extends string>(
+function readNodeStatus<TEvent extends ExplorerEventId>(
   node: ExplorerFlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): FlowNodeStatus {
@@ -185,7 +191,7 @@ function isClassName(value: string | false): value is string {
   return typeof value === "string" && value.length > emptyLength;
 }
 
-interface Props<TEvent extends string> {
+interface Props<TEvent extends ExplorerEventId> {
   code?: JSX.Element;
   codeControls?: JSX.Element;
   scene: ExplorerFlowScene<TEvent>;

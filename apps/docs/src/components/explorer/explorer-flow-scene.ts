@@ -1,11 +1,12 @@
 // oxlint-disable no-magic-numbers
 import type {
+  ExplorerEventId,
   ExplorerFlowGraph,
   ExplorerFlowGraphLink,
   ExplorerFlowGraphNode,
 } from "#/domain/explorer/contract";
 
-export function resolveExplorerFlowScene<TEvent extends string>(
+export function resolveExplorerFlowScene<TEvent extends ExplorerEventId>(
   graph: ExplorerFlowGraph<TEvent>,
   ariaLabel: string,
 ): ExplorerFlowScene<TEvent> {
@@ -22,7 +23,7 @@ export function resolveExplorerFlowScene<TEvent extends string>(
   };
 }
 
-export interface ExplorerFlowLink<TEvent extends string = string> {
+export interface ExplorerFlowLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   label: string;
   labelLeft: number;
@@ -30,7 +31,7 @@ export interface ExplorerFlowLink<TEvent extends string = string> {
   path: string;
 }
 
-export interface ExplorerFlowNode<TEvent extends string = string> {
+export interface ExplorerFlowNode<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
   height: number;
@@ -43,7 +44,7 @@ export interface ExplorerFlowNode<TEvent extends string = string> {
   width: number;
 }
 
-export interface ExplorerFlowScene<TEvent extends string = string> {
+export interface ExplorerFlowScene<TEvent extends ExplorerEventId> {
   ariaLabel: string;
   links: readonly ExplorerFlowLink<TEvent>[];
   markerId: string;
@@ -58,16 +59,30 @@ const defaultLayout = {
   viewBox: "24 34 772 178",
 } as const;
 
+const flowColumns = {
+  branch: 1,
+  join: 2,
+  parent: 0,
+} as const satisfies Record<ExplorerFlowNodeVariant, FlowColumn>;
+
 const nodeSize = {
   branch: { height: 58, width: 188 },
   join: { height: 146, width: 156 },
   parent: { height: 146, width: 156 },
-} as const satisfies Record<ExplorerFlowNode["variant"], { height: number; width: number }>;
+} as const satisfies Record<ExplorerFlowNodeVariant, ExplorerFlowNodeSize>;
 const flowLinkLabelOffsetY = 16;
 const linkControlFromOffsetX = 72;
 const linkControlToOffsetX = 78;
 
-function resolveNodeLayout<TEvent extends string>(
+type ExplorerFlowNodeVariant = ExplorerFlowNode<ExplorerEventId>["variant"];
+type FlowColumn = 0 | 1 | 2;
+type FlowLane = 0 | 1 | 2;
+interface ExplorerFlowNodeSize {
+  readonly height: number;
+  readonly width: number;
+}
+
+function resolveNodeLayout<TEvent extends ExplorerEventId>(
   graphNodes: readonly ExplorerFlowGraphNode<TEvent>[],
 ): ExplorerFlowNode<TEvent>[] {
   const parentNodes = graphNodes.filter((node) => node.kind === "parent");
@@ -76,20 +91,19 @@ function resolveNodeLayout<TEvent extends string>(
   const centerLane = readCenterLane(branchNodes.length);
 
   return [
-    ...parentNodes.map((node) => createFlowNode(node, 0, centerLane)),
+    ...parentNodes.map((node) => createFlowNode(node, centerLane)),
     ...branchNodes.map((node, index) =>
-      createFlowNode(node, 1, readBranchLane(index, branchNodes.length)),
+      createFlowNode(node, readBranchLane(index, branchNodes.length)),
     ),
-    ...joinNodes.map((node) => createFlowNode(node, 2, centerLane)),
+    ...joinNodes.map((node) => createFlowNode(node, centerLane)),
   ];
 }
 
-function createFlowNode<TEvent extends string>(
+function createFlowNode<TEvent extends ExplorerEventId>(
   node: ExplorerFlowGraphNode<TEvent>,
-  column: number,
-  lane: number,
+  lane: FlowLane,
 ): ExplorerFlowNode<TEvent> {
-  const left = readColumn(column);
+  const left = readColumn(flowColumns[node.kind]);
   const top = readLane(lane);
   const size = nodeSize[node.kind];
 
@@ -107,7 +121,7 @@ function createFlowNode<TEvent extends string>(
   };
 }
 
-function createFlowLink<TEvent extends string>(
+function createFlowLink<TEvent extends ExplorerEventId>(
   link: ExplorerFlowGraphLink<TEvent>,
   nodePositions: ReadonlyMap<string, ExplorerFlowNode<TEvent>>,
 ): ExplorerFlowLink<TEvent> {
@@ -139,7 +153,7 @@ function createFlowLink<TEvent extends string>(
   };
 }
 
-function readFlowLinkY<TEvent extends string>(
+function readFlowLinkY<TEvent extends ExplorerEventId>(
   node: ExplorerFlowNode<TEvent>,
   peerNode: ExplorerFlowNode<TEvent>,
 ): number {
@@ -159,7 +173,7 @@ function readCurveMidpoint(
   return (start + 3 * startControl + 3 * endControl + end) / 8;
 }
 
-function readNode<TEvent extends string>(
+function readNode<TEvent extends ExplorerEventId>(
   nodePositions: ReadonlyMap<string, ExplorerFlowNode<TEvent>>,
   nodeId: string,
 ): ExplorerFlowNode<TEvent> {
@@ -172,15 +186,21 @@ function readNode<TEvent extends string>(
   return node;
 }
 
-function readCenterLane(branchCount: number): number {
+function readCenterLane(branchCount: number): FlowLane {
   if (branchCount <= 1) {
     return 1;
   }
 
-  return Math.min(defaultLayout.lanes.length - 1, Math.floor(branchCount / 2));
+  if (branchCount > defaultLayout.lanes.length) {
+    throw new Error(
+      `Explorer flow layout supports at most ${defaultLayout.lanes.length} branches.`,
+    );
+  }
+
+  return Math.floor(branchCount / 2) as FlowLane;
 }
 
-function readBranchLane(index: number, branchCount: number): number {
+function readBranchLane(index: number, branchCount: number): FlowLane {
   if (branchCount <= 1) {
     return 1;
   }
@@ -189,25 +209,19 @@ function readBranchLane(index: number, branchCount: number): number {
     return index === 0 ? 0 : 2;
   }
 
-  return Math.min(index, defaultLayout.lanes.length - 1);
-}
-
-function readColumn(column: number): number {
-  const left = defaultLayout.columns[column];
-
-  if (typeof left !== "number") {
-    throw new TypeError(`Unknown flow column: ${String(column)}`);
+  if (branchCount > defaultLayout.lanes.length) {
+    throw new Error(
+      `Explorer flow layout supports at most ${defaultLayout.lanes.length} branches.`,
+    );
   }
 
-  return left;
+  return index as FlowLane;
 }
 
-function readLane(lane: number): number {
-  const top = defaultLayout.lanes[lane];
+function readColumn(column: FlowColumn): number {
+  return defaultLayout.columns[column];
+}
 
-  if (typeof top !== "number") {
-    throw new TypeError(`Unknown flow lane: ${String(lane)}`);
-  }
-
-  return top;
+function readLane(lane: FlowLane): number {
+  return defaultLayout.lanes[lane];
 }

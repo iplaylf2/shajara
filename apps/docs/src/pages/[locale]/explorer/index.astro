@@ -1,13 +1,12 @@
 ---
 import { DEFAULT_EXPLORER_EXAMPLE_ID } from "#/domain/explorer/examples";
-import { SITE_LOCALES } from "#site";
-import type { SiteLocale } from "#site";
+import { siteLocales } from "#site";
 
 export function getStaticPaths() {
-  return SITE_LOCALES.map((locale) => ({ params: { locale } }));
+  return siteLocales.map((locale) => ({ params: { locale } }));
 }
 
-const { locale } = Astro.params as { locale: SiteLocale };
+const { locale } = Astro.params;
 
 const rewritePath = `/${locale}/explorer/${DEFAULT_EXPLORER_EXAMPLE_ID}`;
 
