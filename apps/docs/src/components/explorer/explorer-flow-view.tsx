@@ -10,6 +10,7 @@ export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): J
         <svg
           aria-label={props.scene.ariaLabel}
           class={styles["flowSvg"]}
+          preserveAspectRatio="xMidYMid meet"
           role="img"
           viewBox={props.scene.viewBox}
         >
@@ -17,16 +18,19 @@ export function ExplorerFlowView<TEvent extends string>(props: Props<TEvent>): J
           <FlowLinks scene={props.scene} state={props.state} />
           <FlowNodes scene={props.scene} state={props.state} />
         </svg>
-        {props.code}
+        <div class={styles["codePanel"]}>
+          {props.codeControls}
+          {props.code}
+        </div>
       </div>
     </div>
   );
 }
 
 const emptyLength = 0;
-const nodeTextOffsetX = 56;
-const nodeStatusOffsetY = 41;
-const nodeTextOffsetY = 24;
+const half = 2;
+const nodeStatusOffsetY = 20;
+const nodeTextOffsetY = -7;
 
 const flowNodeClasses = {
   branch: styles["flowNodeBranch"]!,
@@ -39,14 +43,14 @@ function FlowArrowMarker(props: { markerId: string }): JSX.Element {
     <defs>
       <marker
         id={props.markerId}
-        markerHeight="8"
-        markerWidth="8"
+        markerHeight="9"
+        markerWidth="9"
         orient="auto"
-        refX="7"
-        refY="4"
-        viewBox="0 0 8 8"
+        refX="8"
+        refY="4.5"
+        viewBox="0 0 9 9"
       >
-        <path d="M0 0 L8 4 L0 8 Z" fill="#526a86" />
+        <path d="M0 0 L9 4.5 L0 9 Z" fill="#526a86" />
       </marker>
     </defs>
   );
@@ -90,16 +94,16 @@ function FlowNode<TEvent extends string>(props: {
     >
       <rect
         class={styles["flowNode"]}
-        height="52"
-        rx="10"
-        width="112"
+        height={props.node.height}
+        rx="12"
+        width={props.node.width}
         x={props.node.left}
         y={props.node.top}
       />
       <text
         class={styles["flowNodeText"]}
-        x={offset(props.node.left, nodeTextOffsetX)}
-        y={offset(props.node.top, nodeTextOffsetY)}
+        x={String(props.node.left + props.node.width / half)}
+        y={String(props.node.top + props.node.height / half + nodeTextOffsetY)}
       >
         {props.node.label}
       </text>
@@ -110,8 +114,8 @@ function FlowNode<TEvent extends string>(props: {
             props.status === "blocked" && styles["flowNodeStatusBlocked"]!,
             props.status === "done" && styles["flowNodeStatusDone"]!,
           )}
-          x={offset(props.node.left, nodeTextOffsetX)}
-          y={offset(props.node.top, nodeStatusOffsetY)}
+          x={String(props.node.left + props.node.width / half)}
+          y={String(props.node.top + props.node.height / half + nodeStatusOffsetY)}
         >
           {props.status}
         </text>
@@ -138,9 +142,7 @@ function FlowLinks<TEvent extends string>(props: {
             d={link.path}
             marker-end={`url(#${props.scene.markerId})`}
           />
-          <text class={styles["flowLinkLabel"]} x={link.labelLeft} y={link.labelTop}>
-            {link.label}
-          </text>
+          <title>{link.label}</title>
         </g>
       ))}
     </>
@@ -175,10 +177,6 @@ function readNodeStatus<TEvent extends string>(
   return null;
 }
 
-function offset(value: number, amount: number): string {
-  return String(value + amount);
-}
-
 function classes(...values: (string | false)[]): string {
   return values.filter(isClassName).join(" ");
 }
@@ -189,6 +187,7 @@ function isClassName(value: string | false): value is string {
 
 interface Props<TEvent extends string> {
   code?: JSX.Element;
+  codeControls?: JSX.Element;
   scene: ExplorerFlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }

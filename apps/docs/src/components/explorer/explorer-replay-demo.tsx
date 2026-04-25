@@ -9,27 +9,61 @@ import { createReplayFrameStream, playbackReplayFrames } from "./explorer-replay
 import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { spawn, wait } from "@shajara/host/primitives";
+import type { CodeScroller } from "./explorer-code-scroller";
 import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import type { ExplorerFlowScene } from "./explorer-flow-scene";
 import { ExplorerFlowView } from "./explorer-flow-view";
 import type { RiteCoroutine } from "@shajara/host";
+import { createCodeScroller } from "./explorer-code-scroller";
 import { readExplorerExample } from "#/domain/explorer/examples";
 
 import styles from "./explorer.module.css";
 
 export function ExplorerReplayDemo(props: Props): JSX.Element {
   const [state, setState] = createSignal<ExplorerReplayState>(props.stage.replay.initialState);
+  const [isCodeAutoScrollEnabled, setCodeAutoScrollEnabled] = createSignal(true);
 
   onMount(function mountExplorerReplayDemo() {
-    onCleanup(startReplay(setState, props.codeBlockId, props.stage, props.exampleId));
+    onCleanup(
+      startReplay({
+        codeBlockId: props.codeBlockId,
+        exampleId: props.exampleId,
+        isCodeAutoScrollEnabled,
+        setState,
+        stage: props.stage,
+      }),
+    );
   });
 
-  return <ExplorerFlowView code={props.children} scene={props.stage.scene} state={state()} />;
+  return (
+    <ExplorerFlowView
+      code={props.children}
+      codeControls={
+        <label class={styles["codeAutoScrollToggle"]}>
+          <input
+            checked={isCodeAutoScrollEnabled()}
+            class={styles["codeAutoScrollInput"]}
+            onChange={(event) => setCodeAutoScrollEnabled(event.currentTarget.checked)}
+            type="checkbox"
+          />
+          <span class={styles["codeAutoScrollSwitch"]}>
+            <span class={styles["codeAutoScrollText"]}>
+              {isCodeAutoScrollEnabled() ? props.codeFollowLabel : props.codeManualLabel}
+            </span>
+          </span>
+        </label>
+      }
+      scene={props.stage.scene}
+      state={state()}
+    />
+  );
 }
 
 interface Props {
   children?: JSX.Element;
   codeBlockId: string;
+  codeFollowLabel: string;
+  codeManualLabel: string;
   exampleId: ExplorerExampleId;
   stage: ExplorerReplayStage;
 }
@@ -42,24 +76,34 @@ interface ExplorerReplayStage {
   scene: ExplorerFlowScene<string>;
 }
 
-function startReplay(
-  setState: Setter<ExplorerReplayState>,
-  codeBlockId: string,
-  stage: ExplorerReplayStage,
-  exampleId: ExplorerExampleId,
-): () => void {
+interface StartReplayContext {
+  codeBlockId: string;
+  exampleId: ExplorerExampleId;
+  isCodeAutoScrollEnabled: () => boolean;
+  setState: Setter<ExplorerReplayState>;
+  stage: ExplorerReplayStage;
+}
+
+function startReplay(context: StartReplayContext): () => void {
   let isMounted = true;
   const replayScope = createScope();
-  const replayRuntime = readExplorerExample(exampleId).stage.replay
+  const replayRuntime = readExplorerExample(context.exampleId).stage.replay
     .runtime as ExplorerReplayRuntime<string, unknown>;
-  const codeLines = readCodeLines(codeBlockId);
-  const updateState = createStateUpdater(setState, codeLines, () => isMounted);
+  const codeLines = readCodeLines(context.codeBlockId);
+  const codeScroller = createCodeScroller(context.isCodeAutoScrollEnabled);
+  const updateState = createStateUpdater(
+    context.setState,
+    codeLines,
+    codeScroller,
+    () => isMounted,
+  );
   const replayCycle = {
     codeLines,
+    codeScroller,
     isMounted: () => isMounted,
     replayRuntime,
-    setState,
-    stage,
+    setState: context.setState,
+    stage: context.stage,
     updateState,
   };
 
@@ -96,6 +140,7 @@ function* runReplayLoop(replayCycle: ReplayCycleContext): RiteCoroutine<void> {
 function createStateUpdater(
   setState: Setter<ExplorerReplayState>,
   codeLines: readonly HTMLElement[],
+  codeScroller: CodeScroller,
   isMounted: () => boolean,
 ): (frame: ExplorerReplayFrame<string>) => void {
   return function updateState(frame: ExplorerReplayFrame<string>): void {
@@ -103,7 +148,7 @@ function createStateUpdater(
       return;
     }
 
-    syncCodeLines(codeLines, frame.cursors, frame.completed);
+    syncCodeLines(codeLines, frame.cursors, frame.completed, codeScroller);
     setState({
       active: frame.active,
       completed: frame.completed,
@@ -126,6 +171,7 @@ function* runReplayCycle(context: ReplayCycleContext): RiteCoroutine<void> {
     context.codeLines,
     context.stage.replay.initialState.cursors,
     context.stage.replay.initialState.completed,
+    context.codeScroller,
   );
 
   yield* playReplayRoutine(context);
@@ -135,9 +181,11 @@ function syncCodeLines(
   lines: readonly HTMLElement[],
   cursors: readonly ExplorerReplayCursor<string>[],
   completed: readonly string[],
+  codeScroller: CodeScroller,
 ): void {
   const activeClass = styles["explorerCodeLineActive"]!;
   const doneClass = styles["explorerCodeLineDone"]!;
+  let firstActiveLine: HTMLElement | null = null;
 
   for (const line of lines) {
     const lineEvent = line.dataset["explorerLineEvent"];
@@ -150,6 +198,14 @@ function syncCodeLines(
       doneClass,
       completedEvents.some((event) => completed.includes(event)) && !isActive,
     );
+
+    if (isActive && !firstActiveLine) {
+      firstActiveLine = line;
+    }
+  }
+
+  if (firstActiveLine) {
+    codeScroller.scrollToLine(firstActiveLine);
   }
 }
 
@@ -179,6 +235,7 @@ function readLineEvents(value: string | undefined): string[] {
 
 interface ReplayCycleContext {
   codeLines: readonly HTMLElement[];
+  codeScroller: CodeScroller;
   isMounted: () => boolean;
   replayRuntime: ExplorerReplayRuntime<string, unknown>;
   setState: Setter<ExplorerReplayState>;

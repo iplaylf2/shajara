@@ -26,6 +26,8 @@
   "explorer.home.title": "Orchestration Explorer",
   "explorer.note.body": "The current page is intentionally quiet. It marks the visual territory for the first iteration without implying a finished presentation or interaction pattern.",
   "explorer.note.label": "In Progress",
+  "explorer.replay.follow": "Follow",
+  "explorer.replay.manual": "Manual",
   "explorer.shell.backToDocs": "Back to docs",
   "explorer.shell.eyebrow": "Explorer"
 }

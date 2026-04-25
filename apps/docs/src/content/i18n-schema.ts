@@ -28,6 +28,8 @@ export const explorerUiI18nSchema = z.object({
   "explorer.home.title": z.string(),
   "explorer.note.body": z.string(),
   "explorer.note.label": z.string(),
+  "explorer.replay.follow": z.string(),
+  "explorer.replay.manual": z.string(),
   "explorer.shell.backToDocs": z.string(),
   "explorer.shell.eyebrow": z.string(),
 });

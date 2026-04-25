@@ -35,6 +35,8 @@ interface Props {
   <ExplorerReplayDemo
     client:load
     codeBlockId={codeBlockId}
+    codeFollowLabel={Astro.locals.t("explorer.replay.follow")}
+    codeManualLabel={Astro.locals.t("explorer.replay.manual")}
     exampleId={example.id}
     stage={stage}
   >

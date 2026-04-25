@@ -33,12 +33,14 @@ export interface ExplorerFlowLink<TEvent extends string = string> {
 export interface ExplorerFlowNode<TEvent extends string = string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
+  height: number;
   id: string;
   label: string;
   left: number;
   statusRoutineIds: readonly string[];
   top: number;
   variant: "branch" | "join" | "parent";
+  width: number;
 }
 
 export interface ExplorerFlowScene<TEvent extends string = string> {
@@ -50,21 +52,20 @@ export interface ExplorerFlowScene<TEvent extends string = string> {
 }
 
 const defaultLayout = {
-  columns: [98, 322, 574],
-  lanes: [96, 138, 188],
+  columns: [44, 284, 608],
+  lanes: [44, 58, 134],
   markerId: "explorer-flow-arrow",
-  viewBox: "56 72 680 196",
+  viewBox: "24 34 772 178",
 } as const;
 
-const nodeWidth = 112;
-const nodeLinkAnchorY = {
-  branch: 20,
-  join: 18,
-  parent: 18,
-} as const satisfies Record<ExplorerFlowNode["variant"], number>;
-const flowLinkLabelOffsetY = 12;
-const linkControlFromOffsetX = 38;
-const linkControlToOffsetX = 46;
+const nodeSize = {
+  branch: { height: 58, width: 188 },
+  join: { height: 146, width: 156 },
+  parent: { height: 146, width: 156 },
+} as const satisfies Record<ExplorerFlowNode["variant"], { height: number; width: number }>;
+const flowLinkLabelOffsetY = 16;
+const linkControlFromOffsetX = 72;
+const linkControlToOffsetX = 78;
 
 function resolveNodeLayout<TEvent extends string>(
   graphNodes: readonly ExplorerFlowGraphNode<TEvent>[],
@@ -90,16 +91,19 @@ function createFlowNode<TEvent extends string>(
 ): ExplorerFlowNode<TEvent> {
   const left = readColumn(column);
   const top = readLane(lane);
+  const size = nodeSize[node.kind];
 
   return {
     activeEvents: node.activeEvents,
     completedEvents: node.completedEvents,
+    height: size.height,
     id: node.id,
     label: node.label,
     left,
     statusRoutineIds: node.statusRoutineIds,
     top,
     variant: node.kind,
+    width: size.width,
   };
 }
 
@@ -109,10 +113,10 @@ function createFlowLink<TEvent extends string>(
 ): ExplorerFlowLink<TEvent> {
   const from = readNode(nodePositions, link.from);
   const to = readNode(nodePositions, link.to);
-  const fromX = from.left + nodeWidth;
-  const fromY = from.top + nodeLinkAnchorY[from.variant];
+  const fromX = from.left + from.width;
+  const fromY = readFlowLinkY(from, to);
   const toX = to.left;
-  const toY = to.top + nodeLinkAnchorY[to.variant];
+  const toY = readFlowLinkY(to, from);
   const labelLeft = readCurveMidpoint(
     fromX,
     fromX + linkControlFromOffsetX,
@@ -133,6 +137,17 @@ function createFlowLink<TEvent extends string>(
       `${toX} ${toY}`,
     ].join(" "),
   };
+}
+
+function readFlowLinkY<TEvent extends string>(
+  node: ExplorerFlowNode<TEvent>,
+  peerNode: ExplorerFlowNode<TEvent>,
+): number {
+  const peerCenterY = peerNode.top + peerNode.height / 2;
+  const nodeTop = node.top + node.height * 0.22;
+  const nodeBottom = node.top + node.height * 0.78;
+
+  return Math.min(nodeBottom, Math.max(nodeTop, peerCenterY));
 }
 
 function readCurveMidpoint(

@@ -26,6 +26,8 @@
   "explorer.home.title": "编排图解",
   "explorer.note.body": "当前页面刻意保持安静，只先划定首轮迭代的可视化范围，不提前暗示最终的呈现方式或交互模式。",
   "explorer.note.label": "进行中",
+  "explorer.replay.follow": "跟随",
+  "explorer.replay.manual": "手动",
   "explorer.shell.backToDocs": "返回文档",
   "explorer.shell.eyebrow": "图解"
 }
