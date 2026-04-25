@@ -2,25 +2,28 @@ import type {
   ExplorerReplayCursor,
   ExplorerReplayFrame,
   ExplorerReplayState,
+  ExplorerReplayTrace,
 } from "#/domain/explorer/contract";
 import { channel, receive, send } from "@shajara/host/primitives";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 export interface ReplayFrameStream<TEvent extends string> {
-  emit: (frame: ExplorerReplayFrame<TEvent>) => RiteCoroutine<void>;
+  emit: (trace: ExplorerReplayTrace<TEvent>) => RiteCoroutine<void>;
   finish: () => RiteCoroutine<void>;
   next: () => RiteCoroutine<ExplorerReplayFrame<TEvent> | null>;
 }
 
-export function* createReplayFrameStream<TEvent extends string>(): RiteCoroutine<
-  ReplayFrameStream<TEvent>
-> {
+export function* createReplayFrameStream<TEvent extends string>(
+  initialState: ExplorerReplayState<TEvent>,
+): RiteCoroutine<ReplayFrameStream<TEvent>> {
   const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
+  let state = initialState;
 
   return {
-    *emit(frame) {
-      yield* send(sender, frame);
+    *emit(trace) {
+      state = applyReplayTrace(state, trace);
+      yield* send(sender, state);
     },
     *finish() {
       yield* send(sender, null);
@@ -29,6 +32,39 @@ export function* createReplayFrameStream<TEvent extends string>(): RiteCoroutine
       return receive(receiver);
     },
   };
+}
+
+function applyReplayTrace<TEvent extends string>(
+  state: ExplorerReplayState<TEvent>,
+  trace: ExplorerReplayTrace<TEvent>,
+): ExplorerReplayFrame<TEvent> {
+  const cursorsByRoutine = new Map(state.cursors.map((cursor) => [cursor.routineId, cursor]));
+
+  if (trace.clearCursor) {
+    cursorsByRoutine.delete(trace.clearCursor);
+  }
+  if (trace.cursor) {
+    cursorsByRoutine.set(trace.cursor.routineId, trace.cursor);
+  }
+
+  const cursors = [...cursorsByRoutine.values()];
+
+  return {
+    active: cursors.flatMap((cursor) => cursor.events),
+    completed: appendCompletedEvent(state.completed, trace),
+    cursors,
+  };
+}
+
+function appendCompletedEvent<TEvent extends string>(
+  completed: readonly TEvent[],
+  trace: ExplorerReplayTrace<TEvent>,
+): readonly TEvent[] {
+  if (!("completed" in trace) || completed.includes(trace.completed)) {
+    return completed;
+  }
+
+  return [...completed, trace.completed];
 }
 
 export function* playbackReplayFrames<TEvent extends string>(
@@ -84,7 +120,7 @@ function sameCursors<TEvent extends string>(
       }
 
       return (
-        cursor.event === target.event &&
+        sameEvents(cursor.events, target.events) &&
         cursor.mode === target.mode &&
         cursor.routineId === target.routineId
       );

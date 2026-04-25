@@ -8,7 +8,6 @@ import styles from "./explorer.module.css";
 
 const { code, id, initialState } = Astro.props;
 const source = code.map((line) => line.text).join("\n");
-const emptyLength = 0;
 const firstLine = 1;
 const lineTransformer = {
   line(node: { properties?: Record<string, unknown> }, lineNumber: number) {
@@ -18,33 +17,27 @@ const lineTransformer = {
       return;
     }
 
-    const cursorEvents = line.cursorEvents ?? [];
-    const doneEvents = line.doneEvents ?? [];
-
-    if (
-      cursorEvents.length === emptyLength &&
-      doneEvents.length === emptyLength
-    ) {
-      return;
-    }
+    const lineEvent = line.id;
+    const completedEvents = line.completedEvents ?? [];
 
     const className = [styles["explorerCodeLine"]];
 
     if (
-      cursorEvents.some((event) =>
-        initialState.cursors.some((cursor) => cursor.event === event),
-      )
+      initialState.cursors.some((cursor) => cursor.events.includes(lineEvent))
     ) {
       className.push(styles["explorerCodeLineActive"]);
     }
-    if (doneEvents.some((event) => initialState.completed.includes(event))) {
+    if (
+      completedEvents.some((event) => initialState.completed.includes(event))
+    ) {
       className.push(styles["explorerCodeLineDone"]);
     }
 
     node.properties ??= {};
     node.properties["class"] = className.join(" ");
-    node.properties["data-explorer-cursor-events"] = cursorEvents.join(" ");
-    node.properties["data-explorer-done-events"] = doneEvents.join(" ");
+    node.properties["data-explorer-line-event"] = lineEvent;
+    node.properties["data-explorer-completed-events"] =
+      completedEvents.join(" ");
   },
   name: "explorer-code-lines",
 };

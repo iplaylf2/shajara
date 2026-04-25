@@ -13,8 +13,8 @@ export interface ExplorerExample<
 }
 
 export interface ExplorerExampleCodeLine<TEvent extends string = string> {
-  cursorEvents?: readonly TEvent[];
-  doneEvents?: readonly TEvent[];
+  id: TEvent;
+  completedEvents?: readonly TEvent[];
   text: string;
 }
 
@@ -44,7 +44,7 @@ export interface ExplorerFlowGraphLink<TEvent extends string = string> {
 
 export interface ExplorerFlowGraphNode<TEvent extends string = string> {
   activeEvents: readonly TEvent[];
-  doneEvents: readonly TEvent[];
+  completedEvents: readonly TEvent[];
   id: string;
   kind: "branch" | "join" | "parent";
   label: string;
@@ -63,13 +63,19 @@ export interface ExplorerReplayFrame<TEvent extends string = string> {
 }
 
 export interface ExplorerReplayCursor<TEvent extends string = string> {
-  event: TEvent;
+  events: readonly TEvent[];
   mode: "blocked" | "running";
   routineId: string;
 }
 
+export interface ExplorerReplayTrace<TEvent extends string = string> {
+  clearCursor?: string;
+  completed?: TEvent;
+  cursor?: ExplorerReplayCursor<TEvent>;
+}
+
 export type ExplorerReplayEmit<TEvent extends string = string> = (
-  frame: ExplorerReplayFrame<TEvent>,
+  trace: ExplorerReplayTrace<TEvent>,
 ) => RiteCoroutine<void>;
 
 export type ExplorerReplayRoutine<TEvent extends string = string, TResult = unknown> = (

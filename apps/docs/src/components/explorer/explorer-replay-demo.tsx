@@ -115,8 +115,7 @@ function createStateUpdater(
 function readCodeLines(codeBlockId: string): HTMLElement[] {
   return [
     ...globalThis.document.querySelectorAll<HTMLElement>(
-      `#${globalThis.CSS.escape(codeBlockId)} [data-explorer-cursor-events], ` +
-        `#${globalThis.CSS.escape(codeBlockId)} [data-explorer-done-events]`,
+      `#${globalThis.CSS.escape(codeBlockId)} [data-explorer-line-event]`,
     ),
   ];
 }
@@ -141,20 +140,21 @@ function syncCodeLines(
   const doneClass = styles["explorerCodeLineDone"]!;
 
   for (const line of lines) {
-    const cursorEvents = readLineEvents(line.dataset["explorerCursorEvents"]);
-    const doneEvents = readLineEvents(line.dataset["explorerDoneEvents"]);
-    const isActive = cursorEvents.some((event) => cursors.some((cursor) => cursor.event === event));
+    const lineEvent = line.dataset["explorerLineEvent"];
+    const completedEvents = readLineEvents(line.dataset["explorerCompletedEvents"]);
+    const isActive =
+      typeof lineEvent === "string" && cursors.some((cursor) => cursor.events.includes(lineEvent));
 
     line.classList.toggle(activeClass, isActive);
     line.classList.toggle(
       doneClass,
-      doneEvents.some((event) => completed.includes(event)) && !isActive,
+      completedEvents.some((event) => completed.includes(event)) && !isActive,
     );
   }
 }
 
 function* playReplayRoutine(context: ReplayCycleContext): RiteCoroutine<unknown> {
-  const frameStream = yield* createReplayFrameStream<string>();
+  const frameStream = yield* createReplayFrameStream<string>(context.stage.replay.initialState);
   const replayRoutine = context.replayRuntime.createRoutine();
   const playback = yield* spawn(() =>
     playbackReplayFrames(frameStream, {

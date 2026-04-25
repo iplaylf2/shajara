@@ -61,7 +61,7 @@ function FlowNodes<TEvent extends string>(props: {
       {props.scene.nodes.map((node) => (
         <FlowNode
           isActive={includesAny(props.state.active, node.activeEvents)}
-          isDone={includesAny(props.state.completed, node.doneEvents)}
+          isDone={includesAny(props.state.completed, node.completedEvents)}
           node={node}
         />
       ))}

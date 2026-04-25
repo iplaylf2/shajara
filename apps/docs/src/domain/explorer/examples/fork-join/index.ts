@@ -1,1 +1,1 @@
-export { forkJoinExample } from "./example";
+export { forkJoinExample } from "./definition";

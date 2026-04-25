@@ -30,7 +30,7 @@ export interface ExplorerFlowLink<TEvent extends string = string> {
 
 export interface ExplorerFlowNode<TEvent extends string = string> {
   activeEvents: readonly TEvent[];
-  doneEvents: readonly TEvent[];
+  completedEvents: readonly TEvent[];
   id: string;
   label: string;
   left: number;
@@ -98,7 +98,7 @@ function createFlowNode<TEvent extends string>(
 ): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: node.activeEvents,
-    doneEvents: node.doneEvents,
+    completedEvents: node.completedEvents,
     id: node.id,
     label: node.label,
     left: readColumn(column),
