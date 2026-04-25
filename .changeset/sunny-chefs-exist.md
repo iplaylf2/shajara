@@ -1,6 +1,5 @@
 ---
 "@shajara/kernel": patch
-"@shajara/host": patch
 ---
 
 Tighten runtime scope synchronization semantics.
