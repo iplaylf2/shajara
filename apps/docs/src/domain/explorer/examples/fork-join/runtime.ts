@@ -41,7 +41,7 @@ export function* loadPageDemo(
     });
     const header = yield* spawn(function* loadHeader(): RiteCoroutine<string> {
       yield* emit({
-        cursor: cursorAt("header", "header-sleep", "blocked"),
+        cursor: cursorAt("header", "header-sleep", "running"),
       });
       yield* sleep(headerDelayMs);
       yield* emit({
@@ -61,7 +61,7 @@ export function* loadPageDemo(
     });
     const sidebar = yield* spawn(function* loadSidebar(): RiteCoroutine<string> {
       yield* emit({
-        cursor: cursorAt("sidebar", "sidebar-sleep", "blocked"),
+        cursor: cursorAt("sidebar", "sidebar-sleep", "running"),
       });
       yield* sleep(sidebarDelayMs);
       yield* emit({

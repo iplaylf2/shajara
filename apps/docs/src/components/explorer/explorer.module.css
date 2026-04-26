@@ -1,4 +1,11 @@
 .root {
+  --explorer-text-xs: 0.76rem;
+  --explorer-text-sm: 0.88rem;
+  --explorer-text-md: 1rem;
+  --explorer-weight-regular: 400;
+  --explorer-weight-medium: 520;
+  --explorer-weight-strong: 580;
+
   display: grid;
   gap: 1rem;
   color: #1c2431;
@@ -10,7 +17,8 @@
   justify-content: space-between;
   gap: 1rem;
   color: #4f6178;
-  font-size: 0.82rem;
+  font-size: var(--explorer-text-xs);
+  font-weight: var(--explorer-weight-medium);
   letter-spacing: 0.01em;
 }
 
@@ -23,7 +31,7 @@
 
 .brandLink {
   color: inherit;
-  font-weight: 600;
+  font-weight: var(--explorer-weight-strong);
   text-decoration: none;
 }
 
@@ -41,7 +49,7 @@
 
 .topbarTitle {
   color: #0f172a;
-  font-weight: 600;
+  font-weight: var(--explorer-weight-strong);
 }
 
 .localeMenu {
@@ -75,7 +83,7 @@
 
 .localeSummaryValue {
   color: #0f172a;
-  font-weight: 500;
+  font-weight: var(--explorer-weight-medium);
 }
 
 .localeSummaryCaret {
@@ -152,6 +160,7 @@
   padding: 0;
   border-color: #d6dfeb;
   background: #f8fbff;
+  font-size: var(--explorer-text-sm);
 }
 
 .sceneHeader {
@@ -164,7 +173,8 @@
 .sceneBody {
   margin: 0;
   max-width: 48rem;
-  font-size: 1rem;
+  font-size: var(--explorer-text-md);
+  font-weight: var(--explorer-weight-regular);
   line-height: 1.75;
   color: #31465f;
 }
@@ -178,92 +188,144 @@
 
 .flowDemo {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(31rem, 1fr);
-  height: clamp(12.5rem, 17vw, 15rem);
+  grid-template-columns: minmax(0, 1.2fr) minmax(29rem, 0.92fr);
+  height: clamp(14rem, 18vw, 16.25rem);
+  overflow: hidden;
+}
+
+.flowViewport {
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
 .flowSvg {
+  --flow-surface: #f7fbff;
+  --flow-grid: #e9f1fb;
+  --flow-node-text: #23364b;
+  --flow-node-status: #64788f;
+  --flow-link: #c5d4e5;
+  --flow-link-blocked: #a26955;
+  --flow-link-running: #117f91;
+
   display: block;
   align-self: center;
   width: 100%;
   height: 100%;
-  aspect-ratio: 772 / 178;
+  aspect-ratio: 650 / 224;
   background:
-    linear-gradient(#eef6ff 1px, transparent 1px),
-    linear-gradient(90deg, #eef6ff 1px, transparent 1px), #f8fbff;
+    linear-gradient(var(--flow-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--flow-grid) 1px, transparent 1px), var(--flow-surface);
   background-size:
-    3rem 3rem,
-    3rem 3rem,
+    2.75rem 2.75rem,
+    2.75rem 2.75rem,
     auto;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 .flowNode {
   fill: #ffffff;
-  stroke: #9fb9d6;
-  stroke-width: 1.45;
+  stroke: #a9bfd7;
+  stroke-width: 1.35;
   transition:
     fill 180ms ease,
     stroke 180ms ease,
     stroke-width 180ms ease;
-  filter: drop-shadow(0 0.35rem 0.55rem rgb(54 83 116 / 0.08));
 }
 
 .flowNodeText {
-  fill: #26384d;
-  font-size: 1.12rem;
-  font-weight: 650;
+  fill: var(--flow-node-text);
+  font-size: 20px;
+  font-weight: 580;
+  cursor: text;
+  dominant-baseline: central;
+  pointer-events: auto;
   text-anchor: middle;
+  user-select: text;
 }
 
 .flowNodeStatus {
-  fill: #52677f;
-  font-size: 0.8rem;
-  font-weight: 650;
+  fill: var(--flow-node-status);
+  font-size: 12px;
+  font-weight: 540;
+  cursor: text;
+  dominant-baseline: central;
+  letter-spacing: 0.04em;
+  pointer-events: auto;
   text-anchor: middle;
   text-transform: uppercase;
+  user-select: text;
 }
 
 .flowNodeStatusBlocked {
-  fill: #9a5a47;
+  fill: #9b624e;
 }
 
 .flowNodeStatusDone {
-  fill: #2f8b68;
+  fill: #687b8f;
+}
+
+.flowNodeStatusPending {
+  fill: #8ca0b5;
+  opacity: 0.5;
 }
 
 .flowNodeParent .flowNode {
-  fill: #f7fbff;
-  stroke: #7fa2c8;
+  fill: #f4f9ff;
+  stroke: #86a8cb;
 }
 
 .flowNodeBranch .flowNode {
-  stroke: #3f93a0;
+  stroke: #5196a1;
 }
 
 .flowNodeJoin .flowNode {
-  stroke: #b0705f;
+  stroke: #ad7464;
 }
 
 .flowNodeActive .flowNode {
   fill: #e9fbfd;
-  stroke: #137f90;
-  stroke-width: 2.45;
-  filter: drop-shadow(0 0.85rem 1.1rem rgb(19 127 144 / 0.2));
+  stroke: #237f8c;
+  stroke-width: 2.25;
   animation: flowNodePulse 1400ms ease-in-out infinite;
 }
 
+.flowNodeRunning .flowNode {
+  stroke-dasharray: 9 7;
+  animation:
+    flowNodePulse 1400ms ease-in-out infinite,
+    flowNodeMarch 1100ms linear infinite;
+}
+
+.flowNodeBlocked .flowNode,
 .flowNodeDone .flowNode {
-  fill: #f3fbf8;
-  stroke: #4d9d78;
+  stroke-dasharray: none;
+}
+
+.flowNodeDone .flowNode {
+  fill: #f8fbff;
+  stroke: #9fb1c4;
+  stroke-width: 1.35;
+}
+
+.flowNodeDone .flowNodeText {
+  fill: #425367;
 }
 
 .flowLink {
   fill: none;
-  stroke: #c8d6e6;
+  stroke: var(--flow-link);
   stroke-linecap: round;
-  stroke-width: 3.2;
+  stroke-width: 2.8;
   transition:
+    opacity 180ms ease,
     stroke 180ms ease,
     stroke-dashoffset 180ms ease;
 }
@@ -272,26 +334,39 @@
   transform-box: fill-box;
 }
 
-.flowLinkLabel {
-  fill: #698098;
-  font-size: 0.72rem;
-  font-weight: 700;
-  paint-order: stroke;
-  stroke: #f8fbff;
-  stroke-linejoin: round;
-  stroke-width: 4px;
-  text-anchor: middle;
-  transition: fill 180ms ease;
+.flowLinkGroupDependency .flowLink {
+  stroke: #d2deea;
+  stroke-width: 2.2;
+  opacity: 0;
 }
 
-.flowLinkGroupActive .flowLink {
-  stroke: #526a86;
-  stroke-dasharray: 15 10;
+.flowLinkGroupConsumed .flowLink {
+  opacity: 0;
+  transition-duration: 420ms;
+}
+
+.flowLinkGroupSettledDependency .flowLink {
+  stroke: #b7c5d4;
+  stroke-dasharray: none;
+  stroke-width: 1.9;
+  opacity: 0.58;
+  animation: none;
+}
+
+.flowLinkGroupRunning .flowLink {
+  stroke: var(--flow-link-running);
+  stroke-dasharray: 650;
+  stroke-dashoffset: 0;
+  stroke-width: 3.8;
+  animation: flowLinkDraw 520ms ease-out both;
+}
+
+.flowLinkGroupBlocked .flowLink {
+  stroke: var(--flow-link-blocked);
+  stroke-dasharray: 10 8;
+  stroke-width: 3.1;
+  opacity: 1;
   animation: flowLinkMarch 900ms linear infinite;
-}
-
-.flowLinkGroupActive .flowLinkLabel {
-  fill: #143044;
 }
 
 .codePanel {
@@ -311,17 +386,17 @@
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  color: #60758e;
-  font-size: 0.68rem;
-  font-weight: 700;
+  color: #6f849a;
+  font-size: 0.66rem;
+  font-weight: var(--explorer-weight-medium);
   cursor: pointer;
-  opacity: 0.72;
+  opacity: 0.46;
   transition: opacity 160ms ease;
 }
 
 .codeAutoScrollToggle:hover,
 .codeAutoScrollToggle:focus-within {
-  opacity: 0.96;
+  opacity: 0.82;
 }
 
 .codeAutoScrollInput {
@@ -335,21 +410,22 @@
   display: inline-grid;
   align-items: center;
   width: max-content;
-  min-height: 1.35rem;
-  padding: 0 0.58rem;
-  border-radius: 999px;
-  color: #ffffff;
-  background: rgb(44 135 149 / 0.92);
-  box-shadow: 0 0.3rem 0.8rem rgb(15 23 42 / 0.1);
+  min-height: 1.25rem;
+  padding: 0 0.45rem;
+  border: 1px solid rgb(120 151 177 / 0.24);
+  border-radius: 0;
+  color: #5d758c;
+  background: rgb(255 255 255 / 0.32);
   backdrop-filter: blur(8px);
   transition:
+    border-color 160ms ease,
     background-color 160ms ease,
     color 160ms ease;
 }
 
 .codeAutoScrollInput:not(:checked) + .codeAutoScrollSwitch {
-  color: #58708a;
-  background: rgb(255 255 255 / 0.84);
+  color: #73879b;
+  background: rgb(255 255 255 / 0.18);
 }
 
 .codeAutoScrollInput:focus-visible + .codeAutoScrollSwitch {
@@ -386,7 +462,7 @@
   scroll-padding-block: 40%;
   scroll-behavior: smooth;
   color: #536981;
-  font-size: 0.78rem;
+  font-size: var(--explorer-text-xs);
   line-height: 1.32;
   background: #ffffff;
 }
@@ -431,7 +507,27 @@
 
 @keyframes flowLinkMarch {
   from {
-    stroke-dashoffset: 23;
+    stroke-dashoffset: 18;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowLinkDraw {
+  from {
+    stroke-dashoffset: 650;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowNodeMarch {
+  from {
+    stroke-dashoffset: 16;
   }
 
   to {
@@ -442,11 +538,11 @@
 @keyframes flowNodePulse {
   0%,
   100% {
-    stroke-width: 2.35;
+    stroke-width: 2.15;
   }
 
   50% {
-    stroke-width: 3.1;
+    stroke-width: 2.8;
   }
 }
 
@@ -476,7 +572,8 @@
 
 .guideText {
   color: #465d76;
-  font-size: 0.9rem;
+  font-size: var(--explorer-text-sm);
+  font-weight: var(--explorer-weight-regular);
   line-height: 1.6;
 }
 
@@ -491,7 +588,7 @@
   padding: 0.72rem 0.8rem;
   color: #516983;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--explorer-weight-medium);
   text-align: left;
   cursor: pointer;
   border: 1px solid transparent;
@@ -512,6 +609,7 @@
 
 .tabButtonSelected {
   color: #0f172a;
+  font-weight: var(--explorer-weight-strong);
   border-color: #c1d6ec;
   background: #ecf5ff;
 }
@@ -558,7 +656,7 @@
   }
 
   .flowDemo {
-    grid-template-columns: minmax(0, 1fr) minmax(24rem, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.96fr);
   }
 }
 
@@ -580,6 +678,12 @@
   .flowDemo {
     grid-template-columns: minmax(0, 1fr);
     height: auto;
+    overflow: visible;
+  }
+
+  .flowViewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
   }
 
   .codePanel {
@@ -593,7 +697,7 @@
 
   .flowSvg {
     height: auto;
-    min-height: 13.5rem;
+    min-width: 42rem;
   }
 
   .explorerCode {

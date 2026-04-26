@@ -43,6 +43,7 @@ export interface ExplorerFlowGraph<TEvent extends ExplorerEventId> {
 export interface ExplorerFlowGraphLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   from: string;
+  kind: "dependency" | "spawn";
   label: string;
   to: string;
 }

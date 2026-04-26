@@ -37,26 +37,30 @@ function createForkJoinFlowLinks(): readonly ExplorerFlowGraphLink<LoadPageDemoE
     {
       activeEvents: ["spawn-header"],
       from: "root",
+      kind: "spawn",
       label: "spawn(header)",
       to: "header",
     },
     {
       activeEvents: ["spawn-sidebar"],
       from: "root",
+      kind: "spawn",
       label: "spawn(sidebar)",
       to: "sidebar",
     },
     {
       activeEvents: ["wait-header"],
       from: "header",
+      kind: "dependency",
       label: "wait(header)",
-      to: "join",
+      to: "root",
     },
     {
       activeEvents: ["wait-sidebar"],
       from: "sidebar",
+      kind: "dependency",
       label: "wait(sidebar)",
-      to: "join",
+      to: "root",
     },
   ];
 }
@@ -76,7 +80,7 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       completedEvents: ["done"],
       id: "root",
       kind: "parent",
-      label: "fork",
+      label: "loadPage",
       statusRoutineIds: ["root"],
     },
     {
@@ -84,7 +88,7 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       completedEvents: ["header-return"],
       id: "header",
       kind: "branch",
-      label: "header process",
+      label: "loadHeader",
       statusRoutineIds: ["header"],
     },
     {
@@ -92,16 +96,8 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       completedEvents: ["sidebar-return"],
       id: "sidebar",
       kind: "branch",
-      label: "sidebar process",
+      label: "loadSidebar",
       statusRoutineIds: ["sidebar"],
-    },
-    {
-      activeEvents: ["wait-header", "wait-sidebar", "wait-close", "done"],
-      completedEvents: ["done"],
-      id: "join",
-      kind: "join",
-      label: "join",
-      statusRoutineIds: ["root"],
     },
   ];
 }

@@ -1,4 +1,3 @@
-// oxlint-disable no-magic-numbers
 import type {
   ExplorerEventId,
   ExplorerFlowGraph,
@@ -25,15 +24,17 @@ export function resolveExplorerFlowScene<TEvent extends ExplorerEventId>(
 
 export interface ExplorerFlowLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
+  from: string;
   label: string;
-  labelLeft: number;
-  labelTop: number;
   path: string;
+  to: string;
+  variant: "dependency" | "spawn";
 }
 
 export interface ExplorerFlowNode<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
+  centerY: number;
   height: number;
   id: string;
   label: string;
@@ -52,31 +53,57 @@ export interface ExplorerFlowScene<TEvent extends ExplorerEventId> {
   viewBox: string;
 }
 
+const parentColumnX = 68;
+const branchColumnX = 394;
+const joinColumnX = 680;
+const topLaneY = 48;
+const centerLaneY = 76;
+const bottomLaneY = 156;
+const parentColumn = 0;
+const branchColumn = 1;
+const joinColumn = 2;
+const topLaneIndex = 0;
+const centerLaneIndex = 1;
+const bottomLaneIndex = 2;
+const branchNodeHeight = 68;
+const branchNodeWidth = 248;
+const tallNodeHeight = 154;
+const parentNodeWidth = 214;
+const joinNodeWidth = 154;
+const halfDivisor = 2;
+const forwardDirection = 1;
+const backwardDirection = -1;
+const firstBranchIndex = 0;
+const singleBranchCount = 1;
+const pairedBranchCount = 2;
+const linkAnchorInsetRatio = 0.22;
+const linkAnchorOutsetRatio = 0.78;
+const linkControlFromOffsetX = 76;
+const linkControlToOffsetX = 84;
+
 const defaultLayout = {
-  columns: [44, 284, 608],
-  lanes: [44, 58, 134],
+  columns: [parentColumnX, branchColumnX, joinColumnX],
+  lanes: [topLaneY, centerLaneY, bottomLaneY],
   markerId: "explorer-flow-arrow",
-  viewBox: "24 34 772 178",
+  viewBox: "24 24 650 224",
 } as const;
 
 const flowColumns = {
-  branch: 1,
-  join: 2,
-  parent: 0,
+  branch: branchColumn,
+  join: joinColumn,
+  parent: parentColumn,
 } as const satisfies Record<ExplorerFlowNodeVariant, FlowColumn>;
 
 const nodeSize = {
-  branch: { height: 58, width: 188 },
-  join: { height: 146, width: 156 },
-  parent: { height: 146, width: 156 },
+  branch: { height: branchNodeHeight, width: branchNodeWidth },
+  join: { height: tallNodeHeight, width: joinNodeWidth },
+  parent: { height: tallNodeHeight, width: parentNodeWidth },
 } as const satisfies Record<ExplorerFlowNodeVariant, ExplorerFlowNodeSize>;
-const flowLinkLabelOffsetY = 16;
-const linkControlFromOffsetX = 72;
-const linkControlToOffsetX = 78;
 
 type ExplorerFlowNodeVariant = ExplorerFlowNode<ExplorerEventId>["variant"];
-type FlowColumn = 0 | 1 | 2;
-type FlowLane = 0 | 1 | 2;
+type FlowColumn = typeof parentColumn | typeof branchColumn | typeof joinColumn;
+type FlowLane = typeof topLaneIndex | typeof centerLaneIndex | typeof bottomLaneIndex;
+type FlowLinkDirection = typeof forwardDirection | typeof backwardDirection;
 interface ExplorerFlowNodeSize {
   readonly height: number;
   readonly width: number;
@@ -88,14 +115,14 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
   const parentNodes = graphNodes.filter((node) => node.kind === "parent");
   const branchNodes = graphNodes.filter((node) => node.kind === "branch");
   const joinNodes = graphNodes.filter((node) => node.kind === "join");
-  const centerLane = readCenterLane(branchNodes.length);
+  const resolvedCenterLane = readCenterLane(branchNodes.length);
 
   return [
-    ...parentNodes.map((node) => createFlowNode(node, centerLane)),
+    ...parentNodes.map((node) => createFlowNode(node, resolvedCenterLane)),
     ...branchNodes.map((node, index) =>
       createFlowNode(node, readBranchLane(index, branchNodes.length)),
     ),
-    ...joinNodes.map((node) => createFlowNode(node, centerLane)),
+    ...joinNodes.map((node) => createFlowNode(node, resolvedCenterLane)),
   ];
 }
 
@@ -106,9 +133,11 @@ function createFlowNode<TEvent extends ExplorerEventId>(
   const left = readColumn(flowColumns[node.kind]);
   const top = readLane(lane);
   const size = nodeSize[node.kind];
+  const centerY = top + size.height / halfDivisor;
 
   return {
     activeEvents: node.activeEvents,
+    centerY,
     completedEvents: node.completedEvents,
     height: size.height,
     id: node.id,
@@ -127,50 +156,60 @@ function createFlowLink<TEvent extends ExplorerEventId>(
 ): ExplorerFlowLink<TEvent> {
   const from = readNode(nodePositions, link.from);
   const to = readNode(nodePositions, link.to);
-  const fromX = from.left + from.width;
+  const direction = readFlowLinkDirection(from, to);
+  const fromX = readFlowLinkFromX(from, direction);
   const fromY = readFlowLinkY(from, to);
-  const toX = to.left;
+  const toX = readFlowLinkToX(to, direction);
   const toY = readFlowLinkY(to, from);
-  const labelLeft = readCurveMidpoint(
-    fromX,
-    fromX + linkControlFromOffsetX,
-    toX - linkControlToOffsetX,
-    toX,
-  );
-  const labelTop = readCurveMidpoint(fromY, fromY, toY, toY) - flowLinkLabelOffsetY;
 
   return {
     activeEvents: link.activeEvents,
+    from: link.from,
     label: link.label,
-    labelLeft,
-    labelTop,
     path: [
       `M${fromX} ${fromY}`,
-      `C${fromX + linkControlFromOffsetX} ${fromY}`,
-      `${toX - linkControlToOffsetX} ${toY}`,
+      `C${fromX + direction * linkControlFromOffsetX} ${fromY}`,
+      `${toX - direction * linkControlToOffsetX} ${toY}`,
       `${toX} ${toY}`,
     ].join(" "),
+    to: link.to,
+    variant: link.kind,
   };
+}
+
+function readFlowLinkDirection<TEvent extends ExplorerEventId>(
+  from: ExplorerFlowNode<TEvent>,
+  to: ExplorerFlowNode<TEvent>,
+): FlowLinkDirection {
+  const fromCenterX = from.left + from.width / halfDivisor;
+  const toCenterX = to.left + to.width / halfDivisor;
+
+  return fromCenterX <= toCenterX ? forwardDirection : backwardDirection;
+}
+
+function readFlowLinkFromX<TEvent extends ExplorerEventId>(
+  node: ExplorerFlowNode<TEvent>,
+  direction: FlowLinkDirection,
+): number {
+  return direction === forwardDirection ? node.left + node.width : node.left;
+}
+
+function readFlowLinkToX<TEvent extends ExplorerEventId>(
+  node: ExplorerFlowNode<TEvent>,
+  direction: FlowLinkDirection,
+): number {
+  return direction === forwardDirection ? node.left : node.left + node.width;
 }
 
 function readFlowLinkY<TEvent extends ExplorerEventId>(
   node: ExplorerFlowNode<TEvent>,
   peerNode: ExplorerFlowNode<TEvent>,
 ): number {
-  const peerCenterY = peerNode.top + peerNode.height / 2;
-  const nodeTop = node.top + node.height * 0.22;
-  const nodeBottom = node.top + node.height * 0.78;
+  const peerCenterY = peerNode.top + peerNode.height / halfDivisor;
+  const nodeTop = node.top + node.height * linkAnchorInsetRatio;
+  const nodeBottom = node.top + node.height * linkAnchorOutsetRatio;
 
   return Math.min(nodeBottom, Math.max(nodeTop, peerCenterY));
-}
-
-function readCurveMidpoint(
-  start: number,
-  startControl: number,
-  endControl: number,
-  end: number,
-): number {
-  return (start + 3 * startControl + 3 * endControl + end) / 8;
 }
 
 function readNode<TEvent extends ExplorerEventId>(
@@ -187,8 +226,8 @@ function readNode<TEvent extends ExplorerEventId>(
 }
 
 function readCenterLane(branchCount: number): FlowLane {
-  if (branchCount <= 1) {
-    return 1;
+  if (branchCount <= singleBranchCount) {
+    return centerLaneIndex;
   }
 
   if (branchCount > defaultLayout.lanes.length) {
@@ -197,16 +236,16 @@ function readCenterLane(branchCount: number): FlowLane {
     );
   }
 
-  return Math.floor(branchCount / 2) as FlowLane;
+  return Math.floor(branchCount / halfDivisor) as FlowLane;
 }
 
 function readBranchLane(index: number, branchCount: number): FlowLane {
-  if (branchCount <= 1) {
-    return 1;
+  if (branchCount <= singleBranchCount) {
+    return centerLaneIndex;
   }
 
-  if (branchCount === 2) {
-    return index === 0 ? 0 : 2;
+  if (branchCount === pairedBranchCount) {
+    return index === firstBranchIndex ? topLaneIndex : bottomLaneIndex;
   }
 
   if (branchCount > defaultLayout.lanes.length) {

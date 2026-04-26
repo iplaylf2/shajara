@@ -157,6 +157,7 @@ class ExplorerReplaySession {
       this.#stage.replay.initialState.completed,
     );
 
+    yield* sleep(this.#stage.replay.replayDelayMs);
     yield* this.#playReplayRoutine();
   }
 
