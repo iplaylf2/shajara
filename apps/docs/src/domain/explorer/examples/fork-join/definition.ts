@@ -9,11 +9,7 @@ import { createLoadPageDemoCode, initialLoadPageDemoTrace, loadPageDemo } from "
 
 export const forkJoinExample = {
   descriptionKey: "explorer.examples.fork-join.description",
-  guideKeys: [
-    "explorer.examples.fork-join.guide.scope",
-    "explorer.examples.fork-join.guide.fork",
-    "explorer.examples.fork-join.guide.join",
-  ],
+  guideKeys: ["explorer.examples.fork-join.guide.fork", "explorer.examples.fork-join.guide.join"],
   id: "fork-join",
   stage: {
     code: createLoadPageDemoCode(),
@@ -41,13 +37,13 @@ function createForkJoinFlowLinks(): readonly ExplorerFlowGraphLink<LoadPageDemoE
     {
       activeEvents: ["spawn-header"],
       from: "root",
-      label: "spawn header",
+      label: "spawn(header)",
       to: "header",
     },
     {
       activeEvents: ["spawn-sidebar"],
       from: "root",
-      label: "spawn sidebar",
+      label: "spawn(sidebar)",
       to: "sidebar",
     },
     {
@@ -80,7 +76,7 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       completedEvents: ["done"],
       id: "root",
       kind: "parent",
-      label: "page routine",
+      label: "fork",
       statusRoutineIds: ["root"],
     },
     {
@@ -88,7 +84,7 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       completedEvents: ["header-return"],
       id: "header",
       kind: "branch",
-      label: "header task",
+      label: "header process",
       statusRoutineIds: ["header"],
     },
     {
@@ -96,7 +92,7 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
       completedEvents: ["sidebar-return"],
       id: "sidebar",
       kind: "branch",
-      label: "sidebar task",
+      label: "sidebar process",
       statusRoutineIds: ["sidebar"],
     },
     {

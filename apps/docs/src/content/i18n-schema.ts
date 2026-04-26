@@ -22,7 +22,6 @@ export const explorerUiI18nSchema = z.object({
   "explorer.examples.fork-join.description": z.string(),
   "explorer.examples.fork-join.guide.fork": z.string(),
   "explorer.examples.fork-join.guide.join": z.string(),
-  "explorer.examples.fork-join.guide.scope": z.string(),
   "explorer.examples.fork-join.title": z.string(),
   "explorer.home.intro": z.string(),
   "explorer.home.title": z.string(),
