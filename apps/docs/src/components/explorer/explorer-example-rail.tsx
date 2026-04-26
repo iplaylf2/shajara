@@ -6,15 +6,22 @@ export function ExplorerExampleRail(props: Props): JSX.Element {
   return (
     <aside class={styles["rail"]}>
       <div class={styles["tabList"]}>
-        {props.examples.map((example) => (
-          <a
-            {...(example.id === props.currentExampleId ? { "aria-current": "page" } : {})}
-            class={`${styles["tabButton"]}${example.id === props.currentExampleId ? ` ${styles["tabButtonSelected"]}` : ""}`}
-            href={example.href}
-          >
-            {example.title}
-          </a>
-        ))}
+        {props.examples.map((example) => {
+          const isSelected = example.id === props.currentExampleId;
+
+          return (
+            <a
+              {...(isSelected ? { "aria-current": "page" } : {})}
+              class={styles["tabButton"]}
+              classList={{
+                [styles["tabButtonSelected"]!]: isSelected,
+              }}
+              href={example.href}
+            >
+              {example.title}
+            </a>
+          );
+        })}
       </div>
     </aside>
   );
