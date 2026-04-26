@@ -1,0 +1,1 @@
+export { singleSpawnExample } from "./definition";

@@ -10,7 +10,6 @@ const codeBlockId = `explorer-${example.id}-code`;
 const stage = {
   eventIds: example.stage.code.map((line) => line.id),
   replay: {
-    initialState: example.stage.replay.initialState,
     replayDelayMs: example.stage.replay.replayDelayMs,
   },
   scene: resolveExplorerFlowScene(example.stage.flow, `${title} flow`),
@@ -41,11 +40,7 @@ interface Props {
     exampleId={example.id}
     stage={stage}
   >
-    <ExplorerCodeBlock
-      code={example.stage.code}
-      id={codeBlockId}
-      initialState={example.stage.replay.initialState}
-    />
+    <ExplorerCodeBlock code={example.stage.code} id={codeBlockId} />
   </ExplorerReplayDemo>
 
   <div class={styles["guideList"]}>

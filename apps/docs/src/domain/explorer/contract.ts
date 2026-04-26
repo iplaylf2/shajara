@@ -24,7 +24,6 @@ export interface ExplorerExampleCodeLine<TEvent extends ExplorerEventId> {
 }
 
 export interface ExplorerExampleReplay<TEvent extends ExplorerEventId, TResult> {
-  initialState: ExplorerReplayState<TEvent>;
   replayDelayMs: number;
   runtime: ExplorerReplayRuntime<TEvent, TResult>;
 }
@@ -45,6 +44,7 @@ export interface ExplorerFlowGraphLink<TEvent extends ExplorerEventId> {
   from: string;
   kind: "dependency" | "spawn";
   label: string;
+  visibleLabel?: string;
   to: string;
 }
 
@@ -91,4 +91,14 @@ export interface ExplorerReplayState<TEvent extends ExplorerEventId> {
   active: readonly TEvent[];
   completed: readonly TEvent[];
   cursors: readonly ExplorerReplayCursor<TEvent>[];
+}
+
+export function createPendingExplorerReplayState<
+  TEvent extends ExplorerEventId,
+>(): ExplorerReplayState<TEvent> {
+  return {
+    active: [],
+    completed: [],
+    cursors: [],
+  };
 }

@@ -5,7 +5,7 @@ import type {
   ExplorerFlowGraphNode,
 } from "#/domain/explorer/contract";
 import type { LoadPageDemoEvent, LoadPageDemoResult } from "./runtime";
-import { createLoadPageDemoCode, initialLoadPageDemoTrace, loadPageDemo } from "./runtime";
+import { createLoadPageDemoCode, loadPageDemo } from "./runtime";
 
 export const forkJoinExample = {
   descriptionKey: "explorer.examples.fork-join.description",
@@ -15,7 +15,6 @@ export const forkJoinExample = {
     code: createLoadPageDemoCode(),
     flow: createForkJoinFlow(),
     replay: {
-      initialState: initialLoadPageDemoTrace,
       replayDelayMs: 1400,
       runtime: {
         createRoutine: () => loadPageDemo,

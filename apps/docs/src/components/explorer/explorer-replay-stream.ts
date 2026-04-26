@@ -16,10 +16,10 @@ export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
 }
 
 export function* createReplayFrameStream<TEvent extends ExplorerEventId>(
-  initialState: ExplorerReplayState<TEvent>,
+  baselineState: ExplorerReplayState<TEvent>,
 ): RiteCoroutine<ReplayFrameStream<TEvent>> {
   const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
-  let state = initialState;
+  let state = baselineState;
 
   return {
     *emit(trace) {
@@ -70,7 +70,7 @@ function appendCompletedEvent<TEvent extends ExplorerEventId>(
 
 export function* playbackReplayFrames<TEvent extends ExplorerEventId>(
   stream: ReplayFrameStream<TEvent>,
-  initialState: ExplorerReplayState<TEvent>,
+  baselineState: ExplorerReplayState<TEvent>,
   frameSink: ReplayFrameSink<TEvent>,
   minRenderGapMs: number,
 ): RiteCoroutine<void> {
@@ -83,7 +83,7 @@ export function* playbackReplayFrames<TEvent extends ExplorerEventId>(
       return;
     }
 
-    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, initialState)) {
+    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, baselineState)) {
       continue;
     }
 

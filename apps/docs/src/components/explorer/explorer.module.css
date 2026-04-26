@@ -369,6 +369,32 @@
   animation: flowLinkMarch 900ms linear infinite;
 }
 
+.flowLinkLabel {
+  fill: #6b7f95;
+  stroke: #f7fbff;
+  stroke-linejoin: round;
+  stroke-width: 5;
+  paint-order: stroke;
+  font-size: 12px;
+  font-weight: 580;
+  dominant-baseline: central;
+  opacity: 0;
+  pointer-events: none;
+  text-anchor: middle;
+  transition:
+    fill 180ms ease,
+    opacity 180ms ease;
+}
+
+.flowLinkGroupBlocked .flowLinkLabel {
+  fill: var(--flow-link-blocked);
+  opacity: 1;
+}
+
+.flowLinkGroupSettledDependency .flowLinkLabel {
+  opacity: 0.72;
+}
+
 .codePanel {
   position: relative;
   display: grid;

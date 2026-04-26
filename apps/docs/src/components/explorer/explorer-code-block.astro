@@ -2,12 +2,11 @@
 import type {
   ExplorerEventId,
   ExplorerExampleCodeLine,
-  ExplorerReplayState,
 } from "#/domain/explorer/contract";
 import { Code } from "astro/components";
 import styles from "./explorer.module.css";
 
-const { code, id, initialState } = Astro.props;
+const { code, id } = Astro.props;
 const source = code.map((line) => line.text).join("\n");
 const firstLine = 1;
 const lineTransformer = {
@@ -23,17 +22,6 @@ const lineTransformer = {
 
     const className = [styles["explorerCodeLine"]];
 
-    if (
-      initialState.cursors.some((cursor) => cursor.events.includes(lineEvent))
-    ) {
-      className.push(styles["explorerCodeLineActive"]);
-    }
-    if (
-      completedEvents.some((event) => initialState.completed.includes(event))
-    ) {
-      className.push(styles["explorerCodeLineDone"]);
-    }
-
     node.properties ??= {};
     node.properties["class"] = className.join(" ");
     node.properties["data-explorer-line-event"] = lineEvent;
@@ -46,7 +34,6 @@ const lineTransformer = {
 interface Props {
   code: readonly ExplorerExampleCodeLine<ExplorerEventId>[];
   id: string;
-  initialState: ExplorerReplayState<ExplorerEventId>;
 }
 
 interface CodeLineNode {

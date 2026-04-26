@@ -176,11 +176,30 @@ function FlowLinks<TEvent extends string>(props: {
               d={link.path}
               marker-end={`url(#${props.scene.markerId})`}
             />
+            <FlowLinkLabel link={link} />
             <title>{link.label}</title>
           </g>
         );
       })}
     </>
+  );
+}
+
+function FlowLinkLabel<TEvent extends string>(props: {
+  link: ExplorerFlowScene<TEvent>["links"][number];
+}): JSX.Element {
+  if (!props.link.visibleLabel) {
+    return <></>;
+  }
+
+  return (
+    <text
+      class={styles["flowLinkLabel"]}
+      x={String(props.link.labelX)}
+      y={String(props.link.labelY)}
+    >
+      {props.link.visibleLabel}
+    </text>
   );
 }
 

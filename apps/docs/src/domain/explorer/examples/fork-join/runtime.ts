@@ -3,7 +3,6 @@ import type {
   ExplorerExampleCodeLine,
   ExplorerReplayCursor,
   ExplorerReplayEmit,
-  ExplorerReplayState,
 } from "#/domain/explorer/contract";
 import { enclose, spawn, wait } from "@shajara/host/primitives";
 import type { RiteCoroutine } from "@shajara/host";
@@ -93,18 +92,12 @@ export function* loadPageDemo(
       return { header: headerValue, sidebar: sidebarValue };
     } finally {
       yield* emit({
+        clearCursor: "root",
         completed: "done",
-        cursor: cursorAt("root", "done", "running"),
       });
     }
   });
 }
-
-export const initialLoadPageDemoTrace = {
-  active: ["routine"],
-  completed: [],
-  cursors: [cursorAt("root", "routine", "running")],
-} as const satisfies ExplorerReplayState<LoadPageDemoEvent>;
 
 export interface LoadPageDemoResult {
   header: string;

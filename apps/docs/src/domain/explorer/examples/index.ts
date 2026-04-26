@@ -1,5 +1,7 @@
 import type { ArrayValues } from "type-fest";
 import { forkJoinExample } from "./fork-join";
+import { futureSettlementExample } from "./future-settlement";
+import { singleSpawnExample } from "./single-spawn";
 
 export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
   return explorerExampleDefinitions[exampleId];
@@ -9,8 +11,12 @@ export function readExplorerReplayRuntime(exampleId: ExplorerExampleId): Explore
   return readExplorerExample(exampleId).stage.replay.runtime;
 }
 
-export const explorerExamples = [forkJoinExample] as const;
-export const DEFAULT_EXPLORER_EXAMPLE_ID = forkJoinExample.id;
+export const explorerExamples = [
+  singleSpawnExample,
+  futureSettlementExample,
+  forkJoinExample,
+] as const;
+export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
 export type ExplorerExampleDefinition = ArrayValues<typeof explorerExamples>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
@@ -23,5 +29,7 @@ const explorerExampleDefinitions: {
     { readonly id: ExampleId }
   >;
 } = {
+  [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
+  [singleSpawnExample.id]: singleSpawnExample,
 };

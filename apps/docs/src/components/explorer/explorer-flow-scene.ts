@@ -26,9 +26,12 @@ export interface ExplorerFlowLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   from: string;
   label: string;
+  labelX: number;
+  labelY: number;
   path: string;
   to: string;
   variant: "dependency" | "spawn";
+  visibleLabel?: string;
 }
 
 export interface ExplorerFlowNode<TEvent extends ExplorerEventId> {
@@ -166,6 +169,8 @@ function createFlowLink<TEvent extends ExplorerEventId>(
     activeEvents: link.activeEvents,
     from: link.from,
     label: link.label,
+    labelX: (fromX + toX) / halfDivisor,
+    labelY: (fromY + toY) / halfDivisor,
     path: [
       `M${fromX} ${fromY}`,
       `C${fromX + direction * linkControlFromOffsetX} ${fromY}`,
@@ -174,6 +179,7 @@ function createFlowLink<TEvent extends ExplorerEventId>(
     ].join(" "),
     to: link.to,
     variant: link.kind,
+    ...(link.visibleLabel ? { visibleLabel: link.visibleLabel } : {}),
   };
 }
 
