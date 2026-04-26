@@ -1,4 +1,11 @@
 .root {
+  --explorer-text-xs: 0.76rem;
+  --explorer-text-sm: 0.88rem;
+  --explorer-text-md: 1rem;
+  --explorer-weight-regular: 400;
+  --explorer-weight-medium: 520;
+  --explorer-weight-strong: 580;
+
   display: grid;
   gap: 1rem;
   color: #1c2431;
@@ -10,7 +17,8 @@
   justify-content: space-between;
   gap: 1rem;
   color: #4f6178;
-  font-size: 0.82rem;
+  font-size: var(--explorer-text-xs);
+  font-weight: var(--explorer-weight-medium);
   letter-spacing: 0.01em;
 }
 
@@ -23,7 +31,7 @@
 
 .brandLink {
   color: inherit;
-  font-weight: 600;
+  font-weight: var(--explorer-weight-strong);
   text-decoration: none;
 }
 
@@ -41,7 +49,7 @@
 
 .topbarTitle {
   color: #0f172a;
-  font-weight: 600;
+  font-weight: var(--explorer-weight-strong);
 }
 
 .localeMenu {
@@ -75,7 +83,7 @@
 
 .localeSummaryValue {
   color: #0f172a;
-  font-weight: 500;
+  font-weight: var(--explorer-weight-medium);
 }
 
 .localeSummaryCaret {
@@ -122,9 +130,9 @@
 
 .contentGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 14rem;
+  grid-template-columns: minmax(0, 1fr) 12rem;
   grid-template-areas: "stage rail";
-  gap: 1.1rem;
+  gap: 0.55rem;
   align-items: start;
 }
 
@@ -138,8 +146,9 @@
 .stagePanel {
   grid-area: stage;
   display: grid;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 0.85rem;
   border-color: #cad8e8;
   background: linear-gradient(180deg, #f3f9ff, #fcfdff 5.5rem), #fcfdff;
 }
@@ -148,22 +157,24 @@
   grid-area: rail;
   position: sticky;
   top: 1rem;
-  padding: 0.5rem;
+  padding: 0;
   border-color: #d6dfeb;
   background: #f8fbff;
+  font-size: var(--explorer-text-sm);
 }
 
 .sceneHeader {
   display: grid;
   gap: 0.35rem;
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid #e4ebf4;
 }
 
 .sceneBody {
   margin: 0;
   max-width: 48rem;
-  font-size: 1rem;
+  font-size: var(--explorer-text-md);
+  font-weight: var(--explorer-weight-regular);
   line-height: 1.75;
   color: #31465f;
 }
@@ -171,105 +182,260 @@
 .stageCanvas {
   display: grid;
   gap: 0.75rem;
-  padding: 1rem 0;
+  padding: 0.35rem 0 0.75rem;
   border-bottom: 1px solid #e4ebf4;
 }
 
 .flowDemo {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(29rem, 0.92fr);
+  height: clamp(14rem, 18vw, 16.25rem);
   overflow: hidden;
-  border: 1px solid #c9d9e9;
-  border-radius: 0.35rem;
-  background: #f8fbff;
+}
+
+.flowViewport {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .flowSvg {
+  --flow-surface: #f7fbff;
+  --flow-grid: #e9f1fb;
+  --flow-node-text: #23364b;
+  --flow-node-status: #64788f;
+  --flow-link: #c5d4e5;
+  --flow-link-blocked: #a26955;
+  --flow-link-running: #117f91;
+
   display: block;
+  align-self: center;
   width: 100%;
-  min-height: 16rem;
+  height: 100%;
+  aspect-ratio: 650 / 224;
   background:
-    linear-gradient(#eef6ff 1px, transparent 1px),
-    linear-gradient(90deg, #eef6ff 1px, transparent 1px), #f8fbff;
+    linear-gradient(var(--flow-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--flow-grid) 1px, transparent 1px), var(--flow-surface);
   background-size:
-    3rem 3rem,
-    3rem 3rem,
+    2.75rem 2.75rem,
+    2.75rem 2.75rem,
     auto;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 .flowNode {
   fill: #ffffff;
-  stroke: #9fb9d6;
-  stroke-width: 1.4;
+  stroke: #a9bfd7;
+  stroke-width: 1.35;
   transition:
     fill 180ms ease,
     stroke 180ms ease,
     stroke-width 180ms ease;
-  filter: drop-shadow(0 0.35rem 0.55rem rgb(54 83 116 / 0.08));
 }
 
 .flowNodeText {
-  fill: #26384d;
-  font-size: 0.82rem;
-  font-weight: 700;
+  fill: var(--flow-node-text);
+  font-size: 20px;
+  font-weight: 580;
+  cursor: text;
+  dominant-baseline: central;
+  pointer-events: auto;
   text-anchor: middle;
+  user-select: text;
+}
+
+.flowNodeStatus {
+  fill: var(--flow-node-status);
+  font-size: 12px;
+  font-weight: 540;
+  cursor: text;
+  dominant-baseline: central;
+  letter-spacing: 0.04em;
+  pointer-events: auto;
+  text-anchor: middle;
+  text-transform: uppercase;
+  user-select: text;
+}
+
+.flowNodeStatusBlocked {
+  fill: #9b624e;
+}
+
+.flowNodeStatusDone {
+  fill: #687b8f;
+}
+
+.flowNodeStatusPending {
+  fill: #8ca0b5;
+  opacity: 0.5;
 }
 
 .flowNodeParent .flowNode {
-  fill: #f7fbff;
-  stroke: #7fa2c8;
+  fill: #f4f9ff;
+  stroke: #86a8cb;
 }
 
 .flowNodeBranch .flowNode {
-  stroke: #3f93a0;
+  stroke: #5196a1;
 }
 
 .flowNodeJoin .flowNode {
-  stroke: #b0705f;
+  stroke: #ad7464;
 }
 
 .flowNodeActive .flowNode {
   fill: #e9fbfd;
-  stroke: #137f90;
-  stroke-width: 2.2;
+  stroke: #237f8c;
+  stroke-width: 2.25;
+  animation: flowNodePulse 1400ms ease-in-out infinite;
+}
+
+.flowNodeRunning .flowNode {
+  stroke-dasharray: 9 7;
+  animation:
+    flowNodePulse 1400ms ease-in-out infinite,
+    flowNodeMarch 1100ms linear infinite;
+}
+
+.flowNodeBlocked .flowNode,
+.flowNodeDone .flowNode {
+  stroke-dasharray: none;
 }
 
 .flowNodeDone .flowNode {
-  fill: #f3fbf8;
-  stroke: #4d9d78;
+  fill: #f8fbff;
+  stroke: #9fb1c4;
+  stroke-width: 1.35;
 }
 
-.flowNodeJoin.flowNodeDone .flowNode {
-  fill: #fff6f1;
-  stroke: #b0705f;
+.flowNodeDone .flowNodeText {
+  fill: #425367;
 }
 
 .flowLink {
   fill: none;
-  stroke: #c8d6e6;
+  stroke: var(--flow-link);
   stroke-linecap: round;
-  stroke-width: 2.4;
+  stroke-width: 2.8;
   transition:
+    opacity 180ms ease,
     stroke 180ms ease,
     stroke-dashoffset 180ms ease;
 }
 
-.flowLinkActive {
-  stroke: #526a86;
-  stroke-dasharray: 11 7;
-  stroke-dashoffset: 18;
+.flowLinkGroup {
+  transform-box: fill-box;
 }
 
-.flowTick {
-  fill: #2f8b68;
-  font-size: 0.72rem;
-  font-weight: 700;
+.flowLinkGroupDependency .flowLink {
+  stroke: #d2deea;
+  stroke-width: 2.2;
   opacity: 0;
-  transition: opacity 180ms ease;
 }
 
-.flowTickVisible {
+.flowLinkGroupConsumed .flowLink {
+  opacity: 0;
+  transition-duration: 420ms;
+}
+
+.flowLinkGroupSettledDependency .flowLink {
+  stroke: #b7c5d4;
+  stroke-dasharray: none;
+  stroke-width: 1.9;
+  opacity: 0.58;
+  animation: none;
+}
+
+.flowLinkGroupRunning .flowLink {
+  stroke: var(--flow-link-running);
+  stroke-dasharray: 650;
+  stroke-dashoffset: 0;
+  stroke-width: 3.8;
+  animation: flowLinkDraw 520ms ease-out both;
+}
+
+.flowLinkGroupBlocked .flowLink {
+  stroke: var(--flow-link-blocked);
+  stroke-dasharray: 10 8;
+  stroke-width: 3.1;
   opacity: 1;
+  animation: flowLinkMarch 900ms linear infinite;
+}
+
+.codePanel {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
+  border-left: 1px solid #d9e5f1;
+}
+
+.codeAutoScrollToggle {
+  position: absolute;
+  top: 0.45rem;
+  right: 1.35rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  color: #6f849a;
+  font-size: 0.66rem;
+  font-weight: var(--explorer-weight-medium);
+  cursor: pointer;
+  opacity: 0.46;
+  transition: opacity 160ms ease;
+}
+
+.codeAutoScrollToggle:hover,
+.codeAutoScrollToggle:focus-within {
+  opacity: 0.82;
+}
+
+.codeAutoScrollInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.codeAutoScrollSwitch {
+  position: relative;
+  display: inline-grid;
+  align-items: center;
+  width: max-content;
+  min-height: 1.25rem;
+  padding: 0 0.45rem;
+  border: 1px solid rgb(120 151 177 / 0.24);
+  border-radius: 0;
+  color: #5d758c;
+  background: rgb(255 255 255 / 0.32);
+  backdrop-filter: blur(8px);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.codeAutoScrollInput:not(:checked) + .codeAutoScrollSwitch {
+  color: #73879b;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.codeAutoScrollInput:focus-visible + .codeAutoScrollSwitch {
+  outline: 2px solid #7fb5c0;
+  outline-offset: 2px;
+}
+
+.codeAutoScrollText {
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .explorerCode {
@@ -286,17 +452,25 @@
   --astro-code-token-string-expression: #032f62;
 
   display: grid;
-  align-content: center;
   min-width: 0;
-  min-height: 100%;
-  padding: 1rem;
+  min-height: 0;
+  height: 100%;
+  padding: 0.75rem 0.85rem;
   margin: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 40%;
+  scroll-behavior: smooth;
   color: #536981;
-  font-size: 0.76rem;
+  font-size: var(--explorer-text-xs);
   line-height: 1.32;
   background: #ffffff;
-  border-left: 1px solid #d9e5f1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorerCode {
+    scroll-behavior: auto;
+  }
 }
 
 .explorerCode :global(code) {
@@ -304,9 +478,15 @@
   gap: 0;
 }
 
+.explorerCode :global(code)::after {
+  display: block;
+  height: 5rem;
+  content: "";
+}
+
 .explorerCodeLine {
   display: block;
-  padding: 0.02rem 0.35rem;
+  padding: 0.025rem 0.4rem;
   border-left: 2px solid transparent;
   line-height: 1.32;
   transition:
@@ -323,6 +503,47 @@
   color: #143044;
   border-color: #2c8795;
   background: #ebf8fb;
+}
+
+@keyframes flowLinkMarch {
+  from {
+    stroke-dashoffset: 18;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowLinkDraw {
+  from {
+    stroke-dashoffset: 650;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowNodeMarch {
+  from {
+    stroke-dashoffset: 16;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowNodePulse {
+  0%,
+  100% {
+    stroke-width: 2.15;
+  }
+
+  50% {
+    stroke-width: 2.8;
+  }
 }
 
 .guideList {
@@ -351,7 +572,8 @@
 
 .guideText {
   color: #465d76;
-  font-size: 0.9rem;
+  font-size: var(--explorer-text-sm);
+  font-weight: var(--explorer-weight-regular);
   line-height: 1.6;
 }
 
@@ -363,14 +585,14 @@
 .tabButton {
   box-sizing: border-box;
   display: block;
-  padding: 0.7rem 0.8rem;
+  padding: 0.72rem 0.8rem;
   color: #516983;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--explorer-weight-medium);
   text-align: left;
   cursor: pointer;
   border: 1px solid transparent;
-  border-radius: 0.35rem;
+  border-radius: 0.45rem;
   background: transparent;
   text-decoration: none;
   transition:
@@ -387,6 +609,7 @@
 
 .tabButtonSelected {
   color: #0f172a;
+  font-weight: var(--explorer-weight-strong);
   border-color: #c1d6ec;
   background: #ecf5ff;
 }
@@ -408,13 +631,32 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "stage"
-      "rail"
-      "code";
+      "rail";
   }
 
   .rail {
     position: static;
-    padding: 0.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .tabList {
+    display: flex;
+    gap: 0.3rem;
+    overflow-x: auto;
+  }
+
+  .tabButton {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .flowDemo {
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.96fr);
   }
 }
 
@@ -433,20 +675,40 @@
     right: auto;
   }
 
-  .stagePanel {
-    padding: 0.85rem;
-  }
-
   .flowDemo {
     grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    overflow: visible;
+  }
+
+  .flowViewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .codePanel {
+    border-top: 1px solid #d9e5f1;
+    border-left: 0;
+  }
+
+  .codeAutoScrollToggle {
+    right: 1.25rem;
   }
 
   .flowSvg {
-    min-height: 13rem;
+    height: auto;
+    min-width: 42rem;
   }
 
   .explorerCode {
-    border-top: 1px solid #d9e5f1;
-    border-left: 0;
+    max-height: 22rem;
+    padding: 1rem 1.1rem;
+    font-size: 0.8rem;
+    line-height: 1.38;
+  }
+
+  .explorerCodeLine {
+    padding: 0.03rem 0.4rem;
+    line-height: 1.32;
   }
 }

@@ -1,25 +1,24 @@
 ---
-import {
-  EXPLORER_EXAMPLES,
-  readExplorerExample,
-} from "#/domain/explorer/examples";
 import { ExplorerExampleRail, ExplorerTopbar } from "#/components/explorer";
-import { I18N, SITE_LOCALES } from "#site";
 import {
   buildExplorerHref,
   buildExplorerLocaleLinks,
 } from "#/pages-kit/explorer";
+import {
+  explorerExamples,
+  readExplorerExample,
+} from "#/domain/explorer/examples";
+import { i18N, siteLocales } from "#site";
 import type { ExplorerBodyExample } from "#/pages-kit/explorer";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
 import ExplorerExampleStage from "#/components/explorer/explorer-example-stage.astro";
 import ExplorerLayout from "#/layouts/explorer-layout.astro";
-import type { SiteLocale } from "#site";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import styles from "#/components/explorer/explorer.module.css";
 
 export function getStaticPaths() {
-  return SITE_LOCALES.flatMap((locale) =>
-    EXPLORER_EXAMPLES.map((exampleDefinition) => ({
+  return siteLocales.flatMap((locale) =>
+    explorerExamples.map((exampleDefinition) => ({
       params: { example: exampleDefinition.id, locale },
     })),
   );
@@ -37,21 +36,14 @@ function buildExplorerExample(
   };
 }
 
-const { locale } = Astro.params as {
-  locale: SiteLocale;
-};
-const { example } = Astro.params as {
-  example: string;
-};
-const exampleDefinition = readExplorerExample(
-  example as ExplorerExampleDefinition["id"],
-);
+const { example, locale } = Astro.params;
+const exampleDefinition = readExplorerExample(example);
 
 const examples: ExplorerBodyExample[] =
-  EXPLORER_EXAMPLES.map(buildExplorerExample);
+  explorerExamples.map(buildExplorerExample);
 const currentExample = buildExplorerExample(exampleDefinition);
-const docsHomeHref = getRelativeLocaleUrl(I18N.locales[locale].lang);
-const localeLinks = buildExplorerLocaleLinks(currentExample.id, locale);
+const docsHomeHref = getRelativeLocaleUrl(i18N.locales[locale].lang);
+const localeLinks = buildExplorerLocaleLinks(currentExample.id);
 const pageTitle = `${currentExample.title} · ${Astro.locals.t("explorer.home.title")}`;
 ---
 
@@ -60,6 +52,7 @@ const pageTitle = `${currentExample.title} · ${Astro.locals.t("explorer.home.ti
     <ExplorerTopbar
       brandHref={docsHomeHref}
       brandLabel="shajara"
+      currentLocaleLabel={i18N.locales[locale].label}
       explorerLabel={Astro.locals.t("explorer.shell.eyebrow")}
       localeLinks={localeLinks}
       title={currentExample.title}

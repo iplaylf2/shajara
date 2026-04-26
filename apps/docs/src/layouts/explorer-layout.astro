@@ -1,12 +1,14 @@
 ---
-import { I18N } from "#site";
 import type { SiteLocale } from "#site";
+import { i18N } from "#site";
 
-const { locale, title } = Astro.props as {
+interface Props {
   locale: SiteLocale;
   title: string;
-};
-const { lang } = I18N.locales[locale];
+}
+
+const { locale, title } = Astro.props;
+const { lang } = i18N.locales[locale];
 const dir = Astro.locals.t.dir();
 ---
 

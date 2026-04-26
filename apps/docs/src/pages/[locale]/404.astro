@@ -1,22 +1,23 @@
 ---
-import { I18N, SITE_LOCALES, type SiteLocale } from "#site";
+import { i18N, siteLocales } from "#site";
 import SplashPage from "#/components/splash-page.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 export function getStaticPaths() {
-  return SITE_LOCALES.map((locale) => ({ params: { locale } }));
+  return siteLocales.map((locale) => ({ params: { locale } }));
 }
 
-const { locale } = Astro.params as { locale: SiteLocale };
+const { locale } = Astro.params;
+
 const heroActions = [
   {
     icon: "right-arrow" as const,
-    link: getRelativeLocaleUrl(I18N.locales[locale].lang),
+    link: getRelativeLocaleUrl(i18N.locales[locale].lang),
     text: Astro.locals.t("docs.404.hero.backHome"),
   },
   {
     icon: "right-arrow" as const,
-    link: getRelativeLocaleUrl(I18N.locales[locale].lang, "explorer"),
+    link: getRelativeLocaleUrl(i18N.locales[locale].lang, "explorer"),
     text: Astro.locals.t("docs.404.hero.explorer"),
   },
 ];

@@ -2,12 +2,6 @@ import type { JSX } from "solid-js";
 import styles from "./explorer.module.css";
 
 export function ExplorerTopbar(props: Props): JSX.Element {
-  const currentLocaleLink = props.localeLinks.find((localeLink) => localeLink.isCurrent);
-
-  if (!currentLocaleLink) {
-    throw new Error("Explorer topbar requires one current locale link.");
-  }
-
   return (
     <div class={styles["topbar"]}>
       <div class={styles["topbarTrail"]}>
@@ -25,8 +19,8 @@ export function ExplorerTopbar(props: Props): JSX.Element {
       </div>
 
       <details class={styles["localeMenu"]}>
-        <summary aria-label={currentLocaleLink.label} class={styles["localeSummary"]}>
-          <span class={styles["localeSummaryValue"]}>{currentLocaleLink.label}</span>
+        <summary aria-label={props.currentLocaleLabel} class={styles["localeSummary"]}>
+          <span class={styles["localeSummaryValue"]}>{props.currentLocaleLabel}</span>
           <span aria-hidden="true" class={styles["localeSummaryCaret"]}>
             ▾
           </span>
@@ -52,13 +46,13 @@ export function ExplorerTopbar(props: Props): JSX.Element {
 interface ExplorerTopbarLocaleLink {
   href: string;
   hreflang: string;
-  isCurrent: boolean;
   label: string;
 }
 
 interface Props {
   brandHref: string;
   brandLabel: string;
+  currentLocaleLabel: string;
   explorerLabel: string;
   localeLinks: ExplorerTopbarLocaleLink[];
   title: string;

@@ -8,6 +8,7 @@ import styles from "./explorer.module.css";
 const { description, example, guideRows, title } = Astro.props;
 const codeBlockId = `explorer-${example.id}-code`;
 const stage = {
+  eventIds: example.stage.code.map((line) => line.id),
   replay: {
     initialState: example.stage.replay.initialState,
     replayDelayMs: example.stage.replay.replayDelayMs,
@@ -35,6 +36,8 @@ interface Props {
   <ExplorerReplayDemo
     client:load
     codeBlockId={codeBlockId}
+    codeFollowLabel={Astro.locals.t("explorer.replay.follow")}
+    codeManualLabel={Astro.locals.t("explorer.replay.manual")}
     exampleId={example.id}
     stage={stage}
   >
