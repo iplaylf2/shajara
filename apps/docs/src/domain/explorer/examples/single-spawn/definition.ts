@@ -1,11 +1,7 @@
-import type {
-  ExplorerExample,
-  ExplorerFlowGraph,
-  ExplorerFlowGraphLink,
-  ExplorerFlowGraphNode,
-} from "#/domain/explorer/contract";
-import type { SingleSpawnDemoEvent, SingleSpawnDemoResult } from "./runtime";
+import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import { branchRoutineNode, parentRoutineNode, spawnLink } from "#/domain/explorer/examples-kit";
 import { createSingleSpawnDemoCode, singleSpawnDemo } from "./runtime";
+import type { SingleSpawnDemoEvent } from "./runtime";
 
 export const singleSpawnExample = {
   descriptionKey: "explorer.examples.single-spawn.description",
@@ -25,7 +21,7 @@ export const singleSpawnExample = {
     },
   },
   titleKey: "explorer.examples.single-spawn.title",
-} as const satisfies ExplorerExample<SingleSpawnDemoEvent, SingleSpawnDemoResult, string>;
+} as const satisfies ExplorerExample<SingleSpawnDemoEvent, string, string>;
 
 function createSingleSpawnFlow(): ExplorerFlowGraph<SingleSpawnDemoEvent> {
   return {
@@ -34,35 +30,19 @@ function createSingleSpawnFlow(): ExplorerFlowGraph<SingleSpawnDemoEvent> {
   };
 }
 
-function createSingleSpawnFlowLinks(): readonly ExplorerFlowGraphLink<SingleSpawnDemoEvent>[] {
-  return [
-    {
-      activeEvents: ["spawn-receipt"],
-      from: "root",
-      kind: "spawn",
-      label: "spawn(sendReceiptEmail)",
-      to: "receipt",
-    },
-  ];
+function createSingleSpawnFlowLinks(): ExplorerFlowGraph<SingleSpawnDemoEvent>["links"] {
+  return [spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"])];
 }
 
-function createSingleSpawnFlowNodes(): readonly ExplorerFlowGraphNode<SingleSpawnDemoEvent>[] {
+function createSingleSpawnFlowNodes(): ExplorerFlowGraph<SingleSpawnDemoEvent>["nodes"] {
   return [
-    {
+    parentRoutineNode("root", "submitOrder", {
       activeEvents: ["routine", "spawn-receipt", "return-accepted", "done"],
       completedEvents: ["done"],
-      id: "root",
-      kind: "parent",
-      label: "submitOrder",
-      statusRoutineIds: ["root"],
-    },
-    {
+    }),
+    branchRoutineNode("receipt", "sendReceiptEmail", {
       activeEvents: ["spawn-receipt", "receipt-sleep", "receipt-return"],
       completedEvents: ["receipt-return"],
-      id: "receipt",
-      kind: "branch",
-      label: "sendReceiptEmail",
-      statusRoutineIds: ["receipt"],
-    },
+    }),
   ];
 }

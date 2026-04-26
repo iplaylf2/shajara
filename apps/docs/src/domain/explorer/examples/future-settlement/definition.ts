@@ -1,11 +1,12 @@
-import type {
-  ExplorerExample,
-  ExplorerFlowGraph,
-  ExplorerFlowGraphLink,
-  ExplorerFlowGraphNode,
-} from "#/domain/explorer/contract";
-import type { FutureSettlementDemoEvent, FutureSettlementDemoResult } from "./runtime";
+import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import {
+  branchRoutineNode,
+  dependencyLink,
+  parentRoutineNode,
+  spawnLink,
+} from "#/domain/explorer/examples-kit";
 import { createFutureSettlementDemoCode, futureSettlementDemo } from "./runtime";
+import type { FutureSettlementDemoEvent } from "./runtime";
 
 export const futureSettlementExample = {
   descriptionKey: "explorer.examples.future-settlement.description",
@@ -25,7 +26,7 @@ export const futureSettlementExample = {
     },
   },
   titleKey: "explorer.examples.future-settlement.title",
-} as const satisfies ExplorerExample<FutureSettlementDemoEvent, FutureSettlementDemoResult, string>;
+} as const satisfies ExplorerExample<FutureSettlementDemoEvent, string, string>;
 
 function createFutureSettlementFlow(): ExplorerFlowGraph<FutureSettlementDemoEvent> {
   return {
@@ -34,43 +35,25 @@ function createFutureSettlementFlow(): ExplorerFlowGraph<FutureSettlementDemoEve
   };
 }
 
-function createFutureSettlementFlowLinks(): readonly ExplorerFlowGraphLink<FutureSettlementDemoEvent>[] {
+function createFutureSettlementFlowLinks(): ExplorerFlowGraph<FutureSettlementDemoEvent>["links"] {
   return [
-    {
-      activeEvents: ["spawn-resolver"],
-      from: "root",
-      kind: "spawn",
-      label: "spawn(receiveSmsCode)",
-      to: "resolver",
-    },
-    {
+    spawnLink("root", "resolver", "spawn(receiveSmsCode)", ["spawn-resolver"]),
+    dependencyLink("resolver", "root", "smsCode", {
       activeEvents: ["wait-code"],
-      from: "resolver",
-      kind: "dependency",
-      label: "smsCode",
-      to: "root",
       visibleLabel: "smsCode",
-    },
+    }),
   ];
 }
 
-function createFutureSettlementFlowNodes(): readonly ExplorerFlowGraphNode<FutureSettlementDemoEvent>[] {
+function createFutureSettlementFlowNodes(): ExplorerFlowGraph<FutureSettlementDemoEvent>["nodes"] {
   return [
-    {
+    parentRoutineNode("root", "verifyPhoneNumber", {
       activeEvents: ["routine", "future", "spawn-resolver", "wait-code", "done"],
       completedEvents: ["done"],
-      id: "root",
-      kind: "parent",
-      label: "verifyPhoneNumber",
-      statusRoutineIds: ["root"],
-    },
-    {
+    }),
+    branchRoutineNode("resolver", "receiveSmsCode", {
       activeEvents: ["spawn-resolver", "resolver-sleep", "settle-code"],
       completedEvents: ["settle-code"],
-      id: "resolver",
-      kind: "branch",
-      label: "receiveSmsCode",
-      statusRoutineIds: ["resolver"],
-    },
+    }),
   ];
 }

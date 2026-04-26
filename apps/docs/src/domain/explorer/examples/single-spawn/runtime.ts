@@ -1,14 +1,12 @@
 // oxlint-disable max-lines-per-function
-import type {
-  ExplorerExampleCodeLine,
-  ExplorerReplayCursor,
-  ExplorerReplayEmit,
-} from "#/domain/explorer/contract";
+import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
+import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
-export function createSingleSpawnDemoCode(): readonly ExplorerExampleCodeLine<SingleSpawnDemoEvent>[] {
+// oxlint-disable-next-line explicit-module-boundary-types
+export function createSingleSpawnDemoCode() {
   return [
     codeLine("routine", "function* submitOrder() {", ["done"]),
     codeLine("spawn-receipt", "  yield* spawn(function* sendReceiptEmail() {", ["done"]),
@@ -22,8 +20,8 @@ export function createSingleSpawnDemoCode(): readonly ExplorerExampleCodeLine<Si
 
 export function* singleSpawnDemo(
   emit: ExplorerReplayEmit<SingleSpawnDemoEvent>,
-): RiteCoroutine<SingleSpawnDemoResult> {
-  return yield* enclose(function* submitOrder(): RiteCoroutine<SingleSpawnDemoResult> {
+): RiteCoroutine<string> {
+  return yield* enclose(function* submitOrder(): RiteCoroutine<string> {
     yield* emit({
       cursor: cursorAt("root", "spawn-receipt", "running"),
     });
@@ -60,42 +58,6 @@ export function* singleSpawnDemo(
   });
 }
 
-export type SingleSpawnDemoResult = string;
+export type SingleSpawnDemoEvent = ReturnType<typeof createSingleSpawnDemoCode>[number]["id"];
 
 const receiptDelayMs = 1000;
-
-const singleSpawnDemoLineIds = [
-  "routine",
-  "spawn-receipt",
-  "receipt-sleep",
-  "receipt-return",
-  "receipt-close",
-  "return-accepted",
-  "done",
-] as const;
-
-export type SingleSpawnDemoEvent = (typeof singleSpawnDemoLineIds)[number];
-
-function codeLine(
-  id: SingleSpawnDemoEvent,
-  text: string,
-  completedEvents?: readonly SingleSpawnDemoEvent[],
-): ExplorerExampleCodeLine<SingleSpawnDemoEvent> {
-  if (!completedEvents) {
-    return { id, text };
-  }
-
-  return { completedEvents, id, text };
-}
-
-function cursorAt(
-  routineId: string,
-  event: SingleSpawnDemoEvent | readonly SingleSpawnDemoEvent[],
-  mode: ExplorerReplayCursor<SingleSpawnDemoEvent>["mode"],
-): ExplorerReplayCursor<SingleSpawnDemoEvent> {
-  return {
-    events: typeof event === "string" ? [event] : event,
-    mode,
-    routineId,
-  };
-}

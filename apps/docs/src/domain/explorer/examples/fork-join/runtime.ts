@@ -1,14 +1,12 @@
 // oxlint-disable max-lines-per-function
-import type {
-  ExplorerExampleCodeLine,
-  ExplorerReplayCursor,
-  ExplorerReplayEmit,
-} from "#/domain/explorer/contract";
+import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, spawn, wait } from "@shajara/host/primitives";
+import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
-export function createLoadPageDemoCode(): readonly ExplorerExampleCodeLine<LoadPageDemoEvent>[] {
+// oxlint-disable-next-line explicit-module-boundary-types
+export function createLoadPageDemoCode() {
   return [
     codeLine("routine", "function* loadPage() {", ["done"]),
     codeLine("spawn-header", "  const header = yield* spawn(function* loadHeader() {", [
@@ -104,48 +102,7 @@ export interface LoadPageDemoResult {
   sidebar: string;
 }
 
+export type LoadPageDemoEvent = ReturnType<typeof createLoadPageDemoCode>[number]["id"];
+
 const headerDelayMs = 1000;
 const sidebarDelayMs = 2000;
-
-const loadPageDemoLineIds = [
-  "routine",
-  "spawn-header",
-  "header-sleep",
-  "header-return",
-  "header-close",
-  "spawn-sidebar",
-  "sidebar-sleep",
-  "sidebar-return",
-  "sidebar-close",
-  "wait-open",
-  "wait-header",
-  "wait-sidebar",
-  "wait-close",
-  "done",
-] as const;
-
-export type LoadPageDemoEvent = (typeof loadPageDemoLineIds)[number];
-
-function codeLine(
-  id: LoadPageDemoEvent,
-  text: string,
-  completedEvents?: readonly LoadPageDemoEvent[],
-): ExplorerExampleCodeLine<LoadPageDemoEvent> {
-  if (!completedEvents) {
-    return { id, text };
-  }
-
-  return { completedEvents, id, text };
-}
-
-function cursorAt(
-  routineId: string,
-  event: LoadPageDemoEvent | readonly LoadPageDemoEvent[],
-  mode: ExplorerReplayCursor<LoadPageDemoEvent>["mode"],
-): ExplorerReplayCursor<LoadPageDemoEvent> {
-  return {
-    events: typeof event === "string" ? [event] : event,
-    mode,
-    routineId,
-  };
-}

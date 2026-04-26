@@ -1,14 +1,12 @@
 // oxlint-disable max-lines-per-function
-import type {
-  ExplorerExampleCodeLine,
-  ExplorerReplayCursor,
-  ExplorerReplayEmit,
-} from "#/domain/explorer/contract";
+import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, future, settle, spawn, wait } from "@shajara/host/primitives";
+import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
-export function createFutureSettlementDemoCode(): readonly ExplorerExampleCodeLine<FutureSettlementDemoEvent>[] {
+// oxlint-disable-next-line explicit-module-boundary-types
+export function createFutureSettlementDemoCode() {
   return [
     codeLine("routine", "function* verifyPhoneNumber() {", ["done"]),
     codeLine("future", "  const [smsCode, provideSmsCode] = yield* future<string>();", ["future"]),
@@ -23,8 +21,8 @@ export function createFutureSettlementDemoCode(): readonly ExplorerExampleCodeLi
 
 export function* futureSettlementDemo(
   emit: ExplorerReplayEmit<FutureSettlementDemoEvent>,
-): RiteCoroutine<FutureSettlementDemoResult> {
-  return yield* enclose(function* verifyPhoneNumber(): RiteCoroutine<FutureSettlementDemoResult> {
+): RiteCoroutine<string> {
+  return yield* enclose(function* verifyPhoneNumber(): RiteCoroutine<string> {
     yield* emit({
       cursor: cursorAt("root", "future", "running"),
     });
@@ -71,43 +69,8 @@ export function* futureSettlementDemo(
   });
 }
 
-export type FutureSettlementDemoResult = string;
+export type FutureSettlementDemoEvent = ReturnType<
+  typeof createFutureSettlementDemoCode
+>[number]["id"];
 
 const resolverDelayMs = 1000;
-
-const futureSettlementDemoLineIds = [
-  "routine",
-  "future",
-  "spawn-resolver",
-  "resolver-sleep",
-  "settle-code",
-  "resolver-close",
-  "wait-code",
-  "done",
-] as const;
-
-export type FutureSettlementDemoEvent = (typeof futureSettlementDemoLineIds)[number];
-
-function codeLine(
-  id: FutureSettlementDemoEvent,
-  text: string,
-  completedEvents?: readonly FutureSettlementDemoEvent[],
-): ExplorerExampleCodeLine<FutureSettlementDemoEvent> {
-  if (!completedEvents) {
-    return { id, text };
-  }
-
-  return { completedEvents, id, text };
-}
-
-function cursorAt(
-  routineId: string,
-  event: FutureSettlementDemoEvent | readonly FutureSettlementDemoEvent[],
-  mode: ExplorerReplayCursor<FutureSettlementDemoEvent>["mode"],
-): ExplorerReplayCursor<FutureSettlementDemoEvent> {
-  return {
-    events: typeof event === "string" ? [event] : event,
-    mode,
-    routineId,
-  };
-}
