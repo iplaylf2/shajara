@@ -1,0 +1,87 @@
+import type { AllAggregationDemoEvent, AllAggregationDemoResult } from "./runtime";
+import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import { allAggregationDemo, createAllAggregationDemoCode } from "./runtime";
+import {
+  branchRoutineNode,
+  dependencyLink,
+  parentRoutineNode,
+  spawnLink,
+} from "#/domain/explorer/examples-kit";
+
+export const allAggregationExample = {
+  descriptionKey: "explorer.examples.all-aggregation.description",
+  guideKeys: [
+    "explorer.examples.all-aggregation.guide.branches",
+    "explorer.examples.all-aggregation.guide.future",
+  ],
+  id: "all-aggregation",
+  stage: {
+    code: createAllAggregationDemoCode(),
+    flow: createAllAggregationFlow(),
+    replay: {
+      replayDelayMs: 1400,
+      runtime: {
+        createRoutine: () => allAggregationDemo,
+      },
+    },
+  },
+  titleKey: "explorer.examples.all-aggregation.title",
+} as const satisfies ExplorerExample<AllAggregationDemoEvent, AllAggregationDemoResult, string>;
+
+function createAllAggregationFlow(): ExplorerFlowGraph<AllAggregationDemoEvent> {
+  return {
+    links: createAllAggregationFlowLinks(),
+    nodes: createAllAggregationFlowNodes(),
+  };
+}
+
+function createAllAggregationFlowLinks(): ExplorerFlowGraph<AllAggregationDemoEvent>["links"] {
+  return [
+    spawnLink("root", "result", "all(pageData)", ["all-open"]),
+    spawnLink("result", "user", "loadUser", ["launch-user"]),
+    spawnLink("result", "settings", "loadSettings", ["launch-settings"]),
+    dependencyLink("user", "result", "user result", {
+      activeEvents: ["all-wait-user"],
+    }),
+    dependencyLink("settings", "result", "settings result", {
+      activeEvents: ["all-wait-settings"],
+    }),
+    dependencyLink("result", "root", "wait(pageData)", {
+      activeEvents: ["wait-all"],
+    }),
+  ];
+}
+
+function createAllAggregationFlowNodes(): ExplorerFlowGraph<AllAggregationDemoEvent>["nodes"] {
+  return [
+    parentRoutineNode("root", "renderDashboard", {
+      activeEvents: ["routine", "all-open", "wait-all", "return-page", "done"],
+      completedEvents: ["done"],
+    }),
+    branchRoutineNode("user", "loadUser", {
+      activeEvents: ["user-open", "user-sleep", "user-return"],
+      completedEvents: ["user-return"],
+    }),
+    branchRoutineNode("settings", "loadSettings", {
+      activeEvents: ["settings-open", "settings-sleep", "settings-return"],
+      completedEvents: ["settings-return"],
+    }),
+    {
+      activeEvents: [
+        "all-open",
+        "launch-user",
+        "launch-settings",
+        "all-wait-user",
+        "all-wait-settings",
+        "wait-all",
+        "user-return",
+        "settings-return",
+      ],
+      completedEvents: ["wait-all"],
+      id: "result",
+      kind: "join",
+      label: "pageData",
+      statusRoutineIds: ["root", "all"],
+    },
+  ];
+}

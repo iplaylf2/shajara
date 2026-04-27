@@ -9,6 +9,8 @@ import { channel, receive, send } from "@shajara/host/primitives";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
+const emptyEventCount = 0;
+
 export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
   emit: (trace: ExplorerReplayTrace<TEvent>) => RiteCoroutine<void>;
   finish: () => RiteCoroutine<void>;
@@ -44,8 +46,14 @@ function applyReplayTrace<TEvent extends ExplorerEventId>(
   if (trace.clearCursor) {
     cursorsByRoutine.delete(trace.clearCursor);
   }
+  for (const routineId of trace.clearCursors ?? []) {
+    cursorsByRoutine.delete(routineId);
+  }
   if (trace.cursor) {
     cursorsByRoutine.set(trace.cursor.routineId, trace.cursor);
+  }
+  for (const cursor of trace.cursors ?? []) {
+    cursorsByRoutine.set(cursor.routineId, cursor);
   }
 
   const cursors = [...cursorsByRoutine.values()];
@@ -61,11 +69,18 @@ function appendCompletedEvent<TEvent extends ExplorerEventId>(
   completed: readonly TEvent[],
   trace: ExplorerReplayTrace<TEvent>,
 ): readonly TEvent[] {
-  if (!("completed" in trace) || completed.includes(trace.completed)) {
+  if (!("completed" in trace)) {
     return completed;
   }
 
-  return [...completed, trace.completed];
+  const entries = Array.isArray(trace.completed) ? trace.completed : [trace.completed];
+  const nextEntries = entries.filter((event) => !completed.includes(event));
+
+  if (nextEntries.length === emptyEventCount) {
+    return completed;
+  }
+
+  return [...completed, ...nextEntries];
 }
 
 export function* playbackReplayFrames<TEvent extends ExplorerEventId>(

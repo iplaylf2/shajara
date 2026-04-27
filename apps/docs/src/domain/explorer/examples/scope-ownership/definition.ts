@@ -38,10 +38,13 @@ function createScopeOwnershipFlow(): ExplorerFlowGraph<ScopeOwnershipDemoEvent> 
 
 function createScopeOwnershipFlowLinks(): ExplorerFlowGraph<ScopeOwnershipDemoEvent>["links"] {
   return [
-    spawnLink("root", "index", "enclose -> spawn(updateSearchIndex)", ["spawn-index"]),
-    dependencyLink("index", "root", "enclose waits for owned process", {
-      activeEvents: ["scope-wait"],
-      visibleLabel: "owned",
+    spawnLink("root", "scope", "enclose(commitArticle)", ["launch-scope"]),
+    spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
+    dependencyLink("index", "scope", "owned process", {
+      activeEvents: ["scope-wait-index"],
+    }),
+    dependencyLink("scope", "root", "enclose waits for child scope", {
+      activeEvents: ["scope-wait-root"],
     }),
   ];
 }
@@ -52,15 +55,33 @@ function createScopeOwnershipFlowNodes(): ExplorerFlowGraph<ScopeOwnershipDemoEv
       activeEvents: [
         "routine",
         "enclose-open",
-        "scope-wait",
+        "launch-scope",
+        "scope-wait-root",
         "enclose-close",
         "return-result",
         "done",
       ],
       completedEvents: ["done"],
     }),
+    {
+      activeEvents: [
+        "enclose-open",
+        "launch-scope",
+        "launch-index",
+        "spawn-index",
+        "inner-return",
+        "scope-wait-index",
+        "scope-wait-root",
+        "enclose-close",
+      ],
+      completedEvents: ["enclose-close"],
+      id: "scope",
+      kind: "join",
+      label: "commitArticle",
+      statusRoutineIds: ["scope", "root"],
+    },
     branchRoutineNode("index", "updateSearchIndex", {
-      activeEvents: ["spawn-index", "index-sleep", "enclose-close", "index-close"],
+      activeEvents: ["spawn-index", "index-sleep", "scope-wait-index", "index-close"],
       completedEvents: ["index-close"],
     }),
   ];

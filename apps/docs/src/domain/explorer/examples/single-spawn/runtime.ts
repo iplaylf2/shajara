@@ -37,8 +37,8 @@ export function* singleSpawnDemo(
         return "receipt sent";
       } finally {
         yield* emit({
-          clearCursor: "receipt",
-          completed: "receipt-return",
+          clearCursors: ["receipt", "root"],
+          completed: ["receipt-return", "wait-receipt", "done"],
         });
       }
     });
@@ -51,13 +51,14 @@ export function* singleSpawnDemo(
       return "order accepted";
     } finally {
       yield* emit({
-        clearCursor: "root",
-        completed: "done",
+        cursor: cursorAt("root", "wait-receipt", "blocked"),
       });
     }
   });
 }
 
-export type SingleSpawnDemoEvent = ReturnType<typeof createSingleSpawnDemoCode>[number]["id"];
+export type SingleSpawnDemoEvent =
+  | ReturnType<typeof createSingleSpawnDemoCode>[number]["id"]
+  | "wait-receipt";
 
 const receiptDelayMs = 1000;

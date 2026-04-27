@@ -18,7 +18,7 @@ export function resolveExplorerFlowScene<TEvent extends ExplorerEventId>(
     links,
     markerId: defaultLayout.markerId,
     nodes,
-    viewBox: defaultLayout.viewBox,
+    viewBox: readFlowViewBox(nodes),
   };
 }
 
@@ -77,25 +77,24 @@ const halfDivisor = 2;
 const forwardDirection = 1;
 const backwardDirection = -1;
 const firstBranchIndex = 0;
+const noJoinNodeCount = 0;
 const singleBranchCount = 1;
 const pairedBranchCount = 2;
 const linkAnchorInsetRatio = 0.22;
 const linkAnchorOutsetRatio = 0.78;
 const linkControlFromOffsetX = 76;
 const linkControlToOffsetX = 84;
+const viewBoxHeight = 224;
+const viewBoxMinX = 24;
+const viewBoxMinY = 24;
+const viewBoxPaddingRight = 24;
+const viewBoxWidth = 650;
 
 const defaultLayout = {
   columns: [parentColumnX, branchColumnX, joinColumnX],
   lanes: [topLaneY, centerLaneY, bottomLaneY],
   markerId: "explorer-flow-arrow",
-  viewBox: "24 24 650 224",
 } as const;
-
-const flowColumns = {
-  branch: branchColumn,
-  join: joinColumn,
-  parent: parentColumn,
-} as const satisfies Record<ExplorerFlowNodeVariant, FlowColumn>;
 
 const nodeSize = {
   branch: { height: branchNodeHeight, width: branchNodeWidth },
@@ -119,21 +118,29 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
   const branchNodes = graphNodes.filter((node) => node.kind === "branch");
   const joinNodes = graphNodes.filter((node) => node.kind === "join");
   const resolvedCenterLane = readCenterLane(branchNodes.length);
+  const hasJoinNode = joinNodes.length > noJoinNodeCount;
 
   return [
-    ...parentNodes.map((node) => createFlowNode(node, resolvedCenterLane)),
+    ...parentNodes.map((node) => createFlowNode(node, resolvedCenterLane, parentColumn)),
     ...branchNodes.map((node, index) =>
-      createFlowNode(node, readBranchLane(index, branchNodes.length)),
+      createFlowNode(
+        node,
+        readBranchLane(index, branchNodes.length),
+        readBranchColumn(hasJoinNode),
+      ),
     ),
-    ...joinNodes.map((node) => createFlowNode(node, resolvedCenterLane)),
+    ...joinNodes.map((node) =>
+      createFlowNode(node, resolvedCenterLane, readJoinColumn(hasJoinNode)),
+    ),
   ];
 }
 
 function createFlowNode<TEvent extends ExplorerEventId>(
   node: ExplorerFlowGraphNode<TEvent>,
   lane: FlowLane,
+  column: FlowColumn,
 ): ExplorerFlowNode<TEvent> {
-  const left = readColumn(flowColumns[node.kind]);
+  const left = readColumn(column);
   const top = readLane(lane);
   const size = nodeSize[node.kind];
   const centerY = top + size.height / halfDivisor;
@@ -263,10 +270,27 @@ function readBranchLane(index: number, branchCount: number): FlowLane {
   return index as FlowLane;
 }
 
+function readBranchColumn(hasJoinNode: boolean): FlowColumn {
+  return hasJoinNode ? joinColumn : branchColumn;
+}
+
+function readJoinColumn(hasJoinNode: boolean): FlowColumn {
+  return hasJoinNode ? branchColumn : joinColumn;
+}
+
 function readColumn(column: FlowColumn): number {
   return defaultLayout.columns[column];
 }
 
 function readLane(lane: FlowLane): number {
   return defaultLayout.lanes[lane];
+}
+
+function readFlowViewBox<TEvent extends ExplorerEventId>(
+  nodes: readonly ExplorerFlowNode<TEvent>[],
+): string {
+  const maxNodeRight = Math.max(...nodes.map((node) => node.left + node.width));
+  const width = Math.max(viewBoxWidth, maxNodeRight - viewBoxMinX + viewBoxPaddingRight);
+
+  return `${viewBoxMinX} ${viewBoxMinY} ${width} ${viewBoxHeight}`;
 }

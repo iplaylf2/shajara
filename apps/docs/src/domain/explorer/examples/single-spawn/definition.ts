@@ -1,5 +1,10 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
-import { branchRoutineNode, parentRoutineNode, spawnLink } from "#/domain/explorer/examples-kit";
+import {
+  branchRoutineNode,
+  dependencyLink,
+  parentRoutineNode,
+  spawnLink,
+} from "#/domain/explorer/examples-kit";
 import { createSingleSpawnDemoCode, singleSpawnDemo } from "./runtime";
 import type { SingleSpawnDemoEvent } from "./runtime";
 
@@ -31,13 +36,18 @@ function createSingleSpawnFlow(): ExplorerFlowGraph<SingleSpawnDemoEvent> {
 }
 
 function createSingleSpawnFlowLinks(): ExplorerFlowGraph<SingleSpawnDemoEvent>["links"] {
-  return [spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"])];
+  return [
+    spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"]),
+    dependencyLink("receipt", "root", "scope waits for sendReceiptEmail", {
+      activeEvents: ["wait-receipt"],
+    }),
+  ];
 }
 
 function createSingleSpawnFlowNodes(): ExplorerFlowGraph<SingleSpawnDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "submitOrder", {
-      activeEvents: ["routine", "spawn-receipt", "return-accepted", "done"],
+      activeEvents: ["routine", "spawn-receipt", "return-accepted", "wait-receipt", "done"],
       completedEvents: ["done"],
     }),
     branchRoutineNode("receipt", "sendReceiptEmail", {

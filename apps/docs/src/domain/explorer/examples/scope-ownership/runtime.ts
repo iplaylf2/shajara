@@ -27,11 +27,11 @@ export function* scopeOwnershipDemo(
 ): RiteCoroutine<string> {
   return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
     yield* emit({
-      cursor: cursorAt("root", "enclose-open", "running"),
+      cursor: cursorAt("root", ["enclose-open", "launch-scope"], "running"),
     });
     const result = yield* enclose(function* commitArticle(): RiteCoroutine<string> {
       yield* emit({
-        cursor: cursorAt("scope", "spawn-index", "running"),
+        cursor: cursorAt("scope", ["launch-index", "spawn-index"], "running"),
       });
       yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
         yield* emit({
@@ -40,7 +40,7 @@ export function* scopeOwnershipDemo(
         yield* sleep(indexDelayMs);
         yield* emit({
           clearCursor: "index",
-          completed: "index-close",
+          completed: ["index-close", "scope-wait-index"],
         });
       });
 
@@ -51,15 +51,18 @@ export function* scopeOwnershipDemo(
         return "published";
       } finally {
         yield* emit({
-          clearCursor: "scope",
           completed: "inner-return",
-          cursor: cursorAt("root", ["enclose-open", "scope-wait"], "blocked"),
+          cursors: [
+            cursorAt("root", ["enclose-open", "scope-wait-root"], "blocked"),
+            cursorAt("scope", "scope-wait-index", "blocked"),
+          ],
         });
       }
     });
 
     yield* emit({
-      completed: "enclose-close",
+      clearCursor: "scope",
+      completed: ["enclose-close", "scope-wait-root"],
       cursor: cursorAt("root", "return-result", "running"),
     });
     try {
@@ -75,6 +78,9 @@ export function* scopeOwnershipDemo(
 
 export type ScopeOwnershipDemoEvent =
   | ReturnType<typeof createScopeOwnershipDemoCode>[number]["id"]
-  | "scope-wait";
+  | "launch-scope"
+  | "launch-index"
+  | "scope-wait-index"
+  | "scope-wait-root";
 
 const indexDelayMs = 1000;

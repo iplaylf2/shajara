@@ -71,8 +71,10 @@ export interface ExplorerReplayCursor<TEvent extends ExplorerEventId> {
 
 export interface ExplorerReplayTrace<TEvent extends ExplorerEventId> {
   clearCursor?: ExplorerRoutineId;
-  completed?: TEvent;
+  clearCursors?: readonly ExplorerRoutineId[];
+  completed?: TEvent | readonly TEvent[];
   cursor?: ExplorerReplayCursor<TEvent>;
+  cursors?: readonly ExplorerReplayCursor<TEvent>[];
 }
 
 export type ExplorerReplayEmit<TEvent extends ExplorerEventId> = (

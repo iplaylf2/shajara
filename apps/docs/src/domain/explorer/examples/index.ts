@@ -1,6 +1,8 @@
 import type { ArrayValues } from "type-fest";
+import { allAggregationExample } from "./all-aggregation";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
+import { raceWinnerExample } from "./race-winner";
 import { scopeOwnershipExample } from "./scope-ownership";
 import { singleSpawnExample } from "./single-spawn";
 
@@ -17,6 +19,8 @@ export const explorerExamples = [
   futureSettlementExample,
   scopeOwnershipExample,
   forkJoinExample,
+  allAggregationExample,
+  raceWinnerExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
@@ -46,8 +50,10 @@ const explorerExampleDefinitions: {
     { readonly id: ExampleId }
   >;
 } = {
+  [allAggregationExample.id]: allAggregationExample,
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
+  [raceWinnerExample.id]: raceWinnerExample,
   [scopeOwnershipExample.id]: scopeOwnershipExample,
   [singleSpawnExample.id]: singleSpawnExample,
 };
