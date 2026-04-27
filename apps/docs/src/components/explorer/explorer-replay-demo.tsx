@@ -15,12 +15,13 @@ import { ExplorerFlowView } from "./explorer-flow-view";
 import type { ReplayCodeView } from "./explorer-replay-code-view";
 import type { RiteCoroutine } from "@shajara/host";
 import { createCodeScroller } from "./explorer-code-scroller";
+import { createPendingExplorerReplayState } from "#/domain/explorer/contract";
 import { readExplorerReplayRuntime } from "#/domain/explorer/examples";
 import styles from "./explorer.module.css";
 
 export function ExplorerReplayDemo(props: Props): JSX.Element {
   const [state, setState] = createSignal<ExplorerReplayState<ExplorerExampleEvent>>(
-    props.stage.replay.initialState,
+    createPendingExplorerReplayState(),
   );
   const [isCodeAutoScrollEnabled, setCodeAutoScrollEnabled] = createSignal(true);
 
@@ -75,7 +76,6 @@ interface Props {
 interface ExplorerReplayStage {
   eventIds: readonly ExplorerExampleEvent[];
   replay: {
-    initialState: ExplorerReplayState<ExplorerExampleEvent>;
     replayDelayMs: number;
   };
   scene: ExplorerFlowScene<ExplorerExampleEvent>;
@@ -150,26 +150,23 @@ class ExplorerReplaySession {
   }
 
   *#runReplayCycle(): RiteCoroutine<void> {
-    this.#setState(this.#stage.replay.initialState);
-    syncCodeLines(
-      this.#codeView,
-      this.#stage.replay.initialState.cursors,
-      this.#stage.replay.initialState.completed,
-    );
+    const pendingState = createPendingExplorerReplayState<ExplorerExampleEvent>();
+    this.#setState(pendingState);
+    syncCodeLines(this.#codeView, pendingState.cursors, pendingState.completed);
 
     yield* sleep(this.#stage.replay.replayDelayMs);
-    yield* this.#playReplayRoutine();
+    yield* this.#playReplayRoutine(pendingState);
   }
 
-  *#playReplayRoutine(): RiteCoroutine<void> {
-    const frameStream = yield* createReplayFrameStream<ExplorerExampleEvent>(
-      this.#stage.replay.initialState,
-    );
+  *#playReplayRoutine(
+    pendingState: ExplorerReplayState<ExplorerExampleEvent>,
+  ): RiteCoroutine<void> {
+    const frameStream = yield* createReplayFrameStream<ExplorerExampleEvent>(pendingState);
     const replayRoutine = this.#replayRuntime.createRoutine();
     const playback = yield* spawn(() =>
       playbackReplayFrames(
         frameStream,
-        this.#stage.replay.initialState,
+        pendingState,
         {
           isOpen: () => this.#isMounted,
           write: this.#updateState,

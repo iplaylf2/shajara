@@ -35,7 +35,6 @@ export function ExplorerFlowView<TEvent extends ExplorerEventId>(
   );
 }
 
-const emptyLength = 0;
 const half = 2;
 const nodeTextStackOffsetY = 12;
 
@@ -95,13 +94,13 @@ function FlowNode<TEvent extends string>(props: {
 
   return (
     <g
-      class={classes(
-        flowNodeClasses[props.node.variant],
-        isActive && styles["flowNodeActive"]!,
-        props.status === "running" && styles["flowNodeRunning"]!,
-        props.status === "blocked" && styles["flowNodeBlocked"]!,
-        props.status === "done" && styles["flowNodeDone"]!,
-      )}
+      classList={{
+        [flowNodeClasses[props.node.variant]]: true,
+        [styles["flowNodeActive"]!]: isActive,
+        [styles["flowNodeBlocked"]!]: props.status === "blocked",
+        [styles["flowNodeDone"]!]: props.status === "done",
+        [styles["flowNodeRunning"]!]: props.status === "running",
+      }}
     >
       <rect
         class={styles["flowNode"]}
@@ -136,12 +135,12 @@ function FlowNodeStatus<TEvent extends string>(props: {
 }): JSX.Element {
   return (
     <text
-      class={classes(
-        styles["flowNodeStatus"]!,
-        props.status === "blocked" && styles["flowNodeStatusBlocked"]!,
-        props.status === "done" && styles["flowNodeStatusDone"]!,
-        props.status === "pending" && styles["flowNodeStatusPending"]!,
-      )}
+      classList={{
+        [styles["flowNodeStatus"]!]: true,
+        [styles["flowNodeStatusBlocked"]!]: props.status === "blocked",
+        [styles["flowNodeStatusDone"]!]: props.status === "done",
+        [styles["flowNodeStatusPending"]!]: props.status === "pending",
+      }}
       x={String(props.node.left + props.node.width / half)}
       y={String(props.node.centerY + nodeTextStackOffsetY)}
     >
@@ -163,25 +162,44 @@ function FlowLinks<TEvent extends string>(props: {
 
         return (
           <g
-            class={classes(
-              styles["flowLinkGroup"]!,
-              flowLinkClasses[link.variant],
-              isConsumed && styles["flowLinkGroupConsumed"]!,
-              isDependencyTrail && styles["flowLinkGroupSettledDependency"]!,
-              mode === "running" && styles["flowLinkGroupRunning"]!,
-              mode === "blocked" && styles["flowLinkGroupBlocked"]!,
-            )}
+            classList={{
+              [flowLinkClasses[link.variant]]: true,
+              [styles["flowLinkGroup"]!]: true,
+              [styles["flowLinkGroupBlocked"]!]: mode === "blocked",
+              [styles["flowLinkGroupConsumed"]!]: isConsumed,
+              [styles["flowLinkGroupRunning"]!]: mode === "running",
+              [styles["flowLinkGroupSettledDependency"]!]: isDependencyTrail,
+            }}
           >
             <path
               class={styles["flowLink"]}
               d={link.path}
               marker-end={`url(#${props.scene.markerId})`}
             />
+            <FlowLinkLabel link={link} />
             <title>{link.label}</title>
           </g>
         );
       })}
     </>
+  );
+}
+
+function FlowLinkLabel<TEvent extends string>(props: {
+  link: ExplorerFlowScene<TEvent>["links"][number];
+}): JSX.Element {
+  if (!props.link.visibleLabel) {
+    return <></>;
+  }
+
+  return (
+    <text
+      class={styles["flowLinkLabel"]}
+      x={String(props.link.labelX)}
+      y={String(props.link.labelY)}
+    >
+      {props.link.visibleLabel}
+    </text>
   );
 }
 
@@ -253,14 +271,6 @@ function readNodeStatus<TEvent extends ExplorerEventId>(
   }
 
   return null;
-}
-
-function classes(...values: (string | false)[]): string {
-  return values.filter(isClassName).join(" ");
-}
-
-function isClassName(value: string | false): value is string {
-  return typeof value === "string" && value.length > emptyLength;
 }
 
 interface Props<TEvent extends ExplorerEventId> {

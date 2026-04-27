@@ -1,5 +1,10 @@
 import type { ArrayValues } from "type-fest";
+import { allResultsExample } from "./all-results";
+import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
+import { futureSettlementExample } from "./future-settlement";
+import { scopeOwnershipExample } from "./scope-ownership";
+import { singleSpawnExample } from "./single-spawn";
 
 export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
   return explorerExampleDefinitions[exampleId];
@@ -9,13 +14,35 @@ export function readExplorerReplayRuntime(exampleId: ExplorerExampleId): Explore
   return readExplorerExample(exampleId).stage.replay.runtime;
 }
 
-export const explorerExamples = [forkJoinExample] as const;
-export const DEFAULT_EXPLORER_EXAMPLE_ID = forkJoinExample.id;
+export const explorerExamples = [
+  singleSpawnExample,
+  futureSettlementExample,
+  scopeOwnershipExample,
+  forkJoinExample,
+  allResultsExample,
+  firstResultExample,
+] as const;
+export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
 export type ExplorerExampleDefinition = ArrayValues<typeof explorerExamples>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
-export type ExplorerExampleEvent = ExplorerExampleDefinition["stage"]["code"][number]["id"];
+export type ExplorerExampleEvent =
+  ExplorerExampleDefinition extends ExplorerExampleDefinitionWithEvent<infer Event> ? Event : never;
 export type ExplorerReplayRuntime = ExplorerExampleDefinition["stage"]["replay"]["runtime"];
+
+interface ExplorerExampleDefinitionWithEvent<Event extends string> {
+  readonly stage: {
+    readonly flow: {
+      readonly links: readonly {
+        readonly activeEvents: readonly Event[];
+      }[];
+      readonly nodes: readonly {
+        readonly activeEvents: readonly Event[];
+        readonly completedEvents: readonly Event[];
+      }[];
+    };
+  };
+}
 
 const explorerExampleDefinitions: {
   readonly [ExampleId in ExplorerExampleId]: Extract<
@@ -23,5 +50,10 @@ const explorerExampleDefinitions: {
     { readonly id: ExampleId }
   >;
 } = {
+  [allResultsExample.id]: allResultsExample,
+  [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
+  [firstResultExample.id]: firstResultExample,
+  [scopeOwnershipExample.id]: scopeOwnershipExample,
+  [singleSpawnExample.id]: singleSpawnExample,
 };

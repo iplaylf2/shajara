@@ -1,11 +1,12 @@
-import type {
-  ExplorerExample,
-  ExplorerFlowGraph,
-  ExplorerFlowGraphLink,
-  ExplorerFlowGraphNode,
-} from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
 import type { LoadPageDemoEvent, LoadPageDemoResult } from "./runtime";
-import { createLoadPageDemoCode, initialLoadPageDemoTrace, loadPageDemo } from "./runtime";
+import {
+  branchRoutineNode,
+  dependencyLink,
+  parentRoutineNode,
+  spawnLink,
+} from "#/domain/explorer/examples-kit";
+import { createLoadPageDemoCode, loadPageDemo } from "./runtime";
 
 export const forkJoinExample = {
   descriptionKey: "explorer.examples.fork-join.description",
@@ -15,7 +16,6 @@ export const forkJoinExample = {
     code: createLoadPageDemoCode(),
     flow: createForkJoinFlow(),
     replay: {
-      initialState: initialLoadPageDemoTrace,
       replayDelayMs: 1400,
       runtime: {
         createRoutine: () => loadPageDemo,
@@ -32,42 +32,22 @@ function createForkJoinFlow(): ExplorerFlowGraph<LoadPageDemoEvent> {
   };
 }
 
-function createForkJoinFlowLinks(): readonly ExplorerFlowGraphLink<LoadPageDemoEvent>[] {
+function createForkJoinFlowLinks(): ExplorerFlowGraph<LoadPageDemoEvent>["links"] {
   return [
-    {
-      activeEvents: ["spawn-header"],
-      from: "root",
-      kind: "spawn",
-      label: "spawn(header)",
-      to: "header",
-    },
-    {
-      activeEvents: ["spawn-sidebar"],
-      from: "root",
-      kind: "spawn",
-      label: "spawn(sidebar)",
-      to: "sidebar",
-    },
-    {
+    spawnLink("root", "header", "spawn(header)", ["spawn-header"]),
+    spawnLink("root", "sidebar", "spawn(sidebar)", ["spawn-sidebar"]),
+    dependencyLink("header", "root", "wait(header)", {
       activeEvents: ["wait-header"],
-      from: "header",
-      kind: "dependency",
-      label: "wait(header)",
-      to: "root",
-    },
-    {
+    }),
+    dependencyLink("sidebar", "root", "wait(sidebar)", {
       activeEvents: ["wait-sidebar"],
-      from: "sidebar",
-      kind: "dependency",
-      label: "wait(sidebar)",
-      to: "root",
-    },
+    }),
   ];
 }
 
-function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoEvent>[] {
+function createForkJoinFlowNodes(): ExplorerFlowGraph<LoadPageDemoEvent>["nodes"] {
   return [
-    {
+    parentRoutineNode("root", "loadPage", {
       activeEvents: [
         "routine",
         "spawn-header",
@@ -78,26 +58,14 @@ function createForkJoinFlowNodes(): readonly ExplorerFlowGraphNode<LoadPageDemoE
         "done",
       ],
       completedEvents: ["done"],
-      id: "root",
-      kind: "parent",
-      label: "loadPage",
-      statusRoutineIds: ["root"],
-    },
-    {
+    }),
+    branchRoutineNode("header", "loadHeader", {
       activeEvents: ["spawn-header", "header-sleep", "wait-header", "header-return"],
       completedEvents: ["header-return"],
-      id: "header",
-      kind: "branch",
-      label: "loadHeader",
-      statusRoutineIds: ["header"],
-    },
-    {
+    }),
+    branchRoutineNode("sidebar", "loadSidebar", {
       activeEvents: ["spawn-sidebar", "sidebar-sleep", "wait-sidebar", "sidebar-return"],
       completedEvents: ["sidebar-return"],
-      id: "sidebar",
-      kind: "branch",
-      label: "loadSidebar",
-      statusRoutineIds: ["sidebar"],
-    },
+    }),
   ];
 }

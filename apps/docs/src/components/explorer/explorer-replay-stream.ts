@@ -9,6 +9,8 @@ import { channel, receive, send } from "@shajara/host/primitives";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
+const emptyEventCount = 0;
+
 export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
   emit: (trace: ExplorerReplayTrace<TEvent>) => RiteCoroutine<void>;
   finish: () => RiteCoroutine<void>;
@@ -16,10 +18,10 @@ export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
 }
 
 export function* createReplayFrameStream<TEvent extends ExplorerEventId>(
-  initialState: ExplorerReplayState<TEvent>,
+  baselineState: ExplorerReplayState<TEvent>,
 ): RiteCoroutine<ReplayFrameStream<TEvent>> {
   const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
-  let state = initialState;
+  let state = baselineState;
 
   return {
     *emit(trace) {
@@ -44,8 +46,14 @@ function applyReplayTrace<TEvent extends ExplorerEventId>(
   if (trace.clearCursor) {
     cursorsByRoutine.delete(trace.clearCursor);
   }
+  for (const routineId of trace.clearCursors ?? []) {
+    cursorsByRoutine.delete(routineId);
+  }
   if (trace.cursor) {
     cursorsByRoutine.set(trace.cursor.routineId, trace.cursor);
+  }
+  for (const cursor of trace.cursors ?? []) {
+    cursorsByRoutine.set(cursor.routineId, cursor);
   }
 
   const cursors = [...cursorsByRoutine.values()];
@@ -61,16 +69,23 @@ function appendCompletedEvent<TEvent extends ExplorerEventId>(
   completed: readonly TEvent[],
   trace: ExplorerReplayTrace<TEvent>,
 ): readonly TEvent[] {
-  if (!("completed" in trace) || completed.includes(trace.completed)) {
+  if (!("completed" in trace)) {
     return completed;
   }
 
-  return [...completed, trace.completed];
+  const entries = Array.isArray(trace.completed) ? trace.completed : [trace.completed];
+  const nextEntries = entries.filter((event) => !completed.includes(event));
+
+  if (nextEntries.length === emptyEventCount) {
+    return completed;
+  }
+
+  return [...completed, ...nextEntries];
 }
 
 export function* playbackReplayFrames<TEvent extends ExplorerEventId>(
   stream: ReplayFrameStream<TEvent>,
-  initialState: ExplorerReplayState<TEvent>,
+  baselineState: ExplorerReplayState<TEvent>,
   frameSink: ReplayFrameSink<TEvent>,
   minRenderGapMs: number,
 ): RiteCoroutine<void> {
@@ -83,7 +98,7 @@ export function* playbackReplayFrames<TEvent extends ExplorerEventId>(
       return;
     }
 
-    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, initialState)) {
+    if (previousRenderTimestampMs === null && isSameReplayFrame(frame, baselineState)) {
       continue;
     }
 

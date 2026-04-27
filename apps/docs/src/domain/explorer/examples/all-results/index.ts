@@ -1,0 +1,1 @@
+export { allResultsExample } from "./definition";
