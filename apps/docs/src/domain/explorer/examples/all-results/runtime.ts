@@ -6,7 +6,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 // oxlint-disable-next-line explicit-module-boundary-types
-export function createAllAggregationDemoCode() {
+export function createAllResultsDemoCode() {
   return [
     codeLine("routine", "function* renderDashboard() {", ["done"]),
     codeLine("all-open", "  const pageData = yield* all([", ["wait-all"]),
@@ -25,10 +25,10 @@ export function createAllAggregationDemoCode() {
   ];
 }
 
-export function* allAggregationDemo(
-  emit: ExplorerReplayEmit<AllAggregationDemoEvent>,
-): RiteCoroutine<AllAggregationDemoResult> {
-  return yield* enclose(function* renderDashboard(): RiteCoroutine<AllAggregationDemoResult> {
+export function* allResultsDemo(
+  emit: ExplorerReplayEmit<AllResultsDemoEvent>,
+): RiteCoroutine<AllResultsDemoResult> {
+  return yield* enclose(function* renderDashboard(): RiteCoroutine<AllResultsDemoResult> {
     yield* emit({
       cursors: [
         cursorAt("root", "all-open", "running"),
@@ -100,13 +100,13 @@ export function* allAggregationDemo(
   });
 }
 
-export interface AllAggregationDemoResult {
+export interface AllResultsDemoResult {
   settings: string;
   user: string;
 }
 
-export type AllAggregationDemoEvent =
-  | ReturnType<typeof createAllAggregationDemoCode>[number]["id"]
+export type AllResultsDemoEvent =
+  | ReturnType<typeof createAllResultsDemoCode>[number]["id"]
   | "all-wait-settings"
   | "all-wait-user"
   | "launch-settings"

@@ -6,7 +6,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 // oxlint-disable-next-line explicit-module-boundary-types
-export function createRaceWinnerDemoCode() {
+export function createFirstResultDemoCode() {
   return [
     codeLine("routine", "function* loadProfile() {", ["done"]),
     codeLine("race-open", "  const firstProfile = yield* race([", ["wait-race"]),
@@ -25,8 +25,8 @@ export function createRaceWinnerDemoCode() {
   ];
 }
 
-export function* raceWinnerDemo(
-  emit: ExplorerReplayEmit<RaceWinnerDemoEvent>,
+export function* firstResultDemo(
+  emit: ExplorerReplayEmit<FirstResultDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* loadProfile(): RiteCoroutine<string> {
     yield* emit({
@@ -100,8 +100,8 @@ export function* raceWinnerDemo(
   });
 }
 
-export type RaceWinnerDemoEvent =
-  | ReturnType<typeof createRaceWinnerDemoCode>[number]["id"]
+export type FirstResultDemoEvent =
+  | ReturnType<typeof createFirstResultDemoCode>[number]["id"]
   | "launch-cache"
   | "launch-network"
   | "network-canceled"

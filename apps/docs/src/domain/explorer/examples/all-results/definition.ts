@@ -1,6 +1,6 @@
-import type { AllAggregationDemoEvent, AllAggregationDemoResult } from "./runtime";
+import type { AllResultsDemoEvent, AllResultsDemoResult } from "./runtime";
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
-import { allAggregationDemo, createAllAggregationDemoCode } from "./runtime";
+import { allResultsDemo, createAllResultsDemoCode } from "./runtime";
 import {
   branchRoutineNode,
   dependencyLink,
@@ -8,34 +8,34 @@ import {
   spawnLink,
 } from "#/domain/explorer/examples-kit";
 
-export const allAggregationExample = {
-  descriptionKey: "explorer.examples.all-aggregation.description",
+export const allResultsExample = {
+  descriptionKey: "explorer.examples.all-results.description",
   guideKeys: [
-    "explorer.examples.all-aggregation.guide.branches",
-    "explorer.examples.all-aggregation.guide.future",
+    "explorer.examples.all-results.guide.branches",
+    "explorer.examples.all-results.guide.future",
   ],
-  id: "all-aggregation",
+  id: "all-results",
   stage: {
-    code: createAllAggregationDemoCode(),
-    flow: createAllAggregationFlow(),
+    code: createAllResultsDemoCode(),
+    flow: createAllResultsFlow(),
     replay: {
       replayDelayMs: 1400,
       runtime: {
-        createRoutine: () => allAggregationDemo,
+        createRoutine: () => allResultsDemo,
       },
     },
   },
-  titleKey: "explorer.examples.all-aggregation.title",
-} as const satisfies ExplorerExample<AllAggregationDemoEvent, AllAggregationDemoResult, string>;
+  titleKey: "explorer.examples.all-results.title",
+} as const satisfies ExplorerExample<AllResultsDemoEvent, AllResultsDemoResult, string>;
 
-function createAllAggregationFlow(): ExplorerFlowGraph<AllAggregationDemoEvent> {
+function createAllResultsFlow(): ExplorerFlowGraph<AllResultsDemoEvent> {
   return {
-    links: createAllAggregationFlowLinks(),
-    nodes: createAllAggregationFlowNodes(),
+    links: createAllResultsFlowLinks(),
+    nodes: createAllResultsFlowNodes(),
   };
 }
 
-function createAllAggregationFlowLinks(): ExplorerFlowGraph<AllAggregationDemoEvent>["links"] {
+function createAllResultsFlowLinks(): ExplorerFlowGraph<AllResultsDemoEvent>["links"] {
   return [
     spawnLink("root", "result", "all(pageData)", ["all-open"]),
     spawnLink("result", "user", "loadUser", ["launch-user"]),
@@ -52,7 +52,7 @@ function createAllAggregationFlowLinks(): ExplorerFlowGraph<AllAggregationDemoEv
   ];
 }
 
-function createAllAggregationFlowNodes(): ExplorerFlowGraph<AllAggregationDemoEvent>["nodes"] {
+function createAllResultsFlowNodes(): ExplorerFlowGraph<AllResultsDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "renderDashboard", {
       activeEvents: ["routine", "all-open", "wait-all", "return-page", "done"],

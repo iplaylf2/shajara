@@ -5,37 +5,37 @@ import {
   parentRoutineNode,
   spawnLink,
 } from "#/domain/explorer/examples-kit";
-import { createRaceWinnerDemoCode, raceWinnerDemo } from "./runtime";
-import type { RaceWinnerDemoEvent } from "./runtime";
+import { createFirstResultDemoCode, firstResultDemo } from "./runtime";
+import type { FirstResultDemoEvent } from "./runtime";
 
-export const raceWinnerExample = {
-  descriptionKey: "explorer.examples.race-winner.description",
+export const firstResultExample = {
+  descriptionKey: "explorer.examples.first-result.description",
   guideKeys: [
-    "explorer.examples.race-winner.guide.race",
-    "explorer.examples.race-winner.guide.winner",
+    "explorer.examples.first-result.guide.race",
+    "explorer.examples.first-result.guide.winner",
   ],
-  id: "race-winner",
+  id: "first-result",
   stage: {
-    code: createRaceWinnerDemoCode(),
-    flow: createRaceWinnerFlow(),
+    code: createFirstResultDemoCode(),
+    flow: createFirstResultFlow(),
     replay: {
       replayDelayMs: 1400,
       runtime: {
-        createRoutine: () => raceWinnerDemo,
+        createRoutine: () => firstResultDemo,
       },
     },
   },
-  titleKey: "explorer.examples.race-winner.title",
-} as const satisfies ExplorerExample<RaceWinnerDemoEvent, string, string>;
+  titleKey: "explorer.examples.first-result.title",
+} as const satisfies ExplorerExample<FirstResultDemoEvent, string, string>;
 
-function createRaceWinnerFlow(): ExplorerFlowGraph<RaceWinnerDemoEvent> {
+function createFirstResultFlow(): ExplorerFlowGraph<FirstResultDemoEvent> {
   return {
-    links: createRaceWinnerFlowLinks(),
-    nodes: createRaceWinnerFlowNodes(),
+    links: createFirstResultFlowLinks(),
+    nodes: createFirstResultFlowNodes(),
   };
 }
 
-function createRaceWinnerFlowLinks(): ExplorerFlowGraph<RaceWinnerDemoEvent>["links"] {
+function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["links"] {
   return [
     spawnLink("root", "winner", "race(firstProfile)", ["race-open"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
@@ -52,7 +52,7 @@ function createRaceWinnerFlowLinks(): ExplorerFlowGraph<RaceWinnerDemoEvent>["li
   ];
 }
 
-function createRaceWinnerFlowNodes(): ExplorerFlowGraph<RaceWinnerDemoEvent>["nodes"] {
+function createFirstResultFlowNodes(): ExplorerFlowGraph<FirstResultDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "loadProfile", {
       activeEvents: ["routine", "race-open", "wait-race", "return-profile", "done"],

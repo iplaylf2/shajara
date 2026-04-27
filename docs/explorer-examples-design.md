@@ -27,8 +27,8 @@ Explorer 的示例图解 shajara 边界内的并发编排关系，而不是替�
 | 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。            | future 是 `spawn`、`all`、`race`、resource 和外部输入共同使用的收敛对象。单独展示它可以把“结果收敛”作为独立主题呈现。                      |
 | 3     | Scope Ownership       | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。           | scope 是 shajara 的结构化并发边界。这个示例说明边界内的所有权、完成和收敛，不需要依赖 `run` 或 `createScope` 这类宿主入口。                |
 | 4     | Fork Join             | 一个 process 启动多个并发分支，并在汇合点等待所有需要的结果。                                | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                       |
-| 5     | All Aggregation       | 多个分支并发发起，并把各自结果聚合到一个组合 future。                                        | `all` 的价值不只是“同时跑多个任务”，而是把一组分支表达为一个整体等待点。这个示例展示多个并发分支如何汇成一个聚合结果。                     |
-| 6     | Race Winner           | 多个分支竞争同一个结果，最先完成者决定最终值，其余流程随 arena 收束。                        | `race` 是 fork join 的对照：不是所有结果都需要被消费。它说明 shajara 可以表达“第一个结果足够”的并发意图，并仍然维持结构化收束。            |
+| 5     | All Results           | 多个分支并发发起，并把各自结果聚合到一个组合 future。                                        | `all` 的价值不只是“同时跑多个任务”，而是把一组分支表达为一个整体等待点。这个示例展示多个并发分支如何汇成一个聚合结果。                     |
+| 6     | First Result          | 多个分支竞争同一个结果，最先完成者决定最终值，其余流程随 arena 收束。                        | `race` 是 fork join 的对照：不是所有结果都需要被消费。它说明 shajara 可以表达“第一个结果足够”的并发意图，并仍然维持结构化收束。            |
 | 7     | Rendezvous Channel    | 一个发送者和一个接收者在无缓冲 channel 上相遇后同时继续。                                    | channel 是流程之间传递值的显式通信对象。无缓冲通信最容易动画化“发送和接收互相等待”的关系。                                                 |
 | 8     | Buffered Backpressure | 有界 channel 接收若干值，缓冲满后发送者等待，直到接收者消费。                                | backpressure 是 channel 相比 future 更重要的表达能力。这个示例解释容量不是配置细节，而是流程之间的节奏关系。                               |
 | 9     | Channel Termination   | channel 被显式关闭或因 owning scope 结束而撤销，等待中的发送者和接收者被唤醒。               | close 与 revoke 是理解 channel 生命周期的关键。这个示例说明通信对象也受 scope 所有权管理，不是无主的队列。                                 |
