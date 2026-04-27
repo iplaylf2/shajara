@@ -25,6 +25,7 @@ export function resolveExplorerFlowScene<TEvent extends ExplorerEventId>(
 export interface ExplorerFlowLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   from: string;
+  interruptedEvents?: readonly TEvent[];
   label: string;
   labelX: number;
   labelY: number;
@@ -186,6 +187,7 @@ function createFlowLink<TEvent extends ExplorerEventId>(
     ].join(" "),
     to: link.to,
     variant: link.kind,
+    ...(link.interruptedEvents ? { interruptedEvents: link.interruptedEvents } : {}),
     ...(link.visibleLabel ? { visibleLabel: link.visibleLabel } : {}),
   };
 }

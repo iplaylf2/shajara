@@ -353,6 +353,23 @@
   animation: none;
 }
 
+.flowLinkGroupInterruptedDependency .flowLink {
+  stroke: #b8a89b;
+  stroke-dasharray: 6 8;
+  stroke-width: 1.8;
+  opacity: 0.48;
+  animation: none;
+}
+
+.flowLinkInterruptMark {
+  fill: none;
+  stroke: #9f8f82;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 .flowLinkGroupRunning .flowLink {
   stroke: var(--flow-link-running);
   stroke-dasharray: 650;

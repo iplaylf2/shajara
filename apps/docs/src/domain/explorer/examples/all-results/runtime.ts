@@ -113,4 +113,4 @@ export type AllResultsDemoEvent =
   | "launch-user";
 
 const userDelayMs = 1000;
-const settingsDelayMs = 1800;
+const settingsDelayMs = 2000;
