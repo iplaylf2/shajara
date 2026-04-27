@@ -56,7 +56,7 @@ describe("/ primitives: autonomy", () => {
             yield* park();
           },
           {
-            reaper: function* keepWaitingDuringAdjudication(scope) {
+            reaper: function* reaper(scope) {
               reaped.resolve(scope);
               release.resolve();
             },
@@ -139,7 +139,7 @@ describe("/ primitives: autonomy", () => {
             yield* park();
           },
           {
-            reaper: function* failAdjudication() {
+            reaper: function* reaper() {
               throw cause;
             },
           },
