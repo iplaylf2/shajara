@@ -6,7 +6,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 // oxlint-disable-next-line explicit-module-boundary-types
-export function createScopeBoundaryDemoCode() {
+export function createScopeOwnershipDemoCode() {
   return [
     codeLine("routine", "function* publishArticle() {", ["done"]),
     codeLine("enclose-open", "  const result = yield* enclose(function* commitArticle() {", [
@@ -22,8 +22,8 @@ export function createScopeBoundaryDemoCode() {
   ];
 }
 
-export function* scopeBoundaryDemo(
-  emit: ExplorerReplayEmit<ScopeBoundaryDemoEvent>,
+export function* scopeOwnershipDemo(
+  emit: ExplorerReplayEmit<ScopeOwnershipDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
     yield* emit({
@@ -73,8 +73,8 @@ export function* scopeBoundaryDemo(
   });
 }
 
-export type ScopeBoundaryDemoEvent =
-  | ReturnType<typeof createScopeBoundaryDemoCode>[number]["id"]
+export type ScopeOwnershipDemoEvent =
+  | ReturnType<typeof createScopeOwnershipDemoCode>[number]["id"]
   | "scope-wait";
 
 const indexDelayMs = 1000;

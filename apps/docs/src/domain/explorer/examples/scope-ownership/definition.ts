@@ -1,0 +1,67 @@
+import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import {
+  branchRoutineNode,
+  dependencyLink,
+  parentRoutineNode,
+  spawnLink,
+} from "#/domain/explorer/examples-kit";
+import { createScopeOwnershipDemoCode, scopeOwnershipDemo } from "./runtime";
+import type { ScopeOwnershipDemoEvent } from "./runtime";
+
+export const scopeOwnershipExample = {
+  descriptionKey: "explorer.examples.scope-ownership.description",
+  guideKeys: [
+    "explorer.examples.scope-ownership.guide.enclose",
+    "explorer.examples.scope-ownership.guide.scope",
+    "explorer.examples.scope-ownership.guide.spawn",
+  ],
+  id: "scope-ownership",
+  stage: {
+    code: createScopeOwnershipDemoCode(),
+    flow: createScopeOwnershipFlow(),
+    replay: {
+      replayDelayMs: 1200,
+      runtime: {
+        createRoutine: () => scopeOwnershipDemo,
+      },
+    },
+  },
+  titleKey: "explorer.examples.scope-ownership.title",
+} as const satisfies ExplorerExample<ScopeOwnershipDemoEvent, string, string>;
+
+function createScopeOwnershipFlow(): ExplorerFlowGraph<ScopeOwnershipDemoEvent> {
+  return {
+    links: createScopeOwnershipFlowLinks(),
+    nodes: createScopeOwnershipFlowNodes(),
+  };
+}
+
+function createScopeOwnershipFlowLinks(): ExplorerFlowGraph<ScopeOwnershipDemoEvent>["links"] {
+  return [
+    spawnLink("root", "index", "enclose -> spawn(updateSearchIndex)", ["spawn-index"]),
+    dependencyLink("index", "root", "enclose waits for owned process", {
+      activeEvents: ["scope-wait"],
+      visibleLabel: "owned",
+    }),
+  ];
+}
+
+function createScopeOwnershipFlowNodes(): ExplorerFlowGraph<ScopeOwnershipDemoEvent>["nodes"] {
+  return [
+    parentRoutineNode("root", "publishArticle", {
+      activeEvents: [
+        "routine",
+        "enclose-open",
+        "scope-wait",
+        "enclose-close",
+        "return-result",
+        "done",
+      ],
+      completedEvents: ["done"],
+    }),
+    branchRoutineNode("index", "updateSearchIndex", {
+      activeEvents: ["spawn-index", "index-sleep", "enclose-close", "index-close"],
+      completedEvents: ["index-close"],
+    }),
+  ];
+}
