@@ -7,8 +7,16 @@ import styles from "./explorer.module.css";
 
 const { description, example, guideRows, title } = Astro.props;
 const codeBlockId = `explorer-${example.id}-code`;
+const stageEventIds = [
+  ...new Set(
+    example.stage.code.flatMap((line) => [
+      line.id,
+      ...(line.completedEvents ?? []),
+    ]),
+  ),
+];
 const stage = {
-  eventIds: example.stage.code.map((line) => line.id),
+  eventIds: stageEventIds,
   replay: {
     replayDelayMs: example.stage.replay.replayDelayMs,
   },

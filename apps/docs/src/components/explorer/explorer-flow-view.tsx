@@ -36,6 +36,7 @@ export function ExplorerFlowView<TEvent extends ExplorerEventId>(
 }
 
 const half = 2;
+const flowLinkInterruptMarkRadius = 4;
 const nodeTextStackOffsetY = 12;
 
 const flowNodeClasses = {
@@ -158,7 +159,9 @@ function FlowLinks<TEvent extends string>(props: {
       {props.scene.links.map((link) => {
         const mode = readLinkMode(link.activeEvents, props.state);
         const isConsumed = isSpawnLinkConsumed(link, props.scene, props.state);
-        const isDependencyTrail = isSettledDependencyLink(link, props.state);
+        const isInterruptedDependencyTrail = isInterruptedDependencyLink(link, props.state);
+        const isDependencyTrail =
+          !isInterruptedDependencyTrail && isSettledDependencyLink(link, props.state);
 
         return (
           <g
@@ -167,6 +170,7 @@ function FlowLinks<TEvent extends string>(props: {
               [styles["flowLinkGroup"]!]: true,
               [styles["flowLinkGroupBlocked"]!]: mode === "blocked",
               [styles["flowLinkGroupConsumed"]!]: isConsumed,
+              [styles["flowLinkGroupInterruptedDependency"]!]: isInterruptedDependencyTrail,
               [styles["flowLinkGroupRunning"]!]: mode === "running",
               [styles["flowLinkGroupSettledDependency"]!]: isDependencyTrail,
             }}
@@ -176,6 +180,12 @@ function FlowLinks<TEvent extends string>(props: {
               d={link.path}
               marker-end={`url(#${props.scene.markerId})`}
             />
+            {isInterruptedDependencyTrail && (
+              <path
+                class={styles["flowLinkInterruptMark"]}
+                d={`M${link.labelX - flowLinkInterruptMarkRadius} ${link.labelY - flowLinkInterruptMarkRadius} L${link.labelX + flowLinkInterruptMarkRadius} ${link.labelY + flowLinkInterruptMarkRadius} M${link.labelX + flowLinkInterruptMarkRadius} ${link.labelY - flowLinkInterruptMarkRadius} L${link.labelX - flowLinkInterruptMarkRadius} ${link.labelY + flowLinkInterruptMarkRadius}`}
+              />
+            )}
             <FlowLinkLabel link={link} />
             <title>{link.label}</title>
           </g>
@@ -232,17 +242,24 @@ function isSettledDependencyLink<TEvent extends ExplorerEventId>(
   );
 }
 
+function isInterruptedDependencyLink<TEvent extends ExplorerEventId>(
+  link: ExplorerFlowScene<TEvent>["links"][number],
+  state: ExplorerReplayState<TEvent>,
+): boolean {
+  return (
+    link.variant === "dependency" &&
+    readLinkMode(link.activeEvents, state) === null &&
+    Boolean(link.interruptedEvents && includesAny(state.completed, link.interruptedEvents))
+  );
+}
+
 function readLinkMode<TEvent extends ExplorerEventId>(
   activeEvents: readonly TEvent[],
   state: ExplorerReplayState<TEvent>,
 ): ExplorerReplayCursorMode | null {
   const activeCursor = state.cursors.find((cursor) => includesAny(cursor.events, activeEvents));
 
-  if (activeCursor) {
-    return activeCursor.mode;
-  }
-
-  return null;
+  return activeCursor?.mode ?? null;
 }
 
 function includesAny<TEvent extends ExplorerEventId>(
@@ -266,11 +283,7 @@ function readNodeStatus<TEvent extends ExplorerEventId>(
       includesAny(cursor.events, node.activeEvents),
   );
 
-  if (activeCursor) {
-    return activeCursor.mode;
-  }
-
-  return null;
+  return activeCursor?.mode ?? null;
 }
 
 interface Props<TEvent extends ExplorerEventId> {

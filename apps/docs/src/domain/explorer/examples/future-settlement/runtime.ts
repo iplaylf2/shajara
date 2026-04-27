@@ -1,6 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, future, settle, spawn, wait } from "@shajara/host/primitives";
+import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
@@ -66,8 +67,8 @@ export function* futureSettlementDemo(
   });
 }
 
-export type FutureSettlementDemoEvent = ReturnType<
-  typeof createFutureSettlementDemoCode
->[number]["id"];
+export type FutureSettlementDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createFutureSettlementDemoCode>
+>;
 
 const resolverDelayMs = 1000;

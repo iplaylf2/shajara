@@ -42,9 +42,11 @@ function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["
     spawnLink("winner", "network", "fetchNetwork", ["launch-network"]),
     dependencyLink("cache", "winner", "winner", {
       activeEvents: ["race-wait-cache"],
+      interruptedEvents: ["cache-canceled"],
     }),
     dependencyLink("network", "winner", "loser settles with arena", {
       activeEvents: ["race-wait-network"],
+      interruptedEvents: ["network-canceled"],
     }),
     dependencyLink("winner", "root", "wait(firstProfile)", {
       activeEvents: ["wait-race"],
@@ -59,12 +61,12 @@ function createFirstResultFlowNodes(): ExplorerFlowGraph<FirstResultDemoEvent>["
       completedEvents: ["done"],
     }),
     branchRoutineNode("cache", "readCache", {
-      activeEvents: ["cache-open", "cache-sleep", "cache-return"],
-      completedEvents: ["cache-return"],
+      activeEvents: ["cache-open", "cache-sleep", "cache-return", "cache-canceled"],
+      completedEvents: ["cache-return", "cache-canceled"],
     }),
     branchRoutineNode("network", "fetchNetwork", {
-      activeEvents: ["network-open", "network-sleep", "network-canceled"],
-      completedEvents: ["network-canceled"],
+      activeEvents: ["network-open", "network-sleep", "network-return", "network-canceled"],
+      completedEvents: ["network-return", "network-canceled"],
     }),
     {
       activeEvents: [
@@ -74,6 +76,8 @@ function createFirstResultFlowNodes(): ExplorerFlowGraph<FirstResultDemoEvent>["
         "race-wait-cache",
         "race-wait-network",
         "cache-return",
+        "cache-canceled",
+        "network-return",
         "wait-race",
         "network-canceled",
       ],

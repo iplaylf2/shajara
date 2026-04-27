@@ -1,33 +1,4 @@
-import type {
-  ExplorerExampleCodeLine,
-  ExplorerFlowGraphLink,
-  ExplorerFlowGraphNode,
-  ExplorerReplayCursor,
-} from "#/domain/explorer/contract";
-
-export function codeLine<TEvent extends string>(
-  id: TEvent,
-  text: string,
-  completedEvents?: readonly TEvent[],
-): ExplorerExampleCodeLine<TEvent> {
-  if (!completedEvents) {
-    return { id, text };
-  }
-
-  return { completedEvents, id, text };
-}
-
-export function cursorAt<TEvent extends string>(
-  routineId: string,
-  event: TEvent | readonly TEvent[],
-  mode: ExplorerReplayCursor<TEvent>["mode"],
-): ExplorerReplayCursor<TEvent> {
-  return {
-    events: typeof event === "string" ? [event] : event,
-    mode,
-    routineId,
-  };
-}
+import type { ExplorerFlowGraphLink, ExplorerFlowGraphNode } from "#/domain/explorer/contract";
 
 export function spawnLink<TEvent extends string>(
   from: string,
@@ -50,24 +21,23 @@ export function dependencyLink<TEvent extends string>(
   label: string,
   options: ExplorerFlowLinkActivity<TEvent>,
 ): ExplorerFlowGraphLink<TEvent> {
-  if (options.visibleLabel) {
-    return {
-      activeEvents: options.activeEvents,
-      from,
-      kind: "dependency",
-      label,
-      to,
-      visibleLabel: options.visibleLabel,
-    };
-  }
-
-  return {
+  const link = {
     activeEvents: options.activeEvents,
     from,
     kind: "dependency",
     label,
     to,
-  };
+    ...(options.interruptedEvents ? { interruptedEvents: options.interruptedEvents } : {}),
+  } as const satisfies ExplorerFlowGraphLink<TEvent>;
+
+  if (options.visibleLabel) {
+    return {
+      ...link,
+      visibleLabel: options.visibleLabel,
+    };
+  }
+
+  return link;
 }
 
 export function parentRoutineNode<TEvent extends string>(
@@ -104,6 +74,7 @@ function routineNode<TEvent extends string>(
 
 interface ExplorerFlowLinkActivity<TEvent extends string> {
   activeEvents: readonly TEvent[];
+  interruptedEvents?: readonly TEvent[];
   visibleLabel?: string;
 }
 
