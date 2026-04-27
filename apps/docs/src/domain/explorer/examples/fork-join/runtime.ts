@@ -1,6 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, spawn, wait } from "@shajara/host/primitives";
+import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
@@ -102,7 +103,7 @@ export interface LoadPageDemoResult {
   sidebar: string;
 }
 
-export type LoadPageDemoEvent = ReturnType<typeof createLoadPageDemoCode>[number]["id"];
+export type LoadPageDemoEvent = ExplorerAuthoredEvent<ReturnType<typeof createLoadPageDemoCode>>;
 
 const headerDelayMs = 1000;
 const sidebarDelayMs = 2000;

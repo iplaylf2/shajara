@@ -1,6 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
+import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
@@ -57,8 +58,9 @@ export function* singleSpawnDemo(
   });
 }
 
-export type SingleSpawnDemoEvent =
-  | ReturnType<typeof createSingleSpawnDemoCode>[number]["id"]
-  | "wait-receipt";
+export type SingleSpawnDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createSingleSpawnDemoCode>,
+  "wait-receipt"
+>;
 
 const receiptDelayMs = 1000;

@@ -1,6 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { all, enclose, wait } from "@shajara/host/primitives";
 import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
@@ -105,12 +106,10 @@ export interface AllResultsDemoResult {
   user: string;
 }
 
-export type AllResultsDemoEvent =
-  | ReturnType<typeof createAllResultsDemoCode>[number]["id"]
-  | "all-wait-settings"
-  | "all-wait-user"
-  | "launch-settings"
-  | "launch-user";
+export type AllResultsDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createAllResultsDemoCode>,
+  "all-wait-settings" | "all-wait-user" | "launch-settings" | "launch-user"
+>;
 
 const userDelayMs = 1000;
 const settingsDelayMs = 2000;

@@ -1,6 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { codeLine, cursorAt, raceBranch } from "#/domain/explorer/examples-kit";
 import { enclose, race, wait } from "@shajara/host/primitives";
+import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
@@ -128,14 +129,10 @@ export function* firstResultDemo(
   });
 }
 
-export type FirstResultDemoEvent =
-  | ReturnType<typeof createFirstResultDemoCode>[number]["id"]
-  | "cache-canceled"
-  | "launch-cache"
-  | "launch-network"
-  | "network-canceled"
-  | "race-wait-cache"
-  | "race-wait-network";
+export type FirstResultDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createFirstResultDemoCode>,
+  "launch-cache" | "launch-network" | "race-wait-cache" | "race-wait-network"
+>;
 
 const cacheDelayMs = 1000;
 const networkDelayMs = 2000;

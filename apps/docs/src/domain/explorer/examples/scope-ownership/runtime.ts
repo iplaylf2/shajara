@@ -1,6 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
+import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
@@ -76,11 +77,9 @@ export function* scopeOwnershipDemo(
   });
 }
 
-export type ScopeOwnershipDemoEvent =
-  | ReturnType<typeof createScopeOwnershipDemoCode>[number]["id"]
-  | "launch-scope"
-  | "launch-index"
-  | "scope-wait-index"
-  | "scope-wait-root";
+export type ScopeOwnershipDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createScopeOwnershipDemoCode>,
+  "launch-scope" | "launch-index" | "scope-wait-index" | "scope-wait-root"
+>;
 
 const indexDelayMs = 1000;

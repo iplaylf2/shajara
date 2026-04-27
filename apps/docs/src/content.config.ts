@@ -1,7 +1,7 @@
 import { docsLoader, i18nLoader } from "@astrojs/starlight/loaders";
 import { docsSchema, i18nSchema } from "@astrojs/starlight/schema";
 import { defineCollection } from "astro:content";
-import { explorerUiI18nSchema } from "#/content/i18n-schema";
+import { explorerUiI18nSchema } from "./content/i18n-schema";
 
 type ContentCollectionName = "docs" | "i18n";
 type ContentCollection = ReturnType<typeof defineCollection>;
