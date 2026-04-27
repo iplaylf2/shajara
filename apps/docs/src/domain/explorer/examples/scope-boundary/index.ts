@@ -1,0 +1,1 @@
+export { scopeBoundaryExample } from "./definition";

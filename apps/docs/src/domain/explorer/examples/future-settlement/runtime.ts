@@ -39,14 +39,11 @@ export function* futureSettlementDemo(
       yield* emit({
         cursor: cursorAt("resolver", ["settle-code", "resolver-close"], "running"),
       });
-      try {
-        yield* settle(provideSmsCode, "4921");
-      } finally {
-        yield* emit({
-          clearCursor: "resolver",
-          completed: "settle-code",
-        });
-      }
+      yield* settle(provideSmsCode, "4921");
+      yield* emit({
+        clearCursor: "resolver",
+        completed: "settle-code",
+      });
     });
 
     yield* emit({
