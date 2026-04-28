@@ -14,7 +14,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 // oxlint-disable-next-line explicit-module-boundary-types
-export function createScopeOwnershipDemoCode() {
+export function createScopeOwnedWorkDemoCode() {
   return [
     codeLine("routine", "function* publishArticle() {", ["done"]),
     codeLine("enclose-open", "  const result = yield* enclose(function* commitArticle() {", [
@@ -30,8 +30,8 @@ export function createScopeOwnershipDemoCode() {
   ];
 }
 
-export function* scopeOwnershipDemo(
-  emit: ExplorerReplayEmit<ScopeOwnershipDemoEvent>,
+export function* scopeOwnedWorkDemo(
+  emit: ExplorerReplayEmit<ScopeOwnedWorkDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
     yield* emit({
@@ -86,8 +86,8 @@ export function* scopeOwnershipDemo(
   });
 }
 
-export type ScopeOwnershipDemoEvent = ExplorerAuthoredEvent<
-  ReturnType<typeof createScopeOwnershipDemoCode>,
+export type ScopeOwnedWorkDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createScopeOwnedWorkDemoCode>,
   "launch-scope" | "launch-index" | "scope-wait-index" | "scope-wait-root"
 >;
 

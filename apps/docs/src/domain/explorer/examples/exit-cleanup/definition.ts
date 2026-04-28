@@ -6,38 +6,38 @@ import {
   spawnLink,
   waitLink,
 } from "#/domain/explorer/examples-kit";
-import { createScopedCleanupDemoCode, scopedCleanupDemo } from "./runtime";
-import type { ScopedCleanupDemoEvent } from "./runtime";
+import { createExitCleanupDemoCode, exitCleanupDemo } from "./runtime";
+import type { ExitCleanupDemoEvent } from "./runtime";
 
-export const scopedCleanupExample = {
-  descriptionKey: "explorer.examples.scoped-cleanup.description",
+export const exitCleanupExample = {
+  descriptionKey: "explorer.examples.exit-cleanup.description",
   guideKeys: [
-    "explorer.examples.scoped-cleanup.guide.enclose",
-    "explorer.examples.scoped-cleanup.guide.defer",
-    "explorer.examples.scoped-cleanup.guide.close",
+    "explorer.examples.exit-cleanup.guide.defer",
+    "explorer.examples.exit-cleanup.guide.close",
+    "explorer.examples.exit-cleanup.guide.result",
   ],
-  id: "scoped-cleanup",
+  id: "exit-cleanup",
   stage: {
-    code: createScopedCleanupDemoCode(),
-    flow: createScopedCleanupFlow(),
+    code: createExitCleanupDemoCode(),
+    flow: createExitCleanupFlow(),
     replay: {
       replayDelayMs: 1200,
       runtime: {
-        createRoutine: () => scopedCleanupDemo,
+        createRoutine: () => exitCleanupDemo,
       },
     },
   },
-  titleKey: "explorer.examples.scoped-cleanup.title",
-} as const satisfies ExplorerExample<ScopedCleanupDemoEvent, string, string>;
+  titleKey: "explorer.examples.exit-cleanup.title",
+} as const satisfies ExplorerExample<ExitCleanupDemoEvent, string, string>;
 
-function createScopedCleanupFlow(): ExplorerFlow<ScopedCleanupDemoEvent> {
+function createExitCleanupFlow(): ExplorerFlow<ExitCleanupDemoEvent> {
   return {
-    links: createScopedCleanupFlowLinks(),
-    nodes: createScopedCleanupFlowNodes(),
+    links: createExitCleanupFlowLinks(),
+    nodes: createExitCleanupFlowNodes(),
   };
 }
 
-function createScopedCleanupFlowLinks(): ExplorerFlow<ScopedCleanupDemoEvent>["links"] {
+function createExitCleanupFlowLinks(): ExplorerFlow<ExitCleanupDemoEvent>["links"] {
   return [
     spawnLink("root", "scope", "enclose(packParcel)", ["launch-scope"]),
     dataLink("scope", "defer", "defer(releaseBench)", ["defer-open"]),
@@ -54,7 +54,7 @@ function createScopedCleanupFlowLinks(): ExplorerFlow<ScopedCleanupDemoEvent>["l
   ];
 }
 
-function createScopedCleanupFlowNodes(): ExplorerFlow<ScopedCleanupDemoEvent>["nodes"] {
+function createExitCleanupFlowNodes(): ExplorerFlow<ExitCleanupDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "shipOrder", {
       activeEvents: [

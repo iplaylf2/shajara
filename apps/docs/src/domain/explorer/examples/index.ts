@@ -1,11 +1,11 @@
 import type { ArrayValues } from "type-fest";
 import { allResultsExample } from "./all-results";
 import { boundedChannelExample } from "./bounded-channel";
+import { exitCleanupExample } from "./exit-cleanup";
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
-import { scopeOwnershipExample } from "./scope-ownership";
-import { scopedCleanupExample } from "./scoped-cleanup";
+import { scopeOwnedWorkExample } from "./scope-owned-work";
 import { singleSpawnExample } from "./single-spawn";
 
 export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
@@ -19,12 +19,12 @@ export function readExplorerReplayRuntime(exampleId: ExplorerExampleId): Explore
 export const explorerExamples = [
   singleSpawnExample,
   futureSettlementExample,
-  scopeOwnershipExample,
+  scopeOwnedWorkExample,
   forkJoinExample,
   allResultsExample,
   firstResultExample,
   boundedChannelExample,
-  scopedCleanupExample,
+  exitCleanupExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
@@ -56,10 +56,10 @@ const explorerExampleDefinitions: {
 } = {
   [allResultsExample.id]: allResultsExample,
   [boundedChannelExample.id]: boundedChannelExample,
-  [scopedCleanupExample.id]: scopedCleanupExample,
+  [exitCleanupExample.id]: exitCleanupExample,
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
   [firstResultExample.id]: firstResultExample,
-  [scopeOwnershipExample.id]: scopeOwnershipExample,
+  [scopeOwnedWorkExample.id]: scopeOwnedWorkExample,
   [singleSpawnExample.id]: singleSpawnExample,
 };

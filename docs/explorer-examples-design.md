@@ -8,7 +8,7 @@ Explorer 的示例图解 shajara 边界内的并发编排关系，而不是替�
 
 解决宿主边界或适配问题的 API 通常不具备单独图解价值。`run`、`createScope`、`sleep`、`until`、`action` 这类接口可以出现在示例外壳或触发条件里，但不应该成为 explorer 示例本身。它们的语义可以由 shajara 边界内的 future、scope、channel、failure 和 cancellation 关系覆盖，只是少了一层宿主适配。
 
-Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档中很难说明其时间关系、所有权关系或收敛关系时，它才值得动画化。Single Spawn、Future Settlement 和 Scope Ownership 建立基础运行语言，后续示例在这个基础上展开组合、通信、收束和治理关系。
+Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档中很难说明其时间关系、所有权关系或收敛关系时，它才值得动画化。Single Spawn、Future Settlement 和 Scope-Owned Work 建立基础运行语言，后续示例在这个基础上展开组合、通信、收束和治理关系。
 
 ## Ordering Logic
 
@@ -16,30 +16,30 @@ Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档�
 
 1. **基本编排关系**：先解释 spawned process、future、wait、scope 如何形成可观察的运行关系。
 2. **结构化并发关系**：随后展示 fork join、all、race 如何把多个流程组织成有明确汇合或竞争意图的运行树。
-3. **显式通信关系**：再进入 channel，展示值传递、节奏控制和通信对象生命周期。
-4. **收束与治理关系**：最后展示 cleanup、cancellation、failure、recovery、resource、autonomy 如何决定系统的结束、恢复和治理方式。
+3. **显式通信关系**：再进入 channel，展示值传递和节奏控制。
+4. **收束与治理关系**：最后展示 exit cleanup、scope-managed objects、cancellation、failure、recovery、resource、autonomy 如何决定系统的结束、恢复和治理方式。
 
 ## Example Sequence
 
 下表描述每个示例承担的概念职责。表中的标题是暂定名称，用于表达预期演出的主题；实现示例时应根据实际动画关系重新校准标题。表中的说明用于确定叙事边界，不绑定具体业务故事、变量名或代码结构。
 
-| Order | Example               | What It Shows                                                                                | Why It Exists                                                                                                                              |
-| ----- | --------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1     | Single Spawn          | 一个 process 发起独立工作，随后返回自己的结果；spawned process 继续运行并结算自己的 future。 | 这是最小的边界内并发关系。它把 spawn 发起关系、future 和结果独立收敛串起来，让发起者结果和 spawned process future 各自保持独立。           |
-| 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。            | future 是 `spawn`、`all`、`race`、resource 和外部输入共同使用的收敛对象。单独展示它可以把“结果收敛”作为独立主题呈现。                      |
-| 3     | Scope Ownership       | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。           | scope 是 shajara 的结构化并发边界。这个示例说明边界内的所有权、完成和收敛，不需要依赖 `run` 或 `createScope` 这类宿主入口。                |
-| 4     | Fork Join             | 一个 process 启动多个并发分支，并在汇合点等待所有需要的结果。                                | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                       |
-| 5     | All Results           | `all` 同时发起多个分支，并把全部结果聚合到一个组合 future。                                  | 它把一组并发分支表达为一个整体等待点。示例重点是“全部结果共同结算”这个收敛关系，而不是逐个等待每个分支。                                   |
-| 6     | First Result          | `race` 同时发起多个分支，并让首个完成结果结算到一个竞争 future。                             | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。              |
-| 7     | Bounded Channel       | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。         | channel 是流程之间传递值的显式通信对象。容量不是配置细节，而是发送和接收互相调节推进节奏的运行关系。                                       |
-| 8     | Channel Termination   | channel 被显式关闭或因 owning scope 结束而撤销，等待中的发送者和接收者被唤醒。               | close 与 revoke 是理解 channel 生命周期的关键。这个示例说明通信对象也受 scope 所有权管理，不是无主的队列。                                 |
-| 9     | Scoped Cleanup        | child scope 内的 process 注册 cleanup；process 退出后 cleanup 运行，scope 等待它收束。       | `defer` 是生命周期收束的入口。它让读者看见 scope 的完成需要等待 process 退出后的 cleanup，而不是在返回值产生时立刻消失。                   |
-| 10    | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收敛为 canceled。           | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消不是单点事件，而是沿 scope ownership 传播并最终收束。                         |
-| 11    | Failure Propagation   | 一个 process 失败后，失败沿 scope 规则影响所在边界，或被 contain 边界截断。                  | failure 是 cancellation 的对照。这个示例解释 `propagate` 和 `contain` 的存在意义：不是所有失败都应该毁掉整棵树，也不是所有失败都能被忽略。 |
-| 12    | Guarded Recovery      | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。             | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界，而不是在任意位置逃逸。                                  |
-| 13    | Scoped Resource       | resource provider 暴露一个 ready value 后保持挂起，直到 owning scope 收束时完成清理。        | resource 适合展示“可用值”和“生命周期所有权”分离。读者会看到资源不是一次性 Promise，而是被 scope 持有和释放的长期对象。                     |
-| 14    | Autonomous Scheduling | autonomous scope 把可运行 process 交给 scheduler 分配。                                      | scheduler 是从常规边界内编排走向高级执行治理的第一步。这个示例展示“谁来推进 process”可以被治理，而不改变 scope 的核心语义。                |
-| 15    | Reaper Adjudication   | 一个 closing scope 无法自然收敛时，reaper 决定继续等待或提交失败裁决。                       | reaper 是 explorer 的最高阶示例。它解释 autonomy 不是装饰性的调度钩子，而是 closing 状态下的治理机制。                                     |
+| Order | Example               | What It Shows                                                                                                            | Why It Exists                                                                                                                                                                             |
+| ----- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Single Spawn          | 一个 process 发起独立工作，随后返回自己的结果；spawned process 继续运行并结算自己的 future。                             | 这是最小的边界内并发关系。它把 spawn 发起关系、future 和结果独立收敛串起来，让发起者结果和 spawned process future 各自保持独立。                                                          |
+| 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。                                        | future 是 `spawn`、`all`、`race`、resource 和外部输入共同使用的收敛对象。单独展示它可以把“结果收敛”作为独立主题呈现。                                                                     |
+| 3     | Scope-Owned Work      | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。                                       | scope 是 shajara 的结构化并发边界。这个示例说明 scope-owned work 对完成和收敛的影响，不需要依赖 `run` 或 `createScope` 这类宿主入口。                                                     |
+| 4     | Fork Join             | 一个 process 启动多个并发分支，并在汇合点等待所有需要的结果。                                                            | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                                      |
+| 5     | All Results           | `all` 同时发起多个分支，并把全部结果聚合到一个组合 future。                                                              | 它把一组并发分支表达为一个整体等待点。示例重点是“全部结果共同结算”这个收敛关系，而不是逐个等待每个分支。                                                                                  |
+| 6     | First Result          | `race` 同时发起多个分支，并让首个完成结果结算到一个竞争 future。                                                         | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
+| 7     | Bounded Channel       | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。                                     | channel 是流程之间传递值的显式通信对象。容量不是配置细节，而是发送和接收互相调节推进节奏的运行关系。                                                                                      |
+| 8     | Exit Cleanup          | child scope 内的 process 注册 cleanup；process 退出后 cleanup 运行，scope 等待它收束。                                   | `defer` 是生命周期收束的入口。它让读者看见 scope 的完成需要等待 process 退出后的 cleanup，而不是在返回值产生时立刻消失。                                                                  |
+| 9     | Scope-Managed Objects | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 退出时自动收束这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理，而不是由 handle 的可达位置决定；外层流程后续使用这些 handle 时，只是在观察 child scope 已经取消 future、撤销 channel 的事实。 |
+| 10    | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收敛为 canceled。                                       | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消不是单点事件，而是沿 scope 结构传播并最终收束。                                                                              |
+| 11    | Failure Propagation   | 一个 process 失败后，失败沿 scope 规则影响所在边界，或被 contain 边界截断。                                              | failure 是 cancellation 的对照。这个示例解释 `propagate` 和 `contain` 的存在意义：不是所有失败都应该毁掉整棵树，也不是所有失败都能被忽略。                                                |
+| 12    | Guarded Recovery      | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。                                         | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界，而不是在任意位置逃逸。                                                                                 |
+| 13    | Scoped Resource       | resource provider 暴露一个 ready value 后保持挂起，直到 owning scope 收束时完成清理。                                    | resource 适合展示“可用值”和“生命周期所有权”分离。读者会看到资源不是一次性 Promise，而是被 scope 持有和释放的长期对象。                                                                    |
+| 14    | Autonomous Scheduling | autonomous scope 把可运行 process 交给 scheduler 分配。                                                                  | scheduler 是从常规边界内编排走向高级执行治理的第一步。这个示例展示“谁来推进 process”可以被治理，而不改变 scope 的核心语义。                                                               |
+| 15    | Reaper Adjudication   | 一个 closing scope 无法自然收敛时，reaper 决定继续等待或提交失败裁决。                                                   | reaper 是 explorer 的最高阶示例。它解释 autonomy 不是装饰性的调度钩子，而是 closing 状态下的治理机制。                                                                                    |
 
 ## Narrative Groups
 
@@ -53,11 +53,11 @@ Examples 4-6 展示流程树如何分叉、组合和竞争。Fork Join 是显式
 
 ### Communication
 
-Examples 7-8 专门讲 channel。channel 不应夹在 fork join 内顺带说明，因为它表达的是流程之间的值传递、节奏控制和通信对象生命周期。这里的重点不是谁先返回，而是通信双方如何互相影响推进节奏。
+Example 7 专门讲 channel。channel 不应夹在 fork join 内顺带说明，因为它表达的是流程之间的值传递和节奏控制。这里的重点不是谁先返回，而是通信双方如何互相影响推进节奏。
 
 ### Lifecycle
 
-Examples 9-13 讲系统如何结束：cleanup、cancellation、failure、recovery、resource。它们共同回答当事情不只是成功返回时，运行树如何保持可解释。示例应把收束过程展示为结构化关系，而不是把异常、取消或清理写成孤立事件。
+Examples 8-13 讲系统如何结束：exit cleanup、scope-managed objects、cancellation、failure、recovery、resource。它们共同回答当事情不只是成功返回时，运行树如何保持可解释。Exit Cleanup 先建立 process 退出后的 cleanup 会参与 scope 收束这一生命周期语言。Scope-Managed Objects 随后展示 scope 退出会自动收束它创建的 future 和 channel：未完成的 future 被取消，仍打开的 channel 被撤销。返回到外层流程的 handle 只是观察入口；外层流程通过其他 primitive 使用这些 handle 并捕获异常时，看到的是 owner scope 已经完成运行对象收束后的结果。后续示例应把收束过程展示为结构化关系，而不是把异常、取消或清理写成孤立事件。
 
 ### Governance
 
@@ -65,13 +65,15 @@ Examples 14-15 放在最后。scheduler 和 reaper 需要读者已经理解 proc
 
 ## Naming And Copy
 
-示例标题应命名动画真正演出的关系，而不是命名某个 API、代码形状或中间实现。标题、example id、目录名、导出符号和 i18n key 应使用同一组概念词。读者看到的标题、路由中的名称和代码里的示例边界应指向同一个主题，避免一层命名表达设计意图、另一层命名表达实现细节。
+示例标题应命名动画真正演出的关系，而不是命名某个 API、代码形状或中间实现。标题、example id、目录名、导出符号和 i18n key 应使用同一组概念词，让读者看到的标题、路由中的名称和代码里的示例边界指向同一个主题。不同 locale 的标题应各自本地化，同时保留同一个概念边界；重命名 id 或导出符号时，也应同步校准各 locale 的标题表达。
 
 业务函数名应帮助读者理解谁在发起、谁在等待、谁在完成。优先选择能表达实际动作的业务词，例如订单提交、短信接收、文章发布、索引更新。不要把 `scope`、`future`、`runtime` 这类 shajara 概念塞进业务函数名里，避免读者误以为业务动作是 API 或 runtime 概念。
 
-标题下的短说明负责把示例标题拉入 shajara 术语体系。它应保持短而平，直接连接核心元素和动作。短说明应命名示例演出的运行关系，而不是罗列画面里出现的状态、效果或调用形状。当 API 名称只是通往关系的入口时，短说明应退回到 process、future、scope、channel、cleanup 这类运行对象；API 名称可以留给 guide list 解释代码边界。All Results 与 First Result 这类成组示例应保持句式和信息密度上的对称，避免一个讲 API 语义、另一个讲业务结果。业务语境留给代码和 guide list。
+标题下的短说明负责把示例标题拉入 shajara 术语体系。它应使用短语或片段，不写成完整解释句，也不使用句末标点。当标题已经提供主语时，短说明可以省略主语，直接命名核心运行关系。短说明应围绕 process、future、scope、channel、cleanup 这类运行对象及其动作组织，而不是罗列画面状态、视觉效果或调用形状。
 
-Guide list 不固定行数。每条 guide 应承担一个明确职责：动画里的 process 做了什么、哪个运行对象拥有或等待哪个对象、结果在哪里收敛。基础概念第一次出现时可以单独占一条 guide。没有新概念需要铺垫时，不必为了视觉对称补足固定数量。
+API 名称如果只是通往运行关系的入口，应留给 guide list 解释代码边界，不承担短说明的核心表达。All Results 与 First Result 这类成组示例应保持句式和信息密度上的对称，避免一个讲 API 语义、另一个讲业务结果。业务语境也应留给代码和 guide list。
+
+Guide list 的长度由示例需要解释的职责数量决定。每条 guide 应承担一个明确职责：动画里的 process 做了什么、哪个运行对象拥有或等待哪个对象、结果在哪里收敛。基础概念第一次出现时可以单独占一条 guide；没有新概念需要铺垫时，不补占位 guide。多个职责需要分别说明时，应拆成多条 guide。
 
 Guide copy 应面向示例，而不是写成 API reference。它可以使用示例里的业务名和必要的 shajara 术语，但不应把一条句子写成“动作；解释”的拼接。中文文案中标点应自然服务阅读，不用分号承载硬切换。
 
@@ -92,8 +94,9 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 routine 间的等待关系。
 - 当一个组合 primitive 产生代表整体关系的 future 时，图中应给这个 future 稳定的汇合位置。分支发起线从汇合位置展开，分支结果或竞争结果回到汇合位置，发起者再等待这个整体 future。
 - Future Settlement 等待的是 `smsCode` 这个独立 future，虚线上的 `smsCode` label 承担等待目标的命名。
-- Scope Ownership 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
-- Scoped Cleanup 展示的是 process 退出后 cleanup 参与 scope 收束。cleanup 不是 child scope 独有语义；任何注册 cleanup 的 process 退出后，都应让所在 scope 的收束过程等待 cleanup 完成。示例可以借 child scope 展示这个等待边界，但文案和动画不应把 cleanup 描述成只属于 child scope。
+- Scope-Owned Work 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
+- Exit Cleanup 展示的是 process 退出后 cleanup 参与 scope 收束。cleanup 不是 child scope 独有语义；任何注册 cleanup 的 process 退出后，都应让所在 scope 的收束过程等待 cleanup 完成。示例可以借 child scope 展示这个等待边界，但文案和动画不应把 cleanup 描述成只属于 child scope。
+- Scope-Managed Objects 展示的是 scope 退出时自动收束它创建的 future 和 channel，而不是外层流程如何使用资源。child scope 创建 future 和 channel 后返回观察或通信 handle；child scope 收束事件应触发 future cancellation 和 channel revocation。外层流程之后用 `wait`、`send`、`receive`、`trySend` 或 `tryReceive` 触碰这些 handle，并通过异常处理路径观察运行对象已经关闭。取消和撤销结果应从 child scope 的收束事件发出，不应表现成外层流程主动关闭资源。
 - 当一个 primitive 创建或进入新的运行边界时，父 routine 的等待状态应由父 routine 的边界事件表达，child routine 的运行状态应由 child routine 自己的起始事件表达。不要让 child routine 深处的事件负责修改父 routine 的光标位置；跨 routine 的等待线可以使用内部等待事件，但 cursor 归属仍应跟随实际停留的 process。
 - Channel 应作为独立通信对象出现，不应伪装成 routine 块或执行顺序线的一段。channel 的形状、容量状态和两侧数据动线共同表达通信关系；routine 之间的执行顺序仍由 routine 块自己的线承担。
 - Channel 示例可以包含不发生等待的普通 send 或 receive，作为发送等待和接收等待的对照。这个对照应来自真实代码节奏，例如没有 `sleep` 或缓冲中已有值，并帮助读者辨认等待究竟发生在哪里。
@@ -115,7 +118,7 @@ Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器
 一个 explorer 示例值得动画化，应满足至少一个条件：
 
 - 它展示了两个或多个运行对象之间的时间关系。
-- 它展示了 scope ownership 如何影响结果、取消、失败或资源释放。
+- 它展示了 scope 结构如何影响结果、取消、失败或资源释放。
 - 它展示了边界内语义中难以靠静态代码解释清楚的编排关系。
 - 它能为后续示例提供一个必要的概念台阶。
 

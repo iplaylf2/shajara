@@ -1,1 +1,0 @@
-export { scopeOwnershipExample } from "./definition";

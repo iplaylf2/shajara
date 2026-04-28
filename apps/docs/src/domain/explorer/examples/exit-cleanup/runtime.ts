@@ -16,15 +16,13 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 // oxlint-disable-next-line explicit-module-boundary-types
-export function createScopedCleanupDemoCode() {
+export function createExitCleanupDemoCode() {
   return [
     codeLine("routine", "function* shipOrder() {", ["done"]),
     codeLine("enclose-open", "  const parcel = yield* enclose(function* packParcel() {", [
       "enclose-close",
     ]),
-    codeLine("defer-open", "    yield* defer(function* releaseBench() {", [
-      "defer-registered",
-    ]),
+    codeLine("defer-open", "    yield* defer(function* releaseBench() {", ["defer-registered"]),
     codeLine("defer-sleep", `      yield* sleep(${cleanupDelayMs});`, ["defer-cleaned"]),
     codeLine("defer-close", "    });", ["defer-cleaned"]),
     codeLine("pack-sleep", `    yield* sleep(${packingDelayMs});`, ["pack-sleep"]),
@@ -35,8 +33,8 @@ export function createScopedCleanupDemoCode() {
   ];
 }
 
-export function* scopedCleanupDemo(
-  emit: ExplorerReplayEmit<ScopedCleanupDemoEvent>,
+export function* exitCleanupDemo(
+  emit: ExplorerReplayEmit<ExitCleanupDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* shipOrder(): RiteCoroutine<string> {
     yield* emit({
@@ -108,8 +106,8 @@ export function* scopedCleanupDemo(
   });
 }
 
-export type ScopedCleanupDemoEvent = ExplorerAuthoredEvent<
-  ReturnType<typeof createScopedCleanupDemoCode>,
+export type ExitCleanupDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createExitCleanupDemoCode>,
   "defer-registered" | "launch-scope" | "scope-wait-defer" | "scope-wait-root"
 >;
 

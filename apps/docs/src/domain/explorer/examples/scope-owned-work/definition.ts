@@ -5,38 +5,39 @@ import {
   spawnLink,
   waitLink,
 } from "#/domain/explorer/examples-kit";
-import { createScopeOwnershipDemoCode, scopeOwnershipDemo } from "./runtime";
-import type { ScopeOwnershipDemoEvent } from "./runtime";
+import { createScopeOwnedWorkDemoCode, scopeOwnedWorkDemo } from "./runtime";
+import type { ScopeOwnedWorkDemoEvent } from "./runtime";
 
-export const scopeOwnershipExample = {
-  descriptionKey: "explorer.examples.scope-ownership.description",
+export const scopeOwnedWorkExample = {
+  descriptionKey: "explorer.examples.scope-owned-work.description",
   guideKeys: [
-    "explorer.examples.scope-ownership.guide.enclose",
-    "explorer.examples.scope-ownership.guide.scope",
-    "explorer.examples.scope-ownership.guide.spawn",
+    "explorer.examples.scope-owned-work.guide.enclose",
+    "explorer.examples.scope-owned-work.guide.scope",
+    "explorer.examples.scope-owned-work.guide.result",
+    "explorer.examples.scope-owned-work.guide.wait",
   ],
-  id: "scope-ownership",
+  id: "scope-owned-work",
   stage: {
-    code: createScopeOwnershipDemoCode(),
-    flow: createScopeOwnershipFlow(),
+    code: createScopeOwnedWorkDemoCode(),
+    flow: createScopeOwnedWorkFlow(),
     replay: {
       replayDelayMs: 1200,
       runtime: {
-        createRoutine: () => scopeOwnershipDemo,
+        createRoutine: () => scopeOwnedWorkDemo,
       },
     },
   },
-  titleKey: "explorer.examples.scope-ownership.title",
-} as const satisfies ExplorerExample<ScopeOwnershipDemoEvent, string, string>;
+  titleKey: "explorer.examples.scope-owned-work.title",
+} as const satisfies ExplorerExample<ScopeOwnedWorkDemoEvent, string, string>;
 
-function createScopeOwnershipFlow(): ExplorerFlow<ScopeOwnershipDemoEvent> {
+function createScopeOwnedWorkFlow(): ExplorerFlow<ScopeOwnedWorkDemoEvent> {
   return {
-    links: createScopeOwnershipFlowLinks(),
-    nodes: createScopeOwnershipFlowNodes(),
+    links: createScopeOwnedWorkFlowLinks(),
+    nodes: createScopeOwnedWorkFlowNodes(),
   };
 }
 
-function createScopeOwnershipFlowLinks(): ExplorerFlow<ScopeOwnershipDemoEvent>["links"] {
+function createScopeOwnedWorkFlowLinks(): ExplorerFlow<ScopeOwnedWorkDemoEvent>["links"] {
   return [
     spawnLink("root", "scope", "enclose(commitArticle)", ["launch-scope"]),
     spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
@@ -53,7 +54,7 @@ function createScopeOwnershipFlowLinks(): ExplorerFlow<ScopeOwnershipDemoEvent>[
   ];
 }
 
-function createScopeOwnershipFlowNodes(): ExplorerFlow<ScopeOwnershipDemoEvent>["nodes"] {
+function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "publishArticle", {
       activeEvents: [
