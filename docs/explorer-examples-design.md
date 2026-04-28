@@ -33,7 +33,7 @@ Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档�
 | 6     | First Result          | `race` 同时发起多个分支，并让首个完成结果结算到一个竞争 future。                             | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。              |
 | 7     | Bounded Channel       | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。         | channel 是流程之间传递值的显式通信对象。容量不是配置细节，而是发送和接收互相调节推进节奏的运行关系。                                       |
 | 8     | Channel Termination   | channel 被显式关闭或因 owning scope 结束而撤销，等待中的发送者和接收者被唤醒。               | close 与 revoke 是理解 channel 生命周期的关键。这个示例说明通信对象也受 scope 所有权管理，不是无主的队列。                                 |
-| 9     | Deferred Cleanup      | 流程注册 cleanup，主流程结束或被取消后 cleanup 依次运行。                                    | `defer` 是生命周期收束的入口。它让读者看见“完成”不是简单消失，而是有可观察的清理阶段。                                                     |
+| 9     | Scoped Cleanup        | child scope 内的 process 注册 cleanup；process 退出后 cleanup 运行，scope 等待它收束。       | `defer` 是生命周期收束的入口。它让读者看见 scope 的完成需要等待 process 退出后的 cleanup，而不是在返回值产生时立刻消失。                   |
 | 10    | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收敛为 canceled。           | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消不是单点事件，而是沿 scope ownership 传播并最终收束。                         |
 | 11    | Failure Propagation   | 一个 process 失败后，失败沿 scope 规则影响所在边界，或被 contain 边界截断。                  | failure 是 cancellation 的对照。这个示例解释 `propagate` 和 `contain` 的存在意义：不是所有失败都应该毁掉整棵树，也不是所有失败都能被忽略。 |
 | 12    | Guarded Recovery      | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。             | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界，而不是在任意位置逃逸。                                  |
@@ -69,11 +69,13 @@ Examples 14-15 放在最后。scheduler 和 reaper 需要读者已经理解 proc
 
 业务函数名应帮助读者理解谁在发起、谁在等待、谁在完成。优先选择能表达实际动作的业务词，例如订单提交、短信接收、文章发布、索引更新。不要把 `scope`、`future`、`runtime` 这类 shajara 概念塞进业务函数名里，避免读者误以为业务动作是 API 或 runtime 概念。
 
-标题下的短说明负责把示例标题拉入 shajara 术语体系。它应保持短而平，直接连接核心元素和动作。短说明应命名示例演出的运行关系，而不是罗列画面里出现的状态或效果。All Results 与 First Result 这类成组示例应保持句式和信息密度上的对称，避免一个讲 API 语义、另一个讲业务结果。业务语境留给代码和 guide list。
+标题下的短说明负责把示例标题拉入 shajara 术语体系。它应保持短而平，直接连接核心元素和动作。短说明应命名示例演出的运行关系，而不是罗列画面里出现的状态、效果或调用形状。当 API 名称只是通往关系的入口时，短说明应退回到 process、future、scope、channel、cleanup 这类运行对象；API 名称可以留给 guide list 解释代码边界。All Results 与 First Result 这类成组示例应保持句式和信息密度上的对称，避免一个讲 API 语义、另一个讲业务结果。业务语境留给代码和 guide list。
 
 Guide list 不固定行数。每条 guide 应承担一个明确职责：动画里的 process 做了什么、哪个运行对象拥有或等待哪个对象、结果在哪里收敛。基础概念第一次出现时可以单独占一条 guide。没有新概念需要铺垫时，不必为了视觉对称补足固定数量。
 
 Guide copy 应面向示例，而不是写成 API reference。它可以使用示例里的业务名和必要的 shajara 术语，但不应把一条句子写成“动作；解释”的拼接。中文文案中标点应自然服务阅读，不用分号承载硬切换。
+
+同一示例里的业务名应有足够区分度。发起者、边界内工作和 cleanup routine 不应只靠很长的后缀区分；它们应在动词和对象上呈现不同职责，让读者扫过代码和图形时能快速分辨谁在等待、谁在产出、谁在清理。
 
 ## Animation Language
 
@@ -90,7 +92,9 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 routine 间的等待关系。
 - 当一个组合 primitive 产生代表整体关系的 future 时，图中应给这个 future 稳定的汇合位置。分支发起线从汇合位置展开，分支结果或竞争结果回到汇合位置，发起者再等待这个整体 future。
 - Future Settlement 等待的是 `smsCode` 这个独立 future，虚线上的 `smsCode` label 承担等待目标的命名。
-- Scope Ownership 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达 `enclose` 仍在等待 owned work。
+- Scope Ownership 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
+- Scoped Cleanup 展示的是 process 退出后 cleanup 参与 scope 收束。cleanup 不是 child scope 独有语义；任何注册 cleanup 的 process 退出后，都应让所在 scope 的收束过程等待 cleanup 完成。示例可以借 child scope 展示这个等待边界，但文案和动画不应把 cleanup 描述成只属于 child scope。
+- 当一个 primitive 创建或进入新的运行边界时，父 routine 的等待状态应由父 routine 的边界事件表达，child routine 的运行状态应由 child routine 自己的起始事件表达。不要让 child routine 深处的事件负责修改父 routine 的光标位置；跨 routine 的等待线可以使用内部等待事件，但 cursor 归属仍应跟随实际停留的 process。
 - Channel 应作为独立通信对象出现，不应伪装成 routine 块或执行顺序线的一段。channel 的形状、容量状态和两侧数据动线共同表达通信关系；routine 之间的执行顺序仍由 routine 块自己的线承担。
 - Channel 示例可以包含不发生等待的普通 send 或 receive，作为发送等待和接收等待的对照。这个对照应来自真实代码节奏，例如没有 `sleep` 或缓冲中已有值，并帮助读者辨认等待究竟发生在哪里。
 - Channel 示例应同时让发送等待和接收等待拥有可辨识的演出位置。发送等待来自缓冲满或无接收者，接收等待来自没有可取值；二者可以共享同一个 channel 图形，但不应共享同一种等待痕迹。
@@ -104,6 +108,7 @@ Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器
 - 当动画需要在 `return` 发生后标记完成时，可以使用 `try` / `finally` 让完成事件绑定到返回点。此时 `finally` 表达的是返回语义的收尾，而不是单纯的动画延迟。
 - 代码示例中的控制流应优先服务读者理解。当一个操作同时承担等待和返回两个叙事动作时，可以拆成中间变量和显式返回，让两个阶段在代码回放里都清楚可见；但不能为了制造动画帧而引入没有领域语义的中间步骤。
 - 代码行 id、flow event 和 node lifecycle 应共同表达同一个概念。事件命名应服务动画语义，不应为了复用某个代码行 id 而模糊启动、等待或完成关系。
+- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。不要把一次示例需要的状态迁移下沉到组件或更深的渲染层；渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。
 
 ## Inclusion Criteria
 

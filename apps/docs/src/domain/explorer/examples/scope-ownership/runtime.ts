@@ -4,8 +4,8 @@ import {
   codeLine,
   completeEvents,
   cursorAt,
+  enclosedRoutine,
   setCursor,
-  setCursors,
 } from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
@@ -37,33 +37,39 @@ export function* scopeOwnershipDemo(
     yield* emit({
       actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
     });
-    const result = yield* enclose(function* commitArticle(): RiteCoroutine<string> {
-      yield* emit({
-        actions: [setCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))],
-      });
-      yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
-        yield* emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
-        yield* sleep(indexDelayMs);
-        yield* emit({
-          actions: [clearCursor("index"), completeEvents(["index-close", "scope-wait-index"])],
-        });
-      });
+    const result = yield* enclose(
+      enclosedRoutine(
+        emit,
+        {
+          childEvent: ["launch-index", "spawn-index"],
+          childRoutineId: "scope",
+          parentEvent: "enclose-open",
+          parentRoutineId: "root",
+          waitEvent: "scope-wait-root",
+        },
+        function* commitArticle(): RiteCoroutine<string> {
+          yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
+            yield* emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
+            yield* sleep(indexDelayMs);
+            yield* emit({
+              actions: [clearCursor("index"), completeEvents(["index-close", "scope-wait-index"])],
+            });
+          });
 
-      yield* emit({ actions: [setCursor(cursorAt("scope", "inner-return", "running"))] });
-      try {
-        return "published";
-      } finally {
-        yield* emit({
-          actions: [
-            completeEvents("inner-return"),
-            setCursors([
-              cursorAt("root", ["enclose-open", "scope-wait-root"], "blocked"),
-              cursorAt("scope", "scope-wait-index", "blocked"),
-            ]),
-          ],
-        });
-      }
-    });
+          yield* emit({ actions: [setCursor(cursorAt("scope", "inner-return", "running"))] });
+          try {
+            return "published";
+          } finally {
+            yield* emit({
+              actions: [
+                completeEvents("inner-return"),
+                setCursor(cursorAt("scope", "scope-wait-index", "blocked")),
+              ],
+            });
+          }
+        },
+      ),
+    );
 
     yield* emit({
       actions: [

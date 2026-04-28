@@ -69,13 +69,11 @@ function createScopeOwnershipFlowNodes(): ExplorerFlow<ScopeOwnershipDemoEvent>[
     }),
     {
       activeEvents: [
-        "enclose-open",
         "launch-scope",
         "launch-index",
         "spawn-index",
         "inner-return",
         "scope-wait-index",
-        "scope-wait-root",
         "enclose-close",
       ],
       completedEvents: ["enclose-close"],

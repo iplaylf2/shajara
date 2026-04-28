@@ -5,6 +5,7 @@ import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
 import { scopeOwnershipExample } from "./scope-ownership";
+import { scopedCleanupExample } from "./scoped-cleanup";
 import { singleSpawnExample } from "./single-spawn";
 
 export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
@@ -23,6 +24,7 @@ export const explorerExamples = [
   allResultsExample,
   firstResultExample,
   boundedChannelExample,
+  scopedCleanupExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
@@ -54,6 +56,7 @@ const explorerExampleDefinitions: {
 } = {
   [allResultsExample.id]: allResultsExample,
   [boundedChannelExample.id]: boundedChannelExample,
+  [scopedCleanupExample.id]: scopedCleanupExample,
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
   [firstResultExample.id]: firstResultExample,
