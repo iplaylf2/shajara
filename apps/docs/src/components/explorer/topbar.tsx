@@ -54,6 +54,6 @@ interface Props {
   brandLabel: string;
   currentLocaleLabel: string;
   explorerLabel: string;
-  localeLinks: ExplorerTopbarLocaleLink[];
+  localeLinks: readonly ExplorerTopbarLocaleLink[];
   title: string;
 }

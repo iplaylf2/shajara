@@ -1,0 +1,45 @@
+---
+import { ExplorerTopbar } from "./topbar";
+import styles from "./styles.module.css";
+
+const {
+  brandHref,
+  brandLabel,
+  currentLocaleLabel,
+  explorerLabel,
+  localeLinks,
+  title,
+} = Astro.props;
+
+interface ExplorerShellLocaleLink {
+  href: string;
+  hreflang: string;
+  label: string;
+}
+
+interface Props {
+  brandHref: string;
+  brandLabel: string;
+  currentLocaleLabel: string;
+  explorerLabel: string;
+  localeLinks: readonly ExplorerShellLocaleLink[];
+  title: string;
+}
+---
+
+<div class={styles["root"]}>
+  <ExplorerTopbar
+    brandHref={brandHref}
+    brandLabel={brandLabel}
+    currentLocaleLabel={currentLocaleLabel}
+    explorerLabel={explorerLabel}
+    localeLinks={localeLinks}
+    title={title}
+  />
+
+  <section class={styles["surface"]}>
+    <div class={styles["contentGrid"]}>
+      <slot />
+    </div>
+  </section>
+</div>

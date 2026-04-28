@@ -1,5 +1,9 @@
 ---
-import { ExplorerExampleRail, ExplorerTopbar } from "#/components/explorer";
+import {
+  ExplorerExampleRail,
+  ExplorerExampleStage,
+  ExplorerShell,
+} from "#/components/explorer";
 import {
   buildExplorerHref,
   buildExplorerLocaleLinks,
@@ -11,10 +15,8 @@ import {
 import { i18N, siteLocales } from "#site";
 import type { ExplorerBodyExample } from "#/pages-kit/explorer";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
-import ExplorerExampleStage from "#/components/explorer/example-stage.astro";
 import ExplorerLayout from "#/layouts/explorer-layout.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
-import styles from "#/components/explorer/styles.module.css";
 
 export function getStaticPaths() {
   return siteLocales.flatMap((locale) =>
@@ -48,29 +50,23 @@ const pageTitle = `${currentExample.title} · ${Astro.locals.t("explorer.home.ti
 ---
 
 <ExplorerLayout locale={locale} title={pageTitle}>
-  <div class={styles["root"]}>
-    <ExplorerTopbar
-      brandHref={docsHomeHref}
-      brandLabel="shajara"
-      currentLocaleLabel={i18N.locales[locale].label}
-      explorerLabel={Astro.locals.t("explorer.shell.eyebrow")}
-      localeLinks={localeLinks}
+  <ExplorerShell
+    brandHref={docsHomeHref}
+    brandLabel="shajara"
+    currentLocaleLabel={i18N.locales[locale].label}
+    explorerLabel={Astro.locals.t("explorer.shell.eyebrow")}
+    localeLinks={localeLinks}
+    title={currentExample.title}
+  >
+    <ExplorerExampleStage
+      description={currentExample.description}
+      example={exampleDefinition}
+      guideRows={currentExample.guideRows}
       title={currentExample.title}
     />
-
-    <section class={styles["surface"]}>
-      <div class={styles["contentGrid"]}>
-        <ExplorerExampleStage
-          description={currentExample.description}
-          example={exampleDefinition}
-          guideRows={currentExample.guideRows}
-          title={currentExample.title}
-        />
-        <ExplorerExampleRail
-          currentExampleId={currentExample.id}
-          examples={examples}
-        />
-      </div>
-    </section>
-  </div>
+    <ExplorerExampleRail
+      currentExampleId={currentExample.id}
+      examples={examples}
+    />
+  </ExplorerShell>
 </ExplorerLayout>
