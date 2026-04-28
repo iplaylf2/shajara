@@ -12,6 +12,7 @@ import type { BoundedChannelDemoEvent } from "./runtime";
 export const boundedChannelExample = {
   descriptionKey: "explorer.examples.bounded-channel.description",
   guideKeys: [
+    "explorer.examples.bounded-channel.guide.channel",
     "explorer.examples.bounded-channel.guide.buffer",
     "explorer.examples.bounded-channel.guide.waiter",
     "explorer.examples.bounded-channel.guide.receiver",
@@ -45,11 +46,14 @@ function createBoundedChannelFlowLinks(): ExplorerFlow<BoundedChannelDemoEvent>[
       "send-second",
       "second-sent",
       "send-third",
+      "third-sent",
+      "send-fourth",
     ]),
     dataLink("channel", "worker", "receive takes value", [
       "receive-first",
       "receive-second",
       "receive-third",
+      "receive-fourth",
     ]),
   ];
 }
@@ -67,8 +71,10 @@ function createQueueBatchesNode() {
       "send-first",
       "send-second",
       "second-sent",
-      "sender-sleep",
       "send-third",
+      "third-sent",
+      "sender-sleep",
+      "send-fourth",
       "done-return",
       "done",
     ],
@@ -86,11 +92,15 @@ function createChannelNode() {
         "send-first",
         "send-second",
         "receive-first",
+        "worker-sleep",
         "second-sent",
-        "receive-second",
-        "sender-sleep",
-        "receive-third",
         "send-third",
+        "receive-second",
+        "third-sent",
+        "receive-third",
+        "sender-sleep",
+        "receive-fourth",
+        "send-fourth",
         "done-return",
         "done",
       ],
@@ -99,16 +109,24 @@ function createChannelNode() {
     {
       defaultLabel: "0/1",
       kind: "metered",
-      overloadEvents: ["send-second"],
+      overloadEvents: ["send-second", "send-third"],
       states: [
         { events: ["done"], kind: "completed", label: "0/1" },
-        { events: ["send-first", "send-second", "send-third"], kind: "active", label: "1/1" },
         {
-          events: ["receive-first", "receive-second", "receive-third"],
+          events: ["send-first", "send-second", "send-third", "send-fourth"],
+          kind: "active",
+          label: "1/1",
+        },
+        {
+          events: ["receive-first", "receive-second", "receive-third", "receive-fourth"],
           kind: "active",
           label: "0/1",
         },
-        { events: ["send-first", "second-sent"], kind: "completed", label: "1/1" },
+        {
+          events: ["send-first", "worker-sleep", "second-sent", "third-sent", "sender-sleep"],
+          kind: "completed",
+          label: "1/1",
+        },
       ],
     },
   );
@@ -118,10 +136,11 @@ function createWriteBatchesNode() {
   return branchRoutineNode("worker", "writeBatches", {
     activeEvents: [
       "spawn-worker",
-      "worker-sleep",
       "receive-first",
+      "worker-sleep",
       "receive-second",
       "receive-third",
+      "receive-fourth",
       "worker-return",
     ],
     completedEvents: ["worker-return"],

@@ -69,7 +69,7 @@ Examples 14-15 放在最后。scheduler 和 reaper 需要读者已经理解 proc
 
 业务函数名应帮助读者理解谁在发起、谁在等待、谁在完成。优先选择能表达实际动作的业务词，例如订单提交、短信接收、文章发布、索引更新。不要把 `scope`、`future`、`runtime` 这类 shajara 概念塞进业务函数名里，避免读者误以为业务动作是 API 或 runtime 概念。
 
-标题下的短说明负责把示例标题拉入 shajara 术语体系。它应保持短而平，直接连接核心元素和动作。All Results 与 First Result 这类成组示例应保持句式和信息密度上的对称，避免一个讲 API 语义、另一个讲业务结果。业务语境留给代码和 guide list。
+标题下的短说明负责把示例标题拉入 shajara 术语体系。它应保持短而平，直接连接核心元素和动作。短说明应命名示例演出的运行关系，而不是罗列画面里出现的状态或效果。All Results 与 First Result 这类成组示例应保持句式和信息密度上的对称，避免一个讲 API 语义、另一个讲业务结果。业务语境留给代码和 guide list。
 
 Guide list 不固定行数。每条 guide 应承担一个明确职责：动画里的 process 做了什么、哪个运行对象拥有或等待哪个对象、结果在哪里收敛。基础概念第一次出现时可以单独占一条 guide。没有新概念需要铺垫时，不必为了视觉对称补足固定数量。
 
@@ -92,6 +92,7 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - Future Settlement 等待的是 `smsCode` 这个独立 future，虚线上的 `smsCode` label 承担等待目标的命名。
 - Scope Ownership 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达 `enclose` 仍在等待 owned work。
 - Channel 应作为独立通信对象出现，不应伪装成 routine 块或执行顺序线的一段。channel 的形状、容量状态和两侧数据动线共同表达通信关系；routine 之间的执行顺序仍由 routine 块自己的线承担。
+- Channel 示例可以包含不发生等待的普通 send 或 receive，作为发送等待和接收等待的对照。这个对照应来自真实代码节奏，例如没有 `sleep` 或缓冲中已有值，并帮助读者辨认等待究竟发生在哪里。
 - Channel 示例应同时让发送等待和接收等待拥有可辨识的演出位置。发送等待来自缓冲满或无接收者，接收等待来自没有可取值；二者可以共享同一个 channel 图形，但不应共享同一种等待痕迹。
 
 ## Runtime Authoring Rules

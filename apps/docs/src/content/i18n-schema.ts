@@ -26,6 +26,7 @@ export const explorerUiI18nSchema = z.object(
     "explorer.examples.all-results.title",
     "explorer.examples.bounded-channel.description",
     "explorer.examples.bounded-channel.guide.buffer",
+    "explorer.examples.bounded-channel.guide.channel",
     "explorer.examples.bounded-channel.guide.receiver",
     "explorer.examples.bounded-channel.guide.waiter",
     "explorer.examples.bounded-channel.title",
