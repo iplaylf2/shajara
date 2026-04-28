@@ -290,6 +290,76 @@
   stroke: #ad7464;
 }
 
+.flowNodeChannel {
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.flowNodeChannelPending {
+  opacity: 0;
+}
+
+.flowChannelBody {
+  fill: #fffaf2;
+  stroke: #b8783f;
+  stroke-width: 1.7;
+  transition:
+    fill 180ms ease,
+    stroke 180ms ease,
+    stroke-width 180ms ease;
+}
+
+.flowChannelPort {
+  fill: #fff7e8;
+  stroke: #b8783f;
+  stroke-width: 1.7;
+}
+
+.flowChannelText {
+  fill: #66431e;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: text;
+  dominant-baseline: central;
+  pointer-events: auto;
+  text-anchor: middle;
+  user-select: text;
+}
+
+.flowChannelCaption {
+  fill: #8c6842;
+  font-size: 10px;
+  font-weight: 620;
+  cursor: text;
+  dominant-baseline: central;
+  letter-spacing: 0.04em;
+  pointer-events: auto;
+  text-anchor: middle;
+  text-transform: uppercase;
+  user-select: text;
+}
+
+.flowNodeChannelOpen .flowChannelBody,
+.flowNodeChannelOpen .flowChannelPort {
+  animation: flowChannelAppear 220ms ease-out;
+}
+
+.flowNodeChannelOverload .flowChannelBody {
+  fill: #fff4e0;
+  stroke: #b05f35;
+  stroke-dasharray: 4 4;
+  stroke-width: 2.7;
+  animation:
+    flowNodeMarch 850ms linear infinite,
+    flowNodePulse 1300ms ease-in-out infinite;
+}
+
+.flowNodeChannelDone .flowChannelBody,
+.flowNodeChannelDone .flowChannelPort {
+  fill: #f8fbff;
+  stroke: #9fb1c4;
+}
+
 .flowNodeActive .flowNode {
   fill: #e9fbfd;
   stroke: #237f8c;
@@ -334,9 +404,20 @@
   transform-box: fill-box;
 }
 
-.flowLinkGroupDependency .flowLink {
+.flowLinkGroupWait .flowLink {
   stroke: #d2deea;
   stroke-width: 2.2;
+  opacity: 0;
+}
+
+.flowLinkGroupSpawn .flowLink {
+  stroke: var(--flow-link);
+}
+
+.flowLinkGroupData .flowLink {
+  stroke: #6aa779;
+  stroke-dasharray: 3 7;
+  stroke-width: 2.4;
   opacity: 0;
 }
 
@@ -345,7 +426,7 @@
   transition-duration: 420ms;
 }
 
-.flowLinkGroupSettledDependency .flowLink {
+.flowLinkGroupSettledWait .flowLink {
   stroke: #b7c5d4;
   stroke-dasharray: none;
   stroke-width: 1.9;
@@ -353,7 +434,7 @@
   animation: none;
 }
 
-.flowLinkGroupInterruptedDependency .flowLink {
+.flowLinkGroupInterruptedWait .flowLink {
   stroke: #b8a89b;
   stroke-dasharray: 6 8;
   stroke-width: 1.8;
@@ -376,6 +457,22 @@
   stroke-dashoffset: 0;
   stroke-width: 3.8;
   animation: flowLinkDraw 520ms ease-out both;
+}
+
+.flowLinkGroupData.flowLinkGroupRunning .flowLink {
+  stroke: #2f9b60;
+  stroke-dasharray: 3 8;
+  stroke-width: 3.1;
+  opacity: 1;
+  animation: flowLinkMarch 760ms linear infinite;
+}
+
+.flowLinkGroupSettledData .flowLink {
+  stroke: #78aa84;
+  stroke-dasharray: 2 9;
+  stroke-width: 2.2;
+  opacity: 0.42;
+  animation: none;
 }
 
 .flowLinkGroupBlocked .flowLink {
@@ -408,7 +505,7 @@
   opacity: 1;
 }
 
-.flowLinkGroupSettledDependency .flowLinkLabel {
+.flowLinkGroupSettledWait .flowLinkLabel {
   opacity: 0.72;
 }
 
@@ -586,6 +683,18 @@
 
   50% {
     stroke-width: 2.8;
+  }
+}
+
+@keyframes flowChannelAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

@@ -15,7 +15,7 @@ export function spawnLink<TEvent extends string>(
   };
 }
 
-export function dependencyLink<TEvent extends string>(
+export function waitLink<TEvent extends string>(
   from: string,
   to: string,
   label: string,
@@ -24,7 +24,7 @@ export function dependencyLink<TEvent extends string>(
   const link = {
     activeEvents: options.activeEvents,
     from,
-    kind: "dependency",
+    kind: "wait",
     label,
     to,
     ...(options.interruptedEvents ? { interruptedEvents: options.interruptedEvents } : {}),
@@ -38,6 +38,39 @@ export function dependencyLink<TEvent extends string>(
   }
 
   return link;
+}
+
+export function dataLink<TEvent extends string>(
+  from: string,
+  to: string,
+  label: string,
+  activeEvents: readonly TEvent[],
+): ExplorerFlowGraphLink<TEvent> {
+  return {
+    activeEvents,
+    from,
+    kind: "data",
+    label,
+    to,
+  };
+}
+
+export function channelNode<TEvent extends string>(
+  id: string,
+  label: string,
+  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
+  state?: ExplorerChannelNodeState<TEvent>,
+): ExplorerFlowGraphNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    ...(state?.caption ? { caption: state.caption } : {}),
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "channel",
+    label,
+    ...(state?.overloadEvents ? { overloadEvents: state.overloadEvents } : {}),
+    statusRoutineIds: [],
+  };
 }
 
 export function parentRoutineNode<TEvent extends string>(
@@ -81,4 +114,9 @@ interface ExplorerFlowLinkActivity<TEvent extends string> {
 interface ExplorerRoutineNodeLifecycle<TEvent extends string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
+}
+
+interface ExplorerChannelNodeState<TEvent extends string> {
+  caption?: string;
+  overloadEvents?: readonly TEvent[];
 }

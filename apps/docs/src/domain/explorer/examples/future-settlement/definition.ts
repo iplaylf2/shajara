@@ -1,9 +1,9 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createFutureSettlementDemoCode, futureSettlementDemo } from "./runtime";
 import type { FutureSettlementDemoEvent } from "./runtime";
@@ -38,7 +38,7 @@ function createFutureSettlementFlow(): ExplorerFlowGraph<FutureSettlementDemoEve
 function createFutureSettlementFlowLinks(): ExplorerFlowGraph<FutureSettlementDemoEvent>["links"] {
   return [
     spawnLink("root", "resolver", "spawn(receiveSmsCode)", ["spawn-resolver"]),
-    dependencyLink("resolver", "root", "smsCode", {
+    waitLink("resolver", "root", "smsCode", {
       activeEvents: ["wait-code"],
       visibleLabel: "smsCode",
     }),

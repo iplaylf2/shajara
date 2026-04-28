@@ -43,7 +43,7 @@ export interface ExplorerFlowGraphLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
   from: string;
   interruptedEvents?: readonly TEvent[];
-  kind: "dependency" | "spawn";
+  kind: "data" | "spawn" | "wait";
   label: string;
   visibleLabel?: string;
   to: string;
@@ -51,10 +51,12 @@ export interface ExplorerFlowGraphLink<TEvent extends ExplorerEventId> {
 
 export interface ExplorerFlowGraphNode<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
+  caption?: string;
   completedEvents: readonly TEvent[];
   id: string;
-  kind: "branch" | "join" | "parent";
+  kind: "branch" | "channel" | "join" | "parent";
   label: string;
+  overloadEvents?: readonly TEvent[];
   statusRoutineIds: readonly ExplorerRoutineId[];
 }
 

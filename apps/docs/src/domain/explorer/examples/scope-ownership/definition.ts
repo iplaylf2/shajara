@@ -1,9 +1,9 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createScopeOwnershipDemoCode, scopeOwnershipDemo } from "./runtime";
 import type { ScopeOwnershipDemoEvent } from "./runtime";
@@ -40,10 +40,10 @@ function createScopeOwnershipFlowLinks(): ExplorerFlowGraph<ScopeOwnershipDemoEv
   return [
     spawnLink("root", "scope", "enclose(commitArticle)", ["launch-scope"]),
     spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
-    dependencyLink("index", "scope", "owned process", {
+    waitLink("index", "scope", "owned process", {
       activeEvents: ["scope-wait-index"],
     }),
-    dependencyLink("scope", "root", "enclose waits for child scope", {
+    waitLink("scope", "root", "enclose waits for child scope", {
       activeEvents: ["scope-wait-root"],
     }),
   ];

@@ -1,8 +1,10 @@
 import type { ArrayValues } from "type-fest";
 import { allResultsExample } from "./all-results";
+import { bufferedBackpressureExample } from "./buffered-backpressure";
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
+import { rendezvousChannelExample } from "./rendezvous-channel";
 import { scopeOwnershipExample } from "./scope-ownership";
 import { singleSpawnExample } from "./single-spawn";
 
@@ -21,6 +23,8 @@ export const explorerExamples = [
   forkJoinExample,
   allResultsExample,
   firstResultExample,
+  rendezvousChannelExample,
+  bufferedBackpressureExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
@@ -51,9 +55,11 @@ const explorerExampleDefinitions: {
   >;
 } = {
   [allResultsExample.id]: allResultsExample,
+  [bufferedBackpressureExample.id]: bufferedBackpressureExample,
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
   [firstResultExample.id]: firstResultExample,
+  [rendezvousChannelExample.id]: rendezvousChannelExample,
   [scopeOwnershipExample.id]: scopeOwnershipExample,
   [singleSpawnExample.id]: singleSpawnExample,
 };

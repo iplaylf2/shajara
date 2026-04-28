@@ -2,9 +2,9 @@ import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contr
 import type { LoadPageDemoEvent, LoadPageDemoResult } from "./runtime";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createLoadPageDemoCode, loadPageDemo } from "./runtime";
 
@@ -36,10 +36,10 @@ function createForkJoinFlowLinks(): ExplorerFlowGraph<LoadPageDemoEvent>["links"
   return [
     spawnLink("root", "header", "spawn(header)", ["spawn-header"]),
     spawnLink("root", "sidebar", "spawn(sidebar)", ["spawn-sidebar"]),
-    dependencyLink("header", "root", "wait(header)", {
+    waitLink("header", "root", "wait(header)", {
       activeEvents: ["wait-header"],
     }),
-    dependencyLink("sidebar", "root", "wait(sidebar)", {
+    waitLink("sidebar", "root", "wait(sidebar)", {
       activeEvents: ["wait-sidebar"],
     }),
   ];

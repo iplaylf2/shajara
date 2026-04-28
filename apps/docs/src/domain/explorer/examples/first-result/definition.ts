@@ -1,9 +1,9 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createFirstResultDemoCode, firstResultDemo } from "./runtime";
 import type { FirstResultDemoEvent } from "./runtime";
@@ -40,15 +40,15 @@ function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["
     spawnLink("root", "winner", "race(firstProfile)", ["race-open"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
     spawnLink("winner", "network", "fetchNetwork", ["launch-network"]),
-    dependencyLink("cache", "winner", "winner", {
+    waitLink("cache", "winner", "winner", {
       activeEvents: ["race-wait-cache"],
       interruptedEvents: ["cache-canceled"],
     }),
-    dependencyLink("network", "winner", "loser settles with arena", {
+    waitLink("network", "winner", "loser settles with arena", {
       activeEvents: ["race-wait-network"],
       interruptedEvents: ["network-canceled"],
     }),
-    dependencyLink("winner", "root", "wait(firstProfile)", {
+    waitLink("winner", "root", "wait(firstProfile)", {
       activeEvents: ["wait-race"],
     }),
   ];

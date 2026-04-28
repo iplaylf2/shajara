@@ -3,9 +3,9 @@ import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contr
 import { allResultsDemo, createAllResultsDemoCode } from "./runtime";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 
 export const allResultsExample = {
@@ -40,13 +40,13 @@ function createAllResultsFlowLinks(): ExplorerFlowGraph<AllResultsDemoEvent>["li
     spawnLink("root", "result", "all(pageData)", ["all-open"]),
     spawnLink("result", "user", "loadUser", ["launch-user"]),
     spawnLink("result", "settings", "loadSettings", ["launch-settings"]),
-    dependencyLink("user", "result", "user result", {
+    waitLink("user", "result", "user result", {
       activeEvents: ["all-wait-user"],
     }),
-    dependencyLink("settings", "result", "settings result", {
+    waitLink("settings", "result", "settings result", {
       activeEvents: ["all-wait-settings"],
     }),
-    dependencyLink("result", "root", "wait(pageData)", {
+    waitLink("result", "root", "wait(pageData)", {
       activeEvents: ["wait-all"],
     }),
   ];

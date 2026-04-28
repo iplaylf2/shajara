@@ -1,9 +1,9 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createSingleSpawnDemoCode, singleSpawnDemo } from "./runtime";
 import type { SingleSpawnDemoEvent } from "./runtime";
@@ -38,7 +38,7 @@ function createSingleSpawnFlow(): ExplorerFlowGraph<SingleSpawnDemoEvent> {
 function createSingleSpawnFlowLinks(): ExplorerFlowGraph<SingleSpawnDemoEvent>["links"] {
   return [
     spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"]),
-    dependencyLink("receipt", "root", "scope waits for sendReceiptEmail", {
+    waitLink("receipt", "root", "scope waits for sendReceiptEmail", {
       activeEvents: ["wait-receipt"],
     }),
   ];
