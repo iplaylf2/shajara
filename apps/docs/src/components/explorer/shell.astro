@@ -2,14 +2,7 @@
 import { ExplorerTopbar } from "./topbar";
 import styles from "./styles.module.css";
 
-const {
-  brandHref,
-  brandLabel,
-  currentLocaleLabel,
-  explorerLabel,
-  localeLinks,
-  title,
-} = Astro.props;
+const { chrome } = Astro.props;
 
 interface ExplorerShellLocaleLink {
   href: string;
@@ -18,6 +11,10 @@ interface ExplorerShellLocaleLink {
 }
 
 interface Props {
+  chrome: ExplorerShellChrome;
+}
+
+interface ExplorerShellChrome {
   brandHref: string;
   brandLabel: string;
   currentLocaleLabel: string;
@@ -29,12 +26,12 @@ interface Props {
 
 <div class={styles["root"]}>
   <ExplorerTopbar
-    brandHref={brandHref}
-    brandLabel={brandLabel}
-    currentLocaleLabel={currentLocaleLabel}
-    explorerLabel={explorerLabel}
-    localeLinks={localeLinks}
-    title={title}
+    brandHref={chrome.brandHref}
+    brandLabel={chrome.brandLabel}
+    currentLocaleLabel={chrome.currentLocaleLabel}
+    explorerLabel={chrome.explorerLabel}
+    localeLinks={chrome.localeLinks}
+    title={chrome.title}
   />
 
   <section class={styles["surface"]}>

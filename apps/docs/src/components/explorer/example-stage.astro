@@ -5,11 +5,11 @@ import { ExplorerReplayDemo } from "./replay-demo";
 import { resolveFlowScene } from "./flow-scene";
 import styles from "./styles.module.css";
 
-const { description, example, guideRows, title } = Astro.props;
-const codeBlockId = `explorer-${example.id}-code`;
+const { content, definition, replayLabels } = Astro.props;
+const codeBlockId = `explorer-${definition.id}-code`;
 const stageEventIds = [
   ...new Set(
-    example.stage.code.flatMap((line) => [
+    definition.stage.code.flatMap((line) => [
       line.id,
       ...line.completion.events,
     ]),
@@ -18,42 +18,52 @@ const stageEventIds = [
 const stage = {
   eventIds: stageEventIds,
   replay: {
-    replayDelayMs: example.stage.replay.replayDelayMs,
+    replayDelayMs: definition.stage.replay.replayDelayMs,
   },
-  scene: resolveFlowScene(example.stage.flow, `${title} flow`),
+  scene: resolveFlowScene(definition.stage.flow, `${content.title} flow`),
 };
 
 interface Props {
+  content: ExplorerStageContent;
+  definition: ExplorerExampleDefinition;
+  replayLabels: ExplorerStageReplayLabels;
+}
+
+interface ExplorerStageContent {
   description: string;
-  example: ExplorerExampleDefinition;
   guideRows: readonly string[];
   title: string;
+}
+
+interface ExplorerStageReplayLabels {
+  codeFollow: string;
+  codeManual: string;
 }
 ---
 
 <section aria-labelledby="explorer-stage-title" class={styles["stagePanel"]}>
   <h2 class={styles["srOnly"]} id="explorer-stage-title">
-    {title}
+    {content.title}
   </h2>
 
   <div class={styles["sceneHeader"]}>
-    <p class={styles["sceneBody"]}>{description}</p>
+    <p class={styles["sceneBody"]}>{content.description}</p>
   </div>
 
   <ExplorerReplayDemo
     client:load
     codeBlockId={codeBlockId}
-    codeFollowLabel={Astro.locals.t("explorer.replay.follow")}
-    codeManualLabel={Astro.locals.t("explorer.replay.manual")}
-    exampleId={example.id}
+    codeFollowLabel={replayLabels.codeFollow}
+    codeManualLabel={replayLabels.codeManual}
+    exampleId={definition.id}
     stage={stage}
   >
-    <ExplorerCodeBlock code={example.stage.code} id={codeBlockId} />
+    <ExplorerCodeBlock code={definition.stage.code} id={codeBlockId} />
   </ExplorerReplayDemo>
 
   <div class={styles["guideList"]}>
     {
-      guideRows.map((row) => (
+      content.guideRows.map((row) => (
         <div class={styles["guideRow"]}>
           <span class={styles["guideMarker"]} />
           <div class={styles["guideTrack"]}>

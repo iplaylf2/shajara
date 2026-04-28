@@ -6,7 +6,7 @@ import { i18N } from "#site";
 
 export function buildExplorerLocaleLinks(
   currentExampleId: ExplorerExampleId,
-): ExplorerBodyLocaleLink[] {
+): ExplorerLocaleLink[] {
   return siteLocaleEntries.map(([locale, localeConfig]) => ({
     href: buildExplorerHref(locale, currentExampleId),
     hreflang: localeConfig.lang,
@@ -20,7 +20,7 @@ export function buildExplorerHref(locale: SiteLocale, exampleId: ExplorerExample
   return getRelativeLocaleUrl(i18N.locales[locale].lang, route);
 }
 
-export interface ExplorerBodyExample {
+export interface ExplorerExampleSummary {
   description: string;
   guideRows: readonly string[];
   href: string;
@@ -28,7 +28,7 @@ export interface ExplorerBodyExample {
   title: string;
 }
 
-export interface ExplorerBodyLocaleLink {
+export interface ExplorerLocaleLink {
   href: string;
   hreflang: string;
   label: string;
