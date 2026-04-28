@@ -1,6 +1,6 @@
 import type { ExplorerExampleId } from "#/domain/explorer/examples";
 import type { JSX } from "solid-js";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export function ExplorerExampleRail(props: Props): JSX.Element {
   return (

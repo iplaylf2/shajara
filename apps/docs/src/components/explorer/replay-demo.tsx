@@ -5,19 +5,19 @@ import type {
 } from "#/domain/explorer/examples";
 import type { ExplorerReplayFrame, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
-import { createReplayFrameStream, playbackReplayFrames } from "./explorer-replay-stream";
+import { createReplayFrameStream, playbackReplayFrames } from "./replay-stream";
 import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
-import { readCodeLines, syncCodeLines } from "./explorer-replay-code-view";
+import { readCodeLines, syncCodeLines } from "./replay-code-view";
 import { spawn, wait } from "@shajara/host/primitives";
-import { ExplorerFlowView } from "./explorer-flow-view";
-import type { FlowScene } from "./explorer-flow-model";
-import type { ReplayCodeView } from "./explorer-replay-code-view";
+import { ExplorerFlowView } from "./flow-view";
+import type { FlowScene } from "./flow-model";
+import type { ReplayCodeView } from "./replay-code-view";
 import type { RiteCoroutine } from "@shajara/host";
-import { createCodeScroller } from "./explorer-code-scroller";
+import { createCodeScroller } from "./code-scroller";
 import { createPendingExplorerReplayState } from "#/domain/explorer/contract";
 import { readExplorerReplayRuntime } from "#/domain/explorer/examples";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export function ExplorerReplayDemo(props: Props): JSX.Element {
   const [state, setState] = createSignal<ExplorerReplayState<ExplorerExampleEvent>>(

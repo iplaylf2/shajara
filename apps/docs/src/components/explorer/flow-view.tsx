@@ -1,5 +1,5 @@
 import type { ExplorerEventId, ExplorerReplayState } from "#/domain/explorer/contract";
-import type { FlowNode, FlowScene } from "./explorer-flow-model";
+import type { FlowNode, FlowScene } from "./flow-model";
 import {
   isInterruptedWaitLink,
   isSettledDataLink,
@@ -7,14 +7,14 @@ import {
   isSpawnLinkConsumed,
   readLinkMode,
   readNodeStatus,
-} from "./explorer-flow-state";
-import type { ChannelDataBlockedAnchor } from "./explorer-flow-channel-link";
-import { ChannelDataLink } from "./explorer-flow-channel-link";
-import { ChannelNode } from "./explorer-flow-channel-node";
-import type { FlowNodeStatusValue } from "./explorer-flow-state";
+} from "./flow-status";
+import type { ChannelDataBlockedAnchor } from "./channel-data-link";
+import { ChannelDataLink } from "./channel-data-link";
+import { ChannelNode } from "./channel-node";
+import type { FlowNodeStatusValue } from "./flow-status";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export function ExplorerFlowView<TEvent extends ExplorerEventId>(
   props: Props<TEvent>,

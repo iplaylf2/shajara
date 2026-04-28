@@ -4,9 +4,9 @@ import type {
   ExplorerFlowLink as FlowLinkSpec,
   ExplorerFlowNode as FlowNodeSpec,
 } from "#/domain/explorer/contract";
-import type { FlowLink, FlowNode, FlowScene } from "./explorer-flow-model";
-import { readFlowViewBox } from "./explorer-flow-view-box";
-import { resolveFlowLinkPath } from "./explorer-flow-link-path";
+import type { FlowLink, FlowNode, FlowScene } from "./flow-model";
+import { readFlowViewBox } from "./flow-view-box";
+import { resolveFlowLinkPath } from "./flow-link-path";
 
 export function resolveFlowScene<TEvent extends ExplorerEventId>(
   graph: ExplorerFlow<TEvent>,

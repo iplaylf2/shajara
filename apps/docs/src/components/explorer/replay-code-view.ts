@@ -1,7 +1,7 @@
-import type { CodeScroller } from "./explorer-code-scroller";
+import type { CodeScroller } from "./code-scroller";
 import type { ExplorerExampleEvent } from "#/domain/explorer/examples";
 import type { ExplorerReplayCursor } from "#/domain/explorer/contract";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export interface ReplayCodeView {
   eventIds: readonly ExplorerExampleEvent[];

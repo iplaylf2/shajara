@@ -11,10 +11,10 @@ import {
 import { i18N, siteLocales } from "#site";
 import type { ExplorerBodyExample } from "#/pages-kit/explorer";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
-import ExplorerExampleStage from "#/components/explorer/explorer-example-stage.astro";
+import ExplorerExampleStage from "#/components/explorer/example-stage.astro";
 import ExplorerLayout from "#/layouts/explorer-layout.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
-import styles from "#/components/explorer/explorer.module.css";
+import styles from "#/components/explorer/styles.module.css";
 
 export function getStaticPaths() {
   return siteLocales.flatMap((locale) =>

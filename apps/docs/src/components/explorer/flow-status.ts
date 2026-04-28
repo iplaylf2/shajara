@@ -3,7 +3,7 @@ import type {
   ExplorerReplayCursorMode,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
-import type { FlowNode, FlowScene } from "./explorer-flow-model";
+import type { FlowNode, FlowScene } from "./flow-model";
 
 export type FlowNodeStatusValue = ExplorerReplayCursorMode | "done" | null;
 export type ChannelNodeStatusValue = "done" | "open" | "overload" | "pending";

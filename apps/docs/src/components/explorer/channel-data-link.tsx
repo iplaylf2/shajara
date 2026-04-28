@@ -1,9 +1,9 @@
-import { isSettledDataLink, readLinkMode } from "./explorer-flow-state";
+import { isSettledDataLink, readLinkMode } from "./flow-status";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
-import type { FlowScene } from "./explorer-flow-model";
+import type { FlowScene } from "./flow-model";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export function ChannelDataLink<TEvent extends string>(props: {
   blockedAnchor: ChannelDataBlockedAnchor;

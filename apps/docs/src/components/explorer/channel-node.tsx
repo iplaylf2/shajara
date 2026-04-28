@@ -1,9 +1,9 @@
-import { readChannelMeterLabel, readChannelNodeStatus } from "./explorer-flow-state";
+import { readChannelMeterLabel, readChannelNodeStatus } from "./flow-status";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
-import type { FlowNode } from "./explorer-flow-model";
+import type { FlowNode } from "./flow-model";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export function ChannelNode<TEvent extends string>(props: {
   node: FlowNode<TEvent>;

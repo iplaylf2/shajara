@@ -4,7 +4,7 @@ import type {
   ExplorerExampleCodeLine,
 } from "#/domain/explorer/contract";
 import { Code } from "astro/components";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 const { code, id } = Astro.props;
 const source = code.map((line) => line.text).join("\n");

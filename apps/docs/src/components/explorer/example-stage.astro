@@ -1,9 +1,9 @@
 ---
-import ExplorerCodeBlock from "./explorer-code-block.astro";
+import ExplorerCodeBlock from "./code-block.astro";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
-import { ExplorerReplayDemo } from "./explorer-replay-demo";
-import { resolveFlowScene } from "./explorer-flow-scene";
-import styles from "./explorer.module.css";
+import { ExplorerReplayDemo } from "./replay-demo";
+import { resolveFlowScene } from "./flow-scene";
+import styles from "./styles.module.css";
 
 const { description, example, guideRows, title } = Astro.props;
 const codeBlockId = `explorer-${example.id}-code`;

@@ -1,5 +1,5 @@
 import type { ExplorerEventId } from "#/domain/explorer/contract";
-import type { FlowNode } from "./explorer-flow-model";
+import type { FlowNode } from "./flow-model";
 
 export function readFlowViewBox<TEvent extends ExplorerEventId>(
   nodes: readonly FlowNode<TEvent>[],
