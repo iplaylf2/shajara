@@ -1,10 +1,8 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  interruptedWaitActivity,
   parentRoutineNode,
   spawnLink,
-  waitActivity,
   waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createFirstResultDemoCode, firstResultDemo } from "./runtime";
@@ -42,19 +40,21 @@ function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["
     spawnLink("root", "winner", "race(firstProfile)", ["race-open"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
     spawnLink("winner", "network", "fetchNetwork", ["launch-network"]),
-    waitLink(
-      "cache",
-      "winner",
-      "winner",
-      interruptedWaitActivity(["race-wait-cache"], ["cache-canceled"]),
-    ),
-    waitLink(
-      "network",
-      "winner",
-      "loser settles with arena",
-      interruptedWaitActivity(["race-wait-network"], ["network-canceled"]),
-    ),
-    waitLink("winner", "root", "wait(firstProfile)", waitActivity(["wait-race"])),
+    waitLink("cache", "winner", "winner", {
+      activeEvents: ["race-wait-cache"],
+      displayLabel: { kind: "hidden" },
+      interruption: { events: ["cache-canceled"], kind: "interruptible" },
+    }),
+    waitLink("network", "winner", "loser settles with arena", {
+      activeEvents: ["race-wait-network"],
+      displayLabel: { kind: "hidden" },
+      interruption: { events: ["network-canceled"], kind: "interruptible" },
+    }),
+    waitLink("winner", "root", "wait(firstProfile)", {
+      activeEvents: ["wait-race"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
+    }),
   ];
 }
 

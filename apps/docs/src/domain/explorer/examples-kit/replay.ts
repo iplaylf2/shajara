@@ -2,12 +2,10 @@ import type {
   ExplorerEventId,
   ExplorerReplayCursor,
   ExplorerReplayEmit,
-  ExplorerReplayTrace,
   ExplorerReplayTraceAction,
   ExplorerRoutineId,
 } from "#/domain/explorer/contract";
 import type { RiteCoroutine, RiteRoutine } from "@shajara/host";
-import type { NonEmptyTuple } from "type-fest";
 
 export function cursorAt<TEvent extends string>(
   routineId: string,
@@ -19,12 +17,6 @@ export function cursorAt<TEvent extends string>(
     mode,
     routineId,
   };
-}
-
-export function replayTrace<TEvent extends ExplorerEventId>(
-  ...actions: NonEmptyTuple<ExplorerReplayTraceAction<TEvent>>
-): ExplorerReplayTrace<TEvent> {
-  return { actions };
 }
 
 export function clearReplayCursor(routineId: ExplorerRoutineId): ExplorerReplayTraceAction<never> {
@@ -82,12 +74,12 @@ function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
     return result;
   } finally {
     if (!outcome.didReturn) {
-      yield* emit(
-        replayTrace(
+      yield* emit({
+        actions: [
           clearReplayCursor(replay.routineId),
           completeReplayEvents([replay.cancelEvent, replay.waitEvent]),
-        ),
-      );
+        ],
+      });
     }
   }
 }

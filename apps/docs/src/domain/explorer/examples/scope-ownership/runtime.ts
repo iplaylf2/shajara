@@ -4,7 +4,6 @@ import {
   codeLine,
   completeReplayEvents,
   cursorAt,
-  replayTrace,
   setReplayCursor,
   setReplayCursors,
 } from "#/domain/explorer/examples-kit";
@@ -35,51 +34,51 @@ export function* scopeOwnershipDemo(
   emit: ExplorerReplayEmit<ScopeOwnershipDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
-    yield* emit(
-      replayTrace(setReplayCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))),
-    );
+    yield* emit({
+      actions: [setReplayCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
+    });
     const result = yield* enclose(function* commitArticle(): RiteCoroutine<string> {
-      yield* emit(
-        replayTrace(setReplayCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))),
-      );
+      yield* emit({
+        actions: [setReplayCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))],
+      });
       yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
-        yield* emit(replayTrace(setReplayCursor(cursorAt("index", "index-sleep", "running"))));
+        yield* emit({ actions: [setReplayCursor(cursorAt("index", "index-sleep", "running"))] });
         yield* sleep(indexDelayMs);
-        yield* emit(
-          replayTrace(
+        yield* emit({
+          actions: [
             clearReplayCursor("index"),
             completeReplayEvents(["index-close", "scope-wait-index"]),
-          ),
-        );
+          ],
+        });
       });
 
-      yield* emit(replayTrace(setReplayCursor(cursorAt("scope", "inner-return", "running"))));
+      yield* emit({ actions: [setReplayCursor(cursorAt("scope", "inner-return", "running"))] });
       try {
         return "published";
       } finally {
-        yield* emit(
-          replayTrace(
+        yield* emit({
+          actions: [
             completeReplayEvents("inner-return"),
             setReplayCursors([
               cursorAt("root", ["enclose-open", "scope-wait-root"], "blocked"),
               cursorAt("scope", "scope-wait-index", "blocked"),
             ]),
-          ),
-        );
+          ],
+        });
       }
     });
 
-    yield* emit(
-      replayTrace(
+    yield* emit({
+      actions: [
         clearReplayCursor("scope"),
         completeReplayEvents(["enclose-close", "scope-wait-root"]),
         setReplayCursor(cursorAt("root", "return-result", "running")),
-      ),
-    );
+      ],
+    });
     try {
       return result;
     } finally {
-      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
+      yield* emit({ actions: [clearReplayCursor("root"), completeReplayEvents("done")] });
     }
   });
 }

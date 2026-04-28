@@ -1,4 +1,4 @@
-import type { NonEmptyTuple, Simplify, TaggedUnion } from "type-fest";
+import type { NonEmptyTuple, TaggedUnion } from "type-fest";
 import type { RiteCoroutine } from "@shajara/host";
 
 export type ExplorerEventId = string;
@@ -47,23 +47,30 @@ export interface ExplorerFlowGraph<TEvent extends ExplorerEventId> {
 export type ExplorerFlowGraphLink<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",
   {
-    data: Simplify<ExplorerFlowGraphLinkBase<TEvent>>;
-    spawn: Simplify<ExplorerFlowGraphLinkBase<TEvent>>;
-    wait: Simplify<
-      ExplorerFlowGraphLinkBase<TEvent> & {
-        readonly interruption: ExplorerWaitLinkInterruption<TEvent>;
-      }
-    >;
+    data: {
+      readonly activeEvents: readonly TEvent[];
+      readonly displayLabel: ExplorerFlowLinkDisplayLabel;
+      readonly from: string;
+      readonly label: string;
+      readonly to: string;
+    };
+    spawn: {
+      readonly activeEvents: readonly TEvent[];
+      readonly displayLabel: ExplorerFlowLinkDisplayLabel;
+      readonly from: string;
+      readonly label: string;
+      readonly to: string;
+    };
+    wait: {
+      readonly activeEvents: readonly TEvent[];
+      readonly displayLabel: ExplorerFlowLinkDisplayLabel;
+      readonly from: string;
+      readonly interruption: ExplorerWaitLinkInterruption<TEvent>;
+      readonly label: string;
+      readonly to: string;
+    };
   }
 >;
-
-export interface ExplorerFlowGraphLinkBase<TEvent extends ExplorerEventId> {
-  readonly activeEvents: readonly TEvent[];
-  readonly displayLabel: ExplorerFlowLinkDisplayLabel;
-  readonly from: string;
-  readonly label: string;
-  readonly to: string;
-}
 
 export type ExplorerFlowLinkDisplayLabel = TaggedUnion<
   "kind",
@@ -84,30 +91,37 @@ export type ExplorerWaitLinkInterruption<TEvent extends ExplorerEventId> = Tagge
 export type ExplorerFlowGraphNode<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",
   {
-    branch: Simplify<ExplorerRoutineFlowGraphNode<TEvent>>;
-    channel: Simplify<ExplorerChannelFlowGraphNode<TEvent>>;
-    join: Simplify<ExplorerRoutineFlowGraphNode<TEvent>>;
-    parent: Simplify<ExplorerRoutineFlowGraphNode<TEvent>>;
+    branch: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+    };
+    channel: {
+      readonly activeEvents: readonly TEvent[];
+      readonly channelState: ExplorerChannelFlowGraphNodeState<TEvent>;
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly [];
+    };
+    join: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+    };
+    parent: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+    };
   }
 >;
-
-export type ExplorerChannelFlowGraphNode<TEvent extends ExplorerEventId> =
-  ExplorerFlowGraphNodeBase<TEvent> & {
-    readonly channelState: ExplorerChannelFlowGraphNodeState<TEvent>;
-    readonly statusRoutineIds: readonly [];
-  };
-
-export type ExplorerRoutineFlowGraphNode<TEvent extends ExplorerEventId> =
-  ExplorerFlowGraphNodeBase<TEvent> & {
-    readonly statusRoutineIds: readonly ExplorerRoutineId[];
-  };
-
-export interface ExplorerFlowGraphNodeBase<TEvent extends ExplorerEventId> {
-  readonly activeEvents: readonly TEvent[];
-  readonly completedEvents: readonly TEvent[];
-  readonly id: string;
-  readonly label: string;
-}
 
 export type ExplorerChannelFlowGraphNodeState<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",
@@ -124,15 +138,16 @@ export type ExplorerChannelFlowGraphNodeState<TEvent extends ExplorerEventId> = 
 export type ExplorerFlowGraphNodeMeter<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",
   {
-    active: Simplify<ExplorerFlowGraphNodeMeterBase<TEvent>>;
-    completed: Simplify<ExplorerFlowGraphNodeMeterBase<TEvent>>;
+    active: {
+      readonly events: readonly TEvent[];
+      readonly label: string;
+    };
+    completed: {
+      readonly events: readonly TEvent[];
+      readonly label: string;
+    };
   }
 >;
-
-export interface ExplorerFlowGraphNodeMeterBase<TEvent extends ExplorerEventId> {
-  readonly events: readonly TEvent[];
-  readonly label: string;
-}
 
 export interface ExplorerReplayFrame<TEvent extends ExplorerEventId> {
   active: readonly TEvent[];

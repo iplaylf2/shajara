@@ -4,7 +4,6 @@ import {
   codeLine,
   completeReplayEvents,
   cursorAt,
-  replayTrace,
   setReplayCursor,
 } from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
@@ -30,33 +29,33 @@ export function* singleSpawnDemo(
   emit: ExplorerReplayEmit<SingleSpawnDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* submitOrder(): RiteCoroutine<string> {
-    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "spawn-receipt", "running"))));
+    yield* emit({ actions: [setReplayCursor(cursorAt("root", "spawn-receipt", "running"))] });
     yield* spawn(function* sendReceiptEmail(): RiteCoroutine<string> {
-      yield* emit(replayTrace(setReplayCursor(cursorAt("receipt", "receipt-sleep", "running"))));
+      yield* emit({ actions: [setReplayCursor(cursorAt("receipt", "receipt-sleep", "running"))] });
       yield* sleep(receiptDelayMs);
-      yield* emit(
-        replayTrace(
+      yield* emit({
+        actions: [
           setReplayCursor(cursorAt("receipt", ["receipt-return", "receipt-close"], "running")),
-        ),
-      );
+        ],
+      });
       try {
         return "receipt sent";
       } finally {
-        yield* emit(
-          replayTrace(
+        yield* emit({
+          actions: [
             clearReplayCursors(["receipt", "root"]),
             completeReplayEvents(["receipt-return", "wait-receipt", "done"]),
-          ),
-        );
+          ],
+        });
       }
     });
 
-    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "return-accepted", "running"))));
+    yield* emit({ actions: [setReplayCursor(cursorAt("root", "return-accepted", "running"))] });
 
     try {
       return "order accepted";
     } finally {
-      yield* emit(replayTrace(setReplayCursor(cursorAt("root", "wait-receipt", "blocked"))));
+      yield* emit({ actions: [setReplayCursor(cursorAt("root", "wait-receipt", "blocked"))] });
     }
   });
 }

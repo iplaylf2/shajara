@@ -2,7 +2,7 @@ import type {
   ExplorerChannelFlowGraphNodeState,
   ExplorerFlowGraphLink,
   ExplorerFlowGraphNode,
-  ExplorerFlowGraphNodeMeter,
+  ExplorerWaitLinkInterruption,
 } from "#/domain/explorer/contract";
 
 export function spawnLink<TEvent extends string>(
@@ -25,7 +25,7 @@ export function waitLink<TEvent extends string>(
   from: string,
   to: string,
   label: string,
-  options: ExplorerFlowLinkActivity<TEvent>,
+  options: ExplorerWaitLinkOptions<TEvent>,
 ): ExplorerFlowGraphLink<TEvent> {
   return {
     activeEvents: options.activeEvents,
@@ -58,7 +58,7 @@ export function channelNode<TEvent extends string>(
   id: string,
   label: string,
   lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-  state: ExplorerChannelNodeState<TEvent>,
+  state: ExplorerChannelFlowGraphNodeState<TEvent>,
 ): ExplorerFlowGraphNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
@@ -103,74 +103,13 @@ function routineNode<TEvent extends string>(
   };
 }
 
-interface ExplorerFlowLinkActivity<TEvent extends string> {
+interface ExplorerWaitLinkOptions<TEvent extends string> {
   activeEvents: readonly TEvent[];
   displayLabel: ExplorerFlowGraphLink<TEvent>["displayLabel"];
-  interruption: Extract<ExplorerFlowGraphLink<TEvent>, { kind: "wait" }>["interruption"];
+  interruption: ExplorerWaitLinkInterruption<TEvent>;
 }
 
 interface ExplorerRoutineNodeLifecycle<TEvent extends string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
-}
-
-type ExplorerChannelNodeState<TEvent extends string> = ExplorerChannelFlowGraphNodeState<TEvent>;
-
-export function waitActivity<TEvent extends string>(
-  activeEvents: readonly TEvent[],
-): ExplorerFlowLinkActivity<TEvent> {
-  return {
-    activeEvents,
-    displayLabel: { kind: "hidden" },
-    interruption: { kind: "none" },
-  };
-}
-
-export function interruptedWaitActivity<TEvent extends string>(
-  activeEvents: readonly TEvent[],
-  interruptedEvents: readonly TEvent[],
-): ExplorerFlowLinkActivity<TEvent> {
-  return {
-    activeEvents,
-    displayLabel: { kind: "hidden" },
-    interruption: { events: interruptedEvents, kind: "interruptible" },
-  };
-}
-
-export function labeledWaitActivity<TEvent extends string>(
-  activeEvents: readonly TEvent[],
-  visibleLabel: string,
-): ExplorerFlowLinkActivity<TEvent> {
-  return {
-    activeEvents,
-    displayLabel: { kind: "visible", text: visibleLabel },
-    interruption: { kind: "none" },
-  };
-}
-
-export function meteredChannelState<TEvent extends string>(
-  defaultLabel: string,
-  states: readonly ExplorerFlowGraphNodeMeter<TEvent>[],
-  overloadEvents: readonly TEvent[],
-): ExplorerChannelNodeState<TEvent> {
-  return {
-    defaultLabel,
-    kind: "metered",
-    overloadEvents,
-    states,
-  };
-}
-
-export function activeMeter<TEvent extends string>(
-  label: string,
-  events: readonly TEvent[],
-): ExplorerFlowGraphNodeMeter<TEvent> {
-  return { events, kind: "active", label };
-}
-
-export function completedMeter<TEvent extends string>(
-  label: string,
-  events: readonly TEvent[],
-): ExplorerFlowGraphNodeMeter<TEvent> {
-  return { events, kind: "completed", label };
 }

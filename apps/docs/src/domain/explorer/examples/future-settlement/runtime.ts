@@ -4,7 +4,6 @@ import {
   codeLine,
   completeReplayEvents,
   cursorAt,
-  replayTrace,
   setReplayCursor,
 } from "#/domain/explorer/examples-kit";
 import { enclose, future, settle, spawn, wait } from "@shajara/host/primitives";
@@ -31,39 +30,43 @@ export function* futureSettlementDemo(
   emit: ExplorerReplayEmit<FutureSettlementDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* verifyPhoneNumber(): RiteCoroutine<string> {
-    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "future", "running"))));
+    yield* emit({ actions: [setReplayCursor(cursorAt("root", "future", "running"))] });
     const [smsCode, provideSmsCode] = yield* future<string>();
-    yield* emit(
-      replayTrace(
+    yield* emit({
+      actions: [
         completeReplayEvents("future"),
         setReplayCursor(cursorAt("root", "spawn-resolver", "running")),
-      ),
-    );
+      ],
+    });
     yield* spawn(function* receiveSmsCode(): RiteCoroutine<void> {
-      yield* emit(replayTrace(setReplayCursor(cursorAt("resolver", "resolver-sleep", "running"))));
+      yield* emit({
+        actions: [setReplayCursor(cursorAt("resolver", "resolver-sleep", "running"))],
+      });
       yield* sleep(resolverDelayMs);
-      yield* emit(
-        replayTrace(
+      yield* emit({
+        actions: [
           setReplayCursor(cursorAt("resolver", ["settle-code", "resolver-close"], "running")),
-        ),
-      );
+        ],
+      });
       yield* settle(provideSmsCode, "4921");
-      yield* emit(replayTrace(clearReplayCursor("resolver"), completeReplayEvents("settle-code")));
+      yield* emit({
+        actions: [clearReplayCursor("resolver"), completeReplayEvents("settle-code")],
+      });
     });
 
-    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "wait-code", "blocked"))));
+    yield* emit({ actions: [setReplayCursor(cursorAt("root", "wait-code", "blocked"))] });
     const code = yield* wait(smsCode);
-    yield* emit(
-      replayTrace(
+    yield* emit({
+      actions: [
         completeReplayEvents("wait-code"),
         setReplayCursor(cursorAt("root", "done", "running")),
-      ),
-    );
+      ],
+    });
 
     try {
       return code;
     } finally {
-      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
+      yield* emit({ actions: [clearReplayCursor("root"), completeReplayEvents("done")] });
     }
   });
 }

@@ -5,7 +5,6 @@ import {
   branchRoutineNode,
   parentRoutineNode,
   spawnLink,
-  waitActivity,
   waitLink,
 } from "#/domain/explorer/examples-kit";
 
@@ -41,9 +40,21 @@ function createAllResultsFlowLinks(): ExplorerFlowGraph<AllResultsDemoEvent>["li
     spawnLink("root", "result", "all(pageData)", ["all-open"]),
     spawnLink("result", "user", "loadUser", ["launch-user"]),
     spawnLink("result", "settings", "loadSettings", ["launch-settings"]),
-    waitLink("user", "result", "user result", waitActivity(["all-wait-user"])),
-    waitLink("settings", "result", "settings result", waitActivity(["all-wait-settings"])),
-    waitLink("result", "root", "wait(pageData)", waitActivity(["wait-all"])),
+    waitLink("user", "result", "user result", {
+      activeEvents: ["all-wait-user"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
+    }),
+    waitLink("settings", "result", "settings result", {
+      activeEvents: ["all-wait-settings"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
+    }),
+    waitLink("result", "root", "wait(pageData)", {
+      activeEvents: ["wait-all"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
+    }),
   ];
 }
 

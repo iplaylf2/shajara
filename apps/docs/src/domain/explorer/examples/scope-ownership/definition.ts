@@ -3,7 +3,6 @@ import {
   branchRoutineNode,
   parentRoutineNode,
   spawnLink,
-  waitActivity,
   waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createScopeOwnershipDemoCode, scopeOwnershipDemo } from "./runtime";
@@ -41,8 +40,16 @@ function createScopeOwnershipFlowLinks(): ExplorerFlowGraph<ScopeOwnershipDemoEv
   return [
     spawnLink("root", "scope", "enclose(commitArticle)", ["launch-scope"]),
     spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
-    waitLink("index", "scope", "owned process", waitActivity(["scope-wait-index"])),
-    waitLink("scope", "root", "enclose waits for child scope", waitActivity(["scope-wait-root"])),
+    waitLink("index", "scope", "owned process", {
+      activeEvents: ["scope-wait-index"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
+    }),
+    waitLink("scope", "root", "enclose waits for child scope", {
+      activeEvents: ["scope-wait-root"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
+    }),
   ];
 }
 

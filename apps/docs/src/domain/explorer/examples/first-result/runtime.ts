@@ -5,7 +5,6 @@ import {
   completeReplayEvents,
   cursorAt,
   raceBranch,
-  replayTrace,
   setReplayCursor,
   setReplayCursors,
 } from "#/domain/explorer/examples-kit";
@@ -48,14 +47,14 @@ export function* firstResultDemo(
   emit: ExplorerReplayEmit<FirstResultDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* loadProfile(): RiteCoroutine<string> {
-    yield* emit(
-      replayTrace(
+    yield* emit({
+      actions: [
         setReplayCursors([
           cursorAt("root", "race-open", "running"),
           cursorAt("race", ["launch-cache", "launch-network"], "running"),
         ]),
-      ),
-    );
+      ],
+    });
     const firstProfile = yield* race([
       raceBranch(
         emit,
@@ -65,31 +64,31 @@ export function* firstResultDemo(
           waitEvent: "race-wait-cache",
         },
         function* readCache(): RiteCoroutine<string> {
-          yield* emit(
-            replayTrace(
+          yield* emit({
+            actions: [
               setReplayCursors([
                 cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
                 cursorAt("cache", "cache-sleep", "running"),
               ]),
-            ),
-          );
+            ],
+          });
           yield* sleep(cacheDelayMs);
-          yield* emit(
-            replayTrace(
+          yield* emit({
+            actions: [
               setReplayCursor(cursorAt("cache", ["cache-return", "cache-close"], "running")),
-            ),
-          );
+            ],
+          });
 
           try {
             return "cached profile";
           } finally {
-            yield* emit(
-              replayTrace(
+            yield* emit({
+              actions: [
                 clearReplayCursor("cache"),
                 completeReplayEvents(["cache-return", "race-wait-cache"]),
                 setReplayCursor(cursorAt("race", "race-wait-network", "blocked")),
-              ),
-            );
+              ],
+            });
           }
         },
       ),
@@ -101,50 +100,50 @@ export function* firstResultDemo(
           waitEvent: "race-wait-network",
         },
         function* fetchNetwork(): RiteCoroutine<string> {
-          yield* emit(
-            replayTrace(
+          yield* emit({
+            actions: [
               setReplayCursors([
                 cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
                 cursorAt("network", "network-sleep", "running"),
               ]),
-            ),
-          );
+            ],
+          });
           yield* sleep(networkDelayMs);
-          yield* emit(
-            replayTrace(
+          yield* emit({
+            actions: [
               setReplayCursor(cursorAt("network", ["network-return", "network-close"], "running")),
-            ),
-          );
+            ],
+          });
 
           try {
             return "fresh profile";
           } finally {
-            yield* emit(
-              replayTrace(
+            yield* emit({
+              actions: [
                 clearReplayCursor("network"),
                 completeReplayEvents(["network-return", "race-wait-network"]),
                 setReplayCursor(cursorAt("race", "race-wait-cache", "blocked")),
-              ),
-            );
+              ],
+            });
           }
         },
       ),
     ] as const);
 
-    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "wait-race", "blocked"))));
+    yield* emit({ actions: [setReplayCursor(cursorAt("root", "wait-race", "blocked"))] });
     const profile = yield* wait(firstProfile);
-    yield* emit(
-      replayTrace(
+    yield* emit({
+      actions: [
         clearReplayCursor("race"),
         completeReplayEvents("wait-race"),
         setReplayCursor(cursorAt("root", "return-profile", "running")),
-      ),
-    );
+      ],
+    });
 
     try {
       return profile;
     } finally {
-      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
+      yield* emit({ actions: [clearReplayCursor("root"), completeReplayEvents("done")] });
     }
   });
 }
