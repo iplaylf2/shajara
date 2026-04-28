@@ -1,5 +1,5 @@
 import { isSettledDataLink, readLinkMode } from "./explorer-flow-state";
-import type { ExplorerFlowScene } from "./explorer-flow-scene";
+import type { ExplorerFlowScene } from "./explorer-flow-contract";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";

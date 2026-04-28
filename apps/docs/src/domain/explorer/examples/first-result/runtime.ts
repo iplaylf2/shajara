@@ -1,5 +1,14 @@
 // oxlint-disable max-lines-per-function
-import { codeLine, cursorAt, raceBranch } from "#/domain/explorer/examples-kit";
+import {
+  clearReplayCursor,
+  codeLine,
+  completeReplayEvents,
+  cursorAt,
+  raceBranch,
+  replayTrace,
+  setReplayCursor,
+  setReplayCursors,
+} from "#/domain/explorer/examples-kit";
 import { enclose, race, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
@@ -39,12 +48,14 @@ export function* firstResultDemo(
   emit: ExplorerReplayEmit<FirstResultDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* loadProfile(): RiteCoroutine<string> {
-    yield* emit({
-      cursors: [
-        cursorAt("root", "race-open", "running"),
-        cursorAt("race", ["launch-cache", "launch-network"], "running"),
-      ],
-    });
+    yield* emit(
+      replayTrace(
+        setReplayCursors([
+          cursorAt("root", "race-open", "running"),
+          cursorAt("race", ["launch-cache", "launch-network"], "running"),
+        ]),
+      ),
+    );
     const firstProfile = yield* race([
       raceBranch(
         emit,
@@ -54,25 +65,31 @@ export function* firstResultDemo(
           waitEvent: "race-wait-cache",
         },
         function* readCache(): RiteCoroutine<string> {
-          yield* emit({
-            cursors: [
-              cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
-              cursorAt("cache", "cache-sleep", "running"),
-            ],
-          });
+          yield* emit(
+            replayTrace(
+              setReplayCursors([
+                cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
+                cursorAt("cache", "cache-sleep", "running"),
+              ]),
+            ),
+          );
           yield* sleep(cacheDelayMs);
-          yield* emit({
-            cursor: cursorAt("cache", ["cache-return", "cache-close"], "running"),
-          });
+          yield* emit(
+            replayTrace(
+              setReplayCursor(cursorAt("cache", ["cache-return", "cache-close"], "running")),
+            ),
+          );
 
           try {
             return "cached profile";
           } finally {
-            yield* emit({
-              clearCursor: "cache",
-              completed: ["cache-return", "race-wait-cache"],
-              cursor: cursorAt("race", "race-wait-network", "blocked"),
-            });
+            yield* emit(
+              replayTrace(
+                clearReplayCursor("cache"),
+                completeReplayEvents(["cache-return", "race-wait-cache"]),
+                setReplayCursor(cursorAt("race", "race-wait-network", "blocked")),
+              ),
+            );
           }
         },
       ),
@@ -84,47 +101,50 @@ export function* firstResultDemo(
           waitEvent: "race-wait-network",
         },
         function* fetchNetwork(): RiteCoroutine<string> {
-          yield* emit({
-            cursors: [
-              cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
-              cursorAt("network", "network-sleep", "running"),
-            ],
-          });
+          yield* emit(
+            replayTrace(
+              setReplayCursors([
+                cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
+                cursorAt("network", "network-sleep", "running"),
+              ]),
+            ),
+          );
           yield* sleep(networkDelayMs);
-          yield* emit({
-            cursor: cursorAt("network", ["network-return", "network-close"], "running"),
-          });
+          yield* emit(
+            replayTrace(
+              setReplayCursor(cursorAt("network", ["network-return", "network-close"], "running")),
+            ),
+          );
 
           try {
             return "fresh profile";
           } finally {
-            yield* emit({
-              clearCursor: "network",
-              completed: ["network-return", "race-wait-network"],
-              cursor: cursorAt("race", "race-wait-cache", "blocked"),
-            });
+            yield* emit(
+              replayTrace(
+                clearReplayCursor("network"),
+                completeReplayEvents(["network-return", "race-wait-network"]),
+                setReplayCursor(cursorAt("race", "race-wait-cache", "blocked")),
+              ),
+            );
           }
         },
       ),
     ] as const);
 
-    yield* emit({
-      cursor: cursorAt("root", "wait-race", "blocked"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "wait-race", "blocked"))));
     const profile = yield* wait(firstProfile);
-    yield* emit({
-      clearCursor: "race",
-      completed: "wait-race",
-      cursor: cursorAt("root", "return-profile", "running"),
-    });
+    yield* emit(
+      replayTrace(
+        clearReplayCursor("race"),
+        completeReplayEvents("wait-race"),
+        setReplayCursor(cursorAt("root", "return-profile", "running")),
+      ),
+    );
 
     try {
       return profile;
     } finally {
-      yield* emit({
-        clearCursor: "root",
-        completed: "done",
-      });
+      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
     }
   });
 }

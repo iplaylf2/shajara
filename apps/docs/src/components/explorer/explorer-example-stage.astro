@@ -11,7 +11,7 @@ const stageEventIds = [
   ...new Set(
     example.stage.code.flatMap((line) => [
       line.id,
-      ...(line.completedEvents ?? []),
+      ...line.completion.events,
     ]),
   ),
 ];

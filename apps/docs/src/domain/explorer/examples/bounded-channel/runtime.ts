@@ -1,6 +1,13 @@
 // oxlint-disable max-lines-per-function
 import { channel, enclose, receive, send, spawn } from "@shajara/host/primitives";
-import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import {
+  clearReplayCursor,
+  codeLine,
+  completeReplayEvents,
+  cursorAt,
+  replayTrace,
+  setReplayCursor,
+} from "#/domain/explorer/examples-kit";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -35,79 +42,83 @@ export function* boundedChannelDemo(
   emit: ExplorerReplayEmit<BoundedChannelDemoEvent>,
 ): RiteCoroutine<number> {
   return yield* enclose(function* queueBatches(): RiteCoroutine<number> {
-    yield* emit({
-      cursor: cursorAt("root", "channel-open", "running"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "channel-open", "running"))));
     const [receiver, sender] = yield* channel<string, never>(channelCapacity);
-    yield* emit({
-      completed: "channel-open",
-      cursor: cursorAt("root", "spawn-worker", "running"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("channel-open"),
+        setReplayCursor(cursorAt("root", "spawn-worker", "running")),
+      ),
+    );
     yield* spawn(function* writeBatches(): RiteCoroutine<readonly string[]> {
-      yield* emit({
-        cursor: cursorAt("worker", "worker-sleep", "running"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("worker", "worker-sleep", "running"))));
       yield* sleep(workerDelayMs);
-      yield* emit({
-        cursor: cursorAt("worker", "receive-first", "running"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("worker", "receive-first", "running"))));
       const first = yield* receive(receiver);
-      yield* emit({
-        completed: "receive-first",
-        cursor: cursorAt("worker", "receive-second", "blocked"),
-      });
+      yield* emit(
+        replayTrace(
+          completeReplayEvents("receive-first"),
+          setReplayCursor(cursorAt("worker", "receive-second", "blocked")),
+        ),
+      );
       const second = yield* receive(receiver);
-      yield* emit({
-        completed: "receive-second",
-        cursor: cursorAt("worker", "receive-third", "blocked"),
-      });
+      yield* emit(
+        replayTrace(
+          completeReplayEvents("receive-second"),
+          setReplayCursor(cursorAt("worker", "receive-third", "blocked")),
+        ),
+      );
       const third = yield* receive(receiver);
-      yield* emit({
-        completed: "receive-third",
-        cursor: cursorAt("worker", ["worker-return", "worker-close"], "running"),
-      });
+      yield* emit(
+        replayTrace(
+          completeReplayEvents("receive-third"),
+          setReplayCursor(cursorAt("worker", ["worker-return", "worker-close"], "running")),
+        ),
+      );
 
       try {
         return [first, second, third];
       } finally {
-        yield* emit({
-          clearCursor: "worker",
-          completed: "worker-return",
-        });
+        yield* emit(
+          replayTrace(clearReplayCursor("worker"), completeReplayEvents("worker-return")),
+        );
       }
     });
 
-    yield* emit({
-      cursor: cursorAt("root", "send-first", "running"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "send-first", "running"))));
     yield* send(sender, "draft");
-    yield* emit({
-      completed: "send-first",
-      cursor: cursorAt("root", "send-second", "blocked"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("send-first"),
+        setReplayCursor(cursorAt("root", "send-second", "blocked")),
+      ),
+    );
     yield* send(sender, "review");
-    yield* emit({
-      completed: "second-sent",
-      cursor: cursorAt("root", "sender-sleep", "running"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("second-sent"),
+        setReplayCursor(cursorAt("root", "sender-sleep", "running")),
+      ),
+    );
     yield* sleep(senderDelayMs);
-    yield* emit({
-      completed: "sender-sleep",
-      cursor: cursorAt("root", "send-third", "running"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("sender-sleep"),
+        setReplayCursor(cursorAt("root", "send-third", "running")),
+      ),
+    );
     yield* send(sender, "publish");
-    yield* emit({
-      completed: "send-third",
-      cursor: cursorAt("root", "done-return", "running"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("send-third"),
+        setReplayCursor(cursorAt("root", "done-return", "running")),
+      ),
+    );
 
     try {
       return batchCount;
     } finally {
-      yield* emit({
-        clearCursor: "root",
-        completed: "done",
-      });
+      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
     }
   });
 }

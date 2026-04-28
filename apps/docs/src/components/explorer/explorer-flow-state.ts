@@ -3,7 +3,7 @@ import type {
   ExplorerReplayCursorMode,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-scene";
+import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-contract";
 
 export type FlowNodeStatusValue = ExplorerReplayCursorMode | "done" | null;
 export type ChannelNodeStatusValue = "done" | "open" | "overload" | "pending";
@@ -15,7 +15,8 @@ export function isInterruptedWaitLink<TEvent extends ExplorerEventId>(
   return (
     link.variant === "wait" &&
     readLinkMode(link.activeEvents, state) === null &&
-    Boolean(link.interruptedEvents && includesAny(state.completed, link.interruptedEvents))
+    link.interruption.kind === "interruptible" &&
+    includesAny(state.completed, link.interruption.events)
   );
 }
 
@@ -68,6 +69,10 @@ export function readNodeStatus<TEvent extends ExplorerEventId>(
   node: ExplorerFlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): FlowNodeStatusValue {
+  if (node.variant === "channel") {
+    return null;
+  }
+
   if (includesAny(state.completed, node.completedEvents)) {
     return "done";
   }
@@ -85,7 +90,11 @@ export function readChannelNodeStatus<TEvent extends ExplorerEventId>(
   node: ExplorerFlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): ChannelNodeStatusValue {
-  if (includesAny(state.active, node.overloadEvents ?? [])) {
+  if (
+    node.variant === "channel" &&
+    node.channelState.kind === "metered" &&
+    includesAny(state.active, node.channelState.overloadEvents)
+  ) {
     return "overload";
   }
 
@@ -107,13 +116,19 @@ export function readChannelMeterLabel<TEvent extends ExplorerEventId>(
   node: ExplorerFlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): string | null {
-  const matchedState = node.meterStates?.find(
-    (meterState) =>
-      includesAny(state.active, meterState.activeEvents ?? []) ||
-      includesAny(state.completed, meterState.completedEvents ?? []),
-  );
+  if (node.variant !== "channel" || node.channelState.kind === "plain") {
+    return null;
+  }
 
-  return matchedState?.label ?? node.meterLabel ?? null;
+  const matchedState = node.channelState.states.find((meterState) => {
+    if (meterState.kind === "active") {
+      return includesAny(state.active, meterState.events);
+    }
+
+    return includesAny(state.completed, meterState.events);
+  });
+
+  return matchedState?.label ?? node.channelState.defaultLabel;
 }
 
 function includesAny<TEvent extends ExplorerEventId>(

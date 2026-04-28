@@ -1,12 +1,15 @@
 import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
-import { boundedChannelDemo, createBoundedChannelDemoCode } from "./runtime";
 import {
+  activeMeter,
   branchRoutineNode,
   channelNode,
+  completedMeter,
   dataLink,
+  meteredChannelState,
   parentRoutineNode,
   spawnLink,
 } from "#/domain/explorer/examples-kit";
+import { boundedChannelDemo, createBoundedChannelDemoCode } from "./runtime";
 import type { BoundedChannelDemoEvent } from "./runtime";
 
 export const boundedChannelExample = {
@@ -96,19 +99,16 @@ function createChannelNode() {
       ],
       completedEvents: ["done"],
     },
-    {
-      meterLabel: "0/1",
-      meterStates: [
-        { completedEvents: ["done"], label: "0/1" },
-        {
-          activeEvents: ["send-first", "send-second", "send-third"],
-          label: "1/1",
-        },
-        { activeEvents: ["receive-first", "receive-second", "receive-third"], label: "0/1" },
-        { completedEvents: ["send-first", "second-sent"], label: "1/1" },
+    meteredChannelState(
+      "0/1",
+      [
+        completedMeter("0/1", ["done"]),
+        activeMeter("1/1", ["send-first", "send-second", "send-third"]),
+        activeMeter("0/1", ["receive-first", "receive-second", "receive-third"]),
+        completedMeter("1/1", ["send-first", "second-sent"]),
       ],
-      overloadEvents: ["send-second"],
-    },
+      ["send-second"],
+    ),
   );
 }
 

@@ -1,5 +1,6 @@
 import type { ExplorerEventId, ExplorerFlowGraphLink } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode, FlowLinkDirection } from "./explorer-flow-scene";
+import type { ExplorerFlowNode } from "./explorer-flow-contract";
+import type { FlowLinkDirection } from "./explorer-flow-scene";
 
 export function resolveFlowLinkPath<TEvent extends ExplorerEventId>(
   link: ExplorerFlowGraphLink<TEvent>,

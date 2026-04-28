@@ -1,5 +1,5 @@
 import type { ExplorerEventId, ExplorerReplayState } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-scene";
+import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-contract";
 import {
   isInterruptedWaitLink,
   isSettledDataLink,
@@ -262,7 +262,7 @@ function readChannelDataLink<TEvent extends string>(
 function FlowLinkLabel<TEvent extends string>(props: {
   link: ExplorerFlowScene<TEvent>["links"][number];
 }): JSX.Element {
-  if (!props.link.visibleLabel) {
+  if (props.link.displayLabel.kind === "hidden") {
     return <></>;
   }
 
@@ -272,7 +272,7 @@ function FlowLinkLabel<TEvent extends string>(props: {
       x={String(props.link.labelX)}
       y={String(props.link.labelY)}
     >
-      {props.link.visibleLabel}
+      {props.link.displayLabel.text}
     </text>
   );
 }

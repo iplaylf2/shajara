@@ -10,7 +10,7 @@ import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { readCodeLines, syncCodeLines } from "./explorer-replay-code-view";
 import { spawn, wait } from "@shajara/host/primitives";
-import type { ExplorerFlowScene } from "./explorer-flow-scene";
+import type { ExplorerFlowScene } from "./explorer-flow-contract";
 import { ExplorerFlowView } from "./explorer-flow-view";
 import type { ReplayCodeView } from "./explorer-replay-code-view";
 import type { RiteCoroutine } from "@shajara/host";

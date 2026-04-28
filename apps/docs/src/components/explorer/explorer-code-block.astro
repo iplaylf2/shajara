@@ -18,7 +18,7 @@ const lineTransformer = {
     }
 
     const lineEvent = line.id;
-    const completedEvents = line.completedEvents ?? [];
+    const completedEvents = line.completion.events;
 
     const className = [styles["explorerCodeLine"]];
 

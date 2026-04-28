@@ -1,5 +1,13 @@
 // oxlint-disable max-lines-per-function
-import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import {
+  clearReplayCursor,
+  codeLine,
+  completeReplayEvents,
+  cursorAt,
+  replayTrace,
+  setReplayCursor,
+  setReplayCursors,
+} from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
@@ -27,52 +35,51 @@ export function* scopeOwnershipDemo(
   emit: ExplorerReplayEmit<ScopeOwnershipDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
-    yield* emit({
-      cursor: cursorAt("root", ["enclose-open", "launch-scope"], "running"),
-    });
+    yield* emit(
+      replayTrace(setReplayCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))),
+    );
     const result = yield* enclose(function* commitArticle(): RiteCoroutine<string> {
-      yield* emit({
-        cursor: cursorAt("scope", ["launch-index", "spawn-index"], "running"),
-      });
+      yield* emit(
+        replayTrace(setReplayCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))),
+      );
       yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
-        yield* emit({
-          cursor: cursorAt("index", "index-sleep", "running"),
-        });
+        yield* emit(replayTrace(setReplayCursor(cursorAt("index", "index-sleep", "running"))));
         yield* sleep(indexDelayMs);
-        yield* emit({
-          clearCursor: "index",
-          completed: ["index-close", "scope-wait-index"],
-        });
+        yield* emit(
+          replayTrace(
+            clearReplayCursor("index"),
+            completeReplayEvents(["index-close", "scope-wait-index"]),
+          ),
+        );
       });
 
-      yield* emit({
-        cursor: cursorAt("scope", "inner-return", "running"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("scope", "inner-return", "running"))));
       try {
         return "published";
       } finally {
-        yield* emit({
-          completed: "inner-return",
-          cursors: [
-            cursorAt("root", ["enclose-open", "scope-wait-root"], "blocked"),
-            cursorAt("scope", "scope-wait-index", "blocked"),
-          ],
-        });
+        yield* emit(
+          replayTrace(
+            completeReplayEvents("inner-return"),
+            setReplayCursors([
+              cursorAt("root", ["enclose-open", "scope-wait-root"], "blocked"),
+              cursorAt("scope", "scope-wait-index", "blocked"),
+            ]),
+          ),
+        );
       }
     });
 
-    yield* emit({
-      clearCursor: "scope",
-      completed: ["enclose-close", "scope-wait-root"],
-      cursor: cursorAt("root", "return-result", "running"),
-    });
+    yield* emit(
+      replayTrace(
+        clearReplayCursor("scope"),
+        completeReplayEvents(["enclose-close", "scope-wait-root"]),
+        setReplayCursor(cursorAt("root", "return-result", "running")),
+      ),
+    );
     try {
       return result;
     } finally {
-      yield* emit({
-        clearCursor: "root",
-        completed: "done",
-      });
+      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
     }
   });
 }

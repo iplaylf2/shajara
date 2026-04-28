@@ -1,5 +1,12 @@
 // oxlint-disable max-lines-per-function
-import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import {
+  clearReplayCursor,
+  codeLine,
+  completeReplayEvents,
+  cursorAt,
+  replayTrace,
+  setReplayCursor,
+} from "#/domain/explorer/examples-kit";
 import { enclose, spawn, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
@@ -34,66 +41,59 @@ export function* loadPageDemo(
   emit: ExplorerReplayEmit<LoadPageDemoEvent>,
 ): RiteCoroutine<LoadPageDemoResult> {
   return yield* enclose(function* loadPage(): RiteCoroutine<LoadPageDemoResult> {
-    yield* emit({
-      cursor: cursorAt("root", "spawn-header", "running"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "spawn-header", "running"))));
     const header = yield* spawn(function* loadHeader(): RiteCoroutine<string> {
-      yield* emit({
-        cursor: cursorAt("header", "header-sleep", "running"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("header", "header-sleep", "running"))));
       yield* sleep(headerDelayMs);
-      yield* emit({
-        cursor: cursorAt("header", ["header-return", "header-close"], "running"),
-      });
+      yield* emit(
+        replayTrace(
+          setReplayCursor(cursorAt("header", ["header-return", "header-close"], "running")),
+        ),
+      );
       try {
         return "header";
       } finally {
-        yield* emit({
-          clearCursor: "header",
-          completed: "header-return",
-        });
+        yield* emit(
+          replayTrace(clearReplayCursor("header"), completeReplayEvents("header-return")),
+        );
       }
     });
-    yield* emit({
-      cursor: cursorAt("root", "spawn-sidebar", "running"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "spawn-sidebar", "running"))));
     const sidebar = yield* spawn(function* loadSidebar(): RiteCoroutine<string> {
-      yield* emit({
-        cursor: cursorAt("sidebar", "sidebar-sleep", "running"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("sidebar", "sidebar-sleep", "running"))));
       yield* sleep(sidebarDelayMs);
-      yield* emit({
-        cursor: cursorAt("sidebar", ["sidebar-return", "sidebar-close"], "running"),
-      });
+      yield* emit(
+        replayTrace(
+          setReplayCursor(cursorAt("sidebar", ["sidebar-return", "sidebar-close"], "running")),
+        ),
+      );
       try {
         return "sidebar";
       } finally {
-        yield* emit({
-          clearCursor: "sidebar",
-          completed: "sidebar-return",
-        });
+        yield* emit(
+          replayTrace(clearReplayCursor("sidebar"), completeReplayEvents("sidebar-return")),
+        );
       }
     });
-    yield* emit({
-      cursor: cursorAt("root", "wait-header", "blocked"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "wait-header", "blocked"))));
     const headerValue = yield* wait(header);
-    yield* emit({
-      completed: "wait-header",
-      cursor: cursorAt("root", "wait-sidebar", "blocked"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("wait-header"),
+        setReplayCursor(cursorAt("root", "wait-sidebar", "blocked")),
+      ),
+    );
     const sidebarValue = yield* wait(sidebar);
-    yield* emit({
-      completed: "wait-sidebar",
-      cursor: cursorAt("root", ["wait-close", "done"], "running"),
-    });
+    yield* emit(
+      replayTrace(
+        completeReplayEvents("wait-sidebar"),
+        setReplayCursor(cursorAt("root", ["wait-close", "done"], "running")),
+      ),
+    );
     try {
       return { header: headerValue, sidebar: sidebarValue };
     } finally {
-      yield* emit({
-        clearCursor: "root",
-        completed: "done",
-      });
+      yield* emit(replayTrace(clearReplayCursor("root"), completeReplayEvents("done")));
     }
   });
 }

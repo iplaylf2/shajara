@@ -13,7 +13,9 @@ type ExplorerCodeLineEvent<TCode extends readonly ExplorerExampleCodeLine<Explor
     : never;
 
 type ExplorerCodeLineCompletedEvent<TLine> = TLine extends {
-  readonly completedEvents?: readonly (infer TEvent)[];
+  readonly completion: {
+    readonly events: readonly (infer TEvent)[];
+  };
 }
   ? TEvent & ExplorerEventId
   : never;

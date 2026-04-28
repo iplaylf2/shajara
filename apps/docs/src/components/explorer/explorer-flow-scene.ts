@@ -4,6 +4,11 @@ import type {
   ExplorerFlowGraphLink,
   ExplorerFlowGraphNode,
 } from "#/domain/explorer/contract";
+import type {
+  ExplorerFlowLink,
+  ExplorerFlowNode,
+  ExplorerFlowScene,
+} from "./explorer-flow-contract";
 import { readFlowViewBox } from "./explorer-flow-view-box";
 import { resolveFlowLinkPath } from "./explorer-flow-link-path";
 
@@ -22,45 +27,6 @@ export function resolveExplorerFlowScene<TEvent extends ExplorerEventId>(
     nodes,
     viewBox: readFlowViewBox(nodes),
   };
-}
-
-export interface ExplorerFlowLink<TEvent extends ExplorerEventId> {
-  activeEvents: readonly TEvent[];
-  from: string;
-  interruptedEvents?: readonly TEvent[];
-  label: string;
-  labelX: number;
-  labelY: number;
-  path: string;
-  to: string;
-  variant: ExplorerFlowGraphLink<TEvent>["kind"];
-  visibleLabel?: string;
-}
-
-export interface ExplorerFlowNode<TEvent extends ExplorerEventId> {
-  activeEvents: readonly TEvent[];
-  caption?: string;
-  completedEvents: readonly TEvent[];
-  centerY: number;
-  height: number;
-  id: string;
-  label: string;
-  left: number;
-  meterLabel?: string;
-  meterStates?: ExplorerFlowGraphNode<TEvent>["meterStates"];
-  overloadEvents?: readonly TEvent[];
-  statusRoutineIds: readonly string[];
-  top: number;
-  variant: ExplorerFlowGraphNode<TEvent>["kind"];
-  width: number;
-}
-
-export interface ExplorerFlowScene<TEvent extends ExplorerEventId> {
-  ariaLabel: string;
-  links: readonly ExplorerFlowLink<TEvent>[];
-  markerId: string;
-  nodes: readonly ExplorerFlowNode<TEvent>[];
-  viewBox: string;
 }
 
 const parentColumnX = 68;
@@ -163,22 +129,31 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
   const size = nodeSize[node.kind];
   const centerY = top + size.height / halfDivisor;
 
-  return {
+  const positionedNode = {
     activeEvents: node.activeEvents,
-    ...(node.caption ? { caption: node.caption } : {}),
     centerY,
     completedEvents: node.completedEvents,
     height: size.height,
     id: node.id,
     label: node.label,
     left,
-    ...(node.meterLabel ? { meterLabel: node.meterLabel } : {}),
-    ...(node.meterStates ? { meterStates: node.meterStates } : {}),
-    ...(node.overloadEvents ? { overloadEvents: node.overloadEvents } : {}),
-    statusRoutineIds: node.statusRoutineIds,
     top,
-    variant: node.kind,
     width: size.width,
+  };
+
+  if (node.kind === "channel") {
+    return {
+      ...positionedNode,
+      channelState: node.channelState,
+      statusRoutineIds: node.statusRoutineIds,
+      variant: node.kind,
+    };
+  }
+
+  return {
+    ...positionedNode,
+    statusRoutineIds: node.statusRoutineIds,
+    variant: node.kind,
   };
 }
 
@@ -197,15 +172,15 @@ function createFlowLink<TEvent extends ExplorerEventId>(
 
   return {
     activeEvents: link.activeEvents,
+    displayLabel: link.displayLabel,
     from: link.from,
+    interruption: link.kind === "wait" ? link.interruption : { kind: "none" },
     label: link.label,
     labelX: renderedPath.labelX,
     labelY: renderedPath.labelY,
     path: renderedPath.path,
     to: link.to,
     variant: link.kind,
-    ...(link.interruptedEvents ? { interruptedEvents: link.interruptedEvents } : {}),
-    ...(link.visibleLabel ? { visibleLabel: link.visibleLabel } : {}),
   };
 }
 

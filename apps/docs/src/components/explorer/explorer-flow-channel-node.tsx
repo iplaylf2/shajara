@@ -1,5 +1,5 @@
 import { readChannelMeterLabel, readChannelNodeStatus } from "./explorer-flow-state";
-import type { ExplorerFlowNode } from "./explorer-flow-scene";
+import type { ExplorerFlowNode } from "./explorer-flow-contract";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";

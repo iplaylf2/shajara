@@ -1,5 +1,12 @@
 // oxlint-disable max-lines-per-function
-import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import {
+  clearReplayCursors,
+  codeLine,
+  completeReplayEvents,
+  cursorAt,
+  replayTrace,
+  setReplayCursor,
+} from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
@@ -23,37 +30,33 @@ export function* singleSpawnDemo(
   emit: ExplorerReplayEmit<SingleSpawnDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* submitOrder(): RiteCoroutine<string> {
-    yield* emit({
-      cursor: cursorAt("root", "spawn-receipt", "running"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "spawn-receipt", "running"))));
     yield* spawn(function* sendReceiptEmail(): RiteCoroutine<string> {
-      yield* emit({
-        cursor: cursorAt("receipt", "receipt-sleep", "running"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("receipt", "receipt-sleep", "running"))));
       yield* sleep(receiptDelayMs);
-      yield* emit({
-        cursor: cursorAt("receipt", ["receipt-return", "receipt-close"], "running"),
-      });
+      yield* emit(
+        replayTrace(
+          setReplayCursor(cursorAt("receipt", ["receipt-return", "receipt-close"], "running")),
+        ),
+      );
       try {
         return "receipt sent";
       } finally {
-        yield* emit({
-          clearCursors: ["receipt", "root"],
-          completed: ["receipt-return", "wait-receipt", "done"],
-        });
+        yield* emit(
+          replayTrace(
+            clearReplayCursors(["receipt", "root"]),
+            completeReplayEvents(["receipt-return", "wait-receipt", "done"]),
+          ),
+        );
       }
     });
 
-    yield* emit({
-      cursor: cursorAt("root", "return-accepted", "running"),
-    });
+    yield* emit(replayTrace(setReplayCursor(cursorAt("root", "return-accepted", "running"))));
 
     try {
       return "order accepted";
     } finally {
-      yield* emit({
-        cursor: cursorAt("root", "wait-receipt", "blocked"),
-      });
+      yield* emit(replayTrace(setReplayCursor(cursorAt("root", "wait-receipt", "blocked"))));
     }
   });
 }
