@@ -1,4 +1,4 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
   parentRoutineNode,
@@ -28,14 +28,14 @@ export const futureSettlementExample = {
   titleKey: "explorer.examples.future-settlement.title",
 } as const satisfies ExplorerExample<FutureSettlementDemoEvent, string, string>;
 
-function createFutureSettlementFlow(): ExplorerFlowGraph<FutureSettlementDemoEvent> {
+function createFutureSettlementFlow(): ExplorerFlow<FutureSettlementDemoEvent> {
   return {
     links: createFutureSettlementFlowLinks(),
     nodes: createFutureSettlementFlowNodes(),
   };
 }
 
-function createFutureSettlementFlowLinks(): ExplorerFlowGraph<FutureSettlementDemoEvent>["links"] {
+function createFutureSettlementFlowLinks(): ExplorerFlow<FutureSettlementDemoEvent>["links"] {
   return [
     spawnLink("root", "resolver", "spawn(receiveSmsCode)", ["spawn-resolver"]),
     waitLink("resolver", "root", "smsCode", {
@@ -46,7 +46,7 @@ function createFutureSettlementFlowLinks(): ExplorerFlowGraph<FutureSettlementDe
   ];
 }
 
-function createFutureSettlementFlowNodes(): ExplorerFlowGraph<FutureSettlementDemoEvent>["nodes"] {
+function createFutureSettlementFlowNodes(): ExplorerFlow<FutureSettlementDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "verifyPhoneNumber", {
       activeEvents: ["routine", "future", "spawn-resolver", "wait-code", "done"],

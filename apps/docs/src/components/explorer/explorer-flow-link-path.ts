@@ -1,9 +1,9 @@
-import type { ExplorerEventId, ExplorerFlowGraphLink } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode } from "./explorer-flow-contract";
+import type { ExplorerEventId, ExplorerFlowLink } from "#/domain/explorer/contract";
 import type { FlowLinkDirection } from "./explorer-flow-scene";
+import type { FlowNode } from "./explorer-flow-model";
 
 export function resolveFlowLinkPath<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowGraphLink<TEvent>,
+  link: ExplorerFlowLink<TEvent>,
   points: FlowLinkPathPoints<TEvent>,
 ): FlowLinkPath {
   const bottomEntry = readBottomEntryLink(link, points);
@@ -52,7 +52,7 @@ function createBottomEntryPath(fromX: number, fromY: number, toX: number, toY: n
 }
 
 function readBottomEntryLink<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowGraphLink<TEvent>,
+  link: ExplorerFlowLink<TEvent>,
   points: FlowLinkPathPoints<TEvent>,
 ): FlowLinkAnchor | null {
   if (
@@ -89,10 +89,10 @@ interface FlowLinkPath {
 
 interface FlowLinkPathPoints<TEvent extends ExplorerEventId> {
   direction: FlowLinkDirection;
-  from: ExplorerFlowNode<TEvent>;
+  from: FlowNode<TEvent>;
   fromX: number;
   fromY: number;
-  to: ExplorerFlowNode<TEvent>;
+  to: FlowNode<TEvent>;
   toX: number;
   toY: number;
 }

@@ -1,10 +1,10 @@
 import type {
   ExplorerEventId,
+  ExplorerReplayAction,
   ExplorerReplayCursor,
   ExplorerReplayFrame,
   ExplorerReplayState,
   ExplorerReplayTrace,
-  ExplorerReplayTraceAction,
 } from "#/domain/explorer/contract";
 import { channel, receive, send } from "@shajara/host/primitives";
 import type { RiteCoroutine } from "@shajara/host";
@@ -60,7 +60,7 @@ function applyReplayTrace<TEvent extends ExplorerEventId>(
 
 function applyReplayCursorAction<TEvent extends ExplorerEventId>(
   cursorsByRoutine: Map<string, ExplorerReplayCursor<TEvent>>,
-  action: ExplorerReplayTraceAction<TEvent>,
+  action: ExplorerReplayAction<TEvent>,
 ): void {
   switch (action.kind) {
     case "clear-cursors": {
@@ -83,7 +83,7 @@ function applyReplayCursorAction<TEvent extends ExplorerEventId>(
 
 function appendCompletedEvents<TEvent extends ExplorerEventId>(
   completed: readonly TEvent[],
-  actions: readonly ExplorerReplayTraceAction<TEvent>[],
+  actions: readonly ExplorerReplayAction<TEvent>[],
 ): readonly TEvent[] {
   const entries = actions.flatMap((action) =>
     action.kind === "complete-events" ? action.events : [],

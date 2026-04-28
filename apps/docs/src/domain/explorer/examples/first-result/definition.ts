@@ -1,4 +1,4 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
   parentRoutineNode,
@@ -28,14 +28,14 @@ export const firstResultExample = {
   titleKey: "explorer.examples.first-result.title",
 } as const satisfies ExplorerExample<FirstResultDemoEvent, string, string>;
 
-function createFirstResultFlow(): ExplorerFlowGraph<FirstResultDemoEvent> {
+function createFirstResultFlow(): ExplorerFlow<FirstResultDemoEvent> {
   return {
     links: createFirstResultFlowLinks(),
     nodes: createFirstResultFlowNodes(),
   };
 }
 
-function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["links"] {
+function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links"] {
   return [
     spawnLink("root", "winner", "race(firstProfile)", ["race-open"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
@@ -58,7 +58,7 @@ function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["
   ];
 }
 
-function createFirstResultFlowNodes(): ExplorerFlowGraph<FirstResultDemoEvent>["nodes"] {
+function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "loadProfile", {
       activeEvents: ["routine", "race-open", "wait-race", "return-profile", "done"],

@@ -1,4 +1,4 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
   parentRoutineNode,
@@ -29,14 +29,14 @@ export const scopeOwnershipExample = {
   titleKey: "explorer.examples.scope-ownership.title",
 } as const satisfies ExplorerExample<ScopeOwnershipDemoEvent, string, string>;
 
-function createScopeOwnershipFlow(): ExplorerFlowGraph<ScopeOwnershipDemoEvent> {
+function createScopeOwnershipFlow(): ExplorerFlow<ScopeOwnershipDemoEvent> {
   return {
     links: createScopeOwnershipFlowLinks(),
     nodes: createScopeOwnershipFlowNodes(),
   };
 }
 
-function createScopeOwnershipFlowLinks(): ExplorerFlowGraph<ScopeOwnershipDemoEvent>["links"] {
+function createScopeOwnershipFlowLinks(): ExplorerFlow<ScopeOwnershipDemoEvent>["links"] {
   return [
     spawnLink("root", "scope", "enclose(commitArticle)", ["launch-scope"]),
     spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
@@ -53,7 +53,7 @@ function createScopeOwnershipFlowLinks(): ExplorerFlowGraph<ScopeOwnershipDemoEv
   ];
 }
 
-function createScopeOwnershipFlowNodes(): ExplorerFlowGraph<ScopeOwnershipDemoEvent>["nodes"] {
+function createScopeOwnershipFlowNodes(): ExplorerFlow<ScopeOwnershipDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "publishArticle", {
       activeEvents: [

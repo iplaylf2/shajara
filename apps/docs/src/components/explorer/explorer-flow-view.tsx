@@ -1,5 +1,5 @@
 import type { ExplorerEventId, ExplorerReplayState } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-contract";
+import type { FlowNode, FlowScene } from "./explorer-flow-model";
 import {
   isInterruptedWaitLink,
   isSettledDataLink,
@@ -79,7 +79,7 @@ function FlowArrowMarker(props: { markerId: string }): JSX.Element {
 }
 
 function FlowNodes<TEvent extends string>(props: {
-  scene: ExplorerFlowScene<TEvent>;
+  scene: FlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   return (
@@ -94,7 +94,7 @@ function FlowNodes<TEvent extends string>(props: {
 type FlowNodeDisplayStatus = Exclude<FlowNodeStatusValue, null> | "pending";
 
 function FlowNode<TEvent extends string>(props: {
-  node: ExplorerFlowNode<TEvent>;
+  node: FlowNode<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   if (props.node.variant === "channel") {
@@ -129,9 +129,7 @@ function FlowNode<TEvent extends string>(props: {
   );
 }
 
-function FlowNodeLabel<TEvent extends string>(props: {
-  node: ExplorerFlowNode<TEvent>;
-}): JSX.Element {
+function FlowNodeLabel<TEvent extends string>(props: { node: FlowNode<TEvent> }): JSX.Element {
   const centerX = props.node.left + props.node.width / half;
   const centerY = props.node.centerY - nodeTextStackOffsetY;
 
@@ -143,7 +141,7 @@ function FlowNodeLabel<TEvent extends string>(props: {
 }
 
 function FlowNodeStatus<TEvent extends string>(props: {
-  node: ExplorerFlowNode<TEvent>;
+  node: FlowNode<TEvent>;
   status: FlowNodeDisplayStatus;
 }): JSX.Element {
   return (
@@ -163,7 +161,7 @@ function FlowNodeStatus<TEvent extends string>(props: {
 }
 
 function FlowLinks<TEvent extends string>(props: {
-  scene: ExplorerFlowScene<TEvent>;
+  scene: FlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   return (
@@ -176,8 +174,8 @@ function FlowLinks<TEvent extends string>(props: {
 }
 
 function FlowLink<TEvent extends string>(props: {
-  link: ExplorerFlowScene<TEvent>["links"][number];
-  scene: ExplorerFlowScene<TEvent>;
+  link: FlowScene<TEvent>["links"][number];
+  scene: FlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   const channelData = readChannelDataLink(props.link, props.scene);
@@ -195,8 +193,8 @@ function FlowLink<TEvent extends string>(props: {
 }
 
 function GenericFlowLink<TEvent extends string>(props: {
-  link: ExplorerFlowScene<TEvent>["links"][number];
-  scene: ExplorerFlowScene<TEvent>;
+  link: FlowScene<TEvent>["links"][number];
+  scene: FlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   const mode = createMemo(() => readLinkMode(props.link.activeEvents, props.state));
@@ -238,8 +236,8 @@ function GenericFlowLink<TEvent extends string>(props: {
 }
 
 function readChannelDataLink<TEvent extends string>(
-  link: ExplorerFlowScene<TEvent>["links"][number],
-  scene: ExplorerFlowScene<TEvent>,
+  link: FlowScene<TEvent>["links"][number],
+  scene: FlowScene<TEvent>,
 ): ChannelDataLinkInfo | null {
   if (link.variant !== "data") {
     return null;
@@ -260,7 +258,7 @@ function readChannelDataLink<TEvent extends string>(
 }
 
 function FlowLinkLabel<TEvent extends string>(props: {
-  link: ExplorerFlowScene<TEvent>["links"][number];
+  link: FlowScene<TEvent>["links"][number];
 }): JSX.Element {
   if (props.link.displayLabel.kind === "hidden") {
     return <></>;
@@ -280,7 +278,7 @@ function FlowLinkLabel<TEvent extends string>(props: {
 interface Props<TEvent extends ExplorerEventId> {
   code?: JSX.Element;
   codeControls?: JSX.Element;
-  scene: ExplorerFlowScene<TEvent>;
+  scene: FlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }
 

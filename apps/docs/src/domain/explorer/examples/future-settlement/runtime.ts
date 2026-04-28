@@ -1,10 +1,10 @@
 // oxlint-disable max-lines-per-function
 import {
-  clearReplayCursor,
+  clearCursor,
   codeLine,
-  completeReplayEvents,
+  completeEvents,
   cursorAt,
-  setReplayCursor,
+  setCursor,
 } from "#/domain/explorer/examples-kit";
 import { enclose, future, settle, spawn, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
@@ -30,43 +30,35 @@ export function* futureSettlementDemo(
   emit: ExplorerReplayEmit<FutureSettlementDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* verifyPhoneNumber(): RiteCoroutine<string> {
-    yield* emit({ actions: [setReplayCursor(cursorAt("root", "future", "running"))] });
+    yield* emit({ actions: [setCursor(cursorAt("root", "future", "running"))] });
     const [smsCode, provideSmsCode] = yield* future<string>();
     yield* emit({
-      actions: [
-        completeReplayEvents("future"),
-        setReplayCursor(cursorAt("root", "spawn-resolver", "running")),
-      ],
+      actions: [completeEvents("future"), setCursor(cursorAt("root", "spawn-resolver", "running"))],
     });
     yield* spawn(function* receiveSmsCode(): RiteCoroutine<void> {
       yield* emit({
-        actions: [setReplayCursor(cursorAt("resolver", "resolver-sleep", "running"))],
+        actions: [setCursor(cursorAt("resolver", "resolver-sleep", "running"))],
       });
       yield* sleep(resolverDelayMs);
       yield* emit({
-        actions: [
-          setReplayCursor(cursorAt("resolver", ["settle-code", "resolver-close"], "running")),
-        ],
+        actions: [setCursor(cursorAt("resolver", ["settle-code", "resolver-close"], "running"))],
       });
       yield* settle(provideSmsCode, "4921");
       yield* emit({
-        actions: [clearReplayCursor("resolver"), completeReplayEvents("settle-code")],
+        actions: [clearCursor("resolver"), completeEvents("settle-code")],
       });
     });
 
-    yield* emit({ actions: [setReplayCursor(cursorAt("root", "wait-code", "blocked"))] });
+    yield* emit({ actions: [setCursor(cursorAt("root", "wait-code", "blocked"))] });
     const code = yield* wait(smsCode);
     yield* emit({
-      actions: [
-        completeReplayEvents("wait-code"),
-        setReplayCursor(cursorAt("root", "done", "running")),
-      ],
+      actions: [completeEvents("wait-code"), setCursor(cursorAt("root", "done", "running"))],
     });
 
     try {
       return code;
     } finally {
-      yield* emit({ actions: [clearReplayCursor("root"), completeReplayEvents("done")] });
+      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

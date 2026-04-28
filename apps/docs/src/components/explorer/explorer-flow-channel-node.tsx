@@ -1,12 +1,12 @@
 import { readChannelMeterLabel, readChannelNodeStatus } from "./explorer-flow-state";
-import type { ExplorerFlowNode } from "./explorer-flow-contract";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
+import type { FlowNode } from "./explorer-flow-model";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";
 import styles from "./explorer.module.css";
 
 export function ChannelNode<TEvent extends string>(props: {
-  node: ExplorerFlowNode<TEvent>;
+  node: FlowNode<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   const status = createMemo(() => readChannelNodeStatus(props.node, props.state));
@@ -32,7 +32,7 @@ export function ChannelNode<TEvent extends string>(props: {
 function ChannelLabel<TEvent extends string>(props: {
   centerX: number;
   meterLabel: string | null;
-  node: ExplorerFlowNode<TEvent>;
+  node: FlowNode<TEvent>;
 }): JSX.Element {
   return (
     <>
@@ -56,7 +56,7 @@ function ChannelLabel<TEvent extends string>(props: {
   );
 }
 
-function createChannelBodyPath<TEvent extends string>(node: ExplorerFlowNode<TEvent>): string {
+function createChannelBodyPath<TEvent extends string>(node: FlowNode<TEvent>): string {
   const { centerY, height, left, top, width } = node;
   const right = left + width;
   const bottom = top + height;

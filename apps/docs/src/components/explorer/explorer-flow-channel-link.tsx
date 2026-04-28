@@ -1,13 +1,13 @@
 import { isSettledDataLink, readLinkMode } from "./explorer-flow-state";
-import type { ExplorerFlowScene } from "./explorer-flow-contract";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
+import type { FlowScene } from "./explorer-flow-model";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";
 import styles from "./explorer.module.css";
 
 export function ChannelDataLink<TEvent extends string>(props: {
   blockedAnchor: ChannelDataBlockedAnchor;
-  link: ExplorerFlowScene<TEvent>["links"][number];
+  link: FlowScene<TEvent>["links"][number];
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   const mode = createMemo(() => readLinkMode(props.link.activeEvents, props.state));

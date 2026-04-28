@@ -1,21 +1,17 @@
 import type {
   ExplorerEventId,
-  ExplorerFlowGraph,
-  ExplorerFlowGraphLink,
-  ExplorerFlowGraphNode,
+  ExplorerFlow,
+  ExplorerFlowLink as FlowLinkSpec,
+  ExplorerFlowNode as FlowNodeSpec,
 } from "#/domain/explorer/contract";
-import type {
-  ExplorerFlowLink,
-  ExplorerFlowNode,
-  ExplorerFlowScene,
-} from "./explorer-flow-contract";
+import type { FlowLink, FlowNode, FlowScene } from "./explorer-flow-model";
 import { readFlowViewBox } from "./explorer-flow-view-box";
 import { resolveFlowLinkPath } from "./explorer-flow-link-path";
 
-export function resolveExplorerFlowScene<TEvent extends ExplorerEventId>(
-  graph: ExplorerFlowGraph<TEvent>,
+export function resolveFlowScene<TEvent extends ExplorerEventId>(
+  graph: ExplorerFlow<TEvent>,
   ariaLabel: string,
-): ExplorerFlowScene<TEvent> {
+): FlowScene<TEvent> {
   const nodes = resolveNodeLayout(graph.nodes);
   const nodePositions = new Map(nodes.map((node) => [node.id, node]));
   const links = graph.links.map((link) => createFlowLink(link, nodePositions));
@@ -72,15 +68,15 @@ const nodeSize = {
   join: { height: tallNodeHeight, width: joinNodeWidth },
   parent: { height: tallNodeHeight, width: parentNodeWidth },
 } as const satisfies Record<
-  ExplorerFlowGraphNode<ExplorerEventId>["kind"],
+  FlowNodeSpec<ExplorerEventId>["kind"],
   { readonly height: number; readonly width: number }
 >;
 
 export type FlowLinkDirection = typeof forwardDirection | typeof backwardDirection;
 
 function resolveNodeLayout<TEvent extends ExplorerEventId>(
-  graphNodes: readonly ExplorerFlowGraphNode<TEvent>[],
-): ExplorerFlowNode<TEvent>[] {
+  graphNodes: readonly FlowNodeSpec<TEvent>[],
+): FlowNode<TEvent>[] {
   const parentNodes = graphNodes.filter((node) => node.kind === "parent");
   const branchNodes = graphNodes.filter((node) => node.kind === "branch");
   const channelNodes = graphNodes.filter((node) => node.kind === "channel");
@@ -105,16 +101,16 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
 }
 
 function createAuxiliaryChannelNode<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowGraphNode<TEvent>,
-): ExplorerFlowNode<TEvent> {
+  node: FlowNodeSpec<TEvent>,
+): FlowNode<TEvent> {
   return createPositionedFlowNode(node, channelX, auxiliaryLaneY);
 }
 
 function createFlowNode<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowGraphNode<TEvent>,
+  node: FlowNodeSpec<TEvent>,
   lane: number,
   column: number,
-): ExplorerFlowNode<TEvent> {
+): FlowNode<TEvent> {
   const left = defaultLayout.columns[column]!;
   const top = defaultLayout.lanes[lane]!;
 
@@ -122,10 +118,10 @@ function createFlowNode<TEvent extends ExplorerEventId>(
 }
 
 function createPositionedFlowNode<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowGraphNode<TEvent>,
+  node: FlowNodeSpec<TEvent>,
   left: number,
   top: number,
-): ExplorerFlowNode<TEvent> {
+): FlowNode<TEvent> {
   const size = nodeSize[node.kind];
   const centerY = top + size.height / halfDivisor;
 
@@ -158,9 +154,9 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
 }
 
 function createFlowLink<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowGraphLink<TEvent>,
-  nodePositions: ReadonlyMap<string, ExplorerFlowNode<TEvent>>,
-): ExplorerFlowLink<TEvent> {
+  link: FlowLinkSpec<TEvent>,
+  nodePositions: ReadonlyMap<string, FlowNode<TEvent>>,
+): FlowLink<TEvent> {
   const from = readNode(nodePositions, link.from);
   const to = readNode(nodePositions, link.to);
   const direction = readFlowLinkDirection(from, to);
@@ -185,8 +181,8 @@ function createFlowLink<TEvent extends ExplorerEventId>(
 }
 
 function readFlowLinkDirection<TEvent extends ExplorerEventId>(
-  from: ExplorerFlowNode<TEvent>,
-  to: ExplorerFlowNode<TEvent>,
+  from: FlowNode<TEvent>,
+  to: FlowNode<TEvent>,
 ): FlowLinkDirection {
   const fromCenterX = from.left + from.width / halfDivisor;
   const toCenterX = to.left + to.width / halfDivisor;
@@ -195,22 +191,22 @@ function readFlowLinkDirection<TEvent extends ExplorerEventId>(
 }
 
 function readFlowLinkFromX<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowNode<TEvent>,
+  node: FlowNode<TEvent>,
   direction: FlowLinkDirection,
 ): number {
   return direction === forwardDirection ? node.left + node.width : node.left;
 }
 
 function readFlowLinkToX<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowNode<TEvent>,
+  node: FlowNode<TEvent>,
   direction: FlowLinkDirection,
 ): number {
   return direction === forwardDirection ? node.left : node.left + node.width;
 }
 
 function readFlowLinkY<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowNode<TEvent>,
-  peerNode: ExplorerFlowNode<TEvent>,
+  node: FlowNode<TEvent>,
+  peerNode: FlowNode<TEvent>,
 ): number {
   if (node.variant === "channel") {
     return node.centerY;
@@ -224,9 +220,9 @@ function readFlowLinkY<TEvent extends ExplorerEventId>(
 }
 
 function readNode<TEvent extends ExplorerEventId>(
-  nodePositions: ReadonlyMap<string, ExplorerFlowNode<TEvent>>,
+  nodePositions: ReadonlyMap<string, FlowNode<TEvent>>,
   nodeId: string,
-): ExplorerFlowNode<TEvent> {
+): FlowNode<TEvent> {
   const node = nodePositions.get(nodeId);
 
   if (!node) {

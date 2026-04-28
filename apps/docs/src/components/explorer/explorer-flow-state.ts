@@ -3,13 +3,13 @@ import type {
   ExplorerReplayCursorMode,
   ExplorerReplayState,
 } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode, ExplorerFlowScene } from "./explorer-flow-contract";
+import type { FlowNode, FlowScene } from "./explorer-flow-model";
 
 export type FlowNodeStatusValue = ExplorerReplayCursorMode | "done" | null;
 export type ChannelNodeStatusValue = "done" | "open" | "overload" | "pending";
 
 export function isInterruptedWaitLink<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowScene<TEvent>["links"][number],
+  link: FlowScene<TEvent>["links"][number],
   state: ExplorerReplayState<TEvent>,
 ): boolean {
   return (
@@ -21,7 +21,7 @@ export function isInterruptedWaitLink<TEvent extends ExplorerEventId>(
 }
 
 export function isSettledDataLink<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowScene<TEvent>["links"][number],
+  link: FlowScene<TEvent>["links"][number],
   state: ExplorerReplayState<TEvent>,
 ): boolean {
   return (
@@ -32,7 +32,7 @@ export function isSettledDataLink<TEvent extends ExplorerEventId>(
 }
 
 export function isSettledWaitLink<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowScene<TEvent>["links"][number],
+  link: FlowScene<TEvent>["links"][number],
   state: ExplorerReplayState<TEvent>,
 ): boolean {
   return (
@@ -43,8 +43,8 @@ export function isSettledWaitLink<TEvent extends ExplorerEventId>(
 }
 
 export function isSpawnLinkConsumed<TEvent extends ExplorerEventId>(
-  link: ExplorerFlowScene<TEvent>["links"][number],
-  scene: ExplorerFlowScene<TEvent>,
+  link: FlowScene<TEvent>["links"][number],
+  scene: FlowScene<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): boolean {
   if (link.variant !== "spawn" || readLinkMode(link.activeEvents, state)) {
@@ -66,7 +66,7 @@ export function readLinkMode<TEvent extends ExplorerEventId>(
 }
 
 export function readNodeStatus<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowNode<TEvent>,
+  node: FlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): FlowNodeStatusValue {
   if (node.variant === "channel") {
@@ -87,7 +87,7 @@ export function readNodeStatus<TEvent extends ExplorerEventId>(
 }
 
 export function readChannelNodeStatus<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowNode<TEvent>,
+  node: FlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): ChannelNodeStatusValue {
   if (
@@ -113,7 +113,7 @@ export function readChannelNodeStatus<TEvent extends ExplorerEventId>(
 }
 
 export function readChannelMeterLabel<TEvent extends ExplorerEventId>(
-  node: ExplorerFlowNode<TEvent>,
+  node: FlowNode<TEvent>,
   state: ExplorerReplayState<TEvent>,
 ): string | null {
   if (node.variant !== "channel" || node.channelState.kind === "plain") {

@@ -1,8 +1,8 @@
 import type {
   ExplorerEventId,
+  ExplorerReplayAction,
   ExplorerReplayCursor,
   ExplorerReplayEmit,
-  ExplorerReplayTraceAction,
   ExplorerRoutineId,
 } from "#/domain/explorer/contract";
 import type { RiteCoroutine, RiteRoutine } from "@shajara/host";
@@ -19,31 +19,31 @@ export function cursorAt<TEvent extends string>(
   };
 }
 
-export function clearReplayCursor(routineId: ExplorerRoutineId): ExplorerReplayTraceAction<never> {
-  return clearReplayCursors([routineId]);
+export function clearCursor(routineId: ExplorerRoutineId): ExplorerReplayAction<never> {
+  return clearCursors([routineId]);
 }
 
-export function clearReplayCursors(
+export function clearCursors(
   routineIds: readonly ExplorerRoutineId[],
-): ExplorerReplayTraceAction<never> {
+): ExplorerReplayAction<never> {
   return { kind: "clear-cursors", routineIds };
 }
 
-export function completeReplayEvents<TEvent extends ExplorerEventId>(
+export function completeEvents<TEvent extends ExplorerEventId>(
   events: TEvent | readonly TEvent[],
-): ExplorerReplayTraceAction<TEvent> {
+): ExplorerReplayAction<TEvent> {
   return { events: typeof events === "string" ? [events] : events, kind: "complete-events" };
 }
 
-export function setReplayCursor<TEvent extends ExplorerEventId>(
+export function setCursor<TEvent extends ExplorerEventId>(
   cursor: ExplorerReplayCursor<TEvent>,
-): ExplorerReplayTraceAction<TEvent> {
-  return setReplayCursors([cursor]);
+): ExplorerReplayAction<TEvent> {
+  return setCursors([cursor]);
 }
 
-export function setReplayCursors<TEvent extends ExplorerEventId>(
+export function setCursors<TEvent extends ExplorerEventId>(
   cursors: readonly ExplorerReplayCursor<TEvent>[],
-): ExplorerReplayTraceAction<TEvent> {
+): ExplorerReplayAction<TEvent> {
   return { cursors, kind: "set-cursors" };
 }
 
@@ -76,8 +76,8 @@ function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
     if (!outcome.didReturn) {
       yield* emit({
         actions: [
-          clearReplayCursor(replay.routineId),
-          completeReplayEvents([replay.cancelEvent, replay.waitEvent]),
+          clearCursor(replay.routineId),
+          completeEvents([replay.cancelEvent, replay.waitEvent]),
         ],
       });
     }

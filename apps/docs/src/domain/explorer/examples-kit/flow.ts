@@ -1,8 +1,8 @@
 import type {
-  ExplorerChannelFlowGraphNodeState,
-  ExplorerFlowGraphLink,
-  ExplorerFlowGraphNode,
-  ExplorerWaitLinkInterruption,
+  ExplorerChannelState,
+  ExplorerFlowLink,
+  ExplorerFlowNode,
+  ExplorerWaitInterruption,
 } from "#/domain/explorer/contract";
 
 export function spawnLink<TEvent extends string>(
@@ -10,7 +10,7 @@ export function spawnLink<TEvent extends string>(
   to: string,
   label: string,
   activeEvents: readonly TEvent[],
-): ExplorerFlowGraphLink<TEvent> {
+): ExplorerFlowLink<TEvent> {
   return {
     activeEvents,
     displayLabel: { kind: "hidden" },
@@ -25,8 +25,8 @@ export function waitLink<TEvent extends string>(
   from: string,
   to: string,
   label: string,
-  options: ExplorerWaitLinkOptions<TEvent>,
-): ExplorerFlowGraphLink<TEvent> {
+  options: WaitLinkOptions<TEvent>,
+): ExplorerFlowLink<TEvent> {
   return {
     activeEvents: options.activeEvents,
     displayLabel: options.displayLabel,
@@ -43,7 +43,7 @@ export function dataLink<TEvent extends string>(
   to: string,
   label: string,
   activeEvents: readonly TEvent[],
-): ExplorerFlowGraphLink<TEvent> {
+): ExplorerFlowLink<TEvent> {
   return {
     activeEvents,
     displayLabel: { kind: "hidden" },
@@ -57,9 +57,9 @@ export function dataLink<TEvent extends string>(
 export function channelNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-  state: ExplorerChannelFlowGraphNodeState<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+  state: ExplorerChannelState<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
     channelState: state,
@@ -74,16 +74,16 @@ export function channelNode<TEvent extends string>(
 export function parentRoutineNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return routineNode("parent", id, label, lifecycle);
 }
 
 export function branchRoutineNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return routineNode("branch", id, label, lifecycle);
 }
 
@@ -91,8 +91,8 @@ function routineNode<TEvent extends string>(
   kind: "branch" | "join" | "parent",
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
     completedEvents: lifecycle.completedEvents,
@@ -103,13 +103,13 @@ function routineNode<TEvent extends string>(
   };
 }
 
-interface ExplorerWaitLinkOptions<TEvent extends string> {
+interface WaitLinkOptions<TEvent extends string> {
   activeEvents: readonly TEvent[];
-  displayLabel: ExplorerFlowGraphLink<TEvent>["displayLabel"];
-  interruption: ExplorerWaitLinkInterruption<TEvent>;
+  displayLabel: ExplorerFlowLink<TEvent>["displayLabel"];
+  interruption: ExplorerWaitInterruption<TEvent>;
 }
 
-interface ExplorerRoutineNodeLifecycle<TEvent extends string> {
+interface RoutineNodeLifecycle<TEvent extends string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
 }

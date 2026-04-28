@@ -1,5 +1,5 @@
 import type { AllResultsDemoEvent, AllResultsDemoResult } from "./runtime";
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import { allResultsDemo, createAllResultsDemoCode } from "./runtime";
 import {
   branchRoutineNode,
@@ -28,14 +28,14 @@ export const allResultsExample = {
   titleKey: "explorer.examples.all-results.title",
 } as const satisfies ExplorerExample<AllResultsDemoEvent, AllResultsDemoResult, string>;
 
-function createAllResultsFlow(): ExplorerFlowGraph<AllResultsDemoEvent> {
+function createAllResultsFlow(): ExplorerFlow<AllResultsDemoEvent> {
   return {
     links: createAllResultsFlowLinks(),
     nodes: createAllResultsFlowNodes(),
   };
 }
 
-function createAllResultsFlowLinks(): ExplorerFlowGraph<AllResultsDemoEvent>["links"] {
+function createAllResultsFlowLinks(): ExplorerFlow<AllResultsDemoEvent>["links"] {
   return [
     spawnLink("root", "result", "all(pageData)", ["all-open"]),
     spawnLink("result", "user", "loadUser", ["launch-user"]),
@@ -58,7 +58,7 @@ function createAllResultsFlowLinks(): ExplorerFlowGraph<AllResultsDemoEvent>["li
   ];
 }
 
-function createAllResultsFlowNodes(): ExplorerFlowGraph<AllResultsDemoEvent>["nodes"] {
+function createAllResultsFlowNodes(): ExplorerFlow<AllResultsDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "renderDashboard", {
       activeEvents: ["routine", "all-open", "wait-all", "return-page", "done"],

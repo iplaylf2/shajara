@@ -10,8 +10,8 @@ import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { readCodeLines, syncCodeLines } from "./explorer-replay-code-view";
 import { spawn, wait } from "@shajara/host/primitives";
-import type { ExplorerFlowScene } from "./explorer-flow-contract";
 import { ExplorerFlowView } from "./explorer-flow-view";
+import type { FlowScene } from "./explorer-flow-model";
 import type { ReplayCodeView } from "./explorer-replay-code-view";
 import type { RiteCoroutine } from "@shajara/host";
 import { createCodeScroller } from "./explorer-code-scroller";
@@ -78,7 +78,7 @@ interface ExplorerReplayStage {
   replay: {
     replayDelayMs: number;
   };
-  scene: ExplorerFlowScene<ExplorerExampleEvent>;
+  scene: FlowScene<ExplorerExampleEvent>;
 }
 
 function startReplay(

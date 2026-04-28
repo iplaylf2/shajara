@@ -29,10 +29,10 @@ export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 export type ExplorerExampleDefinition = ArrayValues<typeof explorerExamples>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
 export type ExplorerExampleEvent =
-  ExplorerExampleDefinition extends ExplorerExampleDefinitionWithEvent<infer Event> ? Event : never;
+  ExplorerExampleDefinition extends ExampleWithEvent<infer Event> ? Event : never;
 export type ExplorerReplayRuntime = ExplorerExampleDefinition["stage"]["replay"]["runtime"];
 
-interface ExplorerExampleDefinitionWithEvent<Event extends string> {
+interface ExampleWithEvent<Event extends string> {
   readonly stage: {
     readonly flow: {
       readonly links: readonly {

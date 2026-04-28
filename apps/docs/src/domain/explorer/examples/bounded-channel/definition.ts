@@ -1,4 +1,4 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import { boundedChannelDemo, createBoundedChannelDemoCode } from "./runtime";
 import {
   branchRoutineNode,
@@ -30,14 +30,14 @@ export const boundedChannelExample = {
   titleKey: "explorer.examples.bounded-channel.title",
 } as const satisfies ExplorerExample<BoundedChannelDemoEvent, number, string>;
 
-function createBoundedChannelFlow(): ExplorerFlowGraph<BoundedChannelDemoEvent> {
+function createBoundedChannelFlow(): ExplorerFlow<BoundedChannelDemoEvent> {
   return {
     links: createBoundedChannelFlowLinks(),
     nodes: createBoundedChannelFlowNodes(),
   };
 }
 
-function createBoundedChannelFlowLinks(): ExplorerFlowGraph<BoundedChannelDemoEvent>["links"] {
+function createBoundedChannelFlowLinks(): ExplorerFlow<BoundedChannelDemoEvent>["links"] {
   return [
     spawnLink("root", "worker", "spawn(writeBatches)", ["spawn-worker"]),
     dataLink("root", "channel", "send enters channel", [
@@ -54,7 +54,7 @@ function createBoundedChannelFlowLinks(): ExplorerFlowGraph<BoundedChannelDemoEv
   ];
 }
 
-function createBoundedChannelFlowNodes(): ExplorerFlowGraph<BoundedChannelDemoEvent>["nodes"] {
+function createBoundedChannelFlowNodes(): ExplorerFlow<BoundedChannelDemoEvent>["nodes"] {
   return [createQueueBatchesNode(), createChannelNode(), createWriteBatchesNode()];
 }
 

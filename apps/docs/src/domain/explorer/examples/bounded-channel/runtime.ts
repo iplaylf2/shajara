@@ -1,11 +1,11 @@
 // oxlint-disable max-lines-per-function
 import { channel, enclose, receive, send, spawn } from "@shajara/host/primitives";
 import {
-  clearReplayCursor,
+  clearCursor,
   codeLine,
-  completeReplayEvents,
+  completeEvents,
   cursorAt,
-  setReplayCursor,
+  setCursor,
 } from "#/domain/explorer/examples-kit";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
@@ -41,37 +41,37 @@ export function* boundedChannelDemo(
   emit: ExplorerReplayEmit<BoundedChannelDemoEvent>,
 ): RiteCoroutine<number> {
   return yield* enclose(function* queueBatches(): RiteCoroutine<number> {
-    yield* emit({ actions: [setReplayCursor(cursorAt("root", "channel-open", "running"))] });
+    yield* emit({ actions: [setCursor(cursorAt("root", "channel-open", "running"))] });
     const [receiver, sender] = yield* channel<string, never>(channelCapacity);
     yield* emit({
       actions: [
-        completeReplayEvents("channel-open"),
-        setReplayCursor(cursorAt("root", "spawn-worker", "running")),
+        completeEvents("channel-open"),
+        setCursor(cursorAt("root", "spawn-worker", "running")),
       ],
     });
     yield* spawn(function* writeBatches(): RiteCoroutine<readonly string[]> {
-      yield* emit({ actions: [setReplayCursor(cursorAt("worker", "worker-sleep", "running"))] });
+      yield* emit({ actions: [setCursor(cursorAt("worker", "worker-sleep", "running"))] });
       yield* sleep(workerDelayMs);
-      yield* emit({ actions: [setReplayCursor(cursorAt("worker", "receive-first", "running"))] });
+      yield* emit({ actions: [setCursor(cursorAt("worker", "receive-first", "running"))] });
       const first = yield* receive(receiver);
       yield* emit({
         actions: [
-          completeReplayEvents("receive-first"),
-          setReplayCursor(cursorAt("worker", "receive-second", "blocked")),
+          completeEvents("receive-first"),
+          setCursor(cursorAt("worker", "receive-second", "blocked")),
         ],
       });
       const second = yield* receive(receiver);
       yield* emit({
         actions: [
-          completeReplayEvents("receive-second"),
-          setReplayCursor(cursorAt("worker", "receive-third", "blocked")),
+          completeEvents("receive-second"),
+          setCursor(cursorAt("worker", "receive-third", "blocked")),
         ],
       });
       const third = yield* receive(receiver);
       yield* emit({
         actions: [
-          completeReplayEvents("receive-third"),
-          setReplayCursor(cursorAt("worker", ["worker-return", "worker-close"], "running")),
+          completeEvents("receive-third"),
+          setCursor(cursorAt("worker", ["worker-return", "worker-close"], "running")),
         ],
       });
 
@@ -79,45 +79,45 @@ export function* boundedChannelDemo(
         return [first, second, third];
       } finally {
         yield* emit({
-          actions: [clearReplayCursor("worker"), completeReplayEvents("worker-return")],
+          actions: [clearCursor("worker"), completeEvents("worker-return")],
         });
       }
     });
 
-    yield* emit({ actions: [setReplayCursor(cursorAt("root", "send-first", "running"))] });
+    yield* emit({ actions: [setCursor(cursorAt("root", "send-first", "running"))] });
     yield* send(sender, "draft");
     yield* emit({
       actions: [
-        completeReplayEvents("send-first"),
-        setReplayCursor(cursorAt("root", "send-second", "blocked")),
+        completeEvents("send-first"),
+        setCursor(cursorAt("root", "send-second", "blocked")),
       ],
     });
     yield* send(sender, "review");
     yield* emit({
       actions: [
-        completeReplayEvents("second-sent"),
-        setReplayCursor(cursorAt("root", "sender-sleep", "running")),
+        completeEvents("second-sent"),
+        setCursor(cursorAt("root", "sender-sleep", "running")),
       ],
     });
     yield* sleep(senderDelayMs);
     yield* emit({
       actions: [
-        completeReplayEvents("sender-sleep"),
-        setReplayCursor(cursorAt("root", "send-third", "running")),
+        completeEvents("sender-sleep"),
+        setCursor(cursorAt("root", "send-third", "running")),
       ],
     });
     yield* send(sender, "publish");
     yield* emit({
       actions: [
-        completeReplayEvents("send-third"),
-        setReplayCursor(cursorAt("root", "done-return", "running")),
+        completeEvents("send-third"),
+        setCursor(cursorAt("root", "done-return", "running")),
       ],
     });
 
     try {
       return batchCount;
     } finally {
-      yield* emit({ actions: [clearReplayCursor("root"), completeReplayEvents("done")] });
+      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

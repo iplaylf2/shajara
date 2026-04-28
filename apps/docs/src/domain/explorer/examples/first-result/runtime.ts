@@ -1,12 +1,12 @@
 // oxlint-disable max-lines-per-function
 import {
-  clearReplayCursor,
+  clearCursor,
   codeLine,
-  completeReplayEvents,
+  completeEvents,
   cursorAt,
   raceBranch,
-  setReplayCursor,
-  setReplayCursors,
+  setCursor,
+  setCursors,
 } from "#/domain/explorer/examples-kit";
 import { enclose, race, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
@@ -49,7 +49,7 @@ export function* firstResultDemo(
   return yield* enclose(function* loadProfile(): RiteCoroutine<string> {
     yield* emit({
       actions: [
-        setReplayCursors([
+        setCursors([
           cursorAt("root", "race-open", "running"),
           cursorAt("race", ["launch-cache", "launch-network"], "running"),
         ]),
@@ -66,7 +66,7 @@ export function* firstResultDemo(
         function* readCache(): RiteCoroutine<string> {
           yield* emit({
             actions: [
-              setReplayCursors([
+              setCursors([
                 cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
                 cursorAt("cache", "cache-sleep", "running"),
               ]),
@@ -74,9 +74,7 @@ export function* firstResultDemo(
           });
           yield* sleep(cacheDelayMs);
           yield* emit({
-            actions: [
-              setReplayCursor(cursorAt("cache", ["cache-return", "cache-close"], "running")),
-            ],
+            actions: [setCursor(cursorAt("cache", ["cache-return", "cache-close"], "running"))],
           });
 
           try {
@@ -84,9 +82,9 @@ export function* firstResultDemo(
           } finally {
             yield* emit({
               actions: [
-                clearReplayCursor("cache"),
-                completeReplayEvents(["cache-return", "race-wait-cache"]),
-                setReplayCursor(cursorAt("race", "race-wait-network", "blocked")),
+                clearCursor("cache"),
+                completeEvents(["cache-return", "race-wait-cache"]),
+                setCursor(cursorAt("race", "race-wait-network", "blocked")),
               ],
             });
           }
@@ -102,7 +100,7 @@ export function* firstResultDemo(
         function* fetchNetwork(): RiteCoroutine<string> {
           yield* emit({
             actions: [
-              setReplayCursors([
+              setCursors([
                 cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
                 cursorAt("network", "network-sleep", "running"),
               ]),
@@ -111,7 +109,7 @@ export function* firstResultDemo(
           yield* sleep(networkDelayMs);
           yield* emit({
             actions: [
-              setReplayCursor(cursorAt("network", ["network-return", "network-close"], "running")),
+              setCursor(cursorAt("network", ["network-return", "network-close"], "running")),
             ],
           });
 
@@ -120,9 +118,9 @@ export function* firstResultDemo(
           } finally {
             yield* emit({
               actions: [
-                clearReplayCursor("network"),
-                completeReplayEvents(["network-return", "race-wait-network"]),
-                setReplayCursor(cursorAt("race", "race-wait-cache", "blocked")),
+                clearCursor("network"),
+                completeEvents(["network-return", "race-wait-network"]),
+                setCursor(cursorAt("race", "race-wait-cache", "blocked")),
               ],
             });
           }
@@ -130,20 +128,20 @@ export function* firstResultDemo(
       ),
     ] as const);
 
-    yield* emit({ actions: [setReplayCursor(cursorAt("root", "wait-race", "blocked"))] });
+    yield* emit({ actions: [setCursor(cursorAt("root", "wait-race", "blocked"))] });
     const profile = yield* wait(firstProfile);
     yield* emit({
       actions: [
-        clearReplayCursor("race"),
-        completeReplayEvents("wait-race"),
-        setReplayCursor(cursorAt("root", "return-profile", "running")),
+        clearCursor("race"),
+        completeEvents("wait-race"),
+        setCursor(cursorAt("root", "return-profile", "running")),
       ],
     });
 
     try {
       return profile;
     } finally {
-      yield* emit({ actions: [clearReplayCursor("root"), completeReplayEvents("done")] });
+      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

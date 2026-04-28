@@ -1,8 +1,8 @@
 import type { ExplorerEventId } from "#/domain/explorer/contract";
-import type { ExplorerFlowNode } from "./explorer-flow-contract";
+import type { FlowNode } from "./explorer-flow-model";
 
 export function readFlowViewBox<TEvent extends ExplorerEventId>(
-  nodes: readonly ExplorerFlowNode<TEvent>[],
+  nodes: readonly FlowNode<TEvent>[],
 ): string {
   const maxNodeRight = Math.max(...nodes.map((node) => node.left + node.width));
   const width = Math.max(viewBoxWidth, maxNodeRight - viewBoxMinX + viewBoxPaddingRight);
