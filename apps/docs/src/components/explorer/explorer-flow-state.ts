@@ -103,6 +103,19 @@ export function readChannelNodeStatus<TEvent extends ExplorerEventId>(
   return "pending";
 }
 
+export function readChannelMeterLabel<TEvent extends ExplorerEventId>(
+  node: ExplorerFlowNode<TEvent>,
+  state: ExplorerReplayState<TEvent>,
+): string | null {
+  const matchedState = node.meterStates?.find(
+    (meterState) =>
+      includesAny(state.active, meterState.activeEvents ?? []) ||
+      includesAny(state.completed, meterState.completedEvents ?? []),
+  );
+
+  return matchedState?.label ?? node.meterLabel ?? null;
+}
+
 function includesAny<TEvent extends ExplorerEventId>(
   completedEvents: readonly TEvent[],
   targetEvents: readonly TEvent[],

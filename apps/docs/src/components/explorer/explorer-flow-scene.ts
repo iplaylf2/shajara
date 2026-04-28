@@ -46,6 +46,8 @@ export interface ExplorerFlowNode<TEvent extends ExplorerEventId> {
   id: string;
   label: string;
   left: number;
+  meterLabel?: string;
+  meterStates?: ExplorerFlowGraphNode<TEvent>["meterStates"];
   overloadEvents?: readonly TEvent[];
   statusRoutineIds: readonly string[];
   top: number;
@@ -170,6 +172,8 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
     id: node.id,
     label: node.label,
     left,
+    ...(node.meterLabel ? { meterLabel: node.meterLabel } : {}),
+    ...(node.meterStates ? { meterStates: node.meterStates } : {}),
     ...(node.overloadEvents ? { overloadEvents: node.overloadEvents } : {}),
     statusRoutineIds: node.statusRoutineIds,
     top,

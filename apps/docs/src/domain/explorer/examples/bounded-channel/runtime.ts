@@ -7,7 +7,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { sleep } from "@shajara/host";
 
 // oxlint-disable-next-line explicit-module-boundary-types
-export function createBufferedBackpressureDemoCode() {
+export function createBoundedChannelDemoCode() {
   return [
     codeLine("routine", "function* queueBatches() {", ["done"]),
     codeLine(
@@ -20,18 +20,19 @@ export function createBufferedBackpressureDemoCode() {
     codeLine("receive-first", "    const first = yield* receive(receiver);", ["worker-return"]),
     codeLine("receive-second", "    const second = yield* receive(receiver);", ["worker-return"]),
     codeLine("receive-third", "    const third = yield* receive(receiver);", ["worker-return"]),
-    codeLine("worker-return", "    return [first, second, third].length;", ["worker-return"]),
+    codeLine("worker-return", "    return [first, second, third];", ["worker-return"]),
     codeLine("worker-close", "  });", ["worker-return"]),
     codeLine("send-first", '  yield* send(sender, "draft");', ["send-first"]),
-    codeLine("send-second", '  yield* send(sender, "review");', ["send-second"]),
-    codeLine("send-third", '  yield* send(sender, "publish");', ["third-sent"]),
-    codeLine("third-sent", `  return ${batchCount};`, ["done"]),
+    codeLine("send-second", '  yield* send(sender, "review");', ["second-sent"]),
+    codeLine("sender-sleep", `  yield* sleep(${senderDelayMs});`, ["sender-sleep"]),
+    codeLine("send-third", '  yield* send(sender, "publish");', ["send-third"]),
+    codeLine("done-return", `  return ${batchCount};`, ["done"]),
     codeLine("done", "}", ["done"]),
   ];
 }
 
-export function* bufferedBackpressureDemo(
-  emit: ExplorerReplayEmit<BufferedBackpressureDemoEvent>,
+export function* boundedChannelDemo(
+  emit: ExplorerReplayEmit<BoundedChannelDemoEvent>,
 ): RiteCoroutine<number> {
   return yield* enclose(function* queueBatches(): RiteCoroutine<number> {
     yield* emit({
@@ -42,13 +43,13 @@ export function* bufferedBackpressureDemo(
       completed: "channel-open",
       cursor: cursorAt("root", "spawn-worker", "running"),
     });
-    yield* spawn(function* writeBatches(): RiteCoroutine<number> {
+    yield* spawn(function* writeBatches(): RiteCoroutine<readonly string[]> {
       yield* emit({
         cursor: cursorAt("worker", "worker-sleep", "running"),
       });
       yield* sleep(workerDelayMs);
       yield* emit({
-        cursor: cursorAt("worker", "receive-first", "blocked"),
+        cursor: cursorAt("worker", "receive-first", "running"),
       });
       const first = yield* receive(receiver);
       yield* emit({
@@ -67,7 +68,7 @@ export function* bufferedBackpressureDemo(
       });
 
       try {
-        return [first, second, third].length;
+        return [first, second, third];
       } finally {
         yield* emit({
           clearCursor: "worker",
@@ -82,17 +83,22 @@ export function* bufferedBackpressureDemo(
     yield* send(sender, "draft");
     yield* emit({
       completed: "send-first",
-      cursor: cursorAt("root", "send-second", "running"),
+      cursor: cursorAt("root", "send-second", "blocked"),
     });
     yield* send(sender, "review");
     yield* emit({
-      completed: "send-second",
-      cursor: cursorAt("root", "send-third", "blocked"),
+      completed: "second-sent",
+      cursor: cursorAt("root", "sender-sleep", "running"),
+    });
+    yield* sleep(senderDelayMs);
+    yield* emit({
+      completed: "sender-sleep",
+      cursor: cursorAt("root", "send-third", "running"),
     });
     yield* send(sender, "publish");
     yield* emit({
-      completed: "third-sent",
-      cursor: cursorAt("root", "third-sent", "running"),
+      completed: "send-third",
+      cursor: cursorAt("root", "done-return", "running"),
     });
 
     try {
@@ -106,10 +112,11 @@ export function* bufferedBackpressureDemo(
   });
 }
 
-export type BufferedBackpressureDemoEvent = ExplorerAuthoredEvent<
-  ReturnType<typeof createBufferedBackpressureDemoCode>
+export type BoundedChannelDemoEvent = ExplorerAuthoredEvent<
+  ReturnType<typeof createBoundedChannelDemoCode>
 >;
 
 const batchCount = 3;
-const channelCapacity = 2;
+const channelCapacity = 1;
+const senderDelayMs = 1000;
 const workerDelayMs = 1000;

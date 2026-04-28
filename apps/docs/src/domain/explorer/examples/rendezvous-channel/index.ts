@@ -1,1 +1,0 @@
-export { rendezvousChannelExample } from "./definition";

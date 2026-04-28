@@ -8,6 +8,8 @@ import {
   readLinkMode,
   readNodeStatus,
 } from "./explorer-flow-state";
+import type { ChannelDataBlockedAnchor } from "./explorer-flow-channel-link";
+import { ChannelDataLink } from "./explorer-flow-channel-link";
 import { ChannelNode } from "./explorer-flow-channel-node";
 import type { FlowNodeStatusValue } from "./explorer-flow-state";
 import type { JSX } from "solid-js";
@@ -178,6 +180,25 @@ function FlowLink<TEvent extends string>(props: {
   scene: ExplorerFlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
+  const channelData = readChannelDataLink(props.link, props.scene);
+  if (channelData) {
+    return (
+      <ChannelDataLink
+        blockedAnchor={channelData.blockedAnchor}
+        link={props.link}
+        state={props.state}
+      />
+    );
+  }
+
+  return <GenericFlowLink link={props.link} scene={props.scene} state={props.state} />;
+}
+
+function GenericFlowLink<TEvent extends string>(props: {
+  link: ExplorerFlowScene<TEvent>["links"][number];
+  scene: ExplorerFlowScene<TEvent>;
+  state: ExplorerReplayState<TEvent>;
+}): JSX.Element {
   const mode = createMemo(() => readLinkMode(props.link.activeEvents, props.state));
   const isConsumed = createMemo(() => isSpawnLinkConsumed(props.link, props.scene, props.state));
   const isDataTrail = createMemo(() => isSettledDataLink(props.link, props.state));
@@ -216,6 +237,28 @@ function FlowLink<TEvent extends string>(props: {
   );
 }
 
+function readChannelDataLink<TEvent extends string>(
+  link: ExplorerFlowScene<TEvent>["links"][number],
+  scene: ExplorerFlowScene<TEvent>,
+): ChannelDataLinkInfo | null {
+  if (link.variant !== "data") {
+    return null;
+  }
+
+  const fromNode = scene.nodes.find((node) => node.id === link.from);
+  const toNode = scene.nodes.find((node) => node.id === link.to);
+
+  if (toNode?.variant === "channel") {
+    return { blockedAnchor: "end" };
+  }
+
+  if (fromNode?.variant === "channel") {
+    return { blockedAnchor: "start" };
+  }
+
+  return null;
+}
+
 function FlowLinkLabel<TEvent extends string>(props: {
   link: ExplorerFlowScene<TEvent>["links"][number];
 }): JSX.Element {
@@ -239,4 +282,8 @@ interface Props<TEvent extends ExplorerEventId> {
   codeControls?: JSX.Element;
   scene: ExplorerFlowScene<TEvent>;
   state: ExplorerReplayState<TEvent>;
+}
+
+interface ChannelDataLinkInfo {
+  blockedAnchor: ChannelDataBlockedAnchor;
 }

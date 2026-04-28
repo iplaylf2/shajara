@@ -56,8 +56,16 @@ export interface ExplorerFlowGraphNode<TEvent extends ExplorerEventId> {
   id: string;
   kind: "branch" | "channel" | "join" | "parent";
   label: string;
+  meterLabel?: string;
+  meterStates?: readonly ExplorerFlowGraphNodeMeter<TEvent>[];
   overloadEvents?: readonly TEvent[];
   statusRoutineIds: readonly ExplorerRoutineId[];
+}
+
+export interface ExplorerFlowGraphNodeMeter<TEvent extends ExplorerEventId> {
+  activeEvents?: readonly TEvent[];
+  completedEvents?: readonly TEvent[];
+  label: string;
 }
 
 export interface ExplorerReplayFrame<TEvent extends ExplorerEventId> {

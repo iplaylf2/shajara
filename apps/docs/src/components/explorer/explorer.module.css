@@ -302,17 +302,12 @@
 .flowChannelBody {
   fill: #fffaf2;
   stroke: #b8783f;
+  stroke-linejoin: round;
   stroke-width: 1.7;
   transition:
     fill 180ms ease,
     stroke 180ms ease,
     stroke-width 180ms ease;
-}
-
-.flowChannelPort {
-  fill: #fff7e8;
-  stroke: #b8783f;
-  stroke-width: 1.7;
 }
 
 .flowChannelText {
@@ -326,36 +321,24 @@
   user-select: text;
 }
 
-.flowChannelCaption {
-  fill: #8c6842;
-  font-size: 10px;
-  font-weight: 620;
+.flowChannelMeter {
+  fill: #80562b;
+  font-size: 11px;
+  font-weight: 720;
   cursor: text;
   dominant-baseline: central;
-  letter-spacing: 0.04em;
   pointer-events: auto;
   text-anchor: middle;
-  text-transform: uppercase;
   user-select: text;
-}
-
-.flowNodeChannelOpen .flowChannelBody,
-.flowNodeChannelOpen .flowChannelPort {
-  animation: flowChannelAppear 220ms ease-out;
 }
 
 .flowNodeChannelOverload .flowChannelBody {
   fill: #fff4e0;
   stroke: #b05f35;
-  stroke-dasharray: 4 4;
-  stroke-width: 2.7;
-  animation:
-    flowNodeMarch 850ms linear infinite,
-    flowNodePulse 1300ms ease-in-out infinite;
+  stroke-width: 2.1;
 }
 
-.flowNodeChannelDone .flowChannelBody,
-.flowNodeChannelDone .flowChannelPort {
+.flowNodeChannelDone .flowChannelBody {
   fill: #f8fbff;
   stroke: #9fb1c4;
 }
@@ -402,6 +385,53 @@
 
 .flowLinkGroup {
   transform-box: fill-box;
+}
+
+.flowChannelDataGroup {
+  transform-box: fill-box;
+}
+
+.flowChannelDataTrack {
+  fill: none;
+  stroke: #9ac7a6;
+  stroke-linecap: round;
+  stroke-width: 2.4;
+  opacity: 0;
+}
+
+.flowChannelDataGroupRunning .flowChannelDataTrack {
+  stroke: #46a56a;
+  stroke-dasharray: 4 7;
+  opacity: 0.8;
+  animation: flowLinkMarch 720ms linear infinite;
+}
+
+.flowChannelDataGroupBlocked .flowChannelDataTrack {
+  stroke: #c28b51;
+  stroke-dasharray: 2 8;
+  opacity: 0.72;
+}
+
+.flowChannelDataGroupSettled .flowChannelDataTrack {
+  stroke: #8fb99a;
+  stroke-dasharray: 2 9;
+  opacity: 0.36;
+}
+
+.flowChannelDataToken {
+  fill: none;
+  stroke: #258f58;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.2;
+}
+
+.flowChannelDataTokenBlocked {
+  fill: none;
+  stroke: #b05f35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.2;
 }
 
 .flowLinkGroupWait .flowLink {
@@ -683,18 +713,6 @@
 
   50% {
     stroke-width: 2.8;
-  }
-}
-
-@keyframes flowChannelAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 

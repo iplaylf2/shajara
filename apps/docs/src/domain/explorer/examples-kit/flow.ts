@@ -1,4 +1,8 @@
-import type { ExplorerFlowGraphLink, ExplorerFlowGraphNode } from "#/domain/explorer/contract";
+import type {
+  ExplorerFlowGraphLink,
+  ExplorerFlowGraphNode,
+  ExplorerFlowGraphNodeMeter,
+} from "#/domain/explorer/contract";
 
 export function spawnLink<TEvent extends string>(
   from: string,
@@ -68,6 +72,8 @@ export function channelNode<TEvent extends string>(
     id,
     kind: "channel",
     label,
+    ...(state?.meterLabel ? { meterLabel: state.meterLabel } : {}),
+    ...(state?.meterStates ? { meterStates: state.meterStates } : {}),
     ...(state?.overloadEvents ? { overloadEvents: state.overloadEvents } : {}),
     statusRoutineIds: [],
   };
@@ -118,5 +124,7 @@ interface ExplorerRoutineNodeLifecycle<TEvent extends string> {
 
 interface ExplorerChannelNodeState<TEvent extends string> {
   caption?: string;
+  meterLabel?: string;
+  meterStates?: readonly ExplorerFlowGraphNodeMeter<TEvent>[];
   overloadEvents?: readonly TEvent[];
 }
