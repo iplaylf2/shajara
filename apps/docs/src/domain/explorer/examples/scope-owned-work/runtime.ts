@@ -5,7 +5,7 @@ import {
   codeSpacer,
   completeEvents,
   cursorAt,
-  enclosedRoutine,
+  encloseWait,
   setCursor,
 } from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
@@ -41,16 +41,13 @@ export function* scopeOwnedWorkDemo(
       actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
     });
     const result = yield* enclose(
-      enclosedRoutine(
+      encloseWait(
         emit,
-        {
-          childEvent: ["launch-index", "spawn-index"],
-          childRoutineId: "scope",
-          parentEvent: "enclose-open",
-          parentRoutineId: "root",
-          waitEvent: "scope-wait-root",
-        },
+        { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
         function* commitArticle(): RiteCoroutine<string> {
+          yield* emit({
+            actions: [setCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))],
+          });
           yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
             yield* emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
             yield* sleep(indexDelayMs);

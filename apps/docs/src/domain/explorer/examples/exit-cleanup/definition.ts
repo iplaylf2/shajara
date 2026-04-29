@@ -1,7 +1,6 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dataLink,
   parentRoutineNode,
   spawnLink,
   waitLink,
@@ -40,7 +39,7 @@ function createExitCleanupFlow(): ExplorerFlow<ExitCleanupDemoEvent> {
 function createExitCleanupFlowLinks(): ExplorerFlow<ExitCleanupDemoEvent>["links"] {
   return [
     spawnLink("root", "scope", "enclose(packParcel)", ["launch-scope"]),
-    dataLink("scope", "defer", "defer(releaseBench)", ["defer-open"]),
+    spawnLink("scope", "defer", "defer(releaseBench)", ["defer-open"]),
     waitLink("defer", "scope", "deferred cleanup", {
       activeEvents: ["scope-wait-defer"],
       displayLabel: { kind: "hidden" },

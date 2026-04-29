@@ -292,6 +292,8 @@
 
 .flowNodeChannel {
   opacity: 1;
+  transform-box: fill-box;
+  transform-origin: center;
   transition: opacity 180ms ease;
 }
 
@@ -341,6 +343,124 @@
 .flowNodeChannelDone .flowChannelBody {
   fill: #f8fbff;
   stroke: #9fb1c4;
+}
+
+.flowNodeFuture {
+  opacity: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.flowNodeFutureHidden {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.flowNodeFutureVisible {
+  animation: flowObjectPop 240ms ease-out both;
+}
+
+.flowNodeChannel:not(.flowNodeChannelPending).flowObjectEnterFromLeft,
+.flowNodeFutureVisible.flowObjectEnterFromLeft {
+  animation: flowObjectSlideFromLeft 260ms ease-out both;
+}
+
+.flowNodeChannel:not(.flowNodeChannelPending).flowObjectEnterFromTop,
+.flowNodeFutureVisible.flowObjectEnterFromTop {
+  animation: flowObjectSlideFromTop 260ms ease-out both;
+}
+
+.flowFutureSlot {
+  fill: #f9fbff;
+  stroke: #7c91bd;
+  stroke-width: 1.65;
+  transition:
+    fill 180ms ease,
+    stroke 180ms ease,
+    stroke-width 180ms ease;
+}
+
+.flowFutureFill {
+  fill: #5f789d;
+  opacity: 0;
+  transition:
+    fill 180ms ease,
+    opacity 180ms ease;
+}
+
+.flowFutureText {
+  fill: #394c77;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: text;
+  dominant-baseline: central;
+  pointer-events: auto;
+  text-anchor: middle;
+  user-select: text;
+}
+
+.flowNodeFutureSettled .flowFutureSlot {
+  fill: #f1fbf6;
+  stroke: #7fab91;
+}
+
+.flowNodeFutureSettled .flowFutureFill {
+  fill: #4f8a68;
+  opacity: 1;
+}
+
+.flowScopeGroup {
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.flowScopeGroupRunning .flowScopeBox {
+  fill: rgb(237 246 255 / 0.42);
+  stroke: #6f96bd;
+}
+
+.flowScopeBox {
+  fill: rgb(237 246 255 / 0.36);
+  stroke: #8ea8c6;
+  stroke-dasharray: 8 7;
+  stroke-width: 1.45;
+  transition:
+    fill 180ms ease,
+    stroke 180ms ease,
+    stroke-dasharray 180ms ease;
+}
+
+.flowScopeGroupClosed .flowScopeBox {
+  fill: rgb(241 245 249 / 0.58);
+  stroke: #9fb1c4;
+  stroke-dasharray: none;
+}
+
+.flowScopeLabel,
+.flowScopeStatus {
+  cursor: text;
+  dominant-baseline: central;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.flowScopeLabel {
+  fill: #52677f;
+  font-size: 12px;
+  font-weight: 680;
+  text-anchor: start;
+}
+
+.flowScopeStatus {
+  fill: #6c7f94;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-anchor: end;
+  text-transform: uppercase;
 }
 
 .flowNodeActive .flowNode {
@@ -707,6 +827,47 @@
 
   to {
     stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowObjectPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  72% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes flowObjectSlideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-22px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes flowObjectSlideFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

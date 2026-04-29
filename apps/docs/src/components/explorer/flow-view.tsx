@@ -1,3 +1,4 @@
+// oxlint-disable sort-imports
 import type { ExplorerEventId, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { FlowNode, FlowScene } from "./flow-model";
 import {
@@ -9,10 +10,12 @@ import {
   readNodeStatus,
 } from "./flow-status";
 import type { ChannelDataBlockedAnchor } from "./channel-data-link";
-import { ChannelDataLink } from "./channel-data-link";
-import { ChannelNode } from "./channel-node";
 import type { FlowNodeStatusValue } from "./flow-status";
 import type { JSX } from "solid-js";
+import { ChannelDataLink } from "./channel-data-link";
+import { ChannelNode } from "./channel-node";
+import { FutureNode } from "./future-node";
+import { ScopeGroups } from "./scope-group";
 import { createMemo } from "solid-js";
 import styles from "./styles.module.css";
 
@@ -31,6 +34,7 @@ export function ExplorerFlowView<TEvent extends ExplorerEventId>(
             viewBox={props.scene.viewBox}
           >
             <FlowArrowMarker markerId={props.scene.markerId} />
+            <ScopeGroups scene={props.scene} state={props.state} />
             <FlowLinks scene={props.scene} state={props.state} />
             <FlowNodes scene={props.scene} state={props.state} />
           </svg>
@@ -99,6 +103,10 @@ function FlowNode<TEvent extends string>(props: {
 }): JSX.Element {
   if (props.node.variant === "channel") {
     return <ChannelNode node={props.node} state={props.state} />;
+  }
+
+  if (props.node.variant === "future") {
+    return <FutureNode node={props.node} state={props.state} />;
   }
 
   const status = createMemo(() => readNodeStatus(props.node, props.state));

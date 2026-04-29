@@ -111,6 +111,14 @@ export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
       readonly activeEvents: readonly TEvent[];
       readonly channelState: ExplorerChannelState<TEvent>;
       readonly completedEvents: readonly TEvent[];
+      readonly direction: ExplorerChannelDirection;
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly [];
+    };
+    future: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
       readonly id: string;
       readonly label: string;
       readonly statusRoutineIds: readonly [];
@@ -129,8 +137,19 @@ export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
       readonly label: string;
       readonly statusRoutineIds: readonly ExplorerRoutineId[];
     };
+    scope: {
+      readonly activeEvents: readonly TEvent[];
+      readonly closedEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly ownedNodeIds: readonly string[];
+      readonly statusRoutineIds: readonly [];
+    };
   }
 >;
+
+export type ExplorerChannelDirection = "left" | "right";
 
 export type ExplorerChannelState<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",

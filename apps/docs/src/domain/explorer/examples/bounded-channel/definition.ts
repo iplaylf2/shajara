@@ -85,7 +85,7 @@ function createQueueBatchesNode() {
 function createChannelNode() {
   return channelNode(
     "channel",
-    "channel",
+    "batchQueue",
     {
       activeEvents: [
         "channel-open",

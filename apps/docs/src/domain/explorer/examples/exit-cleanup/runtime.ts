@@ -6,7 +6,7 @@ import {
   codeSpacer,
   completeEvents,
   cursorAt,
-  enclosedRoutine,
+  encloseWait,
   setCursor,
   setCursors,
 } from "#/domain/explorer/examples-kit";
@@ -44,16 +44,13 @@ export function* exitCleanupDemo(
       actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
     });
     const parcel = yield* enclose(
-      enclosedRoutine(
+      encloseWait(
         emit,
-        {
-          childEvent: "defer-open",
-          childRoutineId: "scope",
-          parentEvent: "enclose-open",
-          parentRoutineId: "root",
-          waitEvent: "scope-wait-root",
-        },
+        { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
         function* packParcel(): RiteCoroutine<string> {
+          yield* emit({
+            actions: [setCursor(cursorAt("scope", "defer-open", "running"))],
+          });
           yield* defer(function* releaseBench(): RiteCoroutine<void> {
             yield* emit({
               actions: [

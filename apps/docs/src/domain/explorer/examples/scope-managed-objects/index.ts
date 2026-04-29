@@ -1,0 +1,1 @@
+export { scopeManagedObjectsExample } from "./definition";

@@ -21,6 +21,8 @@ export function ChannelNode<TEvent extends string>(props: {
         [styles["flowNodeChannelOpen"]!]: status() === "open",
         [styles["flowNodeChannelOverload"]!]: status() === "overload",
         [styles["flowNodeChannelPending"]!]: status() === "pending",
+        [styles["flowObjectEnterFromLeft"]!]: props.node.objectEnterFrom === "left",
+        [styles["flowObjectEnterFromTop"]!]: props.node.objectEnterFrom === "top",
       }}
     >
       <path class={styles["flowChannelBody"]} d={createChannelBodyPath(props.node)} />
@@ -60,6 +62,18 @@ function createChannelBodyPath<TEvent extends string>(node: FlowNode<TEvent>): s
   const { centerY, height, left, top, width } = node;
   const right = left + width;
   const bottom = top + height;
+
+  if (node.variant === "channel" && node.channelDirection === "left") {
+    return [
+      `M${right} ${top}`,
+      `L${left + channelPointInset} ${top}`,
+      `L${left} ${centerY}`,
+      `L${left + channelPointInset} ${bottom}`,
+      `L${right} ${bottom}`,
+      `L${right - channelConcaveInset} ${centerY}`,
+      "Z",
+    ].join(" ");
+  }
 
   return [
     `M${left} ${top}`,

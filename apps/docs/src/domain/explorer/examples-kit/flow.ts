@@ -1,4 +1,5 @@
 import type {
+  ExplorerChannelDirection,
   ExplorerChannelState,
   ExplorerFlowLink,
   ExplorerFlowNode,
@@ -57,15 +58,31 @@ export function dataLink<TEvent extends string>(
 export function channelNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: RoutineNodeLifecycle<TEvent>,
+  lifecycle: ChannelNodeLifecycle<TEvent>,
   state: ExplorerChannelState<TEvent>,
 ): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
     channelState: state,
     completedEvents: lifecycle.completedEvents,
+    direction: lifecycle.direction ?? "right",
     id,
     kind: "channel",
+    label,
+    statusRoutineIds: [],
+  };
+}
+
+export function futureNode<TEvent extends string>(
+  id: string,
+  label: string,
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "future",
     label,
     statusRoutineIds: [],
   };
@@ -85,6 +102,24 @@ export function branchRoutineNode<TEvent extends string>(
   lifecycle: RoutineNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
   return routineNode("branch", id, label, lifecycle);
+}
+
+export function scopeNode<TEvent extends string>(
+  id: string,
+  label: string,
+  ownedNodeIds: readonly string[],
+  lifecycle: ScopeNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    closedEvents: lifecycle.closedEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "scope",
+    label,
+    ownedNodeIds,
+    statusRoutineIds: [],
+  };
 }
 
 function routineNode<TEvent extends string>(
@@ -112,4 +147,12 @@ interface WaitLinkOptions<TEvent extends string> {
 interface RoutineNodeLifecycle<TEvent extends string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
+}
+
+interface ChannelNodeLifecycle<TEvent extends string> extends RoutineNodeLifecycle<TEvent> {
+  direction?: ExplorerChannelDirection;
+}
+
+interface ScopeNodeLifecycle<TEvent extends string> extends RoutineNodeLifecycle<TEvent> {
+  closedEvents: readonly TEvent[];
 }

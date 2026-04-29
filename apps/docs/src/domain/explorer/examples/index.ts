@@ -5,6 +5,7 @@ import { exitCleanupExample } from "./exit-cleanup";
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
+import { scopeManagedObjectsExample } from "./scope-managed-objects";
 import { scopeOwnedWorkExample } from "./scope-owned-work";
 import { singleSpawnExample } from "./single-spawn";
 
@@ -25,6 +26,7 @@ export const explorerExamples = [
   firstResultExample,
   boundedChannelExample,
   exitCleanupExample,
+  scopeManagedObjectsExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
@@ -60,6 +62,7 @@ const explorerExampleDefinitions: {
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
   [firstResultExample.id]: firstResultExample,
+  [scopeManagedObjectsExample.id]: scopeManagedObjectsExample,
   [scopeOwnedWorkExample.id]: scopeOwnedWorkExample,
   [singleSpawnExample.id]: singleSpawnExample,
 };

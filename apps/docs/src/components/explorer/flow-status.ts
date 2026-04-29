@@ -7,6 +7,9 @@ import type { FlowNode, FlowScene } from "./flow-model";
 
 export type FlowNodeStatusValue = ExplorerReplayCursorMode | "done" | null;
 export type ChannelNodeStatusValue = "done" | "open" | "overload" | "pending";
+export type FutureNodePresenceValue = "hidden" | "visible";
+export type FutureNodeStatusValue = "pending" | "settled";
+export type ScopeGroupStatusValue = "closed" | "running" | null;
 
 export function isInterruptedWaitLink<TEvent extends ExplorerEventId>(
   link: FlowScene<TEvent>["links"][number],
@@ -73,6 +76,10 @@ export function readNodeStatus<TEvent extends ExplorerEventId>(
     return null;
   }
 
+  if (node.variant === "future") {
+    return null;
+  }
+
   if (includesAny(state.completed, node.completedEvents)) {
     return "done";
   }
@@ -84,6 +91,58 @@ export function readNodeStatus<TEvent extends ExplorerEventId>(
   );
 
   return activeCursor?.mode ?? null;
+}
+
+export function readFutureNodeStatus<TEvent extends ExplorerEventId>(
+  node: FlowNode<TEvent>,
+  state: ExplorerReplayState<TEvent>,
+): FutureNodeStatusValue {
+  if (node.variant !== "future") {
+    return "pending";
+  }
+
+  if (includesAny(state.completed, node.completedEvents)) {
+    return "settled";
+  }
+
+  return "pending";
+}
+
+export function readFutureNodePresence<TEvent extends ExplorerEventId>(
+  node: FlowNode<TEvent>,
+  state: ExplorerReplayState<TEvent>,
+): FutureNodePresenceValue {
+  if (node.variant !== "future") {
+    return "hidden";
+  }
+
+  if (
+    includesAny(state.active, node.activeEvents) ||
+    includesAny(state.completed, node.activeEvents) ||
+    includesAny(state.completed, node.completedEvents)
+  ) {
+    return "visible";
+  }
+
+  return "hidden";
+}
+
+export function readScopeGroupStatus<TEvent extends ExplorerEventId>(
+  group: FlowScene<TEvent>["groups"][number],
+  state: ExplorerReplayState<TEvent>,
+): ScopeGroupStatusValue {
+  if (includesAny(state.completed, group.closedEvents)) {
+    return "closed";
+  }
+
+  if (
+    includesAny(state.active, group.activeEvents) ||
+    includesAny(state.completed, group.activeEvents)
+  ) {
+    return "running";
+  }
+
+  return null;
 }
 
 export function readChannelNodeStatus<TEvent extends ExplorerEventId>(

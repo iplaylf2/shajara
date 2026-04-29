@@ -47,19 +47,14 @@ export function setCursors<TEvent extends ExplorerEventId>(
   return { cursors, kind: "set-cursors" };
 }
 
-export function enclosedRoutine<TEvent extends ExplorerEventId, TResult>(
+export function encloseWait<TEvent extends ExplorerEventId, TResult>(
   emit: ExplorerReplayEmit<TEvent>,
-  replay: EnclosedRoutineReplay<TEvent>,
+  replay: EncloseWaitReplay<TEvent>,
   routine: RiteRoutine<TResult>,
 ): RiteRoutine<TResult> {
-  return function* runEnclosedRoutine(): RiteCoroutine<TResult> {
+  return function* runEncloseWait(): RiteCoroutine<TResult> {
     yield* emit({
-      actions: [
-        setCursors([
-          cursorAt(replay.parentRoutineId, [replay.parentEvent, replay.waitEvent], "blocked"),
-          cursorAt(replay.childRoutineId, replay.childEvent, "running"),
-        ]),
-      ],
+      actions: [setCursor(cursorAt(replay.routineId, replay.events, "blocked"))],
     });
 
     return yield* routine();
@@ -107,16 +102,13 @@ interface BranchOutcome {
   didReturn: boolean;
 }
 
+export interface EncloseWaitReplay<TEvent extends ExplorerEventId> {
+  readonly events: TEvent | readonly TEvent[];
+  readonly routineId: ExplorerRoutineId;
+}
+
 export interface RaceBranchReplay<TEvent extends ExplorerEventId> {
   readonly cancelEvent: TEvent;
   readonly routineId: ExplorerRoutineId;
-  readonly waitEvent: TEvent;
-}
-
-export interface EnclosedRoutineReplay<TEvent extends ExplorerEventId> {
-  readonly childEvent: TEvent | readonly TEvent[];
-  readonly childRoutineId: ExplorerRoutineId;
-  readonly parentEvent: TEvent;
-  readonly parentRoutineId: ExplorerRoutineId;
   readonly waitEvent: TEvent;
 }

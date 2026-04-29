@@ -1,6 +1,8 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
+  dataLink,
+  futureNode,
   parentRoutineNode,
   spawnLink,
   waitLink,
@@ -38,9 +40,10 @@ function createFutureSettlementFlow(): ExplorerFlow<FutureSettlementDemoEvent> {
 function createFutureSettlementFlowLinks(): ExplorerFlow<FutureSettlementDemoEvent>["links"] {
   return [
     spawnLink("root", "resolver", "spawn(receiveSmsCode)", ["spawn-resolver"]),
-    waitLink("resolver", "root", "smsCode", {
+    dataLink("resolver", "sms-code", "settle smsCode", ["settle-code"]),
+    waitLink("sms-code", "root", "wait(smsCode)", {
       activeEvents: ["wait-code"],
-      displayLabel: { kind: "visible", text: "smsCode" },
+      displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
     }),
   ];
@@ -54,6 +57,10 @@ function createFutureSettlementFlowNodes(): ExplorerFlow<FutureSettlementDemoEve
     }),
     branchRoutineNode("resolver", "receiveSmsCode", {
       activeEvents: ["spawn-resolver", "resolver-sleep", "settle-code"],
+      completedEvents: ["settle-code"],
+    }),
+    futureNode("sms-code", "smsCode", {
+      activeEvents: ["future", "wait-code"],
       completedEvents: ["settle-code"],
     }),
   ];
