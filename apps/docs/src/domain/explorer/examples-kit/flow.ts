@@ -1,13 +1,20 @@
-import type { ExplorerFlowGraphLink, ExplorerFlowGraphNode } from "#/domain/explorer/contract";
+import type {
+  ExplorerChannelDirection,
+  ExplorerChannelState,
+  ExplorerFlowLink,
+  ExplorerFlowNode,
+  ExplorerWaitInterruption,
+} from "#/domain/explorer/contract";
 
 export function spawnLink<TEvent extends string>(
   from: string,
   to: string,
   label: string,
   activeEvents: readonly TEvent[],
-): ExplorerFlowGraphLink<TEvent> {
+): ExplorerFlowLink<TEvent> {
   return {
     activeEvents,
+    displayLabel: { kind: "hidden" },
     from,
     kind: "spawn",
     label,
@@ -15,53 +22,112 @@ export function spawnLink<TEvent extends string>(
   };
 }
 
-export function dependencyLink<TEvent extends string>(
+export function waitLink<TEvent extends string>(
   from: string,
   to: string,
   label: string,
-  options: ExplorerFlowLinkActivity<TEvent>,
-): ExplorerFlowGraphLink<TEvent> {
-  const link = {
+  options: WaitLinkOptions<TEvent>,
+): ExplorerFlowLink<TEvent> {
+  return {
     activeEvents: options.activeEvents,
+    displayLabel: options.displayLabel,
     from,
-    kind: "dependency",
+    interruption: options.interruption,
+    kind: "wait",
     label,
     to,
-    ...(options.interruptedEvents ? { interruptedEvents: options.interruptedEvents } : {}),
-  } as const satisfies ExplorerFlowGraphLink<TEvent>;
+  };
+}
 
-  if (options.visibleLabel) {
-    return {
-      ...link,
-      visibleLabel: options.visibleLabel,
-    };
-  }
+export function dataLink<TEvent extends string>(
+  from: string,
+  to: string,
+  label: string,
+  activeEvents: readonly TEvent[],
+): ExplorerFlowLink<TEvent> {
+  return {
+    activeEvents,
+    displayLabel: { kind: "hidden" },
+    from,
+    kind: "data",
+    label,
+    to,
+  };
+}
 
-  return link;
+export function channelNode<TEvent extends string>(
+  id: string,
+  label: string,
+  lifecycle: ChannelNodeLifecycle<TEvent>,
+  state: ExplorerChannelState<TEvent>,
+): ExplorerFlowNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    channelState: state,
+    completedEvents: lifecycle.completedEvents,
+    direction: lifecycle.direction ?? "right",
+    id,
+    kind: "channel",
+    label,
+    statusRoutineIds: [],
+  };
+}
+
+export function futureNode<TEvent extends string>(
+  id: string,
+  label: string,
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "future",
+    label,
+    statusRoutineIds: [],
+  };
 }
 
 export function parentRoutineNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return routineNode("parent", id, label, lifecycle);
 }
 
 export function branchRoutineNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return routineNode("branch", id, label, lifecycle);
 }
 
-function routineNode<TEvent extends string>(
-  kind: ExplorerFlowGraphNode<TEvent>["kind"],
+export function scopeNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: ExplorerRoutineNodeLifecycle<TEvent>,
-): ExplorerFlowGraphNode<TEvent> {
+  ownedNodeIds: readonly string[],
+  lifecycle: ScopeNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    closedEvents: lifecycle.closedEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "scope",
+    label,
+    ownedNodeIds,
+    statusRoutineIds: [],
+  };
+}
+
+function routineNode<TEvent extends string>(
+  kind: "branch" | "join" | "parent",
+  id: string,
+  label: string,
+  lifecycle: RoutineNodeLifecycle<TEvent>,
+): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
     completedEvents: lifecycle.completedEvents,
@@ -72,13 +138,21 @@ function routineNode<TEvent extends string>(
   };
 }
 
-interface ExplorerFlowLinkActivity<TEvent extends string> {
+interface WaitLinkOptions<TEvent extends string> {
   activeEvents: readonly TEvent[];
-  interruptedEvents?: readonly TEvent[];
-  visibleLabel?: string;
+  displayLabel: ExplorerFlowLink<TEvent>["displayLabel"];
+  interruption: ExplorerWaitInterruption<TEvent>;
 }
 
-interface ExplorerRoutineNodeLifecycle<TEvent extends string> {
+interface RoutineNodeLifecycle<TEvent extends string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
+}
+
+interface ChannelNodeLifecycle<TEvent extends string> extends RoutineNodeLifecycle<TEvent> {
+  direction?: ExplorerChannelDirection;
+}
+
+interface ScopeNodeLifecycle<TEvent extends string> extends RoutineNodeLifecycle<TEvent> {
+  closedEvents: readonly TEvent[];
 }

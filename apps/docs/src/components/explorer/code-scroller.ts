@@ -1,4 +1,5 @@
 export interface CodeScroller {
+  scrollToTop: (container: HTMLElement) => void;
   scrollToLine: (line: HTMLElement) => void;
 }
 
@@ -18,17 +19,34 @@ export function createCodeScroller(isEnabled: () => boolean): CodeScroller {
       }
 
       lastLine = line;
-
-      if (scrollFrame !== emptyLength) {
-        globalThis.cancelAnimationFrame(scrollFrame);
+      scheduleScroll(() => scrollCodeLineIntoView(line));
+    },
+    scrollToTop(container) {
+      if (!isEnabled()) {
+        lastLine = null;
+        return;
       }
 
-      scrollFrame = globalThis.requestAnimationFrame(() => {
-        scrollFrame = emptyLength;
-        scrollCodeLineIntoView(line);
+      lastLine = null;
+      scheduleScroll(() => {
+        container.scrollTo({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          top: emptyLength,
+        });
       });
     },
   };
+
+  function scheduleScroll(scroll: () => void): void {
+    if (scrollFrame !== emptyLength) {
+      globalThis.cancelAnimationFrame(scrollFrame);
+    }
+
+    scrollFrame = globalThis.requestAnimationFrame(() => {
+      scrollFrame = emptyLength;
+      scroll();
+    });
+  }
 }
 
 function scrollCodeLineIntoView(line: HTMLElement): void {

@@ -1,9 +1,9 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createFirstResultDemoCode, firstResultDemo } from "./runtime";
 import type { FirstResultDemoEvent } from "./runtime";
@@ -28,33 +28,37 @@ export const firstResultExample = {
   titleKey: "explorer.examples.first-result.title",
 } as const satisfies ExplorerExample<FirstResultDemoEvent, string, string>;
 
-function createFirstResultFlow(): ExplorerFlowGraph<FirstResultDemoEvent> {
+function createFirstResultFlow(): ExplorerFlow<FirstResultDemoEvent> {
   return {
     links: createFirstResultFlowLinks(),
     nodes: createFirstResultFlowNodes(),
   };
 }
 
-function createFirstResultFlowLinks(): ExplorerFlowGraph<FirstResultDemoEvent>["links"] {
+function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links"] {
   return [
     spawnLink("root", "winner", "race(firstProfile)", ["race-open"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
     spawnLink("winner", "network", "fetchNetwork", ["launch-network"]),
-    dependencyLink("cache", "winner", "winner", {
+    waitLink("cache", "winner", "winner", {
       activeEvents: ["race-wait-cache"],
-      interruptedEvents: ["cache-canceled"],
+      displayLabel: { kind: "hidden" },
+      interruption: { events: ["cache-canceled"], kind: "interruptible" },
     }),
-    dependencyLink("network", "winner", "loser settles with arena", {
+    waitLink("network", "winner", "remaining branch", {
       activeEvents: ["race-wait-network"],
-      interruptedEvents: ["network-canceled"],
+      displayLabel: { kind: "hidden" },
+      interruption: { events: ["network-canceled"], kind: "interruptible" },
     }),
-    dependencyLink("winner", "root", "wait(firstProfile)", {
+    waitLink("winner", "root", "wait(firstProfile)", {
       activeEvents: ["wait-race"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
     }),
   ];
 }
 
-function createFirstResultFlowNodes(): ExplorerFlowGraph<FirstResultDemoEvent>["nodes"] {
+function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "loadProfile", {
       activeEvents: ["routine", "race-open", "wait-race", "return-profile", "done"],

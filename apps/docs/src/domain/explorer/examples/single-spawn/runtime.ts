@@ -1,5 +1,12 @@
 // oxlint-disable max-lines-per-function
-import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import {
+  clearCursors,
+  codeLine,
+  codeSpacer,
+  completeEvents,
+  cursorAt,
+  setCursor,
+} from "#/domain/explorer/examples-kit";
 import { enclose, spawn } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
@@ -14,6 +21,7 @@ export function createSingleSpawnDemoCode() {
     codeLine("receipt-sleep", `    yield* sleep(${receiptDelayMs});`, ["receipt-return"]),
     codeLine("receipt-return", '    return "receipt sent";', ["receipt-return"]),
     codeLine("receipt-close", "  });", ["receipt-return"]),
+    codeSpacer(),
     codeLine("return-accepted", '  return "order accepted";', ["done"]),
     codeLine("done", "}", ["done"]),
   ];
@@ -23,37 +31,31 @@ export function* singleSpawnDemo(
   emit: ExplorerReplayEmit<SingleSpawnDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* submitOrder(): RiteCoroutine<string> {
-    yield* emit({
-      cursor: cursorAt("root", "spawn-receipt", "running"),
-    });
+    emit({ actions: [setCursor(cursorAt("root", "spawn-receipt", "running"))] });
     yield* spawn(function* sendReceiptEmail(): RiteCoroutine<string> {
-      yield* emit({
-        cursor: cursorAt("receipt", "receipt-sleep", "running"),
-      });
+      emit({ actions: [setCursor(cursorAt("receipt", "receipt-sleep", "running"))] });
       yield* sleep(receiptDelayMs);
-      yield* emit({
-        cursor: cursorAt("receipt", ["receipt-return", "receipt-close"], "running"),
+      emit({
+        actions: [setCursor(cursorAt("receipt", ["receipt-return", "receipt-close"], "running"))],
       });
       try {
         return "receipt sent";
       } finally {
-        yield* emit({
-          clearCursors: ["receipt", "root"],
-          completed: ["receipt-return", "wait-receipt", "done"],
+        emit({
+          actions: [
+            clearCursors(["receipt", "root"]),
+            completeEvents(["receipt-return", "wait-receipt", "done"]),
+          ],
         });
       }
     });
 
-    yield* emit({
-      cursor: cursorAt("root", "return-accepted", "running"),
-    });
+    emit({ actions: [setCursor(cursorAt("root", "return-accepted", "running"))] });
 
     try {
       return "order accepted";
     } finally {
-      yield* emit({
-        cursor: cursorAt("root", "wait-receipt", "blocked"),
-      });
+      emit({ actions: [setCursor(cursorAt("root", "wait-receipt", "blocked"))] });
     }
   });
 }

@@ -1,9 +1,12 @@
 import type { ArrayValues } from "type-fest";
 import { allResultsExample } from "./all-results";
+import { boundedChannelExample } from "./bounded-channel";
+import { exitCleanupExample } from "./exit-cleanup";
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
-import { scopeOwnershipExample } from "./scope-ownership";
+import { scopeManagedObjectsExample } from "./scope-managed-objects";
+import { scopeOwnedWorkExample } from "./scope-owned-work";
 import { singleSpawnExample } from "./single-spawn";
 
 export function readExplorerExample(exampleId: ExplorerExampleId): ExplorerExampleDefinition {
@@ -17,20 +20,23 @@ export function readExplorerReplayRuntime(exampleId: ExplorerExampleId): Explore
 export const explorerExamples = [
   singleSpawnExample,
   futureSettlementExample,
-  scopeOwnershipExample,
+  scopeOwnedWorkExample,
   forkJoinExample,
   allResultsExample,
   firstResultExample,
+  boundedChannelExample,
+  exitCleanupExample,
+  scopeManagedObjectsExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
 
 export type ExplorerExampleDefinition = ArrayValues<typeof explorerExamples>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
 export type ExplorerExampleEvent =
-  ExplorerExampleDefinition extends ExplorerExampleDefinitionWithEvent<infer Event> ? Event : never;
+  ExplorerExampleDefinition extends ExampleWithEvent<infer Event> ? Event : never;
 export type ExplorerReplayRuntime = ExplorerExampleDefinition["stage"]["replay"]["runtime"];
 
-interface ExplorerExampleDefinitionWithEvent<Event extends string> {
+interface ExampleWithEvent<Event extends string> {
   readonly stage: {
     readonly flow: {
       readonly links: readonly {
@@ -51,9 +57,12 @@ const explorerExampleDefinitions: {
   >;
 } = {
   [allResultsExample.id]: allResultsExample,
+  [boundedChannelExample.id]: boundedChannelExample,
+  [exitCleanupExample.id]: exitCleanupExample,
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
   [firstResultExample.id]: firstResultExample,
-  [scopeOwnershipExample.id]: scopeOwnershipExample,
+  [scopeManagedObjectsExample.id]: scopeManagedObjectsExample,
+  [scopeOwnedWorkExample.id]: scopeOwnedWorkExample,
   [singleSpawnExample.id]: singleSpawnExample,
 };

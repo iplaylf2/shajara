@@ -1,5 +1,9 @@
 ---
-import { ExplorerExampleRail, ExplorerTopbar } from "#/components/explorer";
+import {
+  ExplorerExampleRail,
+  ExplorerExampleStage,
+  ExplorerShell,
+} from "#/components/explorer";
 import {
   buildExplorerHref,
   buildExplorerLocaleLinks,
@@ -9,12 +13,10 @@ import {
   readExplorerExample,
 } from "#/domain/explorer/examples";
 import { i18N, siteLocales } from "#site";
-import type { ExplorerBodyExample } from "#/pages-kit/explorer";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
-import ExplorerExampleStage from "#/components/explorer/explorer-example-stage.astro";
+import type { ExplorerExampleSummary } from "#/pages-kit/explorer";
 import ExplorerLayout from "#/layouts/explorer-layout.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
-import styles from "#/components/explorer/explorer.module.css";
 
 export function getStaticPaths() {
   return siteLocales.flatMap((locale) =>
@@ -24,9 +26,11 @@ export function getStaticPaths() {
   );
 }
 
-function buildExplorerExample(
+const { example, locale } = Astro.params;
+
+function buildExplorerExampleSummary(
   entry: ExplorerExampleDefinition,
-): ExplorerBodyExample {
+): ExplorerExampleSummary {
   return {
     description: Astro.locals.t(entry.descriptionKey),
     guideRows: entry.guideKeys.map((key) => Astro.locals.t(key)),
@@ -36,41 +40,34 @@ function buildExplorerExample(
   };
 }
 
-const { example, locale } = Astro.params;
 const exampleDefinition = readExplorerExample(example);
-
-const examples: ExplorerBodyExample[] =
-  explorerExamples.map(buildExplorerExample);
-const currentExample = buildExplorerExample(exampleDefinition);
-const docsHomeHref = getRelativeLocaleUrl(i18N.locales[locale].lang);
-const localeLinks = buildExplorerLocaleLinks(currentExample.id);
+const examples = explorerExamples.map(buildExplorerExampleSummary);
+const currentExample = buildExplorerExampleSummary(exampleDefinition);
+const chrome = {
+  brandHref: getRelativeLocaleUrl(i18N.locales[locale].lang),
+  brandLabel: "shajara",
+  currentLocaleLabel: i18N.locales[locale].label,
+  explorerLabel: Astro.locals.t("explorer.shell.eyebrow"),
+  localeLinks: buildExplorerLocaleLinks(currentExample.id),
+  title: currentExample.title,
+};
 const pageTitle = `${currentExample.title} · ${Astro.locals.t("explorer.home.title")}`;
+const replayLabels = {
+  codeFollow: Astro.locals.t("explorer.replay.follow"),
+  codeManual: Astro.locals.t("explorer.replay.manual"),
+};
 ---
 
 <ExplorerLayout locale={locale} title={pageTitle}>
-  <div class={styles["root"]}>
-    <ExplorerTopbar
-      brandHref={docsHomeHref}
-      brandLabel="shajara"
-      currentLocaleLabel={i18N.locales[locale].label}
-      explorerLabel={Astro.locals.t("explorer.shell.eyebrow")}
-      localeLinks={localeLinks}
-      title={currentExample.title}
+  <ExplorerShell chrome={chrome}>
+    <ExplorerExampleStage
+      content={currentExample}
+      definition={exampleDefinition}
+      replayLabels={replayLabels}
     />
-
-    <section class={styles["surface"]}>
-      <div class={styles["contentGrid"]}>
-        <ExplorerExampleStage
-          description={currentExample.description}
-          example={exampleDefinition}
-          guideRows={currentExample.guideRows}
-          title={currentExample.title}
-        />
-        <ExplorerExampleRail
-          currentExampleId={currentExample.id}
-          examples={examples}
-        />
-      </div>
-    </section>
-  </div>
+    <ExplorerExampleRail
+      currentExampleId={currentExample.id}
+      examples={examples}
+    />
+  </ExplorerShell>
 </ExplorerLayout>

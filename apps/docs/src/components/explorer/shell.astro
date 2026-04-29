@@ -1,0 +1,42 @@
+---
+import { ExplorerTopbar } from "./topbar";
+import styles from "./styles.module.css";
+
+const { chrome } = Astro.props;
+
+interface ExplorerShellLocaleLink {
+  href: string;
+  hreflang: string;
+  label: string;
+}
+
+interface Props {
+  chrome: ExplorerShellChrome;
+}
+
+interface ExplorerShellChrome {
+  brandHref: string;
+  brandLabel: string;
+  currentLocaleLabel: string;
+  explorerLabel: string;
+  localeLinks: readonly ExplorerShellLocaleLink[];
+  title: string;
+}
+---
+
+<div class={styles["root"]}>
+  <ExplorerTopbar
+    brandHref={chrome.brandHref}
+    brandLabel={chrome.brandLabel}
+    currentLocaleLabel={chrome.currentLocaleLabel}
+    explorerLabel={chrome.explorerLabel}
+    localeLinks={chrome.localeLinks}
+    title={chrome.title}
+  />
+
+  <section class={styles["surface"]}>
+    <div class={styles["contentGrid"]}>
+      <slot />
+    </div>
+  </section>
+</div>

@@ -1,5 +1,5 @@
 import type { JSX } from "solid-js";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export function ExplorerTopbar(props: Props): JSX.Element {
   return (
@@ -54,6 +54,6 @@ interface Props {
   brandLabel: string;
   currentLocaleLabel: string;
   explorerLabel: string;
-  localeLinks: ExplorerTopbarLocaleLink[];
+  localeLinks: readonly ExplorerTopbarLocaleLink[];
   title: string;
 }

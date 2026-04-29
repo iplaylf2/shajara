@@ -1,5 +1,6 @@
 import type {
   ExplorerEventId,
+  ExplorerReplayAction,
   ExplorerReplayCursor,
   ExplorerReplayEmit,
   ExplorerRoutineId,
@@ -16,6 +17,46 @@ export function cursorAt<TEvent extends string>(
     mode,
     routineId,
   };
+}
+
+export function clearCursor(routineId: ExplorerRoutineId): ExplorerReplayAction<never> {
+  return clearCursors([routineId]);
+}
+
+export function clearCursors(
+  routineIds: readonly ExplorerRoutineId[],
+): ExplorerReplayAction<never> {
+  return { kind: "clear-cursors", routineIds };
+}
+
+export function completeEvents<TEvent extends ExplorerEventId>(
+  events: TEvent | readonly TEvent[],
+): ExplorerReplayAction<TEvent> {
+  return { events: typeof events === "string" ? [events] : events, kind: "complete-events" };
+}
+
+export function setCursor<TEvent extends ExplorerEventId>(
+  cursor: ExplorerReplayCursor<TEvent>,
+): ExplorerReplayAction<TEvent> {
+  return setCursors([cursor]);
+}
+
+export function setCursors<TEvent extends ExplorerEventId>(
+  cursors: readonly ExplorerReplayCursor<TEvent>[],
+): ExplorerReplayAction<TEvent> {
+  return { cursors, kind: "set-cursors" };
+}
+
+export function encloseWait<TEvent extends ExplorerEventId, TResult>(
+  emit: ExplorerReplayEmit<TEvent>,
+  replay: EncloseWaitReplay<TEvent>,
+  routine: RiteRoutine<TResult>,
+): RiteRoutine<TResult> {
+  emit({
+    actions: [setCursor(cursorAt(replay.routineId, replay.events, "blocked"))],
+  });
+
+  return routine;
 }
 
 export function raceBranch<TEvent extends ExplorerEventId, TResult>(
@@ -45,9 +86,11 @@ function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
     return result;
   } finally {
     if (!outcome.didReturn) {
-      yield* emit({
-        clearCursor: replay.routineId,
-        completed: [replay.cancelEvent, replay.waitEvent],
+      emit({
+        actions: [
+          clearCursor(replay.routineId),
+          completeEvents([replay.cancelEvent, replay.waitEvent]),
+        ],
       });
     }
   }
@@ -55,6 +98,11 @@ function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
 
 interface BranchOutcome {
   didReturn: boolean;
+}
+
+export interface EncloseWaitReplay<TEvent extends ExplorerEventId> {
+  readonly events: TEvent | readonly TEvent[];
+  readonly routineId: ExplorerRoutineId;
 }
 
 export interface RaceBranchReplay<TEvent extends ExplorerEventId> {

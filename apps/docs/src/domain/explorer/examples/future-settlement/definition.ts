@@ -1,9 +1,11 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
+  dataLink,
+  futureNode,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createFutureSettlementDemoCode, futureSettlementDemo } from "./runtime";
 import type { FutureSettlementDemoEvent } from "./runtime";
@@ -28,24 +30,26 @@ export const futureSettlementExample = {
   titleKey: "explorer.examples.future-settlement.title",
 } as const satisfies ExplorerExample<FutureSettlementDemoEvent, string, string>;
 
-function createFutureSettlementFlow(): ExplorerFlowGraph<FutureSettlementDemoEvent> {
+function createFutureSettlementFlow(): ExplorerFlow<FutureSettlementDemoEvent> {
   return {
     links: createFutureSettlementFlowLinks(),
     nodes: createFutureSettlementFlowNodes(),
   };
 }
 
-function createFutureSettlementFlowLinks(): ExplorerFlowGraph<FutureSettlementDemoEvent>["links"] {
+function createFutureSettlementFlowLinks(): ExplorerFlow<FutureSettlementDemoEvent>["links"] {
   return [
     spawnLink("root", "resolver", "spawn(receiveSmsCode)", ["spawn-resolver"]),
-    dependencyLink("resolver", "root", "smsCode", {
+    dataLink("resolver", "sms-code", "settle smsCode", ["settle-code"]),
+    waitLink("sms-code", "root", "wait(smsCode)", {
       activeEvents: ["wait-code"],
-      visibleLabel: "smsCode",
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
     }),
   ];
 }
 
-function createFutureSettlementFlowNodes(): ExplorerFlowGraph<FutureSettlementDemoEvent>["nodes"] {
+function createFutureSettlementFlowNodes(): ExplorerFlow<FutureSettlementDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "verifyPhoneNumber", {
       activeEvents: ["routine", "future", "spawn-resolver", "wait-code", "done"],
@@ -53,6 +57,10 @@ function createFutureSettlementFlowNodes(): ExplorerFlowGraph<FutureSettlementDe
     }),
     branchRoutineNode("resolver", "receiveSmsCode", {
       activeEvents: ["spawn-resolver", "resolver-sleep", "settle-code"],
+      completedEvents: ["settle-code"],
+    }),
+    futureNode("sms-code", "smsCode", {
+      activeEvents: ["future", "wait-code"],
       completedEvents: ["settle-code"],
     }),
   ];

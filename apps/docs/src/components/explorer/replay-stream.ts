@@ -1,35 +1,36 @@
 import type {
   ExplorerEventId,
+  ExplorerReplayAction,
   ExplorerReplayCursor,
   ExplorerReplayFrame,
   ExplorerReplayState,
   ExplorerReplayTrace,
 } from "#/domain/explorer/contract";
-import { channel, receive, send } from "@shajara/host/primitives";
+import { feed, sleep } from "@shajara/host";
 import type { RiteCoroutine } from "@shajara/host";
-import { sleep } from "@shajara/host";
+import { receive } from "@shajara/host/primitives";
 
 const emptyEventCount = 0;
 
 export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
-  emit: (trace: ExplorerReplayTrace<TEvent>) => RiteCoroutine<void>;
-  finish: () => RiteCoroutine<void>;
+  emit: (trace: ExplorerReplayTrace<TEvent>) => void;
+  finish: () => void;
   next: () => RiteCoroutine<ExplorerReplayFrame<TEvent> | null>;
 }
 
 export function* createReplayFrameStream<TEvent extends ExplorerEventId>(
   baselineState: ExplorerReplayState<TEvent>,
 ): RiteCoroutine<ReplayFrameStream<TEvent>> {
-  const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
+  const { receiver, trySend } = yield* feed<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
   let state = baselineState;
 
   return {
-    *emit(trace) {
+    emit(trace) {
       state = applyReplayTrace(state, trace);
-      yield* send(sender, state);
+      trySend(state);
     },
-    *finish() {
-      yield* send(sender, null);
+    finish() {
+      trySend(null);
     },
     next() {
       return receive(receiver);
@@ -42,38 +43,56 @@ function applyReplayTrace<TEvent extends ExplorerEventId>(
   trace: ExplorerReplayTrace<TEvent>,
 ): ExplorerReplayFrame<TEvent> {
   const cursorsByRoutine = new Map(state.cursors.map((cursor) => [cursor.routineId, cursor]));
+  const completed = appendCompletedEvents(state.completed, trace.actions);
 
-  if (trace.clearCursor) {
-    cursorsByRoutine.delete(trace.clearCursor);
-  }
-  for (const routineId of trace.clearCursors ?? []) {
-    cursorsByRoutine.delete(routineId);
-  }
-  if (trace.cursor) {
-    cursorsByRoutine.set(trace.cursor.routineId, trace.cursor);
-  }
-  for (const cursor of trace.cursors ?? []) {
-    cursorsByRoutine.set(cursor.routineId, cursor);
+  for (const action of trace.actions) {
+    applyReplayCursorAction(cursorsByRoutine, action);
   }
 
   const cursors = [...cursorsByRoutine.values()];
 
   return {
     active: cursors.flatMap((cursor) => cursor.events),
-    completed: appendCompletedEvent(state.completed, trace),
+    completed,
     cursors,
   };
 }
 
-function appendCompletedEvent<TEvent extends ExplorerEventId>(
+function applyReplayCursorAction<TEvent extends ExplorerEventId>(
+  cursorsByRoutine: Map<string, ExplorerReplayCursor<TEvent>>,
+  action: ExplorerReplayAction<TEvent>,
+): void {
+  switch (action.kind) {
+    case "clear-cursors": {
+      for (const routineId of action.routineIds) {
+        cursorsByRoutine.delete(routineId);
+      }
+      return;
+    }
+    case "set-cursors": {
+      for (const cursor of action.cursors) {
+        cursorsByRoutine.set(cursor.routineId, cursor);
+      }
+      return;
+    }
+    case "complete-events": {
+      break;
+    }
+  }
+}
+
+function appendCompletedEvents<TEvent extends ExplorerEventId>(
   completed: readonly TEvent[],
-  trace: ExplorerReplayTrace<TEvent>,
+  actions: readonly ExplorerReplayAction<TEvent>[],
 ): readonly TEvent[] {
-  if (!("completed" in trace)) {
+  const entries = actions.flatMap((action) =>
+    action.kind === "complete-events" ? action.events : [],
+  );
+
+  if (entries.length === emptyEventCount) {
     return completed;
   }
 
-  const entries = Array.isArray(trace.completed) ? trace.completed : [trace.completed];
   const nextEntries = entries.filter((event) => !completed.includes(event));
 
   if (nextEntries.length === emptyEventCount) {

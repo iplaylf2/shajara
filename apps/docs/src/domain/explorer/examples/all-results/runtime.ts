@@ -1,6 +1,14 @@
 // oxlint-disable max-lines-per-function
 import { all, enclose, wait } from "@shajara/host/primitives";
-import { codeLine, cursorAt } from "#/domain/explorer/examples-kit";
+import {
+  clearCursor,
+  codeLine,
+  codeSpacer,
+  completeEvents,
+  cursorAt,
+  setCursor,
+  setCursors,
+} from "#/domain/explorer/examples-kit";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -15,11 +23,13 @@ export function createAllResultsDemoCode() {
     codeLine("user-sleep", `      yield* sleep(${userDelayMs});`, ["user-return"]),
     codeLine("user-return", '      return "user";', ["user-return"]),
     codeLine("user-close", "    },", ["user-return"]),
+    codeSpacer(),
     codeLine("settings-open", "    function* loadSettings() {", ["settings-return"]),
     codeLine("settings-sleep", `      yield* sleep(${settingsDelayMs});`, ["settings-return"]),
     codeLine("settings-return", '      return "settings";', ["settings-return"]),
     codeLine("settings-close", "    },", ["settings-return"]),
     codeLine("all-close", "  ] as const);", ["wait-all"]),
+    codeSpacer(),
     codeLine("wait-all", "  const [user, settings] = yield* wait(pageData);", ["wait-all"]),
     codeLine("return-page", "  return { user, settings };", ["done"]),
     codeLine("done", "}", ["done"]),
@@ -30,73 +40,82 @@ export function* allResultsDemo(
   emit: ExplorerReplayEmit<AllResultsDemoEvent>,
 ): RiteCoroutine<AllResultsDemoResult> {
   return yield* enclose(function* renderDashboard(): RiteCoroutine<AllResultsDemoResult> {
-    yield* emit({
-      cursors: [
-        cursorAt("root", "all-open", "running"),
-        cursorAt("all", ["launch-user", "launch-settings"], "running"),
+    emit({
+      actions: [
+        setCursors([
+          cursorAt("root", "all-open", "running"),
+          cursorAt("all", ["launch-user", "launch-settings"], "running"),
+        ]),
       ],
     });
     const pageData = yield* all([
       function* loadUser(): RiteCoroutine<string> {
-        yield* emit({
-          cursors: [
-            cursorAt("all", ["all-wait-user", "all-wait-settings"], "blocked"),
-            cursorAt("user", "user-sleep", "running"),
+        emit({
+          actions: [
+            setCursors([
+              cursorAt("all", ["all-wait-user", "all-wait-settings"], "blocked"),
+              cursorAt("user", "user-sleep", "running"),
+            ]),
           ],
         });
         yield* sleep(userDelayMs);
-        yield* emit({
-          cursor: cursorAt("user", ["user-return", "user-close"], "running"),
+        emit({
+          actions: [setCursor(cursorAt("user", ["user-return", "user-close"], "running"))],
         });
         try {
           return "user";
         } finally {
-          yield* emit({
-            clearCursor: "user",
-            completed: ["user-return", "all-wait-user"],
-            cursor: cursorAt("all", "all-wait-settings", "blocked"),
+          emit({
+            actions: [
+              clearCursor("user"),
+              completeEvents(["user-return", "all-wait-user"]),
+              setCursor(cursorAt("all", "all-wait-settings", "blocked")),
+            ],
           });
         }
       },
       function* loadSettings(): RiteCoroutine<string> {
-        yield* emit({
-          cursors: [
-            cursorAt("all", ["all-wait-user", "all-wait-settings"], "blocked"),
-            cursorAt("settings", "settings-sleep", "running"),
+        emit({
+          actions: [
+            setCursors([
+              cursorAt("all", ["all-wait-user", "all-wait-settings"], "blocked"),
+              cursorAt("settings", "settings-sleep", "running"),
+            ]),
           ],
         });
         yield* sleep(settingsDelayMs);
-        yield* emit({
-          cursor: cursorAt("settings", ["settings-return", "settings-close"], "running"),
+        emit({
+          actions: [
+            setCursor(cursorAt("settings", ["settings-return", "settings-close"], "running")),
+          ],
         });
         try {
           return "settings";
         } finally {
-          yield* emit({
-            clearCursor: "settings",
-            completed: ["settings-return", "all-wait-settings"],
+          emit({
+            actions: [
+              clearCursor("settings"),
+              completeEvents(["settings-return", "all-wait-settings"]),
+            ],
           });
         }
       },
     ] as const);
 
-    yield* emit({
-      cursor: cursorAt("root", "wait-all", "blocked"),
-    });
+    emit({ actions: [setCursor(cursorAt("root", "wait-all", "blocked"))] });
     const [user, settings] = yield* wait(pageData);
-    yield* emit({
-      clearCursor: "all",
-      completed: "wait-all",
-      cursor: cursorAt("root", "return-page", "running"),
+    emit({
+      actions: [
+        clearCursor("all"),
+        completeEvents("wait-all"),
+        setCursor(cursorAt("root", "return-page", "running")),
+      ],
     });
 
     try {
       return { settings, user };
     } finally {
-      yield* emit({
-        clearCursor: "root",
-        completed: "done",
-      });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

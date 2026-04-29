@@ -1,9 +1,9 @@
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 import { createSingleSpawnDemoCode, singleSpawnDemo } from "./runtime";
 import type { SingleSpawnDemoEvent } from "./runtime";
@@ -28,23 +28,25 @@ export const singleSpawnExample = {
   titleKey: "explorer.examples.single-spawn.title",
 } as const satisfies ExplorerExample<SingleSpawnDemoEvent, string, string>;
 
-function createSingleSpawnFlow(): ExplorerFlowGraph<SingleSpawnDemoEvent> {
+function createSingleSpawnFlow(): ExplorerFlow<SingleSpawnDemoEvent> {
   return {
     links: createSingleSpawnFlowLinks(),
     nodes: createSingleSpawnFlowNodes(),
   };
 }
 
-function createSingleSpawnFlowLinks(): ExplorerFlowGraph<SingleSpawnDemoEvent>["links"] {
+function createSingleSpawnFlowLinks(): ExplorerFlow<SingleSpawnDemoEvent>["links"] {
   return [
     spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"]),
-    dependencyLink("receipt", "root", "scope waits for sendReceiptEmail", {
+    waitLink("receipt", "root", "scope waits for sendReceiptEmail", {
       activeEvents: ["wait-receipt"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
     }),
   ];
 }
 
-function createSingleSpawnFlowNodes(): ExplorerFlowGraph<SingleSpawnDemoEvent>["nodes"] {
+function createSingleSpawnFlowNodes(): ExplorerFlow<SingleSpawnDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "submitOrder", {
       activeEvents: ["routine", "spawn-receipt", "return-accepted", "wait-receipt", "done"],

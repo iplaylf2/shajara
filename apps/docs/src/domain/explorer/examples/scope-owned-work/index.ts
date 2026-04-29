@@ -1,0 +1,1 @@
+export { scopeOwnedWorkExample } from "./definition";

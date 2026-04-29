@@ -1,3 +1,4 @@
+import type { NonEmptyTuple, TaggedUnion } from "type-fest";
 import type { RiteCoroutine } from "@shajara/host";
 
 export type ExplorerEventId = string;
@@ -17,10 +18,23 @@ export interface ExplorerExample<
   titleKey: TTranslationKey;
 }
 
+export type ExplorerExampleCodeEntry<TEvent extends ExplorerEventId> =
+  | ExplorerExampleCodeLine<TEvent>
+  | ExplorerExampleCodeSpacer;
+
 export interface ExplorerExampleCodeLine<TEvent extends ExplorerEventId> {
+  completion: ExplorerCodeCompletion<TEvent>;
   id: TEvent;
-  completedEvents?: readonly TEvent[];
   text: string;
+}
+
+export interface ExplorerExampleCodeSpacer {
+  kind: "spacer";
+  text: "";
+}
+
+export interface ExplorerCodeCompletion<TEvent extends ExplorerEventId> {
+  events: readonly TEvent[];
 }
 
 export interface ExplorerExampleReplay<TEvent extends ExplorerEventId, TResult> {
@@ -29,34 +43,139 @@ export interface ExplorerExampleReplay<TEvent extends ExplorerEventId, TResult> 
 }
 
 export interface ExplorerExampleStage<TEvent extends ExplorerEventId, TResult> {
-  code: readonly ExplorerExampleCodeLine<TEvent>[];
-  flow: ExplorerFlowGraph<TEvent>;
+  code: readonly ExplorerExampleCodeEntry<TEvent>[];
+  flow: ExplorerFlow<TEvent>;
   replay: ExplorerExampleReplay<TEvent, TResult>;
 }
 
-export interface ExplorerFlowGraph<TEvent extends ExplorerEventId> {
-  links: readonly ExplorerFlowGraphLink<TEvent>[];
-  nodes: readonly ExplorerFlowGraphNode<TEvent>[];
+export interface ExplorerFlow<TEvent extends ExplorerEventId> {
+  links: readonly ExplorerFlowLink<TEvent>[];
+  nodes: readonly ExplorerFlowNode<TEvent>[];
 }
 
-export interface ExplorerFlowGraphLink<TEvent extends ExplorerEventId> {
-  activeEvents: readonly TEvent[];
-  from: string;
-  interruptedEvents?: readonly TEvent[];
-  kind: "dependency" | "spawn";
-  label: string;
-  visibleLabel?: string;
-  to: string;
-}
+export type ExplorerFlowLink<TEvent extends ExplorerEventId> = TaggedUnion<
+  "kind",
+  {
+    data: {
+      readonly activeEvents: readonly TEvent[];
+      readonly displayLabel: ExplorerFlowLinkLabel;
+      readonly from: string;
+      readonly label: string;
+      readonly to: string;
+    };
+    spawn: {
+      readonly activeEvents: readonly TEvent[];
+      readonly displayLabel: ExplorerFlowLinkLabel;
+      readonly from: string;
+      readonly label: string;
+      readonly to: string;
+    };
+    wait: {
+      readonly activeEvents: readonly TEvent[];
+      readonly displayLabel: ExplorerFlowLinkLabel;
+      readonly from: string;
+      readonly interruption: ExplorerWaitInterruption<TEvent>;
+      readonly label: string;
+      readonly to: string;
+    };
+  }
+>;
 
-export interface ExplorerFlowGraphNode<TEvent extends ExplorerEventId> {
-  activeEvents: readonly TEvent[];
-  completedEvents: readonly TEvent[];
-  id: string;
-  kind: "branch" | "join" | "parent";
-  label: string;
-  statusRoutineIds: readonly ExplorerRoutineId[];
-}
+export type ExplorerFlowLinkLabel = TaggedUnion<
+  "kind",
+  {
+    hidden: {};
+    visible: { readonly text: string };
+  }
+>;
+
+export type ExplorerWaitInterruption<TEvent extends ExplorerEventId> = TaggedUnion<
+  "kind",
+  {
+    interruptible: { readonly events: readonly TEvent[] };
+    none: {};
+  }
+>;
+
+export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
+  "kind",
+  {
+    branch: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+    };
+    channel: {
+      readonly activeEvents: readonly TEvent[];
+      readonly channelState: ExplorerChannelState<TEvent>;
+      readonly completedEvents: readonly TEvent[];
+      readonly direction: ExplorerChannelDirection;
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly [];
+    };
+    future: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly [];
+    };
+    join: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+    };
+    parent: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+    };
+    scope: {
+      readonly activeEvents: readonly TEvent[];
+      readonly closedEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly ownedNodeIds: readonly string[];
+      readonly statusRoutineIds: readonly [];
+    };
+  }
+>;
+
+export type ExplorerChannelDirection = "left" | "right";
+
+export type ExplorerChannelState<TEvent extends ExplorerEventId> = TaggedUnion<
+  "kind",
+  {
+    metered: {
+      readonly defaultLabel: string;
+      readonly overloadEvents: readonly TEvent[];
+      readonly states: readonly ExplorerChannelMeter<TEvent>[];
+    };
+    plain: {};
+  }
+>;
+
+export type ExplorerChannelMeter<TEvent extends ExplorerEventId> = TaggedUnion<
+  "kind",
+  {
+    active: {
+      readonly events: readonly TEvent[];
+      readonly label: string;
+    };
+    completed: {
+      readonly events: readonly TEvent[];
+      readonly label: string;
+    };
+  }
+>;
 
 export interface ExplorerReplayFrame<TEvent extends ExplorerEventId> {
   active: readonly TEvent[];
@@ -71,16 +190,21 @@ export interface ExplorerReplayCursor<TEvent extends ExplorerEventId> {
 }
 
 export interface ExplorerReplayTrace<TEvent extends ExplorerEventId> {
-  clearCursor?: ExplorerRoutineId;
-  clearCursors?: readonly ExplorerRoutineId[];
-  completed?: TEvent | readonly TEvent[];
-  cursor?: ExplorerReplayCursor<TEvent>;
-  cursors?: readonly ExplorerReplayCursor<TEvent>[];
+  actions: NonEmptyTuple<ExplorerReplayAction<TEvent>>;
 }
+
+export type ExplorerReplayAction<TEvent extends ExplorerEventId> = TaggedUnion<
+  "kind",
+  {
+    "clear-cursors": { readonly routineIds: readonly ExplorerRoutineId[] };
+    "complete-events": { readonly events: readonly TEvent[] };
+    "set-cursors": { readonly cursors: readonly ExplorerReplayCursor<TEvent>[] };
+  }
+>;
 
 export type ExplorerReplayEmit<TEvent extends ExplorerEventId> = (
   trace: ExplorerReplayTrace<TEvent>,
-) => RiteCoroutine<void>;
+) => void;
 
 export type ExplorerReplayRoutine<TEvent extends ExplorerEventId, TResult> = (
   emit: ExplorerReplayEmit<TEvent>,
@@ -104,4 +228,10 @@ export function createPendingExplorerReplayState<
     completed: [],
     cursors: [],
   };
+}
+
+export function isExplorerExampleCodeLine<TEvent extends ExplorerEventId>(
+  entry: ExplorerExampleCodeEntry<TEvent>,
+): entry is ExplorerExampleCodeLine<TEvent> {
+  return "id" in entry;
 }

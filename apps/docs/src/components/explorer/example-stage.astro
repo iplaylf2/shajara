@@ -1,0 +1,76 @@
+---
+import ExplorerCodeBlock from "./code-block.astro";
+import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
+import { ExplorerReplayDemo } from "./replay-demo";
+import { isExplorerExampleCodeLine } from "#/domain/explorer/contract";
+import { resolveFlowScene } from "./flow-scene";
+import styles from "./styles.module.css";
+
+const { content, definition, replayLabels } = Astro.props;
+const codeBlockId = `explorer-${definition.id}-code`;
+const stageEventIds = [
+  ...new Set(
+    definition.stage.code.flatMap((line) =>
+      isExplorerExampleCodeLine(line) ? [line.id, ...line.completion.events] : [],
+    ),
+  ),
+];
+const stage = {
+  eventIds: stageEventIds,
+  replay: {
+    replayDelayMs: definition.stage.replay.replayDelayMs,
+  },
+  scene: resolveFlowScene(definition.stage.flow, `${content.title} flow`),
+};
+
+interface Props {
+  content: ExplorerStageContent;
+  definition: ExplorerExampleDefinition;
+  replayLabels: ExplorerStageReplayLabels;
+}
+
+interface ExplorerStageContent {
+  description: string;
+  guideRows: readonly string[];
+  title: string;
+}
+
+interface ExplorerStageReplayLabels {
+  codeFollow: string;
+  codeManual: string;
+}
+---
+
+<section aria-labelledby="explorer-stage-title" class={styles["stagePanel"]}>
+  <h2 class={styles["srOnly"]} id="explorer-stage-title">
+    {content.title}
+  </h2>
+
+  <div class={styles["sceneHeader"]}>
+    <p class={styles["sceneBody"]}>{content.description}</p>
+  </div>
+
+  <ExplorerReplayDemo
+    client:load
+    codeBlockId={codeBlockId}
+    codeFollowLabel={replayLabels.codeFollow}
+    codeManualLabel={replayLabels.codeManual}
+    exampleId={definition.id}
+    stage={stage}
+  >
+    <ExplorerCodeBlock code={definition.stage.code} id={codeBlockId} />
+  </ExplorerReplayDemo>
+
+  <div class={styles["guideList"]}>
+    {
+      content.guideRows.map((row) => (
+        <div class={styles["guideRow"]}>
+          <span class={styles["guideMarker"]} />
+          <div class={styles["guideTrack"]}>
+            <span class={styles["guideText"]}>{row}</span>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</section>

@@ -1,11 +1,11 @@
 import type { AllResultsDemoEvent, AllResultsDemoResult } from "./runtime";
-import type { ExplorerExample, ExplorerFlowGraph } from "#/domain/explorer/contract";
+import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import { allResultsDemo, createAllResultsDemoCode } from "./runtime";
 import {
   branchRoutineNode,
-  dependencyLink,
   parentRoutineNode,
   spawnLink,
+  waitLink,
 } from "#/domain/explorer/examples-kit";
 
 export const allResultsExample = {
@@ -28,31 +28,37 @@ export const allResultsExample = {
   titleKey: "explorer.examples.all-results.title",
 } as const satisfies ExplorerExample<AllResultsDemoEvent, AllResultsDemoResult, string>;
 
-function createAllResultsFlow(): ExplorerFlowGraph<AllResultsDemoEvent> {
+function createAllResultsFlow(): ExplorerFlow<AllResultsDemoEvent> {
   return {
     links: createAllResultsFlowLinks(),
     nodes: createAllResultsFlowNodes(),
   };
 }
 
-function createAllResultsFlowLinks(): ExplorerFlowGraph<AllResultsDemoEvent>["links"] {
+function createAllResultsFlowLinks(): ExplorerFlow<AllResultsDemoEvent>["links"] {
   return [
     spawnLink("root", "result", "all(pageData)", ["all-open"]),
     spawnLink("result", "user", "loadUser", ["launch-user"]),
     spawnLink("result", "settings", "loadSettings", ["launch-settings"]),
-    dependencyLink("user", "result", "user result", {
+    waitLink("user", "result", "user result", {
       activeEvents: ["all-wait-user"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
     }),
-    dependencyLink("settings", "result", "settings result", {
+    waitLink("settings", "result", "settings result", {
       activeEvents: ["all-wait-settings"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
     }),
-    dependencyLink("result", "root", "wait(pageData)", {
+    waitLink("result", "root", "wait(pageData)", {
       activeEvents: ["wait-all"],
+      displayLabel: { kind: "hidden" },
+      interruption: { kind: "none" },
     }),
   ];
 }
 
-function createAllResultsFlowNodes(): ExplorerFlowGraph<AllResultsDemoEvent>["nodes"] {
+function createAllResultsFlowNodes(): ExplorerFlow<AllResultsDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "renderDashboard", {
       activeEvents: ["routine", "all-open", "wait-all", "return-page", "done"],

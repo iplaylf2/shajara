@@ -1,13 +1,16 @@
-import type { ExplorerExampleCodeLine } from "#/domain/explorer/contract";
+import type {
+  ExplorerExampleCodeLine,
+  ExplorerExampleCodeSpacer,
+} from "#/domain/explorer/contract";
 
 export function codeLine<TEvent extends string>(
   id: TEvent,
   text: string,
-  completedEvents?: readonly TEvent[],
+  completedEvents: readonly TEvent[],
 ): ExplorerExampleCodeLine<TEvent> {
-  if (!completedEvents) {
-    return { id, text };
-  }
+  return { completion: { events: completedEvents }, id, text };
+}
 
-  return { completedEvents, id, text };
+export function codeSpacer(): ExplorerExampleCodeSpacer {
+  return { kind: "spacer", text: "" };
 }

@@ -1,7 +1,7 @@
-import type { CodeScroller } from "./explorer-code-scroller";
+import type { CodeScroller } from "./code-scroller";
 import type { ExplorerExampleEvent } from "#/domain/explorer/examples";
 import type { ExplorerReplayCursor } from "#/domain/explorer/contract";
-import styles from "./explorer.module.css";
+import styles from "./styles.module.css";
 
 export interface ReplayCodeView {
   eventIds: readonly ExplorerExampleEvent[];
@@ -24,7 +24,6 @@ export function syncCodeLines(
 ): void {
   const activeClass = styles["explorerCodeLineActive"]!;
   const doneClass = styles["explorerCodeLineDone"]!;
-  let firstActiveLine: HTMLElement | null = null;
 
   for (const line of codeView.lines) {
     const lineEvent = readLineEvent(line, codeView.eventIds);
@@ -36,14 +35,91 @@ export function syncCodeLines(
       doneClass,
       completedEvents.some((event) => completed.includes(event)) && !isActive,
     );
+  }
 
-    if (isActive && !firstActiveLine) {
-      firstActiveLine = line;
+  syncCodeScroll(codeView, cursors, completed);
+}
+
+function syncCodeScroll(
+  codeView: ReplayCodeView,
+  cursors: readonly ExplorerReplayCursor<ExplorerExampleEvent>[],
+  completed: readonly ExplorerExampleEvent[],
+): void {
+  if (isReplayPreparing(cursors, completed)) {
+    codeView.scroller.scrollToTop(readCodeContainer(codeView));
+    return;
+  }
+
+  scrollToActiveLine(codeView, cursors);
+}
+
+function isReplayPreparing(
+  cursors: readonly ExplorerReplayCursor<ExplorerExampleEvent>[],
+  completed: readonly ExplorerExampleEvent[],
+): boolean {
+  return cursors.length === emptyLength && completed.length === emptyLength;
+}
+
+function readCodeContainer(codeView: ReplayCodeView): HTMLElement {
+  const firstLine = codeView.lines.at(firstIndex);
+  const container = firstLine?.closest<HTMLElement>("[data-explorer-code]");
+
+  if (!container) {
+    throw new Error("Explorer code block is missing its scroll container.");
+  }
+
+  return container;
+}
+
+function readPrimaryActiveLine(
+  lines: readonly HTMLElement[],
+  cursors: readonly ExplorerReplayCursor<ExplorerExampleEvent>[],
+  eventIds: readonly ExplorerExampleEvent[],
+): HTMLElement | null {
+  const runningCursor = cursors.find((cursor) => cursor.mode === "running");
+
+  if (!runningCursor) {
+    return null;
+  }
+
+  for (const line of lines) {
+    const lineEvent = readLineEvent(line, eventIds);
+
+    if (runningCursor.events.includes(lineEvent)) {
+      return line;
     }
   }
 
-  if (firstActiveLine) {
-    codeView.scroller.scrollToLine(firstActiveLine);
+  return null;
+}
+
+function readFirstActiveLine(
+  lines: readonly HTMLElement[],
+  cursors: readonly ExplorerReplayCursor<ExplorerExampleEvent>[],
+  eventIds: readonly ExplorerExampleEvent[],
+): HTMLElement | null {
+  for (const line of lines) {
+    const lineEvent = readLineEvent(line, eventIds);
+    const isActive = cursors.some((cursor) => cursor.events.includes(lineEvent));
+
+    if (isActive) {
+      return line;
+    }
+  }
+
+  return null;
+}
+
+function scrollToActiveLine(
+  codeView: ReplayCodeView,
+  cursors: readonly ExplorerReplayCursor<ExplorerExampleEvent>[],
+): void {
+  const firstActiveLine = readFirstActiveLine(codeView.lines, cursors, codeView.eventIds);
+  const focusLine =
+    readPrimaryActiveLine(codeView.lines, cursors, codeView.eventIds) ?? firstActiveLine;
+
+  if (focusLine) {
+    codeView.scroller.scrollToLine(focusLine);
   }
 }
 
@@ -98,3 +174,4 @@ function isExplorerEventId(
 }
 
 const emptyLength = 0;
+const firstIndex = 0;
