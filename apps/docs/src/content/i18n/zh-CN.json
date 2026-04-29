@@ -34,7 +34,7 @@
   "explorer.examples.exit-cleanup.title": "退出 Cleanup",
   "explorer.examples.first-result.description": "race 首个结果选择",
   "explorer.examples.first-result.guide.race": "loadProfile 把 readCache 和 fetchNetwork 启动为相互竞争的分支。",
-  "explorer.examples.first-result.guide.winner": "firstProfile 由最先完成的分支结算，race arena 随后收束剩余工作。",
+  "explorer.examples.first-result.guide.winner": "firstProfile 由 readCache 结算，race 随后取消 fetchNetwork。",
   "explorer.examples.first-result.title": "首个结果",
   "explorer.examples.fork-join.description": "spawn 分叉，wait 汇合",
   "explorer.examples.fork-join.guide.fork": "loadPage spawn 出 loadHeader 和 loadSidebar 这两个并行 process。",

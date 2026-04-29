@@ -45,7 +45,7 @@ function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links
       displayLabel: { kind: "hidden" },
       interruption: { events: ["cache-canceled"], kind: "interruptible" },
     }),
-    waitLink("network", "winner", "loser settles with arena", {
+    waitLink("network", "winner", "remaining branch", {
       activeEvents: ["race-wait-network"],
       displayLabel: { kind: "hidden" },
       interruption: { events: ["network-canceled"], kind: "interruptible" },

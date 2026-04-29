@@ -155,4 +155,4 @@ export type FirstResultDemoEvent = ExplorerAuthoredEvent<
 >;
 
 const cacheDelayMs = 1000;
-const networkDelayMs = 2000;
+const networkDelayMs = 6000;
