@@ -31,17 +31,17 @@ export function* singleSpawnDemo(
   emit: ExplorerReplayEmit<SingleSpawnDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* submitOrder(): RiteCoroutine<string> {
-    yield* emit({ actions: [setCursor(cursorAt("root", "spawn-receipt", "running"))] });
+    emit({ actions: [setCursor(cursorAt("root", "spawn-receipt", "running"))] });
     yield* spawn(function* sendReceiptEmail(): RiteCoroutine<string> {
-      yield* emit({ actions: [setCursor(cursorAt("receipt", "receipt-sleep", "running"))] });
+      emit({ actions: [setCursor(cursorAt("receipt", "receipt-sleep", "running"))] });
       yield* sleep(receiptDelayMs);
-      yield* emit({
+      emit({
         actions: [setCursor(cursorAt("receipt", ["receipt-return", "receipt-close"], "running"))],
       });
       try {
         return "receipt sent";
       } finally {
-        yield* emit({
+        emit({
           actions: [
             clearCursors(["receipt", "root"]),
             completeEvents(["receipt-return", "wait-receipt", "done"]),
@@ -50,12 +50,12 @@ export function* singleSpawnDemo(
       }
     });
 
-    yield* emit({ actions: [setCursor(cursorAt("root", "return-accepted", "running"))] });
+    emit({ actions: [setCursor(cursorAt("root", "return-accepted", "running"))] });
 
     try {
       return "order accepted";
     } finally {
-      yield* emit({ actions: [setCursor(cursorAt("root", "wait-receipt", "blocked"))] });
+      emit({ actions: [setCursor(cursorAt("root", "wait-receipt", "blocked"))] });
     }
   });
 }

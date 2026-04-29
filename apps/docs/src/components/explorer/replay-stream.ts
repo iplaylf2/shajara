@@ -6,31 +6,31 @@ import type {
   ExplorerReplayState,
   ExplorerReplayTrace,
 } from "#/domain/explorer/contract";
-import { channel, receive, send } from "@shajara/host/primitives";
+import { feed, sleep } from "@shajara/host";
 import type { RiteCoroutine } from "@shajara/host";
-import { sleep } from "@shajara/host";
+import { receive } from "@shajara/host/primitives";
 
 const emptyEventCount = 0;
 
 export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
-  emit: (trace: ExplorerReplayTrace<TEvent>) => RiteCoroutine<void>;
-  finish: () => RiteCoroutine<void>;
+  emit: (trace: ExplorerReplayTrace<TEvent>) => void;
+  finish: () => void;
   next: () => RiteCoroutine<ExplorerReplayFrame<TEvent> | null>;
 }
 
 export function* createReplayFrameStream<TEvent extends ExplorerEventId>(
   baselineState: ExplorerReplayState<TEvent>,
 ): RiteCoroutine<ReplayFrameStream<TEvent>> {
-  const [receiver, sender] = yield* channel<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
+  const { receiver, trySend } = yield* feed<ExplorerReplayFrame<TEvent> | null, null>(Infinity);
   let state = baselineState;
 
   return {
-    *emit(trace) {
+    emit(trace) {
       state = applyReplayTrace(state, trace);
-      yield* send(sender, state);
+      trySend(state);
     },
-    *finish() {
-      yield* send(sender, null);
+    finish() {
+      trySend(null);
     },
     next() {
       return receive(receiver);

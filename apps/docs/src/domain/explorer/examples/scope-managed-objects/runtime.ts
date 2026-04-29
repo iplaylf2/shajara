@@ -52,7 +52,7 @@ export function* scopeManagedObjectsDemo(
   emit: ExplorerReplayEmit<ScopeManagedObjectsDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* resumeCheckout(): RiteCoroutine<string> {
-    yield* emit({
+    emit({
       actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
     });
     const [ticket, updates] = yield* enclose(
@@ -60,25 +60,25 @@ export function* scopeManagedObjectsDemo(
         emit,
         { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
         function* openSession(): RiteCoroutine<SessionObjects> {
-          yield* emit({
+          emit({
             actions: [setCursor(cursorAt("child", "future-open", "running"))],
           });
           const [createdTicket] = yield* future<string>();
-          yield* emit({
+          emit({
             actions: [
               completeEvents("future-open"),
               setCursor(cursorAt("child", "channel-open", "running")),
             ],
           });
           const [createdUpdates] = yield* channel<string, never>(channelCapacity);
-          yield* emit({
+          emit({
             actions: [
               completeEvents("channel-open"),
               setCursor(cursorAt("child", "session-sleep", "running")),
             ],
           });
           yield* sleep(sessionDelayMs);
-          yield* emit({
+          emit({
             actions: [
               completeEvents("session-sleep"),
               setCursor(cursorAt("child", "return-objects", "running")),
@@ -88,13 +88,13 @@ export function* scopeManagedObjectsDemo(
           try {
             return [createdTicket, createdUpdates] as const;
           } finally {
-            yield* emit({ actions: [completeEvents("return-objects")] });
+            emit({ actions: [completeEvents("return-objects")] });
           }
         },
       ),
     );
 
-    yield* emit({
+    emit({
       actions: [
         clearCursor("child"),
         completeEvents([
@@ -109,7 +109,7 @@ export function* scopeManagedObjectsDemo(
     });
 
     yield* sleep(afterEncloseDelayMs);
-    yield* emit({
+    emit({
       actions: [
         completeEvents("after-enclose-sleep"),
         setCursor(cursorAt("root", "wait-ticket", "running")),
@@ -123,7 +123,7 @@ export function* scopeManagedObjectsDemo(
         throw error;
       }
 
-      yield* emit({
+      emit({
         actions: [
           completeEvents("ticket-caught"),
           setCursor(cursorAt("root", "object-sleep", "running")),
@@ -132,7 +132,7 @@ export function* scopeManagedObjectsDemo(
     }
 
     yield* sleep(objectDelayMs);
-    yield* emit({
+    emit({
       actions: [
         completeEvents("object-sleep"),
         setCursor(cursorAt("root", "receive-updates", "running")),
@@ -146,7 +146,7 @@ export function* scopeManagedObjectsDemo(
         throw error;
       }
 
-      yield* emit({
+      emit({
         actions: [
           completeEvents("updates-caught"),
           setCursor(cursorAt("root", "return-result", "running")),
@@ -157,7 +157,7 @@ export function* scopeManagedObjectsDemo(
     try {
       return "owned objects closed";
     } finally {
-      yield* emit({ actions: [clearCursors(["root", "child"]), completeEvents("done")] });
+      emit({ actions: [clearCursors(["root", "child"]), completeEvents("done")] });
     }
   });
 }

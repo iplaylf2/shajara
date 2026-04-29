@@ -37,7 +37,7 @@ export function* scopeOwnedWorkDemo(
   emit: ExplorerReplayEmit<ScopeOwnedWorkDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
-    yield* emit({
+    emit({
       actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
     });
     const result = yield* enclose(
@@ -45,22 +45,22 @@ export function* scopeOwnedWorkDemo(
         emit,
         { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
         function* commitArticle(): RiteCoroutine<string> {
-          yield* emit({
+          emit({
             actions: [setCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))],
           });
           yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
-            yield* emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
+            emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
             yield* sleep(indexDelayMs);
-            yield* emit({
+            emit({
               actions: [clearCursor("index"), completeEvents(["index-close", "scope-wait-index"])],
             });
           });
 
-          yield* emit({ actions: [setCursor(cursorAt("scope", "inner-return", "running"))] });
+          emit({ actions: [setCursor(cursorAt("scope", "inner-return", "running"))] });
           try {
             return "published";
           } finally {
-            yield* emit({
+            emit({
               actions: [
                 completeEvents("inner-return"),
                 setCursor(cursorAt("scope", "scope-wait-index", "blocked")),
@@ -71,7 +71,7 @@ export function* scopeOwnedWorkDemo(
       ),
     );
 
-    yield* emit({
+    emit({
       actions: [
         clearCursor("scope"),
         completeEvents(["enclose-close", "scope-wait-root"]),
@@ -81,7 +81,7 @@ export function* scopeOwnedWorkDemo(
     try {
       return result;
     } finally {
-      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

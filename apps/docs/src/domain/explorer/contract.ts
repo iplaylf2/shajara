@@ -204,7 +204,7 @@ export type ExplorerReplayAction<TEvent extends ExplorerEventId> = TaggedUnion<
 
 export type ExplorerReplayEmit<TEvent extends ExplorerEventId> = (
   trace: ExplorerReplayTrace<TEvent>,
-) => RiteCoroutine<void>;
+) => void;
 
 export type ExplorerReplayRoutine<TEvent extends ExplorerEventId, TResult> = (
   emit: ExplorerReplayEmit<TEvent>,

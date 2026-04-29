@@ -50,7 +50,7 @@ export function* firstResultDemo(
   emit: ExplorerReplayEmit<FirstResultDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* loadProfile(): RiteCoroutine<string> {
-    yield* emit({
+    emit({
       actions: [
         setCursors([
           cursorAt("root", "race-open", "running"),
@@ -67,7 +67,7 @@ export function* firstResultDemo(
           waitEvent: "race-wait-cache",
         },
         function* readCache(): RiteCoroutine<string> {
-          yield* emit({
+          emit({
             actions: [
               setCursors([
                 cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
@@ -76,14 +76,14 @@ export function* firstResultDemo(
             ],
           });
           yield* sleep(cacheDelayMs);
-          yield* emit({
+          emit({
             actions: [setCursor(cursorAt("cache", ["cache-return", "cache-close"], "running"))],
           });
 
           try {
             return "cached profile";
           } finally {
-            yield* emit({
+            emit({
               actions: [
                 clearCursor("cache"),
                 completeEvents(["cache-return", "race-wait-cache"]),
@@ -101,7 +101,7 @@ export function* firstResultDemo(
           waitEvent: "race-wait-network",
         },
         function* fetchNetwork(): RiteCoroutine<string> {
-          yield* emit({
+          emit({
             actions: [
               setCursors([
                 cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
@@ -110,7 +110,7 @@ export function* firstResultDemo(
             ],
           });
           yield* sleep(networkDelayMs);
-          yield* emit({
+          emit({
             actions: [
               setCursor(cursorAt("network", ["network-return", "network-close"], "running")),
             ],
@@ -119,7 +119,7 @@ export function* firstResultDemo(
           try {
             return "fresh profile";
           } finally {
-            yield* emit({
+            emit({
               actions: [
                 clearCursor("network"),
                 completeEvents(["network-return", "race-wait-network"]),
@@ -131,9 +131,9 @@ export function* firstResultDemo(
       ),
     ] as const);
 
-    yield* emit({ actions: [setCursor(cursorAt("root", "wait-race", "blocked"))] });
+    emit({ actions: [setCursor(cursorAt("root", "wait-race", "blocked"))] });
     const profile = yield* wait(firstProfile);
-    yield* emit({
+    emit({
       actions: [
         clearCursor("race"),
         completeEvents("wait-race"),
@@ -144,7 +144,7 @@ export function* firstResultDemo(
     try {
       return profile;
     } finally {
-      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

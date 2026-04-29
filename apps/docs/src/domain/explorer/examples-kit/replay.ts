@@ -52,13 +52,11 @@ export function encloseWait<TEvent extends ExplorerEventId, TResult>(
   replay: EncloseWaitReplay<TEvent>,
   routine: RiteRoutine<TResult>,
 ): RiteRoutine<TResult> {
-  return function* runEncloseWait(): RiteCoroutine<TResult> {
-    yield* emit({
-      actions: [setCursor(cursorAt(replay.routineId, replay.events, "blocked"))],
-    });
+  emit({
+    actions: [setCursor(cursorAt(replay.routineId, replay.events, "blocked"))],
+  });
 
-    return yield* routine();
-  };
+  return routine;
 }
 
 export function raceBranch<TEvent extends ExplorerEventId, TResult>(
@@ -88,7 +86,7 @@ function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
     return result;
   } finally {
     if (!outcome.didReturn) {
-      yield* emit({
+      emit({
         actions: [
           clearCursor(replay.routineId),
           completeEvents([replay.cancelEvent, replay.waitEvent]),

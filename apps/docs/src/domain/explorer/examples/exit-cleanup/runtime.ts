@@ -40,7 +40,7 @@ export function* exitCleanupDemo(
   emit: ExplorerReplayEmit<ExitCleanupDemoEvent>,
 ): RiteCoroutine<string> {
   return yield* enclose(function* shipOrder(): RiteCoroutine<string> {
-    yield* emit({
+    emit({
       actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
     });
     const parcel = yield* enclose(
@@ -48,11 +48,11 @@ export function* exitCleanupDemo(
         emit,
         { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
         function* packParcel(): RiteCoroutine<string> {
-          yield* emit({
+          emit({
             actions: [setCursor(cursorAt("scope", "defer-open", "running"))],
           });
           yield* defer(function* releaseBench(): RiteCoroutine<void> {
-            yield* emit({
+            emit({
               actions: [
                 setCursors([
                   cursorAt("scope", "scope-wait-defer", "blocked"),
@@ -61,7 +61,7 @@ export function* exitCleanupDemo(
               ],
             });
             yield* sleep(cleanupDelayMs);
-            yield* emit({
+            emit({
               actions: [
                 clearCursors(["defer", "scope"]),
                 completeEvents(["defer-cleaned", "scope-wait-defer"]),
@@ -69,14 +69,14 @@ export function* exitCleanupDemo(
             });
           });
 
-          yield* emit({
+          emit({
             actions: [
               completeEvents("defer-registered"),
               setCursor(cursorAt("scope", "pack-sleep", "running")),
             ],
           });
           yield* sleep(packingDelayMs);
-          yield* emit({
+          emit({
             actions: [
               completeEvents("pack-sleep"),
               setCursor(cursorAt("scope", "inner-return", "running")),
@@ -85,13 +85,13 @@ export function* exitCleanupDemo(
           try {
             return "packed parcel";
           } finally {
-            yield* emit({ actions: [completeEvents("inner-return")] });
+            emit({ actions: [completeEvents("inner-return")] });
           }
         },
       ),
     );
 
-    yield* emit({
+    emit({
       actions: [
         clearCursor("scope"),
         completeEvents(["enclose-close", "scope-wait-root"]),
@@ -101,7 +101,7 @@ export function* exitCleanupDemo(
     try {
       return parcel;
     } finally {
-      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

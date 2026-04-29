@@ -178,7 +178,7 @@ class ExplorerReplaySession {
     try {
       yield* replayRoutine(frameStream.emit);
     } finally {
-      yield* frameStream.finish();
+      frameStream.finish();
       yield* wait(playback);
     }
   }

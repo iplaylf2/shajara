@@ -40,7 +40,7 @@ export function* allResultsDemo(
   emit: ExplorerReplayEmit<AllResultsDemoEvent>,
 ): RiteCoroutine<AllResultsDemoResult> {
   return yield* enclose(function* renderDashboard(): RiteCoroutine<AllResultsDemoResult> {
-    yield* emit({
+    emit({
       actions: [
         setCursors([
           cursorAt("root", "all-open", "running"),
@@ -50,7 +50,7 @@ export function* allResultsDemo(
     });
     const pageData = yield* all([
       function* loadUser(): RiteCoroutine<string> {
-        yield* emit({
+        emit({
           actions: [
             setCursors([
               cursorAt("all", ["all-wait-user", "all-wait-settings"], "blocked"),
@@ -59,13 +59,13 @@ export function* allResultsDemo(
           ],
         });
         yield* sleep(userDelayMs);
-        yield* emit({
+        emit({
           actions: [setCursor(cursorAt("user", ["user-return", "user-close"], "running"))],
         });
         try {
           return "user";
         } finally {
-          yield* emit({
+          emit({
             actions: [
               clearCursor("user"),
               completeEvents(["user-return", "all-wait-user"]),
@@ -75,7 +75,7 @@ export function* allResultsDemo(
         }
       },
       function* loadSettings(): RiteCoroutine<string> {
-        yield* emit({
+        emit({
           actions: [
             setCursors([
               cursorAt("all", ["all-wait-user", "all-wait-settings"], "blocked"),
@@ -84,7 +84,7 @@ export function* allResultsDemo(
           ],
         });
         yield* sleep(settingsDelayMs);
-        yield* emit({
+        emit({
           actions: [
             setCursor(cursorAt("settings", ["settings-return", "settings-close"], "running")),
           ],
@@ -92,7 +92,7 @@ export function* allResultsDemo(
         try {
           return "settings";
         } finally {
-          yield* emit({
+          emit({
             actions: [
               clearCursor("settings"),
               completeEvents(["settings-return", "all-wait-settings"]),
@@ -102,9 +102,9 @@ export function* allResultsDemo(
       },
     ] as const);
 
-    yield* emit({ actions: [setCursor(cursorAt("root", "wait-all", "blocked"))] });
+    emit({ actions: [setCursor(cursorAt("root", "wait-all", "blocked"))] });
     const [user, settings] = yield* wait(pageData);
-    yield* emit({
+    emit({
       actions: [
         clearCursor("all"),
         completeEvents("wait-all"),
@@ -115,7 +115,7 @@ export function* allResultsDemo(
     try {
       return { settings, user };
     } finally {
-      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

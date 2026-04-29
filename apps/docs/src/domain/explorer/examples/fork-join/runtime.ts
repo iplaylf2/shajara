@@ -43,46 +43,46 @@ export function* loadPageDemo(
   emit: ExplorerReplayEmit<LoadPageDemoEvent>,
 ): RiteCoroutine<LoadPageDemoResult> {
   return yield* enclose(function* loadPage(): RiteCoroutine<LoadPageDemoResult> {
-    yield* emit({ actions: [setCursor(cursorAt("root", "spawn-header", "running"))] });
+    emit({ actions: [setCursor(cursorAt("root", "spawn-header", "running"))] });
     const header = yield* spawn(function* loadHeader(): RiteCoroutine<string> {
-      yield* emit({ actions: [setCursor(cursorAt("header", "header-sleep", "running"))] });
+      emit({ actions: [setCursor(cursorAt("header", "header-sleep", "running"))] });
       yield* sleep(headerDelayMs);
-      yield* emit({
+      emit({
         actions: [setCursor(cursorAt("header", ["header-return", "header-close"], "running"))],
       });
       try {
         return "header";
       } finally {
-        yield* emit({
+        emit({
           actions: [clearCursor("header"), completeEvents("header-return")],
         });
       }
     });
-    yield* emit({ actions: [setCursor(cursorAt("root", "spawn-sidebar", "running"))] });
+    emit({ actions: [setCursor(cursorAt("root", "spawn-sidebar", "running"))] });
     const sidebar = yield* spawn(function* loadSidebar(): RiteCoroutine<string> {
-      yield* emit({ actions: [setCursor(cursorAt("sidebar", "sidebar-sleep", "running"))] });
+      emit({ actions: [setCursor(cursorAt("sidebar", "sidebar-sleep", "running"))] });
       yield* sleep(sidebarDelayMs);
-      yield* emit({
+      emit({
         actions: [setCursor(cursorAt("sidebar", ["sidebar-return", "sidebar-close"], "running"))],
       });
       try {
         return "sidebar";
       } finally {
-        yield* emit({
+        emit({
           actions: [clearCursor("sidebar"), completeEvents("sidebar-return")],
         });
       }
     });
-    yield* emit({ actions: [setCursor(cursorAt("root", "wait-header", "blocked"))] });
+    emit({ actions: [setCursor(cursorAt("root", "wait-header", "blocked"))] });
     const headerValue = yield* wait(header);
-    yield* emit({
+    emit({
       actions: [
         completeEvents("wait-header"),
         setCursor(cursorAt("root", "wait-sidebar", "blocked")),
       ],
     });
     const sidebarValue = yield* wait(sidebar);
-    yield* emit({
+    emit({
       actions: [
         completeEvents("wait-sidebar"),
         setCursor(cursorAt("root", ["wait-close", "done"], "running")),
@@ -91,7 +91,7 @@ export function* loadPageDemo(
     try {
       return { header: headerValue, sidebar: sidebarValue };
     } finally {
-      yield* emit({ actions: [clearCursor("root"), completeEvents("done")] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }

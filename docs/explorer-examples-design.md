@@ -115,14 +115,14 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 
 ## Runtime Authoring Rules
 
-Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器。动画事件应贴在真实代码动作旁边，不能牺牲代码卫生。
+Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器。动画事件应贴在真实代码动作和运行边界旁边，不能牺牲代码卫生。
 
-- `emit` 前后应有真实代码推进，或把多个状态变化合并到同一个 `emit` 中。不要出现连续 `emit` 只是为了分帧。
+- `emit` 是 replay 记录动作，不是运行世界里的 coroutine 步骤。它应在对应运行关系成立的调用时机同步发生；`emit` 前后应有真实代码推进，或把多个状态变化合并到同一个 `emit` 中。不要出现连续 `emit` 只是为了分帧。
 - 不要为了动画完成事件包一层没有业务语义的 `try` / `finally`。如果代码没有 `return`、cleanup、异常边界或资源保护语义，操作完成后直接 `emit`。
 - 当动画需要在 `return` 发生后标记完成时，可以使用 `try` / `finally` 让完成事件绑定到返回点。此时 `finally` 表达的是返回语义的收尾，而不是单纯的动画延迟。
 - 代码示例中的控制流应优先服务读者理解。当一个操作同时承担等待和返回两个叙事动作时，可以拆成中间变量和显式返回，让两个阶段在代码回放里都清楚可见；但不能为了制造动画帧而引入没有领域语义的中间步骤。
 - 代码行 id、flow event 和 node lifecycle 应共同表达同一个概念。事件命名应服务动画语义，不应为了复用某个代码行 id 而模糊启动、等待或完成关系。
-- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：如果它为 `race` 分支补充取消演出，就应包装分支 routine；如果它为 `enclose` 边界补充等待演出，也应包装传给 `enclose` 的 routine。helper 可以封装重复 replay 细节，但不应把父 routine 的 cursor 归属转移给 child routine，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
+- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：为 `race` 分支补充取消演出时，helper 作用于分支 routine；为 `enclose` 边界补充等待演出时，helper 作用于传给 `enclose` 的 routine，并在边界调用点记录父 routine 的等待状态。helper 可以封装重复 replay 细节，但不应把父 routine 的 cursor 归属转移给 child routine，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
 - 渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。组件可以负责把 node、link、scope box、future 和 channel 渲染成统一图形语言；但“哪个 routine 正在运行或等待”“哪个事件使对象进入终止状态”应由 runtime 与 examples-kit 明确给出。
 
 ## Inclusion Criteria
