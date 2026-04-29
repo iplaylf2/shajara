@@ -59,6 +59,12 @@ Example 7 专门讲 channel。channel 不应夹在 fork join 内顺带说明，�
 
 Examples 8-13 讲系统如何结束：exit cleanup、scope-managed objects、cancellation、failure、recovery、resource。它们共同回答当事情不只是成功返回时，运行树如何保持可解释。Exit Cleanup 先建立 process 退出后的 cleanup 会参与 scope 收束这一生命周期语言。Scope-Managed Objects 随后展示 scope 退出会自动收束它创建的 future 和 channel：未完成的 future 被取消，仍打开的 channel 被撤销。返回到外层流程的 handle 只是观察入口；外层流程通过其他 primitive 使用这些 handle 并捕获异常时，看到的是 owner scope 已经完成运行对象收束后的结果。后续示例应把收束过程展示为结构化关系，而不是把异常、取消或清理写成孤立事件。
 
+### Scope Boundary Objects
+
+Example 9 引入 scope box 作为独立叙事单元。scope box 表示一个真实的运行所有权边界，而不是普通视觉分组：box 内可以包含读者已经熟悉的 process 块，也可以包含该 scope 创建并拥有的运行对象，例如 future 和 channel。handle 可以从 box 内返回到外层流程，但 future 和 channel 的对象本体仍停留在 owner scope box 内。
+
+Scope-Managed Objects 的演出应让读者先看到对象归属，再看到 handle 可达性。child scope 创建 future 和 channel 后，box 内出现对应对象；外层流程拿到 handle 时，只得到指向这些对象的观察或通信入口。child scope 收束时，box 的 closing 或 closed 状态触发内部对象自动收束：future 收敛为 canceled，channel 变为 revoked。外层流程随后触碰 handle 时，画面应表达它正在观察 owner scope 已经完成的收束结果，而不是由外层流程主动关闭对象。
+
 ### Governance
 
 Examples 14-15 放在最后。scheduler 和 reaper 需要读者已经理解 process runnable、scope closing、failure convergence。它们是 explorer 的高级章节，关注谁有权推进或裁决运行树，而不是重新解释基础并发关系。
@@ -66,6 +72,8 @@ Examples 14-15 放在最后。scheduler 和 reaper 需要读者已经理解 proc
 ## Naming And Copy
 
 示例标题应命名动画真正演出的关系，而不是命名某个 API、代码形状或中间实现。标题、example id、目录名、导出符号和 i18n key 应使用同一组概念词，让读者看到的标题、路由中的名称和代码里的示例边界指向同一个主题。不同 locale 的标题应各自本地化，同时保留同一个概念边界；重命名 id 或导出符号时，也应同步校准各 locale 的标题表达。
+
+命名的信息密度来自语义和长度的平衡。处在明确模块、示例或 primitive 调用上下文里的名字，应利用上下文保留区分度，而不是重复写出调用点已经提供的层级关系。共享 helper 的名字尤其应命名它增加的运行关系；配置字段只保留调用者必须显式决定的部分，避免把 parent、child、scope、wait 等上下文词机械堆叠成冗长标识符。
 
 业务函数名应帮助读者理解谁在发起、谁在等待、谁在完成。优先选择能表达实际动作的业务词，例如订单提交、短信接收、文章发布、索引更新。不要把 `scope`、`future`、`runtime` 这类 shajara 概念塞进业务函数名里，避免读者误以为业务动作是 API 或 runtime 概念。
 
@@ -93,9 +101,12 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - 如果等待关系没有对应的代码行，可以使用只服务 flow 的内部事件。内部事件可以出现在 cursor 的事件集合里，用来点亮等待线，但不需要伪造一行代码。
 - Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 routine 间的等待关系。
 - 当一个组合 primitive 产生代表整体关系的 future 时，图中应给这个 future 稳定的汇合位置。分支发起线从汇合位置展开，分支结果或竞争结果回到汇合位置，发起者再等待这个整体 future。
-- Future Settlement 等待的是 `smsCode` 这个独立 future，虚线上的 `smsCode` label 承担等待目标的命名。
+- Future Settlement 等待的是 `smsCode` 这个独立 future。future 本体应像 channel 一样以通用对象名 `future` 承担对象类型和状态表达；示例变量名可以留在代码和旁白里，但关系线不再用可见 label 标记变量。
 - Scope-Owned Work 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
 - Exit Cleanup 展示的是 process 退出后 cleanup 参与 scope 收束。cleanup 不是 child scope 独有语义；任何注册 cleanup 的 process 退出后，都应让所在 scope 的收束过程等待 cleanup 完成。示例可以借 child scope 展示这个等待边界，但文案和动画不应把 cleanup 描述成只属于 child scope。
+- Scope box 表示 scope 的运行所有权边界。box 可以容纳该 scope 内的 process 块、future、channel 和其他 scope-owned objects；它不应被用作普通布局容器，也不应把外层流程或只持有 handle 的流程包入 owner scope。
+- Scope-Managed Objects 应使用 scope box 展示对象本体和 handle 的分离。future 和 channel 的对象本体留在创建它们的 child scope box 内；返回给外层流程的 handle 可以用细线、端点或标签表示，但不能让对象本体随 handle 移出 box。
+- Scope box 的 lifecycle 状态应驱动内部对象状态。child scope 进入 closing 或 closed 时，box 触发未完成 future 的 canceled 状态和仍打开 channel 的 revoked 状态；这些状态变化不应从外层 handle 发出。
 - Scope-Managed Objects 展示的是 scope 退出时自动收束它创建的 future 和 channel，而不是外层流程如何使用资源。child scope 创建 future 和 channel 后返回观察或通信 handle；child scope 收束事件应触发 future cancellation 和 channel revocation。外层流程之后用 `wait`、`send`、`receive`、`trySend` 或 `tryReceive` 触碰这些 handle，并通过异常处理路径观察运行对象已经关闭。取消和撤销结果应从 child scope 的收束事件发出，不应表现成外层流程主动关闭资源。
 - 当一个 primitive 创建或进入新的运行边界时，父 routine 的等待状态应由父 routine 的边界事件表达，child routine 的运行状态应由 child routine 自己的起始事件表达。不要让 child routine 深处的事件负责修改父 routine 的光标位置；跨 routine 的等待线可以使用内部等待事件，但 cursor 归属仍应跟随实际停留的 process。
 - Channel 应作为独立通信对象出现，不应伪装成 routine 块或执行顺序线的一段。channel 的形状、容量状态和两侧数据动线共同表达通信关系；routine 之间的执行顺序仍由 routine 块自己的线承担。
@@ -111,7 +122,8 @@ Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器
 - 当动画需要在 `return` 发生后标记完成时，可以使用 `try` / `finally` 让完成事件绑定到返回点。此时 `finally` 表达的是返回语义的收尾，而不是单纯的动画延迟。
 - 代码示例中的控制流应优先服务读者理解。当一个操作同时承担等待和返回两个叙事动作时，可以拆成中间变量和显式返回，让两个阶段在代码回放里都清楚可见；但不能为了制造动画帧而引入没有领域语义的中间步骤。
 - 代码行 id、flow event 和 node lifecycle 应共同表达同一个概念。事件命名应服务动画语义，不应为了复用某个代码行 id 而模糊启动、等待或完成关系。
-- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。不要把一次示例需要的状态迁移下沉到组件或更深的渲染层；渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。
+- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：如果它为 `race` 分支补充取消演出，就应包装分支 routine；如果它为 `enclose` 边界补充等待演出，也应包装传给 `enclose` 的 routine。helper 可以封装重复 replay 细节，但不应把父 routine 的 cursor 归属转移给 child routine，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
+- 渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。组件可以负责把 node、link、scope box、future 和 channel 渲染成统一图形语言；但“哪个 routine 正在运行或等待”“哪个事件使对象进入终止状态”应由 runtime 与 examples-kit 明确给出。
 
 ## Inclusion Criteria
 
