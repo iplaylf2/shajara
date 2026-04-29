@@ -2,6 +2,7 @@
 import {
   clearCursors,
   codeLine,
+  codeSpacer,
   completeEvents,
   cursorAt,
   setCursor,
@@ -20,6 +21,7 @@ export function createSingleSpawnDemoCode() {
     codeLine("receipt-sleep", `    yield* sleep(${receiptDelayMs});`, ["receipt-return"]),
     codeLine("receipt-return", '    return "receipt sent";', ["receipt-return"]),
     codeLine("receipt-close", "  });", ["receipt-return"]),
+    codeSpacer(),
     codeLine("return-accepted", '  return "order accepted";', ["done"]),
     codeLine("done", "}", ["done"]),
   ];

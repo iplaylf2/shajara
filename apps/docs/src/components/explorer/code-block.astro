@@ -1,9 +1,10 @@
 ---
 import type {
   ExplorerEventId,
-  ExplorerExampleCodeLine,
+  ExplorerExampleCodeEntry,
 } from "#/domain/explorer/contract";
 import { Code } from "astro/components";
+import { isExplorerExampleCodeLine } from "#/domain/explorer/contract";
 import styles from "./styles.module.css";
 
 const { code, id } = Astro.props;
@@ -17,10 +18,17 @@ const lineTransformer = {
       return;
     }
 
+    const className = [styles["explorerCodeLine"]];
+
+    if (!isExplorerExampleCodeLine(line)) {
+      className.push(styles["explorerCodeSpacer"]);
+      node.properties ??= {};
+      node.properties["class"] = className.join(" ");
+      return;
+    }
+
     const lineEvent = line.id;
     const completedEvents = line.completion.events;
-
-    const className = [styles["explorerCodeLine"]];
 
     node.properties ??= {};
     node.properties["class"] = className.join(" ");
@@ -32,7 +40,7 @@ const lineTransformer = {
 };
 
 interface Props {
-  code: readonly ExplorerExampleCodeLine<ExplorerEventId>[];
+  code: readonly ExplorerExampleCodeEntry<ExplorerEventId>[];
   id: string;
 }
 

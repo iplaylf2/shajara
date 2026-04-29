@@ -2,6 +2,7 @@
 import ExplorerCodeBlock from "./code-block.astro";
 import type { ExplorerExampleDefinition } from "#/domain/explorer/examples";
 import { ExplorerReplayDemo } from "./replay-demo";
+import { isExplorerExampleCodeLine } from "#/domain/explorer/contract";
 import { resolveFlowScene } from "./flow-scene";
 import styles from "./styles.module.css";
 
@@ -9,10 +10,9 @@ const { content, definition, replayLabels } = Astro.props;
 const codeBlockId = `explorer-${definition.id}-code`;
 const stageEventIds = [
   ...new Set(
-    definition.stage.code.flatMap((line) => [
-      line.id,
-      ...line.completion.events,
-    ]),
+    definition.stage.code.flatMap((line) =>
+      isExplorerExampleCodeLine(line) ? [line.id, ...line.completion.events] : [],
+    ),
   ),
 ];
 const stage = {

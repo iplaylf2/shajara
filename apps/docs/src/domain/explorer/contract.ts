@@ -18,10 +18,19 @@ export interface ExplorerExample<
   titleKey: TTranslationKey;
 }
 
+export type ExplorerExampleCodeEntry<TEvent extends ExplorerEventId> =
+  | ExplorerExampleCodeLine<TEvent>
+  | ExplorerExampleCodeSpacer;
+
 export interface ExplorerExampleCodeLine<TEvent extends ExplorerEventId> {
   completion: ExplorerCodeCompletion<TEvent>;
   id: TEvent;
   text: string;
+}
+
+export interface ExplorerExampleCodeSpacer {
+  kind: "spacer";
+  text: "";
 }
 
 export interface ExplorerCodeCompletion<TEvent extends ExplorerEventId> {
@@ -34,7 +43,7 @@ export interface ExplorerExampleReplay<TEvent extends ExplorerEventId, TResult> 
 }
 
 export interface ExplorerExampleStage<TEvent extends ExplorerEventId, TResult> {
-  code: readonly ExplorerExampleCodeLine<TEvent>[];
+  code: readonly ExplorerExampleCodeEntry<TEvent>[];
   flow: ExplorerFlow<TEvent>;
   replay: ExplorerExampleReplay<TEvent, TResult>;
 }
@@ -200,4 +209,10 @@ export function createPendingExplorerReplayState<
     completed: [],
     cursors: [],
   };
+}
+
+export function isExplorerExampleCodeLine<TEvent extends ExplorerEventId>(
+  entry: ExplorerExampleCodeEntry<TEvent>,
+): entry is ExplorerExampleCodeLine<TEvent> {
+  return "id" in entry;
 }

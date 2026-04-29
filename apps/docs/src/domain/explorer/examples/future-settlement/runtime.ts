@@ -2,6 +2,7 @@
 import {
   clearCursor,
   codeLine,
+  codeSpacer,
   completeEvents,
   cursorAt,
   setCursor,
@@ -17,10 +18,12 @@ export function createFutureSettlementDemoCode() {
   return [
     codeLine("routine", "function* verifyPhoneNumber() {", ["done"]),
     codeLine("future", "  const [smsCode, provideSmsCode] = yield* future<string>();", ["future"]),
+    codeSpacer(),
     codeLine("spawn-resolver", "  yield* spawn(function* receiveSmsCode() {", ["settle-code"]),
     codeLine("resolver-sleep", `    yield* sleep(${resolverDelayMs});`, ["settle-code"]),
     codeLine("settle-code", '    yield* settle(provideSmsCode, "4921");', ["settle-code"]),
     codeLine("resolver-close", "  });", ["settle-code"]),
+    codeSpacer(),
     codeLine("wait-code", "  return yield* wait(smsCode);", ["wait-code"]),
     codeLine("done", "}", ["done"]),
   ];

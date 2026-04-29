@@ -2,6 +2,7 @@
 import {
   clearCursor,
   codeLine,
+  codeSpacer,
   completeEvents,
   cursorAt,
   setCursor,
@@ -22,12 +23,14 @@ export function createLoadPageDemoCode() {
     codeLine("header-sleep", `    yield* sleep(${headerDelayMs});`, ["header-return"]),
     codeLine("header-return", '    return "header";', ["header-return"]),
     codeLine("header-close", "  });", ["header-return"]),
+    codeSpacer(),
     codeLine("spawn-sidebar", "  const sidebar = yield* spawn(function* loadSidebar() {", [
       "sidebar-return",
     ]),
     codeLine("sidebar-sleep", `    yield* sleep(${sidebarDelayMs});`, ["sidebar-return"]),
     codeLine("sidebar-return", '    return "sidebar";', ["sidebar-return"]),
     codeLine("sidebar-close", "  });", ["sidebar-return"]),
+    codeSpacer(),
     codeLine("wait-open", "  return {", ["done"]),
     codeLine("wait-header", "    header: yield* wait(header),", ["wait-header"]),
     codeLine("wait-sidebar", "    sidebar: yield* wait(sidebar),", ["wait-sidebar"]),

@@ -669,6 +669,11 @@
   opacity: 0.86;
 }
 
+.explorerCodeSpacer {
+  min-height: 1.32em;
+  pointer-events: none;
+}
+
 .explorerCodeLineActive {
   color: #143044;
   border-color: #2c8795;

@@ -2,6 +2,7 @@
 import {
   clearCursor,
   codeLine,
+  codeSpacer,
   completeEvents,
   cursorAt,
   raceBranch,
@@ -26,6 +27,7 @@ export function createFirstResultDemoCode() {
     ]),
     codeLine("cache-return", '      return "cached profile";', ["cache-return"]),
     codeLine("cache-close", "    },", ["cache-return"]),
+    codeSpacer(),
     codeLine("network-open", "    function* fetchNetwork() {", [
       "network-canceled",
       "network-return",
@@ -37,6 +39,7 @@ export function createFirstResultDemoCode() {
     codeLine("network-return", '      return "fresh profile";', ["network-return"]),
     codeLine("network-close", "    },", ["network-return"]),
     codeLine("race-close", "  ] as const);", ["wait-race"]),
+    codeSpacer(),
     codeLine("wait-race", "  const profile = yield* wait(firstProfile);", ["wait-race"]),
     codeLine("return-profile", "  return profile;", ["done"]),
     codeLine("done", "}", ["done"]),

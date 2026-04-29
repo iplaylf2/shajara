@@ -2,6 +2,7 @@
 import {
   clearCursor,
   codeLine,
+  codeSpacer,
   completeEvents,
   cursorAt,
   enclosedRoutine,
@@ -23,8 +24,10 @@ export function createScopeOwnedWorkDemoCode() {
     codeLine("spawn-index", "    yield* spawn(function* updateSearchIndex() {", ["index-close"]),
     codeLine("index-sleep", `      yield* sleep(${indexDelayMs});`, ["index-close"]),
     codeLine("index-close", "    });", ["index-close"]),
+    codeSpacer(),
     codeLine("inner-return", '    return "published";', ["inner-return"]),
     codeLine("enclose-close", "  });", ["enclose-close"]),
+    codeSpacer(),
     codeLine("return-result", "  return result;", ["done"]),
     codeLine("done", "}", ["done"]),
   ];
