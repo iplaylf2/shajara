@@ -1,7 +1,6 @@
-// oxlint-disable sort-imports
+import { readFutureNodePresence, readFutureNodeStatus } from "./flow-status";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
 import type { FutureFlowNode } from "./flow-model";
-import { readFutureNodePresence, readFutureNodeStatus } from "./flow-status";
 import type { JSX } from "solid-js";
 import { createMemo } from "solid-js";
 import styles from "./styles.module.css";

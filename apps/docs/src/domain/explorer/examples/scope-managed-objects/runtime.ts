@@ -1,4 +1,7 @@
-// oxlint-disable max-lines-per-function sort-imports
+// oxlint-disable max-lines-per-function
+import { CanceledError, ChannelError, sleep } from "@shajara/host";
+import type { RiteCoroutine, RiteFuture } from "@shajara/host";
+import { channel, enclose, future, tryReceive, wait } from "@shajara/host/primitives";
 import {
   clearCursor,
   clearCursors,
@@ -9,9 +12,6 @@ import {
   encloseWait,
   setCursor,
 } from "#/domain/explorer/examples-kit";
-import { CanceledError, ChannelError, sleep } from "@shajara/host";
-import { channel, enclose, future, tryReceive, wait } from "@shajara/host/primitives";
-import type { RiteCoroutine, RiteFuture } from "@shajara/host";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 

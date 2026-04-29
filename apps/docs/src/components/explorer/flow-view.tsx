@@ -1,4 +1,3 @@
-// oxlint-disable sort-imports
 import type { ExplorerEventId, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { FlowNode, FlowScene } from "./flow-model";
 import {
@@ -10,11 +9,11 @@ import {
   readNodeStatus,
 } from "./flow-status";
 import type { ChannelDataBlockedAnchor } from "./channel-data-link";
-import type { FlowNodeStatusValue } from "./flow-status";
-import type { JSX } from "solid-js";
 import { ChannelDataLink } from "./channel-data-link";
 import { ChannelNode } from "./channel-node";
+import type { FlowNodeStatusValue } from "./flow-status";
 import { FutureNode } from "./future-node";
+import type { JSX } from "solid-js";
 import { ScopeGroups } from "./scope-group";
 import { createMemo } from "solid-js";
 import styles from "./styles.module.css";

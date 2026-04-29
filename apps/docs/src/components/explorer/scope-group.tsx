@@ -1,9 +1,8 @@
-// oxlint-disable sort-imports
+import { Show, createMemo } from "solid-js";
 import type { ExplorerReplayState } from "#/domain/explorer/contract";
 import type { FlowScene } from "./flow-model";
-import { readScopeGroupStatus } from "./flow-status";
 import type { JSX } from "solid-js";
-import { Show, createMemo } from "solid-js";
+import { readScopeGroupStatus } from "./flow-status";
 import styles from "./styles.module.css";
 
 export function ScopeGroups<TEvent extends string>(props: {
