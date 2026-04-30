@@ -2,7 +2,7 @@ import { CanceledError, ScopeError, createScope, until } from "#/index";
 import { describe, expect, test } from "vitest";
 import { createPendingPromise } from "#test/harness";
 
-describe("/ operations: createScope", () => {
+describe("/ entries: createScope", () => {
   test.for([
     {
       given: ["settled"] as const,

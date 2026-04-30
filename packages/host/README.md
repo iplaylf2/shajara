@@ -14,11 +14,11 @@ npm install @shajara/host
 
 This package turns structured concurrency orchestration into a generator-style JavaScript API.
 
-It packages runtime entries, host operations, concurrency primitives, and boundary adapters into interfaces that application code and extension libraries can use directly.
+It packages host entries, host operations, concurrency primitives, and boundary adapters into interfaces that application code and extension libraries can use directly.
 
 ## What this package provides
 
-- runtime entries: `run`, `createScope`
+- host entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
 - concurrency, communication, and control primitives: `@shajara/host/primitives`
 - host/kernel adapters: `@shajara/host/boundary`

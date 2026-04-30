@@ -6,7 +6,7 @@
 
 The host layer adapts kernel execution into four host-facing surfaces:
 
-- application-facing runtime entries: `run`, `createScope`
+- application-facing host entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
 - generator-style primitives exposed by `@shajara/host/primitives`
 - result and failure mapping between kernel values and JavaScript-facing values or exceptions
@@ -26,7 +26,7 @@ type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 ```
 
 In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
-When a started coroutine is unwound by the runtime, generator control flow continues through `try...finally`. Work that needs its own scoped lifetime is modeled separately with `resource(...)`, whose provider remains attached to the runtime scope until release.
+When a started coroutine is unwound, generator control flow continues through `try...finally`. Work that needs its own scoped lifetime is modeled separately with `resource(...)`, whose provider remains attached to its owning scope until release.
 
 ## Result Model
 
@@ -100,7 +100,7 @@ The original cause lives at:
 - `ScopeError.cause.failure`
 - if that cause comes from an `external` failure, the original external value is in `raw`
 
-## Runtime Entries
+## Host Entries
 
 ### `run`
 
@@ -122,7 +122,7 @@ Result semantics:
 - `status`
 - `closed`
 
-The focus here is the host-side runtime boundary. Kernel scope internals remain in the semantic baseline.
+The focus here is the host-side entry boundary. Kernel scope internals remain in the semantic baseline.
 
 Closing semantics:
 

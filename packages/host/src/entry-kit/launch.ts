@@ -11,13 +11,13 @@ import type { Option } from "@shajara/kernel/utils";
 import type { RiteRoutine } from "#/contracts";
 import { isNone } from "@shajara/kernel/utils";
 
-export class RuntimeLaunch<Result> {
+export class EntryLaunch<Result> {
   public static create<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: RiteRoutine<Result>,
-    services: RuntimeLaunchServices,
+    services: EntryLaunchServices,
     options?: RunOptions,
-  ): RuntimeLaunch<Result> {
+  ): EntryLaunch<Result> {
     const signal = options?.signal;
 
     const execution = unwrap(
@@ -48,7 +48,7 @@ export class RuntimeLaunch<Result> {
       ),
     );
 
-    return new RuntimeLaunch(execution);
+    return new EntryLaunch(execution);
   }
 
   public get settled(): StatefulPromise<Result> {
@@ -74,7 +74,7 @@ export interface StatefulPromise<Return> extends Promise<Return> {
   readonly status: LaunchStatus;
 }
 
-export interface RuntimeLaunchServices {
+export interface EntryLaunchServices {
   cancelScope(scope: ExecutionScopeRef<unknown>): void;
   launchInScope<Result>(
     scope: ExecutionScopeRef<unknown>,

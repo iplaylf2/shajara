@@ -35,17 +35,17 @@ The same concept appears in different documents from different angles:
 
 The glossary is grouped by the model layer that owns each term.
 
-### Runtime Boundary
+### Entry Boundary
 
 - "Entry" means a runnable boundary that can be started from the outside, such as `launch(...)`, `run(...)`, or `createScope().run(...)`.
 
 ### Host Boundary
 
-- "Host operation" means an application-facing bridge that connects JavaScript host effects to runtime objects.
+- "Host operation" means an application-facing bridge that connects JavaScript host effects to shajara objects.
 
 ### Communication
 
-- "Channel" means an explicit runtime communication object with receiver and sender endpoints.
+- "Channel" means an explicit communication object with receiver and sender endpoints.
 
 ### Convergence and Lifecycle
 

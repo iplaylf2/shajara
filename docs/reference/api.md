@@ -14,7 +14,7 @@ The root entry is intended for application code and re-exports:
 
 Names available from the root entry include:
 
-- runtime entries: `run`, `createScope`
+- host entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
@@ -66,7 +66,7 @@ The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
 - channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - introspection: `self`
 
-## Host Runtime Entries
+## Host Entries
 
 ### `run`
 
