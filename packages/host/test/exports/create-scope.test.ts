@@ -1,9 +1,8 @@
 import { CanceledError, ScopeError, createScope, until } from "#/index";
-import { defer, park } from "#/primitives";
 import { describe, expect, test } from "vitest";
 import { createPendingPromise } from "#test/harness";
 
-describe("/ operations: createScope", () => {
+describe("/ entries: createScope", () => {
   test.for([
     {
       given: ["settled"] as const,
@@ -132,7 +131,7 @@ describe("/ operations: createScope", () => {
       try {
         const settled = scope.run(function* runWithFinallyCleanup() {
           try {
-            yield* park();
+            yield* until(createPendingPromise);
           } finally {
             events.push(cleanupEntry);
           }
@@ -166,7 +165,7 @@ describe("/ operations: createScope", () => {
         const settled = scope.run(function* runWithFinallyCleanup() {
           started.resolve(null);
           try {
-            yield* park();
+            yield* until(createPendingPromise);
           } finally {
             events.push(cleanupEntry);
           }
@@ -182,51 +181,6 @@ describe("/ operations: createScope", () => {
           await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
         }
       }
-    },
-  );
-
-  test.for([
-    {
-      given: [new Error("cleanup-failed-during-close")] as const,
-      outcome: {
-        cause: {
-          failure: {
-            kind: "external",
-          },
-          kind: "process",
-        },
-        kind: "scope",
-      } as const,
-    },
-  ])(
-    "surfaces deferred cleanup exceptions through a started ritual result",
-    async ({ given: [cause], outcome }) => {
-      const started = Promise.withResolvers<null>();
-      const scope = createScope();
-      const settled = scope.run(function* runWithFailingCleanup() {
-        started.resolve(null);
-        yield* defer(function* throwDuringCleanup() {
-          throw cause;
-        });
-        yield* park();
-      });
-
-      await started.promise;
-      const cancelation = scope.cancel();
-
-      await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-      await expect(settled).rejects.toBeInstanceOf(ScopeError);
-      await expect(settled).rejects.toMatchObject({
-        ...outcome,
-        cause: {
-          ...outcome.cause,
-          failure: {
-            ...outcome.cause.failure,
-            raw: cause,
-          },
-        },
-      });
     },
   );
 
@@ -251,7 +205,7 @@ describe("/ operations: createScope", () => {
       const settled = scope.run(function* runWithFailingFinally() {
         started.resolve(null);
         try {
-          yield* park();
+          yield* until(createPendingPromise);
         } finally {
           // Intentionally throw from finally to verify close propagates the failure.
           // oxlint-disable-next-line eslint/no-unsafe-finally

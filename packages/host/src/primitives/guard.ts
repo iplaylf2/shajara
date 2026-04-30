@@ -1,5 +1,5 @@
 import type { Failure, RiteCoroutine, RiteFuture, RiteRoutine } from "#/contracts";
-import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary";
+import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index";
 import { left, right } from "@shajara/kernel/utils";
 import type { Either } from "@shajara/kernel/utils";
 import { ScopeError } from "#/errors";

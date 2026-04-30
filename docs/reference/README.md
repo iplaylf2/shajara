@@ -6,7 +6,7 @@
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | [semantics.md](semantics.md) | Semantic baseline. Defines `Wisp`, `Sigil`, `Scope`, `Process`, `Future`, channel, failure, and convergence. |
 | [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, external control, `Pacer`, and autonomy.      |
-| [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, error mapping, and host integration.     |
+| [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, callback bridges, and result mapping.    |
 | [api.md](api.md)             | Public interface reference. Covers exports, import paths, result shapes, and public entry points.            |
 
 ## Dependency Direction
@@ -35,13 +35,17 @@ The same concept appears in different documents from different angles:
 
 The glossary is grouped by the model layer that owns each term.
 
-### Runtime Boundary
+### Entry Boundary
 
 - "Entry" means a runnable boundary that can be started from the outside, such as `launch(...)`, `run(...)`, or `createScope().run(...)`.
 
+### Host Boundary
+
+- "Host operation" means an application-facing bridge that connects JavaScript host effects to shajara objects.
+
 ### Communication
 
-- "Channel" means an explicit runtime communication object with receiver and sender endpoints.
+- "Channel" means an explicit communication object with receiver and sender endpoints.
 
 ### Convergence and Lifecycle
 

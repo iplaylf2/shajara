@@ -5,6 +5,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
+        boundary: "src/boundary.ts",
         index: "src/index.ts",
         primitives: "src/primitives.ts",
       },

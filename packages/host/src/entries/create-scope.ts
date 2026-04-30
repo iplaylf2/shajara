@@ -1,18 +1,19 @@
+import type { EntryLaunchServices, RunOptions, StatefulPromise } from "#/entry-kit";
 import type { LaunchStatus, RiteRoutine } from "#/contracts";
-import type { RunOptions, RuntimeLaunchServices, StatefulPromise } from "#/operations-kit";
+import { EntryLaunch } from "#/entry-kit";
 import type { ExecutionScopeRef } from "@shajara/kernel";
-import { RuntimeLaunch } from "#/operations-kit";
+import { encodeRitual } from "#/boundary/index";
 import { ensureExecutor } from "#/executor";
-import { park } from "#/primitives/index";
+import { park } from "@shajara/kernel";
 
 export function createScope(): Scope {
   const executor = ensureExecutor();
-  const services: RuntimeLaunchServices = {
+  const services: EntryLaunchServices = {
     cancelScope: (scope) => executor.cancel(scope),
     launchInScope: (scope, ritual) => executor.launch(scope, ritual),
   };
 
-  return new RuntimeScope(executor.scope, services);
+  return new HostScope(executor.scope, services);
 }
 
 export interface Scope {
@@ -27,17 +28,17 @@ export type ScopeStatus = LaunchStatus;
 
 export type { RunOptions, StatefulPromise };
 
-class RuntimeScope implements Scope {
+class HostScope implements Scope {
   public constructor(
     scope: ExecutionScopeRef<unknown>,
-    private readonly services: RuntimeLaunchServices,
+    private readonly services: EntryLaunchServices,
   ) {
-    this.#launch = RuntimeLaunch.create(scope, park, this.services);
+    this.#launch = EntryLaunch.create(scope, encodeRitual(park), this.services);
     this.#closed = Promise.resolve(this.#launch.settled);
   }
 
   public run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
-    return RuntimeLaunch.create(this.#launch.scope, ritual, this.services, options).settled;
+    return EntryLaunch.create(this.#launch.scope, ritual, this.services, options).settled;
   }
 
   public async cancel(): Promise<void> {
@@ -60,6 +61,6 @@ class RuntimeScope implements Scope {
     return this.#launch.settled.status;
   }
 
-  readonly #launch: RuntimeLaunch<never>;
+  readonly #launch: EntryLaunch<never>;
   readonly #closed: Promise<void>;
 }

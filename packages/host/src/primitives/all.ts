@@ -1,11 +1,11 @@
 import type { RiteCoroutine, RiteFuture } from "#/contracts";
-import { decodeRituals, encodeRitual } from "#/boundary";
-import type { RiteRoutineTuple } from "#/boundary";
+import { decodeRituals, encodeRitual } from "#/boundary/index";
+import type { RiteRoutineTuple } from "#/boundary/index";
 import type { UnknownArray } from "type-fest";
 import { all as kernelAll } from "@shajara/kernel";
 
 export function all<Returns extends UnknownArray>(
-  primitives: RiteRoutineTuple<Returns>,
+  routines: RiteRoutineTuple<Returns>,
 ): RiteCoroutine<RiteFuture<Returns>> {
-  return encodeRitual(() => kernelAll(decodeRituals(primitives)))();
+  return encodeRitual(() => kernelAll(decodeRituals(routines)))();
 }

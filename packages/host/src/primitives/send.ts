@@ -1,7 +1,7 @@
 import type { ChannelSender } from "@shajara/kernel";
 import type { RiteCoroutine } from "#/contracts";
 import { channelErrorOf } from "#/primitives-kit";
-import { encodeRitual } from "#/boundary";
+import { encodeRitual } from "#/boundary/index";
 import { send as kernelSend } from "@shajara/kernel";
 
 export function* send<Value, Outcome>(

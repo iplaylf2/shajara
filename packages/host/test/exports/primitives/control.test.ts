@@ -1,8 +1,8 @@
 import { CanceledError, createScope, run } from "#/index";
-import { cede, park } from "#/primitives";
+import { cede, future, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
 
-describe("/ primitives: cede, park", () => {
+describe("/ primitives: cede", () => {
   test.for([
     {
       given: ["before", "after"] as const,
@@ -23,22 +23,18 @@ describe("/ primitives: cede, park", () => {
     },
   );
 
-  test.for([
-    {
-      given: [] as const,
-      outcome: "closed",
-    },
-  ])("park keeps the ritual suspended until its scope is canceled", async ({ outcome }) => {
+  test("unsettled waits are canceled when their scope closes", async () => {
     const scope = createScope();
 
     try {
-      const settled = scope.run(function* parkCurrentScope() {
-        yield* park();
+      const settled = scope.run(function* waitForUnsettledFuture() {
+        const [pending] = yield* future<never>();
+        yield* wait(pending);
       });
 
       await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
       await expect(settled).rejects.toBeInstanceOf(CanceledError);
-      expect(scope.status).toBe(outcome);
+      expect(scope.status).toBe("closed");
     } finally {
       if (scope.status !== "closed") {
         await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);

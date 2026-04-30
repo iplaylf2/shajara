@@ -6,15 +6,16 @@ This document summarizes the public export surfaces and call results.
 
 ### `@shajara/host`
 
-This package is intended for application code. Its root entry re-exports:
+The root entry is intended for application code and re-exports:
 
 - `contracts`
+- `entries`
 - `errors`
 - `operations`
 
 Names available from the root entry include:
 
-- runtime entries: `run`, `createScope`
+- host entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
@@ -27,7 +28,13 @@ The subpath `@shajara/host/primitives` exposes:
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
 - channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
-- control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
+- control: `cede`
+
+The subpath `@shajara/host/boundary` exposes host/kernel adapter helpers for extension libraries:
+
+- ritual adapters: `decodeRitual`, `decodeRituals`, `encodeRitual`, `RiteRoutineTuple`
+- failure mapping: `toFailure`, `toFailureUnknown`, `fromFailure`
+- result adapters: `unwrapEither`, `unwrapOption`
 
 ### `@shajara/kernel`
 
@@ -35,6 +42,7 @@ This package is intended for lower-level integrations. Its root entry re-exports
 
 - `contracts`
 - `executor`
+- `executor/primitives`
 - `failures`
 - `primitives`
 
@@ -42,8 +50,9 @@ Names available from the root entry include:
 
 - contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
 - failures: `Failure`, `canceledFailure`, `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
-- primitives: `Wisp` primitives for concurrency, futures, channels, context, lifecycle, and introspection
+- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
+- executor primitives: `autonomy`
+- primitives: `Wisp` primitives for concurrency, futures, channels, context, control, termination, cleanup, parking, and introspection
 
 Public subpaths:
 
@@ -53,13 +62,14 @@ Public subpaths:
 The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
 
 - context: `bind`, `lookup`, `unbind`
-- lifecycle: `cancel`, `cede`, `defer`, `halt`
+- control: `cede`
+- termination and cleanup: `cancel`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
 - channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - introspection: `self`
 
-## Host Runtime Entries
+## Host Entries
 
 ### `run`
 
@@ -130,6 +140,8 @@ Returns:
 - `trySend(value)`
 - `close(outcome)`
 
+The receiver is consumed by coroutine channel primitives; the callbacks send or close the channel from host code.
+
 ### `sleep`
 
 ```ts
@@ -182,7 +194,7 @@ A `Presence<T>` return value is `[true, value]` when a value is present and `[fa
 
 For channels, `T` is the value type and `O` is the close outcome type.
 
-### Context, control, and lifecycle
+### Context, introspection, and control
 
 | Primitive | Return value  |
 | --------- | ------------- |
@@ -190,24 +202,23 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `lookup`  | `Presence<T>` |
 | `unbind`  | `void`        |
 | `self`    | `SelfHandle`  |
-| `halt`    | `never`       |
-| `cancel`  | `never`       |
 | `cede`    | `void`        |
-| `defer`   | `void`        |
-| `park`    | `never`       |
 
-## Kernel Primitive Result Model
+Host rituals use JavaScript exceptions for current-process termination:
+throw a `CanceledError` to cancel, or throw any other value to fail.
 
-Kernel primitives keep failure and terminal states in explicit return values:
+## Kernel Result Model
 
-- kernel `wait(future)` returns `Either<FailureShape, T>`
-- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
-- kernel `enclose(ritual)` returns `Either<FailureShape, T>`
-- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T, O>, ChannelSender<T, O>]`
-- kernel `send(sender, value)` returns `{ kind: "sent" }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
-- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
-- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
-- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
-- kernel `close(endpoint, outcome)` returns `void`
+Kernel APIs preserve runtime state in returned values. Callers that consume kernel directly handle these values in band instead of relying on host exceptions or `Presence<T>` tuples.
 
-When consuming kernel directly, callers handle those values in band.
+The common return forms are:
+
+- `FutureKey<T>` for operations that start concurrent or scoped work and return an observation handle.
+- `[FutureKey<T>, FutureSettleKey<T>]` for operations that create a future and expose separate observation and settlement authority.
+- `Either<FailureShape, T>` for waits or contained boundaries whose success and failure are both part of the result domain.
+- `Option<T>` for non-blocking or optional observations, including context lookup and polling.
+- channel result unions for send and receive outcomes; closed and revoked channel states remain explicit values.
+- `void` for operations that mutate runtime state without producing an observation value.
+- `never` for termination or indefinite parking paths such as cancellation, halt, and park.
+
+Host primitives adapt these forms into JavaScript values, `Presence<T>`, and exceptions.

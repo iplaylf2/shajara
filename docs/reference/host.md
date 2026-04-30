@@ -4,11 +4,12 @@
 
 ## Host Responsibilities
 
-The host layer is responsible for three things:
+The host layer adapts kernel execution through four responsibilities:
 
-- providing application-facing runtime entries: `run`, `createScope`, `action`, `feed`, `sleep`, `until`
-- providing generator-style primitives: `@shajara/host/primitives`
-- mapping kernel failures into JavaScript error objects
+- application-facing host entries: `run`, `createScope`
+- host operations: `action`, `feed`, `sleep`, `until`
+- generator-style primitives exposed by `@shajara/host/primitives`
+- result and failure mapping between kernel values and JavaScript-facing values or exceptions
 
 ## Ritual Adaptation
 
@@ -25,6 +26,7 @@ type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 ```
 
 In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
+When a started coroutine is unwound, generator control flow continues through `try...finally`. Work that needs its own scoped lifetime is modeled separately with `resource(...)`, whose provider remains attached to its owning scope until release.
 
 ## Result Model
 
@@ -66,12 +68,15 @@ The host layer maps kernel failures into JavaScript error objects.
 
 ### Writing into kernel
 
-The following entries rewrite host-side errors into kernel failures:
+The following paths write host-side failures into the kernel:
 
-- `halt(error)`
+- throwing from a host ritual, recovery handler, or host integration callback
 - `settleError(futureSettle, error)`
 - `action.reject(error)`
-- `until(...).catch(...)`
+- a promise rejection observed by `until(thunk)`
+
+At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive.
+Other thrown values become the kernel `halt` primitive after failure mapping.
 
 ### Returning from kernel
 
@@ -95,7 +100,7 @@ The original cause lives at:
 - `ScopeError.cause.failure`
 - if that cause comes from an `external` failure, the original external value is in `raw`
 
-## Runtime Entries
+## Host Entries
 
 ### `run`
 
@@ -117,7 +122,7 @@ Result semantics:
 - `status`
 - `closed`
 
-The focus here is the host-side runtime boundary. Kernel scope internals remain in the semantic baseline.
+The focus here is the host-side entry boundary. Kernel scope internals remain in the semantic baseline.
 
 Closing semantics:
 
@@ -125,7 +130,7 @@ Closing semantics:
 - `closed` settles when that scope has fully closed
 - if the closure result is cancellation or failure, `cancel()` and `closed` reflect the same result
 
-## Host Integration
+## Host Operations
 
 ### `action`
 
@@ -135,6 +140,16 @@ Closing semantics:
 - `resolve(value)`
 - `reject(error)`
 
+### `feed`
+
+`feed(capacity, overloadRewrite?)` exposes channel input capabilities to host code:
+
+- `receiver`
+- `trySend(value)`
+- `close(outcome)`
+
+The returned receiver stays inside coroutine code, while the callbacks send or close the channel from host code.
+
 ### `sleep`
 
 `sleep(milliseconds)` uses a host timer to resume a waiting computation.
@@ -143,7 +158,7 @@ Closing semantics:
 
 `until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
 
-Together, these three entries translate browser or JavaScript host effects into future convergence the `Executor` can observe.
+Together, these operations translate browser or JavaScript host effects into future or channel convergence the `Executor` can observe.
 
 ## Host Form of Autonomous Governance
 

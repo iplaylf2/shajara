@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { guard, halt, resumable, wait } from "#/primitives";
+import { guard, resumable, wait } from "#/primitives";
 import type { ScopeError } from "#/index";
 import { findFailureByKind } from "#test/harness";
 import { run } from "#/index";
@@ -7,7 +7,7 @@ import { run } from "#/index";
 describe("/ primitives: guard, resumable", () => {
   test.for([
     {
-      given: [new Error("halted without guard")] as const,
+      given: [new Error("failed without guard")] as const,
       outcome: {
         cause: {
           failure: {
@@ -22,11 +22,11 @@ describe("/ primitives: guard, resumable", () => {
     "resumable rejects with a scope failure when no guard recovery boundary is present",
     async ({ given: [cause], outcome }) => {
       const settled = run(function* awaitUnrecoveredResumable() {
-        const future = yield* resumable(function* haltWithoutRecovery() {
-          yield* halt(cause);
+        const unrecoveredResult = yield* resumable(function* failWithoutRecovery() {
+          throw cause;
         });
 
-        return yield* wait(future);
+        return yield* wait(unrecoveredResult);
       });
 
       const actual = await settled.catch((error: unknown) => error);
@@ -37,9 +37,9 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [new Error("halted for recovery"), "recovered:halted"] as const,
+      given: [new Error("failed for recovery"), "recovered:failed"] as const,
       outcome: {
-        recovered: "recovered:halted",
+        recovered: "recovered:failed",
         recoveryError: {
           cause: {
             failure: {
@@ -56,13 +56,13 @@ describe("/ primitives: guard, resumable", () => {
     async ({ given: [cause, recovered], outcome }) => {
       const captured = Promise.withResolvers<ScopeError>();
       const settled = run(function* awaitRecoveredGuard() {
-        const guardFuture = yield* guard(
+        const recoveredResult = yield* guard(
           function* runGuardedEntry() {
-            const resumableFuture = yield* resumable(function* haltRecoverableScope() {
-              yield* halt(cause);
+            const recoverableResult = yield* resumable(function* failRecoverableScope() {
+              throw cause;
             });
 
-            return yield* wait(resumableFuture);
+            return yield* wait(recoverableResult);
           },
           function* recoverResumable(error) {
             captured.resolve(error);
@@ -70,7 +70,7 @@ describe("/ primitives: guard, resumable", () => {
           },
         );
 
-        return yield* wait(guardFuture);
+        return yield* wait(recoveredResult);
       });
 
       await expect(settled).resolves.toBe(outcome.recovered);
@@ -89,10 +89,7 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [
-        new Error("halted for failed recovery"),
-        new Error("recovery-handler-failed"),
-      ] as const,
+      given: [new Error("failed before recovery"), new Error("recovery-handler-failed")] as const,
       outcome: {
         external: {
           kind: "external",
@@ -102,22 +99,22 @@ describe("/ primitives: guard, resumable", () => {
     },
   ])(
     "guard fails with the recovery handler error when recovery throws",
-    async ({ given: [haltCause, recoveryCause], outcome }) => {
+    async ({ given: [entryCause, recoveryCause], outcome }) => {
       const settled = run(function* awaitFailedRecovery() {
-        const guardFuture = yield* guard(
+        const failedRecovery = yield* guard(
           function* runGuardedEntry() {
-            const resumableFuture = yield* resumable(function* haltRecoverableScope() {
-              yield* halt(haltCause);
+            const recoverableResult = yield* resumable(function* failRecoverableScope() {
+              throw entryCause;
             });
 
-            return yield* wait(resumableFuture);
+            return yield* wait(recoverableResult);
           },
           function* throwFromRecovery() {
             throw recoveryCause;
           },
         );
 
-        return yield* wait(guardFuture);
+        return yield* wait(failedRecovery);
       });
 
       const actual = await settled.catch((error: unknown) => error);

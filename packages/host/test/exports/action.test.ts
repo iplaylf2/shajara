@@ -12,13 +12,13 @@ describe("/ operations: action", () => {
     "returns a future whose resolution settles from host callbacks",
     async ({ given: [value], outcome }) => {
       const settled = run(function* settled() {
-        const { future, resolve } = yield* action<string>();
+        const { future: actionResult, resolve } = yield* action<string>();
 
         globalThis.queueMicrotask(() => {
           resolve(value);
         });
 
-        return yield* wait(future);
+        return yield* wait(actionResult);
       });
 
       await expect(settled).resolves.toBe(outcome);
@@ -42,13 +42,13 @@ describe("/ operations: action", () => {
     "propagates the original error instance when the host rejects the action",
     async ({ given: [cause], outcome }) => {
       const settled = run(function* settled() {
-        const { future, reject } = yield* action<never>();
+        const { future: rejectedAction, reject } = yield* action<never>();
 
         globalThis.queueMicrotask(() => {
           reject(cause);
         });
 
-        return yield* wait(future);
+        return yield* wait(rejectedAction);
       });
 
       await expect(settled).rejects.toBeInstanceOf(ScopeError);

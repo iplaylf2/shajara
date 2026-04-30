@@ -15,10 +15,10 @@ describe("/ primitives: all", () => {
       outcome: [] as const,
     },
   ])(
-    "returns a settled future whose result preserves branch order",
-    async ({ given: [branches], outcome }) => {
+    "returns a settled future whose result preserves entry order",
+    async ({ given: [values], outcome }) => {
       await using ritual = interpretRitual(() =>
-        pipe(all(branches.map((branch) => () => wisp.of(branch))), wisp.chain(wait)),
+        pipe(all(values.map((value) => () => wisp.of(value))), wisp.chain(wait)),
       );
       const step = ritual.driveSync();
       const actual = unwrapRight(unwrapExitedSucceeded(step));

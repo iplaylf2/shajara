@@ -1,6 +1,6 @@
 import { CanceledError, createScope } from "#/index";
 import { describe, expect, test } from "vitest";
-import { park, resource, wait } from "#/primitives";
+import { future, resource, wait } from "#/primitives";
 
 describe("/ primitives: resource", () => {
   test.for([
@@ -16,13 +16,13 @@ describe("/ primitives: resource", () => {
 
       try {
         const settled = scope.run(function* awaitProvidedResource() {
-          const resourceFuture = yield* resource<string>(function* provideResource(provide) {
+          const providedResource = yield* resource<string>(function* provideResource(provide) {
             yield* provide(resourceValue);
           });
 
-          const value = yield* wait(resourceFuture);
+          const value = yield* wait(providedResource);
           captured.resolve(value);
-          yield* park();
+          yield* waitForCancellation();
         });
 
         await expect(captured.promise).resolves.toBe(outcome);
@@ -50,7 +50,7 @@ describe("/ primitives: resource", () => {
 
       try {
         const settled = scope.run(function* manageScopedResource() {
-          const resourceFuture = yield* resource<string>(function* provideScopedResource(provide) {
+          const scopedResource = yield* resource<string>(function* provideScopedResource(provide) {
             try {
               events.push(providedEntry);
               yield* provide(resourceValue);
@@ -59,9 +59,9 @@ describe("/ primitives: resource", () => {
             }
           });
 
-          const value = yield* wait(resourceFuture);
+          const value = yield* wait(scopedResource);
           captured.resolve(value);
-          yield* park();
+          yield* waitForCancellation();
         });
 
         await expect(captured.promise).resolves.toBe(resourceValue);
@@ -76,3 +76,8 @@ describe("/ primitives: resource", () => {
     },
   );
 });
+
+function* waitForCancellation() {
+  const [pending] = yield* future<never>();
+  return yield* wait(pending);
+}

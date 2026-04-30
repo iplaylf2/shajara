@@ -9,7 +9,7 @@ export function resource<Value>(body: ResourceBody<Value>): Wisp<FutureKey<Value
   return pipe(
     future<Value>(),
     wisp.liftF,
-    wisp.chainFirstF(([, resourceSettle]) => spawn(resourceWorker(body, resourceSettle))),
+    wisp.chainFirstF(([, resourceSettle]) => spawn(resourceProvider(body, resourceSettle))),
     wisp.map(([resourceFuture]) => resourceFuture),
   );
 }
@@ -17,7 +17,10 @@ export function resource<Value>(body: ResourceBody<Value>): Wisp<FutureKey<Value
 export type ResourceBody<Value> = (provide: ResourceProvide<Value>) => Wisp<void>;
 export type ResourceProvide<Value> = (value: Value) => Wisp<never>;
 
-function resourceWorker<Value>(body: ResourceBody<Value>, resourceSettle: FutureSettleKey<Value>) {
+function resourceProvider<Value>(
+  body: ResourceBody<Value>,
+  resourceSettle: FutureSettleKey<Value>,
+) {
   return () =>
     body((value) => pipe(settle(resourceSettle, right(value)), wisp.liftF, wisp.chain(park)));
 }

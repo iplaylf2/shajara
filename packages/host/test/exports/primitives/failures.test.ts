@@ -1,8 +1,8 @@
 import { CanceledError, ScopeError, run } from "#/index";
-import { cancel, enclose, future, halt, settleError, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
+import { enclose, future, settleError, wait } from "#/primitives";
 
-describe("/ primitives: cancel, halt, settleError", () => {
+describe("/ primitives: thrown termination, settleError", () => {
   test.for([
     {
       given: [] as const,
@@ -10,9 +10,9 @@ describe("/ primitives: cancel, halt, settleError", () => {
         kind: "canceled",
       } as const,
     },
-  ])("cancel rejects the current scope with CanceledError", async ({ outcome }) => {
-    const settled = run(function* cancelCurrentScope() {
-      yield* cancel();
+  ])("throwing CanceledError cancels the current scope", async ({ outcome }) => {
+    const settled = run(function* throwCancellation() {
+      throw new CanceledError();
     });
 
     await expect(settled).rejects.toBeInstanceOf(CanceledError);
@@ -21,7 +21,7 @@ describe("/ primitives: cancel, halt, settleError", () => {
 
   test.for([
     {
-      given: [new Error("halted for test")] as const,
+      given: [new Error("failed for test")] as const,
       outcome: {
         cause: {
           failure: {
@@ -32,10 +32,10 @@ describe("/ primitives: cancel, halt, settleError", () => {
         kind: "scope",
       } as const,
     },
-  ])("enclose surfaces halt failures as scope failures", async ({ given: [cause], outcome }) => {
-    const settled = run(function* awaitHaltedEnclosure() {
-      return yield* enclose(function* haltChildScope() {
-        yield* halt(cause);
+  ])("enclose surfaces thrown errors as scope failures", async ({ given: [cause], outcome }) => {
+    const settled = run(function* awaitFailedEnclosure() {
+      return yield* enclose(function* failChildScope() {
+        throw cause;
       });
     });
 

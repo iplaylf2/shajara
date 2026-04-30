@@ -1,7 +1,7 @@
 import type { ChannelHandle, OverloadRewrite } from "@shajara/kernel";
 import { ChannelError } from "#/errors";
 import type { RiteCoroutine } from "#/contracts";
-import { encodeRitual } from "#/boundary";
+import { encodeRitual } from "#/boundary/index";
 import { channel as kernelChannel } from "@shajara/kernel";
 
 export function channel<Value, Outcome>(
