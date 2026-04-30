@@ -15,11 +15,11 @@ describe("/ primitives: self", () => {
     },
   ])("returns refs whose process exit futures settle with root closure", async ({ outcome }) => {
     const settled = run(function* captureSelfHandle() {
-      const selfFuture = yield* spawn(function* readSelfInBranch() {
+      const branchSelf = yield* spawn(function* readSelfInBranch() {
         return yield* self();
       });
 
-      return yield* wait(selfFuture);
+      return yield* wait(branchSelf);
     });
     const actual: SelfHandle = await settled;
 

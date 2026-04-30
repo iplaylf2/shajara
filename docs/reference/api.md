@@ -27,7 +27,7 @@ The subpath `@shajara/host/primitives` exposes:
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
 - channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
-- control and lifecycle: `cede`, `park`
+- control: `cede`
 
 The subpath `@shajara/host/boundary` exposes host/kernel adapter helpers for extension libraries:
 
@@ -197,7 +197,6 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `unbind`  | `void`        |
 | `self`    | `SelfHandle`  |
 | `cede`    | `void`        |
-| `park`    | `never`       |
 
 Host rituals use JavaScript exceptions for current-process termination:
 throw a `CanceledError` to cancel, or throw any other value to fail.

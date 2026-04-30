@@ -6,10 +6,10 @@ import { toFailure } from "#/boundary/index";
 
 export function* action<Return>(): RiteCoroutine<Action<Return>> {
   const executor = ensureExecutor();
-  const [actionFuture, actionSettle] = yield* future<Return>();
+  const [actionResult, actionSettle] = yield* future<Return>();
 
   return {
-    future: actionFuture,
+    future: actionResult,
     reject(reason) {
       executor.settle(actionSettle, left(toFailure(reason)));
     },

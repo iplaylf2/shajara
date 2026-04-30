@@ -20,7 +20,7 @@ It packages runtime entries, host operations, concurrency primitives, and bounda
 
 - runtime entries: `run`, `createScope`
 - host operations: `action`, `sleep`, `until`
-- concurrency, communication, and lifecycle primitives: `@shajara/host/primitives`
+- concurrency, communication, and control primitives: `@shajara/host/primitives`
 - host/kernel adapters: `@shajara/host/boundary`
 
 ## Example

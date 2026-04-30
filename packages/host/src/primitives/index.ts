@@ -15,7 +15,6 @@ export * from "./cede";
 export * from "./spawn";
 export * from "./future";
 export * from "./lookup";
-export * from "./park";
 export * from "./race";
 export * from "./resource";
 export * from "./resumable";

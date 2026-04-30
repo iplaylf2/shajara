@@ -22,11 +22,11 @@ describe("/ primitives: guard, resumable", () => {
     "resumable rejects with a scope failure when no guard recovery boundary is present",
     async ({ given: [cause], outcome }) => {
       const settled = run(function* awaitUnrecoveredResumable() {
-        const future = yield* resumable(function* failWithoutRecovery() {
+        const unrecoveredResult = yield* resumable(function* failWithoutRecovery() {
           throw cause;
         });
 
-        return yield* wait(future);
+        return yield* wait(unrecoveredResult);
       });
 
       const actual = await settled.catch((error: unknown) => error);
@@ -56,13 +56,13 @@ describe("/ primitives: guard, resumable", () => {
     async ({ given: [cause, recovered], outcome }) => {
       const captured = Promise.withResolvers<ScopeError>();
       const settled = run(function* awaitRecoveredGuard() {
-        const guardFuture = yield* guard(
+        const recoveredResult = yield* guard(
           function* runGuardedEntry() {
-            const resumableFuture = yield* resumable(function* failRecoverableScope() {
+            const recoverableResult = yield* resumable(function* failRecoverableScope() {
               throw cause;
             });
 
-            return yield* wait(resumableFuture);
+            return yield* wait(recoverableResult);
           },
           function* recoverResumable(error) {
             captured.resolve(error);
@@ -70,7 +70,7 @@ describe("/ primitives: guard, resumable", () => {
           },
         );
 
-        return yield* wait(guardFuture);
+        return yield* wait(recoveredResult);
       });
 
       await expect(settled).resolves.toBe(outcome.recovered);
@@ -101,20 +101,20 @@ describe("/ primitives: guard, resumable", () => {
     "guard fails with the recovery handler error when recovery throws",
     async ({ given: [entryCause, recoveryCause], outcome }) => {
       const settled = run(function* awaitFailedRecovery() {
-        const guardFuture = yield* guard(
+        const failedRecovery = yield* guard(
           function* runGuardedEntry() {
-            const resumableFuture = yield* resumable(function* failRecoverableScope() {
+            const recoverableResult = yield* resumable(function* failRecoverableScope() {
               throw entryCause;
             });
 
-            return yield* wait(resumableFuture);
+            return yield* wait(recoverableResult);
           },
           function* throwFromRecovery() {
             throw recoveryCause;
           },
         );
 
-        return yield* wait(guardFuture);
+        return yield* wait(failedRecovery);
       });
 
       const actual = await settled.catch((error: unknown) => error);

@@ -16,7 +16,7 @@ describe("/ primitives: all, race, spawn, enclose", () => {
     "all returns a settled future whose result preserves routine order",
     async ({ given: [values], outcome }) => {
       const settled = run(function* awaitAllRoutines() {
-        const future = yield* all(
+        const orderedResults = yield* all(
           values.map(
             (value) =>
               function* returnRoutineValue() {
@@ -25,7 +25,7 @@ describe("/ primitives: all, race, spawn, enclose", () => {
           ),
         );
 
-        return yield* wait(future);
+        return yield* wait(orderedResults);
       });
 
       await expect(settled).resolves.toEqual(outcome);
@@ -41,7 +41,7 @@ describe("/ primitives: all, race, spawn, enclose", () => {
     "race returns a future settled by the first routine to complete",
     async ({ given: [fast, slow], outcome }) => {
       const settled = run(function* awaitRaceWinner() {
-        const future = yield* race([
+        const winningResult = yield* race([
           function* slowRoutine() {
             yield* cede();
             return slow;
@@ -51,7 +51,7 @@ describe("/ primitives: all, race, spawn, enclose", () => {
           },
         ] as const);
 
-        return yield* wait(future);
+        return yield* wait(winningResult);
       });
 
       await expect(settled).resolves.toBe(outcome);
@@ -67,11 +67,11 @@ describe("/ primitives: all, race, spawn, enclose", () => {
     "spawn returns the spawned process exit future from a single primitive call",
     async ({ given: [value], outcome }) => {
       const settled = run(function* awaitSpawnedProcess() {
-        const future = yield* spawn(function* returnSpawnedValue() {
+        const spawnedResult = yield* spawn(function* returnSpawnedValue() {
           return value;
         });
 
-        return yield* wait(future);
+        return yield* wait(spawnedResult);
       });
 
       await expect(settled).resolves.toBe(outcome);

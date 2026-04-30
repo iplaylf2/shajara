@@ -2,8 +2,9 @@ import type { LaunchStatus, RiteRoutine } from "#/contracts";
 import type { RunOptions, RuntimeLaunchServices, StatefulPromise } from "#/operations-kit";
 import type { ExecutionScopeRef } from "@shajara/kernel";
 import { RuntimeLaunch } from "#/operations-kit";
+import { encodeRitual } from "#/boundary/index";
 import { ensureExecutor } from "#/executor";
-import { park } from "#/primitives/index";
+import { park } from "@shajara/kernel";
 
 export function createScope(): Scope {
   const executor = ensureExecutor();
@@ -32,7 +33,7 @@ class RuntimeScope implements Scope {
     scope: ExecutionScopeRef<unknown>,
     private readonly services: RuntimeLaunchServices,
   ) {
-    this.#launch = RuntimeLaunch.create(scope, park, this.services);
+    this.#launch = RuntimeLaunch.create(scope, encodeRitual(park), this.services);
     this.#closed = Promise.resolve(this.#launch.settled);
   }
 

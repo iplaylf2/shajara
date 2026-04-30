@@ -1,7 +1,6 @@
 import { CanceledError, ScopeError, createScope, until } from "#/index";
 import { describe, expect, test } from "vitest";
 import { createPendingPromise } from "#test/harness";
-import { park } from "#/primitives";
 
 describe("/ operations: createScope", () => {
   test.for([
@@ -132,7 +131,7 @@ describe("/ operations: createScope", () => {
       try {
         const settled = scope.run(function* runWithFinallyCleanup() {
           try {
-            yield* park();
+            yield* until(createPendingPromise);
           } finally {
             events.push(cleanupEntry);
           }
@@ -166,7 +165,7 @@ describe("/ operations: createScope", () => {
         const settled = scope.run(function* runWithFinallyCleanup() {
           started.resolve(null);
           try {
-            yield* park();
+            yield* until(createPendingPromise);
           } finally {
             events.push(cleanupEntry);
           }
@@ -206,7 +205,7 @@ describe("/ operations: createScope", () => {
       const settled = scope.run(function* runWithFailingFinally() {
         started.resolve(null);
         try {
-          yield* park();
+          yield* until(createPendingPromise);
         } finally {
           // Intentionally throw from finally to verify close propagates the failure.
           // oxlint-disable-next-line eslint/no-unsafe-finally
