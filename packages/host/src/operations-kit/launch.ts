@@ -5,7 +5,7 @@ import type {
   LaunchStatus,
   Ritual,
 } from "@shajara/kernel";
-import { decodeRitual, fromFailure } from "#/boundary";
+import { decodeRitual, fromFailure } from "#/boundary/index";
 import { CanceledError } from "#/errors";
 import type { Option } from "@shajara/kernel/utils";
 import type { RiteRoutine } from "#/contracts";

@@ -1,5 +1,5 @@
 import type { Failure, RiteCoroutine, RiteFuture } from "#/contracts";
-import { encodeRitual, unwrapEither } from "#/boundary";
+import { encodeRitual, unwrapEither } from "#/boundary/index";
 import type { Either } from "@shajara/kernel/utils";
 import { wait as kernelWait } from "@shajara/kernel";
 

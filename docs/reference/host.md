@@ -4,11 +4,11 @@
 
 ## Host Responsibilities
 
-The host layer is responsible for three things:
+The host layer adapts kernel execution into three host-facing surfaces:
 
-- providing application-facing runtime entries: `run`, `createScope`, `action`, `feed`, `sleep`, `until`
-- providing generator-style primitives: `@shajara/host/primitives`
-- mapping kernel failures into JavaScript error objects
+- application-facing runtime entries: `run`, `createScope`, `action`, `feed`, `sleep`, `until`
+- generator-style primitives exposed by `@shajara/host/primitives`
+- result and failure mapping between kernel values and JavaScript-facing values or exceptions
 
 ## Ritual Adaptation
 

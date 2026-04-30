@@ -1,5 +1,5 @@
 import type { RiteCoroutine, RiteRoutine } from "#/contracts";
-import { decodeRitual, encodeRitual } from "#/boundary";
+import { decodeRitual, encodeRitual } from "#/boundary/index";
 import { defer as kernelDefer } from "@shajara/kernel";
 
 export function defer(cleanup: RiteRoutine<void>): RiteCoroutine<void> {

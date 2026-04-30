@@ -1,7 +1,7 @@
 import type { Presence, RiteCoroutine } from "#/contracts";
 import type { ChannelReceiver } from "@shajara/kernel";
 import { channelErrorOf } from "#/primitives-kit";
-import { encodeRitual } from "#/boundary";
+import { encodeRitual } from "#/boundary/index";
 import { isNone } from "@shajara/kernel/utils";
 import { tryReceive as kernelTryReceive } from "@shajara/kernel";
 

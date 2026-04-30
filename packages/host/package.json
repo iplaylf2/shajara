@@ -42,6 +42,11 @@
       "import": "./dist/primitives.js",
       "require": "./dist/primitives.cjs",
       "types": "./dist/primitives.d.ts"
+    },
+    "./boundary": {
+      "import": "./dist/boundary.js",
+      "require": "./dist/boundary.cjs",
+      "types": "./dist/boundary.d.ts"
     }
   },
   "scripts": {

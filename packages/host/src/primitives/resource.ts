@@ -1,5 +1,5 @@
 import type { RiteCoroutine, RiteFuture } from "#/contracts";
-import { decodeRitual, encodeRitual } from "#/boundary";
+import { decodeRitual, encodeRitual } from "#/boundary/index";
 import type { ResourceProvide as KernelResourceProvide } from "@shajara/kernel";
 import { resource as kernelResource } from "@shajara/kernel";
 

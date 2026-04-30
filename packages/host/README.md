@@ -14,14 +14,14 @@ npm install @shajara/host
 
 This package turns structured concurrency orchestration into a generator-style JavaScript API.
 
-It is responsible for packaging runtime entries, host operations, concurrency primitives, and error mapping into a set of interfaces that application code can use directly.
+It packages runtime entries, host operations, concurrency primitives, and boundary adapters into interfaces that application code and extension libraries can use directly.
 
 ## What this package provides
 
 - runtime entries: `run`, `createScope`
 - host operations: `action`, `sleep`, `until`
 - concurrency, communication, and lifecycle primitives: `@shajara/host/primitives`
-- boundary mapping between JavaScript error objects and lower-level failure results
+- host/kernel adapters: `@shajara/host/boundary`
 
 ## Example
 
@@ -55,7 +55,7 @@ The point of this code is not just that two async steps run concurrently. The co
 
 ## When to use this package
 
-Use this package when you want to use shajara directly in application code.
+Use this package when you want to use shajara directly in application code or build host-level abstractions on top of the same generator surface.
 
 It fits especially well when:
 
@@ -67,3 +67,4 @@ It fits especially well when:
 
 - `@shajara/host`
 - `@shajara/host/primitives`
+- `@shajara/host/boundary`

@@ -4,7 +4,7 @@ import type {
   Scheduler,
 } from "@shajara/kernel";
 import type { RiteCoroutine, RiteFuture, RiteRoutine, ScopeRef } from "#/contracts";
-import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary";
+import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index";
 import { none, some } from "@shajara/kernel/utils";
 import { autonomy as kernelAutonomy } from "@shajara/kernel";
 

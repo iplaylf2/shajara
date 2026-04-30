@@ -2,7 +2,7 @@ import type { RiteCoroutine, RiteFuture } from "#/contracts";
 import { left, right } from "@shajara/kernel/utils";
 import { ensureExecutor } from "#/executor";
 import { future } from "#/primitives/index";
-import { toFailure } from "#/boundary";
+import { toFailure } from "#/boundary/index";
 
 export function* action<Return>(): RiteCoroutine<Action<Return>> {
   const executor = ensureExecutor();

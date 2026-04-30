@@ -6,7 +6,7 @@ This document summarizes the public export surfaces and call results.
 
 ### `@shajara/host`
 
-This package is intended for application code. Its root entry re-exports:
+The root entry is intended for application code and re-exports:
 
 - `contracts`
 - `errors`
@@ -28,6 +28,12 @@ The subpath `@shajara/host/primitives` exposes:
 - channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
 - control and lifecycle: `cede`, `defer`, `park`
+
+The subpath `@shajara/host/boundary` exposes host/kernel adapter helpers for extension libraries:
+
+- ritual adapters: `decodeRitual`, `decodeRituals`, `encodeRitual`, `RiteRoutineTuple`
+- failure mapping: `toFailure`, `toFailureUnknown`, `fromFailure`
+- result adapters: `unwrapEither`, `unwrapOption`
 
 ### `@shajara/kernel`
 
