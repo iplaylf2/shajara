@@ -1,7 +1,6 @@
 import type { ArrayValues } from "type-fest";
 import { allResultsExample } from "./all-results";
 import { boundedChannelExample } from "./bounded-channel";
-import { exitCleanupExample } from "./exit-cleanup";
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
@@ -25,7 +24,6 @@ export const explorerExamples = [
   allResultsExample,
   firstResultExample,
   boundedChannelExample,
-  exitCleanupExample,
   scopeManagedObjectsExample,
 ] as const;
 export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
@@ -58,7 +56,6 @@ const explorerExampleDefinitions: {
 } = {
   [allResultsExample.id]: allResultsExample,
   [boundedChannelExample.id]: boundedChannelExample,
-  [exitCleanupExample.id]: exitCleanupExample,
   [futureSettlementExample.id]: futureSettlementExample,
   [forkJoinExample.id]: forkJoinExample,
   [firstResultExample.id]: firstResultExample,
