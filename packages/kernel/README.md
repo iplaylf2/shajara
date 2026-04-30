@@ -20,7 +20,7 @@ It defines what the concurrency model is and how the execution environment advan
 
 - core contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`
 - failure model: `Failure` and its failure constructors
-- concurrency, communication, and lifecycle primitives
+- concurrency, communication, control, termination, and cleanup primitives
 - execution environment: `createExecutor`, `ExecutionScopeRef`, `LaunchHandle`, `Pacer`
 - supplemental entries: `@shajara/kernel/sigils`, `@shajara/kernel/utils`
 

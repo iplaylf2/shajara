@@ -24,7 +24,8 @@ At runtime, the interpreter handles the `sigil`, produces an `echo`, and feeds t
 The public sigil kinds include:
 
 - context: `bind`, `lookup`, `unbind`
-- lifecycle: `cancel`, `cede`, `defer`, `halt`
+- control: `cede`
+- termination and cleanup: `cancel`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
 - channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`

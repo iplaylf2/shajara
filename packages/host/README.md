@@ -19,7 +19,7 @@ It packages runtime entries, host operations, concurrency primitives, and bounda
 ## What this package provides
 
 - runtime entries: `run`, `createScope`
-- host operations: `action`, `sleep`, `until`
+- host operations: `action`, `feed`, `sleep`, `until`
 - concurrency, communication, and control primitives: `@shajara/host/primitives`
 - host/kernel adapters: `@shajara/host/boundary`
 

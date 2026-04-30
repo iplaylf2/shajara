@@ -48,8 +48,8 @@ Names available from the root entry include:
 
 - contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
 - failures: `Failure`, `canceledFailure`, `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, autonomy-related types
-- primitives: `Wisp` primitives for concurrency, futures, channels, context, lifecycle, and introspection
+- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `autonomy`, `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
+- primitives: `Wisp` primitives for concurrency, futures, channels, context, control, termination, cleanup, and introspection
 
 Public subpaths:
 
@@ -59,7 +59,8 @@ Public subpaths:
 The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
 
 - context: `bind`, `lookup`, `unbind`
-- lifecycle: `cancel`, `cede`, `defer`, `halt`
+- control: `cede`
+- termination and cleanup: `cancel`, `defer`, `halt`
 - concurrency: `branch`, `spawn`
 - future: `future`, `poll`, `settle`, `wait`
 - channel: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
@@ -136,6 +137,8 @@ Returns:
 - `trySend(value)`
 - `close(outcome)`
 
+The receiver is consumed by coroutine channel primitives; the callbacks send or close the channel from host code.
+
 ### `sleep`
 
 ```ts
@@ -188,7 +191,7 @@ A `Presence<T>` return value is `[true, value]` when a value is present and `[fa
 
 For channels, `T` is the value type and `O` is the close outcome type.
 
-### Context, control, and lifecycle
+### Context, introspection, and control
 
 | Primitive | Return value  |
 | --------- | ------------- |

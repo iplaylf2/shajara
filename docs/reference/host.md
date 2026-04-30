@@ -4,9 +4,10 @@
 
 ## Host Responsibilities
 
-The host layer adapts kernel execution into three host-facing surfaces:
+The host layer adapts kernel execution into four host-facing surfaces:
 
-- application-facing runtime entries: `run`, `createScope`, `action`, `feed`, `sleep`, `until`
+- application-facing runtime entries: `run`, `createScope`
+- host operations: `action`, `feed`, `sleep`, `until`
 - generator-style primitives exposed by `@shajara/host/primitives`
 - result and failure mapping between kernel values and JavaScript-facing values or exceptions
 
@@ -139,6 +140,16 @@ Closing semantics:
 - `resolve(value)`
 - `reject(error)`
 
+### `feed`
+
+`feed(capacity, overloadRewrite?)` exposes channel input capabilities to host code:
+
+- `receiver`
+- `trySend(value)`
+- `close(outcome)`
+
+The returned receiver stays inside coroutine code, while the callbacks send or close the channel from host code.
+
 ### `sleep`
 
 `sleep(milliseconds)` uses a host timer to resume a waiting computation.
@@ -147,7 +158,7 @@ Closing semantics:
 
 `until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
 
-Together, these three entries translate browser or JavaScript host effects into future convergence the `Executor` can observe.
+Together, these entries translate browser or JavaScript host effects into future or channel convergence the `Executor` can observe.
 
 ## Host Form of Autonomous Governance
 
