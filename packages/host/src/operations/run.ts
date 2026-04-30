@@ -10,7 +10,7 @@ export function run<Return>(
   const executor = ensureExecutor();
   const services: RuntimeLaunchServices = {
     cancelScope: (scope) => executor.cancel(scope),
-    launchInScope: (scope, worker) => executor.launch(scope, worker),
+    launchInScope: (scope, entry) => executor.launch(scope, entry),
   };
 
   return RuntimeLaunch.create(executor.scope, ritual, services, options).settled;

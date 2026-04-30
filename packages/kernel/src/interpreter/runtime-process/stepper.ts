@@ -75,9 +75,9 @@ export class Stepper<Relic> {
     }
   }
 
-  public constructor(worker: Ritual<Relic>) {
+  public constructor(entry: Ritual<Relic>) {
     this.#state = {
-      resonate: worker,
+      resonate: entry,
       status: "resonate",
     };
   }

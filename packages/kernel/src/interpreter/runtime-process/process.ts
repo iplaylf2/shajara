@@ -19,10 +19,10 @@ export class RuntimeProcess<Relic>
 {
   public static create<Relic>(
     scopeRef: ScopeRef<unknown>,
-    worker: Ritual<Relic>,
+    entry: Ritual<Relic>,
     descriptor: ProcessDescriptor,
   ): RuntimeProcessHandle<Relic> {
-    return new RuntimeProcess(scopeRef, worker, descriptor);
+    return new RuntimeProcess(scopeRef, entry, descriptor);
   }
 
   public selfHandle(): SelfHandle {
@@ -130,10 +130,10 @@ export class RuntimeProcess<Relic>
 
   private constructor(
     private readonly scopeReference: ScopeRef<unknown>,
-    worker: Ritual<Relic>,
+    entry: Ritual<Relic>,
     private readonly processDescriptor: ProcessDescriptor,
   ) {
-    this.#state = createRunningState(new Stepper(worker));
+    this.#state = createRunningState(new Stepper(entry));
   }
 
   #settleClosed(result: FutureResult<Relic>): ProcessClosure {

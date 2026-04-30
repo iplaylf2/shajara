@@ -38,14 +38,14 @@ export class ReaperDomain extends Domain<ReaperDomain> {
     }
   }
 
-  public *createWorkers(
+  public *createAdjudications(
     scopeState: (scope: ScopeRef<unknown>) => ScopeState,
-  ): Iterable<ReaperWorker> {
+  ): Iterable<ReaperAdjudication> {
     for (const scope of this.#leafScopes) {
       if (scopeState(scope).status === "closing") {
         yield {
+          adjudicate: () => this.reaper.adjudicate(scope),
           scope,
-          worker: () => this.reaper.adjudicate(scope),
         };
       }
     }
@@ -77,7 +77,7 @@ export class ReaperDomain extends Domain<ReaperDomain> {
   readonly #leafScopes = new Set<ScopeRef<unknown>>();
 }
 
-export interface ReaperWorker {
-  worker: Ritual<Option<Failure>>;
+export interface ReaperAdjudication {
+  adjudicate: Ritual<Option<Failure>>;
   scope: ScopeRef<unknown>;
 }

@@ -13,14 +13,14 @@ describe("/ primitives: all, race, spawn, enclose", () => {
       outcome: [] as const,
     },
   ])(
-    "all returns a settled future whose result preserves branch order",
-    async ({ given: [branches], outcome }) => {
-      const settled = run(function* awaitAllBranches() {
+    "all returns a settled future whose result preserves routine order",
+    async ({ given: [values], outcome }) => {
+      const settled = run(function* awaitAllRoutines() {
         const future = yield* all(
-          branches.map(
-            (branch) =>
-              function* returnBranchValue() {
-                return branch;
+          values.map(
+            (value) =>
+              function* returnRoutineValue() {
+                return value;
               },
           ),
         );
@@ -38,15 +38,15 @@ describe("/ primitives: all, race, spawn, enclose", () => {
       outcome: "fast",
     },
   ])(
-    "race returns a future settled by the first branch to complete",
+    "race returns a future settled by the first routine to complete",
     async ({ given: [fast, slow], outcome }) => {
       const settled = run(function* awaitRaceWinner() {
         const future = yield* race([
-          function* slowBranch() {
+          function* slowRoutine() {
             yield* cede();
             return slow;
           },
-          function* fastBranch() {
+          function* fastRoutine() {
             return fast;
           },
         ] as const);

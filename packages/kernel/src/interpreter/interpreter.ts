@@ -120,13 +120,13 @@ export class Interpreter {
 
   public spawn<Relic>(
     scope: ScopeRef<unknown>,
-    worker: Ritual<Relic>,
+    entry: Ritual<Relic>,
     descriptor: ProcessDescriptor,
     suppressor: Suppressor,
   ): ProcessRef<Relic> {
     return this.#reconcile(
       scope,
-      spawn(this.#resolve(scope), this.#provideProcess(worker), descriptor),
+      spawn(this.#resolve(scope), this.#provideProcess(entry), descriptor),
       suppressor,
     );
   }
@@ -452,7 +452,7 @@ export class Interpreter {
       case "spawn": {
         const spawnedProcess = this.#reconcile(
           scope,
-          spawn(scope, this.#provideProcess(sigil.worker), sigil.descriptor),
+          spawn(scope, this.#provideProcess(sigil.entry), sigil.descriptor),
           suppressor,
         );
 
@@ -511,9 +511,9 @@ export class Interpreter {
     return this.#scopeReconciler.reconcile(scope, sync, suppressor);
   }
 
-  #provideProcess<Relic>(worker: Ritual<Relic>): ProvideRuntimeProcess {
+  #provideProcess<Relic>(entry: Ritual<Relic>): ProvideRuntimeProcess {
     return (scopeRef, descriptor) => {
-      const process = RuntimeProcess.create(scopeRef, worker, descriptor);
+      const process = RuntimeProcess.create(scopeRef, entry, descriptor);
 
       this.#touch(process);
 

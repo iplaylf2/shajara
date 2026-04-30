@@ -11,7 +11,7 @@ describe("/ primitives: race", () => {
       outcome: "fast",
     },
   ])(
-    "returns a future key settled by the first branch to complete",
+    "returns a future key settled by the first entry to complete",
     async ({ given: [fast, slow], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(

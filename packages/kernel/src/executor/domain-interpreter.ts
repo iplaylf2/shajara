@@ -29,13 +29,15 @@ export class DomainInterpreter extends Interpreter {
         continue;
       }
 
-      for (const { scope, worker } of reaperDomain.createWorkers((id) => this.scopeState(id))) {
+      for (const { adjudicate, scope } of reaperDomain.createAdjudications((id) =>
+        this.scopeState(id),
+      )) {
         using faultSink = new FaultSink(
           "Out-of-band failures occurred while spawning a reaper adjudication process",
         );
         const process = this.spawn(
           reaperDomain.scopeRoot,
-          worker,
+          adjudicate,
           { completionMode: "detached" },
           faultSink,
         );

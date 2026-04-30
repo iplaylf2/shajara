@@ -25,13 +25,13 @@ function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
       wisp.liftF,
       wisp.chainFirstF(([, sender]) => bind(recoveryChannelKey, sender)),
       wisp.chainF(([receiver]) =>
-        spawn(recoveryWorker(recover, receiver), { completionMode: "detached" }),
+        spawn(recoveryLoop(recover, receiver), { completionMode: "detached" }),
       ),
       wisp.chain(entry),
     );
 }
 
-function recoveryWorker(
+function recoveryLoop(
   recover: RecoveryHandler,
   receiver: ChannelReceiver<RecoveryRequest, unknown>,
 ) {

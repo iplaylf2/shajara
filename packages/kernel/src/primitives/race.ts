@@ -5,34 +5,34 @@ import { either, readonlyArray } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
-export function race<BranchReturns extends NonEmptyTuple<unknown>>(
-  branches: RaceBranches<BranchReturns>,
-): Wisp<FutureKey<ArrayValues<BranchReturns>>> {
+export function race<EntryReturns extends NonEmptyTuple<unknown>>(
+  entries: RaceEntries<EntryReturns>,
+): Wisp<FutureKey<ArrayValues<EntryReturns>>> {
   return pipe(
-    future<ArrayValues<BranchReturns>>(),
+    future<ArrayValues<EntryReturns>>(),
     wisp.liftF,
-    wisp.chainFirstF(([, winnerSettle]) => branch(raceArena(branches, winnerSettle))),
+    wisp.chainFirstF(([, winnerSettle]) => branch(raceArena(entries, winnerSettle))),
     wisp.map(([winnerFuture]) => winnerFuture),
   );
 }
 
-type RaceBranches<BranchReturns extends NonEmptyTuple<unknown>> = {
-  readonly [Index in keyof BranchReturns]: Ritual<BranchReturns[Index]>;
+type RaceEntries<EntryReturns extends NonEmptyTuple<unknown>> = {
+  readonly [Index in keyof EntryReturns]: Ritual<EntryReturns[Index]>;
 };
 
-function raceArena(branches: readonly Ritual<unknown>[], winnerSettle: FutureSettleKey<unknown>) {
+function raceArena(entries: readonly Ritual<unknown>[], winnerSettle: FutureSettleKey<unknown>) {
   return () =>
     pipe(
-      branches,
-      readonlyArray.map((ritual) => pipe(spawn(runBranch(ritual, winnerSettle)), wisp.liftF)),
+      entries,
+      readonlyArray.map((entry) => pipe(spawn(raceEntrant(entry, winnerSettle)), wisp.liftF)),
       wisp.sequence,
     );
 }
 
-function runBranch(ritual: Ritual<unknown>, winnerSettle: FutureSettleKey<unknown>) {
+function raceEntrant(entry: Ritual<unknown>, winnerSettle: FutureSettleKey<unknown>) {
   return () =>
     pipe(
-      ritual(),
+      entry(),
       wisp.chainF((value) => settle(winnerSettle, either.right(value))),
       wisp.chainF(cancel),
     );
