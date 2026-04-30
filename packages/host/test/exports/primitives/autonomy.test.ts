@@ -1,6 +1,7 @@
-import { ScopeError, run, until } from "#/index";
-import { autonomy, cancel, defer, park, spawn, wait } from "#/primitives";
+import { CanceledError, ScopeError, run, until } from "#/index";
+import { autonomy, defer, park, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
+import type { RiteCoroutine } from "#/index";
 import { findFailureByKind } from "#test/harness";
 
 describe("/ primitives: autonomy", () => {
@@ -33,10 +34,7 @@ describe("/ primitives: autonomy", () => {
     {
       given: [] as const,
       outcome: {
-        canceled: {
-          kind: "canceled",
-        },
-        kind: "scope",
+        kind: "canceled",
         reaped: true,
       } as const,
     },
@@ -52,7 +50,7 @@ describe("/ primitives: autonomy", () => {
             yield* defer(function* waitForCleanupRelease() {
               yield* until(() => release.promise);
             });
-            yield* spawn(cancel);
+            yield* spawn(throwCancellation);
             yield* park();
           },
           {
@@ -69,9 +67,8 @@ describe("/ primitives: autonomy", () => {
       await expect(reaped.promise).resolves.toEqual(outcome.reaped ? expect.anything() : null);
       const actual = await settled.catch((error: unknown) => error);
 
-      expect(actual).toBeInstanceOf(ScopeError);
+      expect(actual).toBeInstanceOf(CanceledError);
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, "canceled")).toMatchObject(outcome.canceled);
     },
   );
 
@@ -135,7 +132,7 @@ describe("/ primitives: autonomy", () => {
             yield* defer(function* keepAutonomousCleanupPending() {
               yield* park();
             });
-            yield* spawn(cancel);
+            yield* spawn(throwCancellation);
             yield* park();
           },
           {
@@ -162,4 +159,8 @@ describe("/ primitives: autonomy", () => {
 
 function* keepWaiting() {
   // Keep waiting until the autonomous entry settles.
+}
+
+function* throwCancellation(): RiteCoroutine<never> {
+  throw new CanceledError();
 }

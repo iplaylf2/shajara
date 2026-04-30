@@ -1,6 +1,5 @@
 export * from "./all";
 export * from "./autonomy";
-export * from "./cancel";
 export * from "./channel";
 export * from "./close";
 export * from "./poll";
@@ -16,7 +15,6 @@ export * from "./cede";
 export * from "./defer";
 export * from "./spawn";
 export * from "./future";
-export * from "./halt";
 export * from "./lookup";
 export * from "./park";
 export * from "./race";

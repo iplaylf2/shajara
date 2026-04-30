@@ -66,12 +66,15 @@ The host layer maps kernel failures into JavaScript error objects.
 
 ### Writing into kernel
 
-The following entries rewrite host-side errors into kernel failures:
+The following entries write host-side failures into the kernel:
 
-- `halt(error)`
+- throwing from a host ritual, recovery handler, or host integration callback
 - `settleError(futureSettle, error)`
 - `action.reject(error)`
 - `until(...).catch(...)`
+
+At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive.
+Other thrown values become the kernel `halt` primitive after failure mapping.
 
 ### Returning from kernel
 

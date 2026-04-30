@@ -27,7 +27,7 @@ The subpath `@shajara/host/primitives` exposes:
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
 - channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
-- control and lifecycle: `cancel`, `cede`, `defer`, `halt`, `park`
+- control and lifecycle: `cede`, `defer`, `park`
 
 ### `@shajara/kernel`
 
@@ -190,11 +190,12 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `lookup`  | `Presence<T>` |
 | `unbind`  | `void`        |
 | `self`    | `SelfHandle`  |
-| `halt`    | `never`       |
-| `cancel`  | `never`       |
 | `cede`    | `void`        |
 | `defer`   | `void`        |
 | `park`    | `never`       |
+
+Host rituals use JavaScript exceptions for current-process termination:
+throw a `CanceledError` to cancel, or throw any other value to fail.
 
 ## Kernel Primitive Result Model
 
