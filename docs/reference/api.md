@@ -9,6 +9,7 @@ This document summarizes the public export surfaces and call results.
 The root entry is intended for application code and re-exports:
 
 - `contracts`
+- `entries`
 - `errors`
 - `operations`
 
@@ -41,6 +42,7 @@ This package is intended for lower-level integrations. Its root entry re-exports
 
 - `contracts`
 - `executor`
+- `executor/primitives`
 - `failures`
 - `primitives`
 
@@ -48,8 +50,9 @@ Names available from the root entry include:
 
 - contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
 - failures: `Failure`, `canceledFailure`, `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `autonomy`, `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
-- primitives: `Wisp` primitives for concurrency, futures, channels, context, control, termination, cleanup, and introspection
+- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
+- executor primitives: `autonomy`
+- primitives: `Wisp` primitives for concurrency, futures, channels, context, control, termination, cleanup, parking, and introspection
 
 Public subpaths:
 
@@ -204,18 +207,18 @@ For channels, `T` is the value type and `O` is the close outcome type.
 Host rituals use JavaScript exceptions for current-process termination:
 throw a `CanceledError` to cancel, or throw any other value to fail.
 
-## Kernel Primitive Result Model
+## Kernel Result Model
 
-Kernel primitives keep failure and terminal states in explicit return values:
+Kernel APIs preserve runtime state in returned values. Callers that consume kernel directly handle these values in band instead of relying on host exceptions or `Presence<T>` tuples.
 
-- kernel `wait(future)` returns `Either<FailureShape, T>`
-- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
-- kernel `enclose(ritual)` returns `Either<FailureShape, T>`
-- kernel `channel(capacity, overloadRewrite?)` returns `[ChannelReceiver<T, O>, ChannelSender<T, O>]`
-- kernel `send(sender, value)` returns `{ kind: "sent" }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
-- kernel `receive(receiver)` returns `{ kind: "value"; value: T }`, `{ kind: "closed"; outcome: O }`, or `{ kind: "revoked" }`
-- kernel `trySend(sender, value)` returns `Option<{ kind: "sent" } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
-- kernel `tryReceive(receiver)` returns `Option<{ kind: "value"; value: T } | { kind: "closed"; outcome: O } | { kind: "revoked" }>`
-- kernel `close(endpoint, outcome)` returns `void`
+The common return forms are:
 
-When consuming kernel directly, callers handle those values in band.
+- `FutureKey<T>` for operations that start concurrent or scoped work and return an observation handle.
+- `[FutureKey<T>, FutureSettleKey<T>]` for operations that create a future and expose separate observation and settlement authority.
+- `Either<FailureShape, T>` for waits or contained boundaries whose success and failure are both part of the result domain.
+- `Option<T>` for non-blocking or optional observations, including context lookup and polling.
+- channel result unions for send and receive outcomes; closed and revoked channel states remain explicit values.
+- `void` for operations that mutate runtime state without producing an observation value.
+- `never` for termination or indefinite parking paths such as cancellation, halt, and park.
+
+Host primitives adapt these forms into JavaScript values, `Presence<T>`, and exceptions.

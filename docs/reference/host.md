@@ -4,7 +4,7 @@
 
 ## Host Responsibilities
 
-The host layer adapts kernel execution into four host-facing surfaces:
+The host layer adapts kernel execution through four responsibilities:
 
 - application-facing host entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
@@ -68,12 +68,12 @@ The host layer maps kernel failures into JavaScript error objects.
 
 ### Writing into kernel
 
-The following entries write host-side failures into the kernel:
+The following paths write host-side failures into the kernel:
 
 - throwing from a host ritual, recovery handler, or host integration callback
 - `settleError(futureSettle, error)`
 - `action.reject(error)`
-- `until(...).catch(...)`
+- a promise rejection observed by `until(thunk)`
 
 At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive.
 Other thrown values become the kernel `halt` primitive after failure mapping.
@@ -130,7 +130,7 @@ Closing semantics:
 - `closed` settles when that scope has fully closed
 - if the closure result is cancellation or failure, `cancel()` and `closed` reflect the same result
 
-## Host Integration
+## Host Operations
 
 ### `action`
 
@@ -158,7 +158,7 @@ The returned receiver stays inside coroutine code, while the callbacks send or c
 
 `until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
 
-Together, these entries translate browser or JavaScript host effects into future or channel convergence the `Executor` can observe.
+Together, these operations translate browser or JavaScript host effects into future or channel convergence the `Executor` can observe.
 
 ## Host Form of Autonomous Governance
 
