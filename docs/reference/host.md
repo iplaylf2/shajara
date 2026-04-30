@@ -25,6 +25,7 @@ type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 ```
 
 In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
+When a started coroutine is unwound by the runtime, generator control flow continues through `try...finally`. Work that needs its own scoped lifetime is modeled separately with `resource(...)`, whose provider remains attached to the runtime scope until release.
 
 ## Result Model
 

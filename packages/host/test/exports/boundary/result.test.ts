@@ -3,7 +3,7 @@ import { fromFailure, toFailure, unwrapEither, unwrapOption } from "#/boundary";
 import { none, right, some } from "@shajara/kernel/utils";
 import { externalFailure } from "@shajara/kernel";
 
-describe("/ boundary: failure and result adapters", () => {
+describe("/ boundary: fromFailure, toFailure, unwrapEither, unwrapOption", () => {
   test.for([
     {
       given: [new Error("failed")] as const,

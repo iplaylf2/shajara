@@ -1,5 +1,5 @@
 import { CanceledError, ScopeError, run, until } from "#/index";
-import { autonomy, defer, park, spawn, wait } from "#/primitives";
+import { autonomy, park, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
 import type { RiteCoroutine } from "#/index";
 import { findFailureByKind } from "#test/harness";
@@ -47,11 +47,12 @@ describe("/ primitives: autonomy", () => {
       const settled = run(function* awaitReapedAutonomy() {
         const future = yield* autonomy(
           function* runAutonomousEntry() {
-            yield* defer(function* waitForCleanupRelease() {
+            try {
+              yield* spawn(throwCancellation);
+              yield* park();
+            } finally {
               yield* until(() => release.promise);
-            });
-            yield* spawn(throwCancellation);
-            yield* park();
+            }
           },
           {
             reaper: function* reaper(scope) {
@@ -129,11 +130,12 @@ describe("/ primitives: autonomy", () => {
       const settled = run(function* awaitInterruptedAutonomy() {
         const future = yield* autonomy(
           function* runAutonomousEntry() {
-            yield* defer(function* keepAutonomousCleanupPending() {
+            try {
+              yield* spawn(throwCancellation);
               yield* park();
-            });
-            yield* spawn(throwCancellation);
-            yield* park();
+            } finally {
+              yield* park();
+            }
           },
           {
             reaper: function* reaper() {

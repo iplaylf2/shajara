@@ -95,4 +95,44 @@ describe("/ primitives: all, race, spawn, enclose", () => {
       await expect(settled).resolves.toBe(outcome);
     },
   );
+
+  test.for([
+    {
+      given: ["body", "cleanup"] as const,
+      outcome: {
+        cleanup: ["body", "cleanup"],
+        result: ["body"],
+      },
+    },
+    {
+      given: ["body", "cleanup:1", "cleanup:2"] as const,
+      outcome: {
+        cleanup: ["body", "cleanup:1", "cleanup:2"],
+        result: ["body"],
+      },
+    },
+  ])(
+    "enclose waits for generator finally cleanup after the child produces its result",
+    async ({ given, outcome }) => {
+      const [bodyEntry, firstCleanup, secondCleanup] = given;
+      const events: string[] = [];
+      const settled = run(function* awaitFinallyCleanup() {
+        return yield* enclose(function* runWithFinallyCleanup() {
+          try {
+            events.push(bodyEntry);
+            return [...events] as const;
+          } finally {
+            events.push(firstCleanup);
+
+            if (secondCleanup !== undefined) {
+              events.push(secondCleanup);
+            }
+          }
+        });
+      });
+
+      await expect(settled).resolves.toEqual(outcome.result);
+      expect(events).toEqual(outcome.cleanup);
+    },
+  );
 });
