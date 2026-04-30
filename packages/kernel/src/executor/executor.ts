@@ -1,4 +1,3 @@
-// oxlint-disable max-dependencies
 import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
 import type { Disposer, Option } from "#/utils/index";
 import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";

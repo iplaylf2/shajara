@@ -1,4 +1,3 @@
-// oxlint-disable sort-imports
 import type {
   AutonomyOptions as KernelAutonomyOptions,
   Reaper as KernelReaper,
@@ -6,8 +5,8 @@ import type {
 } from "@shajara/kernel";
 import type { RiteCoroutine, RiteFuture, RiteRoutine, ScopeRef } from "#/contracts";
 import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary";
-import { autonomy as kernelAutonomy } from "@shajara/kernel";
 import { none, some } from "@shajara/kernel/utils";
+import { autonomy as kernelAutonomy } from "@shajara/kernel";
 
 export function autonomy<Return>(
   entry: RiteRoutine<Return>,
