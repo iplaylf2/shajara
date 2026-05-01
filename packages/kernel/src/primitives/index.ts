@@ -1,6 +1,7 @@
 export * from "./all";
 export * from "./wait";
 export * from "./bind";
+export * from "./branch";
 export * from "./cancel";
 export * from "./cede";
 export * from "./channel";

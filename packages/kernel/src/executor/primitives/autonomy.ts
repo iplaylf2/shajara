@@ -1,6 +1,6 @@
 import type { FutureKey, Ritual, Wisp } from "#/contracts";
 import type { AutonomyOptions } from "#/executor/autonomy";
-import { branch } from "#/sigils/index";
+import { branch } from "#/primitives/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 import { withAutonomy } from "#/executor/autonomy";
@@ -11,7 +11,6 @@ export function autonomy<Relic>(
 ): Wisp<FutureKey<Relic>> {
   return pipe(
     branch(entry, withAutonomy(options)),
-    wisp.liftF,
     wisp.map(({ scope }) => scope.exitFuture),
   );
 }

@@ -1,4 +1,5 @@
-import type { ChannelSender, SendResult } from "#/sigils/index";
+import type { ChannelSender } from "./channel";
+import type { SendResult } from "#/sigils/index";
 import type { Wisp } from "#/contracts";
 import { send as sendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";

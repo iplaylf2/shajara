@@ -1,19 +1,16 @@
 import type { FutureKey, Ritual, Wisp } from "#/contracts";
-import { flow, pipe } from "fp-ts/function";
-import { awaitProcessInBand } from "#/primitives-kit";
-import { narrowArrayAs } from "#/utils/index";
+import { narrowArrayAs, narrowAs } from "#/utils/index";
+import type { either } from "fp-ts";
+import { pipe } from "fp-ts/function";
 import { readonlyArray } from "fp-ts";
-import { spawn } from "#/sigils/index";
+import { spawn } from "./spawn";
+import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
 export function all<EntryReturns extends readonly unknown[]>(
   entries: AllEntries<EntryReturns>,
 ): Wisp<FutureKey<EntryReturns>> {
-  return pipe(
-    spawn(allAggregator(entries)),
-    wisp.liftF,
-    wisp.map((process) => process.exitFuture),
-  );
+  return spawn(allAggregator(entries));
 }
 
 type AllEntries<EntryReturns extends readonly unknown[]> = {
@@ -24,10 +21,18 @@ function allAggregator<EntryReturns extends readonly unknown[]>(entries: AllEntr
   return () =>
     pipe(
       entries,
-      readonlyArray.map(flow(spawn, wisp.liftF)),
+      readonlyArray.map(spawn),
       wisp.sequence,
-      wisp.map(readonlyArray.map(awaitProcessInBand)),
+      wisp.map(readonlyArray.map(awaitFutureInBand)),
       wisp.chain(wisp.sequence),
       wisp.map(narrowArrayAs<EntryReturns>()),
     );
+}
+
+function awaitFutureInBand<Relic>(future: FutureKey<Relic>): Wisp<Relic> {
+  return pipe(
+    wait(future),
+    wisp.map(narrowAs<either.Right<Relic>>()),
+    wisp.map(({ right }) => right),
+  );
 }

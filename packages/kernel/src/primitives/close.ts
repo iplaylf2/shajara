@@ -1,4 +1,4 @@
-import type { ChannelEndpoint } from "#/sigils/index";
+import type { ChannelEndpoint } from "./channel";
 import type { Wisp } from "#/contracts";
 import { close as closeSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";

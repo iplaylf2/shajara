@@ -1,17 +1,22 @@
+// oxlint-disable import/max-dependencies
 import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
-import { branch, future, halt, lookup, send, spawn, wait } from "#/sigils/index";
-import { flow, pipe } from "fp-ts/function";
 import { wisp, wispEither } from "#/internal/fp";
 import type { ScopeFailure } from "#/failures";
+import { branch } from "./branch";
 import { either } from "fp-ts";
+import { future } from "./future";
+import { halt } from "./halt";
+import { lookup } from "./lookup";
+import { pipe } from "fp-ts/function";
 import { recoveryChannelKey } from "#/primitives-kit";
+import { send } from "./send";
+import { spawn } from "./spawn";
+import { wait } from "./wait";
 
 export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
   return pipe(
     branch(entry, { failureMode: "contain" }),
-    wisp.liftF,
-    wisp.chainF(({ scope }) => spawn(resumeAttempt(scope.exitFuture))),
-    wisp.map(({ exitFuture }) => exitFuture),
+    wisp.chain(({ scope }) => spawn(resumeAttempt(scope.exitFuture))),
   );
 }
 
@@ -19,24 +24,23 @@ function resumeAttempt<Relic>(entryFuture: FutureKey<Relic>) {
   return () =>
     pipe(
       wait(entryFuture),
-      wisp.liftF,
       wispEither.orElse((failure) =>
         pipe(
           lookup(recoveryChannelKey),
-          wisp.liftF,
           wisp.map(either.fromOption(() => failure)),
           wispEither.map((recoveryChannel) => ({ recoveryChannel })),
-          wispEither.bindF("resolver", () => future<Relic>()),
-          wispEither.chainFirstF(({ resolver: [, recoverySettle], recoveryChannel }) =>
-            send(recoveryChannel, {
-              failure: failure as ScopeFailure,
-              recoverySettle,
-            }),
+          wispEither.bind("resolver", () => wispEither.rightWisp(future<Relic>())),
+          wispEither.chainFirst(({ resolver: [, recoverySettle], recoveryChannel }) =>
+            wispEither.rightWisp(
+              send(recoveryChannel, {
+                failure: failure as ScopeFailure,
+                recoverySettle,
+              }),
+            ),
           ),
-          wispEither.chainF(({ resolver: [recoveryFuture] }) => wait(recoveryFuture)),
-          wisp.map(either.flatten),
+          wispEither.chain(({ resolver: [recoveryFuture] }) => wait(recoveryFuture)),
         ),
       ),
-      wispEither.getOrElse<FailureShape, Relic>(flow(halt, wisp.liftF)),
+      wispEither.getOrElse<FailureShape, Relic>(halt),
     );
 }

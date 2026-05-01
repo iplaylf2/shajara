@@ -1,15 +1,16 @@
 import type { FutureKey, FutureSettleKey, Wisp } from "#/contracts";
-import { future, settle, spawn } from "#/sigils/index";
+import { future } from "./future";
 import { park } from "./park";
 import { pipe } from "fp-ts/function";
 import { right } from "#/utils/index";
+import { settle } from "./settle";
+import { spawn } from "./spawn";
 import { wisp } from "#/internal/fp";
 
 export function resource<Value>(body: ResourceBody<Value>): Wisp<FutureKey<Value>> {
   return pipe(
     future<Value>(),
-    wisp.liftF,
-    wisp.chainFirstF(([, resourceSettle]) => spawn(resourceProvider(body, resourceSettle))),
+    wisp.chainFirst(([, resourceSettle]) => spawn(resourceProvider(body, resourceSettle))),
     wisp.map(([resourceFuture]) => resourceFuture),
   );
 }
@@ -21,6 +22,5 @@ function resourceProvider<Value>(
   body: ResourceBody<Value>,
   resourceSettle: FutureSettleKey<Value>,
 ) {
-  return () =>
-    body((value) => pipe(settle(resourceSettle, right(value)), wisp.liftF, wisp.chain(park)));
+  return () => body((value) => pipe(settle(resourceSettle, right(value)), wisp.chain(park)));
 }

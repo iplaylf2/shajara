@@ -1,17 +1,23 @@
 import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
-import { bind, branch, channel, settle, spawn } from "#/sigils/index";
-import { receiveInBand, recoveryChannelKey } from "#/primitives-kit";
-import type { ChannelReceiver } from "#/sigils/index";
+import type { ChannelReceiver } from "./channel";
 import type { Either } from "#/utils/index";
+import type { ReceiveResult } from "./receive";
 import type { RecoveryRequest } from "#/primitives-kit";
 import type { ScopeFailure } from "#/failures";
+import { bind } from "./bind";
+import { branch } from "./branch";
+import { channel } from "./channel";
+import { narrowAs } from "#/utils/index";
 import { pipe } from "fp-ts/function";
+import { receive } from "./receive";
+import { recoveryChannelKey } from "#/primitives-kit";
+import { settle } from "./settle";
+import { spawn } from "./spawn";
 import { wisp } from "#/internal/fp";
 
 export function guard(entry: Ritual<void>, recover: RecoveryHandler): Wisp<FutureKey<void>> {
   return pipe(
     branch(withRecoveryPoint(entry, recover)),
-    wisp.liftF,
     wisp.map(({ scope }) => scope.exitFuture),
   );
 }
@@ -22,9 +28,8 @@ function withRecoveryPoint(entry: Ritual<void>, recover: RecoveryHandler) {
   return () =>
     pipe(
       channel<RecoveryRequest, unknown>(Infinity),
-      wisp.liftF,
-      wisp.chainFirstF(([, sender]) => bind(recoveryChannelKey, sender)),
-      wisp.chainF(([receiver]) =>
+      wisp.chainFirst(([, sender]) => bind(recoveryChannelKey, sender)),
+      wisp.chain(([receiver]) =>
         spawn(recoveryLoop(recover, receiver), { completionMode: "detached" }),
       ),
       wisp.chain(entry),
@@ -38,16 +43,24 @@ function recoveryLoop(
   return function loop(): Wisp<never> {
     return pipe(
       receiveInBand(receiver),
-      wisp.chainF((value) => spawn(recoveryAttempt(value, recover))),
+      wisp.chain((value) => spawn(recoveryAttempt(value, recover))),
       wisp.chain(loop),
     );
   };
+}
+
+function receiveInBand<Value, Outcome>(receiver: ChannelReceiver<Value, Outcome>): Wisp<Value> {
+  return pipe(
+    receive(receiver),
+    wisp.map(narrowAs<Extract<ReceiveResult<Value, Outcome>, { kind: "value" }>>()),
+    wisp.map(({ value }) => value),
+  );
 }
 
 function recoveryAttempt(request: RecoveryRequest, recover: RecoveryHandler) {
   return () =>
     pipe(
       recover(request.failure),
-      wisp.chainF((recovery) => settle(request.recoverySettle, recovery)),
+      wisp.chain((recovery) => settle(request.recoverySettle, recovery)),
     );
 }
