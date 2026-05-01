@@ -189,10 +189,7 @@ describe("/ entries: createScope", () => {
       given: [new Error("finally-failed-during-close")] as const,
       outcome: {
         cause: {
-          failure: {
-            kind: "external",
-          },
-          kind: "process",
+          kind: "external",
         },
         kind: "scope",
       } as const,
@@ -223,10 +220,7 @@ describe("/ entries: createScope", () => {
         ...outcome,
         cause: {
           ...outcome.cause,
-          failure: {
-            ...outcome.cause.failure,
-            raw: cause,
-          },
+          raw: cause,
         },
       });
     },

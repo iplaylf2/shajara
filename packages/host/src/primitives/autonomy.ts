@@ -3,18 +3,20 @@ import type {
   Reaper as KernelReaper,
   Scheduler,
 } from "@shajara/kernel";
-import type { RiteCoroutine, RiteFuture, RiteRoutine, ScopeRef } from "#/contracts";
+import type { RiteCoroutine, RiteRoutine, ScopeRef } from "#/contracts";
 import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index";
 import { none, some } from "@shajara/kernel/utils";
 import { autonomy as kernelAutonomy } from "@shajara/kernel";
+import { waitChild } from "#/primitives-kit";
 
-export function autonomy<Return>(
+export function* autonomy<Return>(
   entry: RiteRoutine<Return>,
   options: AutonomyOptions,
-): RiteCoroutine<RiteFuture<Return>> {
-  return encodeRitual(() =>
+): RiteCoroutine<Return> {
+  const child = yield* encodeRitual(() =>
     kernelAutonomy(decodeRitual(entry), toKernelAutonomyOptions(options)),
   )();
+  return yield* waitChild(child);
 }
 
 export type AutonomyOptions = SchedulerOption | ReaperOption | (SchedulerOption & ReaperOption);

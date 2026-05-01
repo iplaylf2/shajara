@@ -1,5 +1,5 @@
 import { ChannelError, run } from "#/index";
-import { channel, close, enclose, receive, send, tryReceive, trySend } from "#/primitives";
+import { branch, channel, close, receive, send, tryReceive, trySend } from "#/primitives";
 import { describe, expect, test } from "vitest";
 
 describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () => {
@@ -165,7 +165,7 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
     },
   ])("throws ChannelError when receiving from a revoked channel", async ({ outcome }) => {
     const settled = run(function* catchRevokedReceive() {
-      const receiver = yield* enclose(function* createOwnedReceiver() {
+      const receiver = yield* branch(function* createOwnedReceiver() {
         const [ownedReceiver] = yield* channel<string, string>(0);
         return ownedReceiver;
       });

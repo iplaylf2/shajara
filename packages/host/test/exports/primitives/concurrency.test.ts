@@ -1,8 +1,8 @@
-import { all, cede, enclose, race, spawn, wait } from "#/primitives";
+import { all, branch, cede, race, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
 import { run } from "#/index";
 
-describe("/ primitives: all, race, spawn, enclose", () => {
+describe("/ primitives: all, branch, race, spawn", () => {
   test.for([
     {
       given: [["alpha", "beta"] as const] as const,
@@ -37,24 +37,59 @@ describe("/ primitives: all, race, spawn, enclose", () => {
       given: ["fast", "slow"] as const,
       outcome: "fast",
     },
-  ])(
-    "race returns a future settled by the first routine to complete",
-    async ({ given: [fast, slow], outcome }) => {
-      const settled = run(function* awaitRaceWinner() {
-        const winningResult = yield* race([
-          function* slowRoutine() {
-            yield* cede();
-            return slow;
-          },
-          function* fastRoutine() {
-            return fast;
-          },
-        ] as const);
+  ])("race returns the first routine result", async ({ given: [fast, slow], outcome }) => {
+    const settled = run(function* awaitRaceWinner() {
+      return yield* race([
+        function* slowRoutine() {
+          yield* cede();
+          return slow;
+        },
+        function* fastRoutine() {
+          return fast;
+        },
+      ] as const);
+    });
 
-        return yield* wait(winningResult);
+    await expect(settled).resolves.toBe(outcome);
+  });
+
+  test.for([
+    {
+      given: ["branched"] as const,
+      outcome: "branched",
+    },
+  ])("branch returns the child value", async ({ given: [value], outcome }) => {
+    const settled = run(function* awaitBranch() {
+      return yield* branch(function* returnBranchValue() {
+        return value;
+      });
+    });
+
+    await expect(settled).resolves.toBe(outcome);
+  });
+
+  test.for([
+    {
+      given: ["body", "cleanup"] as const,
+      outcome: ["body", "cleanup"],
+    },
+  ])(
+    "branch waits for child scope cleanup before returning",
+    async ({ given: [body, cleanup], outcome }) => {
+      const events: string[] = [];
+      const settled = run(function* awaitBranchCleanup() {
+        return yield* branch(function* returnBeforeFinally() {
+          try {
+            events.push(body);
+            return body;
+          } finally {
+            events.push(cleanup);
+          }
+        });
       });
 
-      await expect(settled).resolves.toBe(outcome);
+      await expect(settled).resolves.toBe(body);
+      expect(events).toEqual(outcome);
     },
   );
 
@@ -75,64 +110,6 @@ describe("/ primitives: all, race, spawn, enclose", () => {
       });
 
       await expect(settled).resolves.toBe(outcome);
-    },
-  );
-
-  test.for([
-    {
-      given: ["enclosed"] as const,
-      outcome: "enclosed",
-    },
-  ])(
-    "enclose returns the child result when the enclosed scope completes",
-    async ({ given: [value], outcome }) => {
-      const settled = run(function* awaitEnclosedResult() {
-        return yield* enclose(function* returnEnclosedValue() {
-          return value;
-        });
-      });
-
-      await expect(settled).resolves.toBe(outcome);
-    },
-  );
-
-  test.for([
-    {
-      given: ["body", "cleanup"] as const,
-      outcome: {
-        cleanup: ["body", "cleanup"],
-        result: ["body"],
-      },
-    },
-    {
-      given: ["body", "cleanup:1", "cleanup:2"] as const,
-      outcome: {
-        cleanup: ["body", "cleanup:1", "cleanup:2"],
-        result: ["body"],
-      },
-    },
-  ])(
-    "enclose waits for generator finally cleanup after the child produces its result",
-    async ({ given, outcome }) => {
-      const [bodyEntry, firstCleanup, secondCleanup] = given;
-      const events: string[] = [];
-      const settled = run(function* awaitFinallyCleanup() {
-        return yield* enclose(function* runWithFinallyCleanup() {
-          try {
-            events.push(bodyEntry);
-            return [...events] as const;
-          } finally {
-            events.push(firstCleanup);
-
-            if (secondCleanup !== undefined) {
-              events.push(secondCleanup);
-            }
-          }
-        });
-      });
-
-      await expect(settled).resolves.toEqual(outcome.result);
-      expect(events).toEqual(outcome.cleanup);
     },
   );
 });

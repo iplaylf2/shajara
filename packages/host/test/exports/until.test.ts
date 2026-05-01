@@ -18,10 +18,7 @@ describe("/ operations: until", () => {
       given: [new Error("until-failed")] as const,
       outcome: {
         cause: {
-          failure: {
-            kind: "external",
-          },
-          kind: "process",
+          kind: "external",
         },
         kind: "scope",
       } as const,
@@ -34,10 +31,7 @@ describe("/ operations: until", () => {
       ...outcome,
       cause: {
         ...outcome.cause,
-        failure: {
-          ...outcome.cause.failure,
-          raw: cause,
-        },
+        raw: cause,
       },
     });
   });
@@ -56,13 +50,10 @@ describe("/ operations: until", () => {
     await expect(settled).rejects.toBeInstanceOf(ScopeError);
     await expect(settled).rejects.toMatchObject({
       cause: {
-        failure: {
-          kind: "external",
-          message: outcome.message,
-          name: "ExternalError",
-          raw: outcome.raw,
-        },
-        kind: "process",
+        kind: "external",
+        message: outcome.message,
+        name: "ExternalError",
+        raw: outcome.raw,
       },
       kind: "scope",
     });
