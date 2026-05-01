@@ -1,7 +1,9 @@
 import type { FutureKey } from "./future-key";
+import type { ProcessDescriptor } from "./descriptor";
 import type { REF_TOKEN } from "./token";
 
-export interface ProcessRef<Value> {
+export interface ProcessRef<Value, Descriptor extends ProcessDescriptor = ProcessDescriptor> {
   readonly [REF_TOKEN]: "process";
+  readonly descriptor: Descriptor;
   readonly exitFuture: FutureKey<Value>;
 }

@@ -20,7 +20,7 @@ export function race<EntryReturns extends NonEmptyTuple<unknown>>(
     wisp.bind("winner", () => future<ArrayValues<EntryReturns>>()),
     wisp.bind("scope", ({ winner: [, winnerSettle] }) =>
       pipe(
-        branch(raceArena(entries, winnerSettle), { failureMode: "contain" }),
+        branch(raceArena(entries, winnerSettle)),
         wisp.map(({ scope }) => scope),
       ),
     ),

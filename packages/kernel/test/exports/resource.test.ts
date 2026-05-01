@@ -1,4 +1,4 @@
-import { cancel, canceledFailure, defer, enclose, resource, spawn, wait } from "#/index";
+import { branch, cancel, canceledFailure, defer, resource, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
 import { left, noop, right } from "#/utils";
@@ -43,7 +43,7 @@ describe("/ primitives: resource", () => {
 
       await using ritual = interpretRitual(() =>
         pipe(
-          enclose(() =>
+          branch(() =>
             pipe(
               resource<string>((provide) =>
                 pipe(

@@ -1,12 +1,11 @@
 import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy";
-import type { ProcessRef, Ritual, ScopeRef, Suppressor } from "#/contracts";
+import type { ProcessRef, Ritual, ScopeDescriptor, ScopeRef, Suppressor } from "#/contracts";
 import { ReaperDomain, SchedulerDomain } from "./domains";
 import { option, readonlyArray } from "fp-ts";
 import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
 import { Interpreter } from "#/interpreter/index";
 import type { ProcessorTaskStatus } from "./processor";
-import type { ScopeDescriptor } from "#/sigils/index";
 import type { ScopeZone } from "#/interpreter/index";
 import { autonomyOf } from "./autonomy";
 import { interruptedFailure } from "#/failures";
@@ -82,13 +81,13 @@ export class DomainInterpreter extends Interpreter {
   }
 
   // oxlint-disable-next-line max-params
-  protected override scopeBranch(
+  protected override scopeBranch<Descriptor extends ScopeDescriptor>(
     scope: ScopeRef<unknown>,
     entry: Ritual<unknown>,
-    descriptor: ScopeDescriptor,
+    descriptor: Descriptor,
     zone: ScopeZone,
     suppressor: Suppressor,
-  ): ScopeRef<unknown> {
+  ): ScopeRef<unknown, Descriptor> {
     const domainZone = resolveDomainZone(zone);
     const autonomy = autonomyOf(descriptor);
     const preparedZone = autonomy

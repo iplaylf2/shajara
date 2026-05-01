@@ -1,12 +1,11 @@
-import type { FutureKey, Ritual, Wisp } from "#/contracts";
-import type { ProcessDescriptor } from "#/sigils/index";
+import type { FutureKey, ProcessDescriptor, Ritual, Wisp } from "#/contracts";
 import { pipe } from "fp-ts/function";
 import { spawn as spawnSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
-export function spawn<Relic>(
+export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescriptor>(
   entry: Ritual<Relic>,
-  descriptor?: ProcessDescriptor,
+  descriptor?: Descriptor,
 ): Wisp<FutureKey<Relic>> {
   return pipe(
     spawnSigil(entry, descriptor),

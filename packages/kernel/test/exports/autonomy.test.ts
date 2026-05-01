@@ -13,6 +13,7 @@ import type {
 import {
   all,
   autonomy,
+  branch,
   cancel,
   cede,
   defer,
@@ -32,7 +33,8 @@ import {
   waitForSettled,
 } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { right, some } from "#/utils";
+import { left, right, some } from "#/utils";
+import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -131,10 +133,81 @@ describe("/ primitives: autonomy", () => {
 
   test.for([
     {
+      given: ["autonomy-sibling", "ordinary-sibling"] as const,
+      outcome: {
+        assignedCount: 1,
+        settled: {
+          kind: "success",
+          result: {
+            autonomousExit: right("autonomy-sibling"),
+            ordinaryExit: right("ordinary-sibling"),
+          },
+        },
+        settledStatus: "closed",
+        taskStatuses: ["ready", "cede", "exited"],
+      },
+    },
+  ])(
+    "keeps autonomous scheduler routing scoped to the autonomous branch",
+    async ({ given: [autonomousResult, ordinaryResult], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
+
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            wisp.Do,
+            wisp.bind("autonomous", () =>
+              autonomy(
+                () =>
+                  pipe(
+                    cede(),
+                    wisp.chain(() => wisp.of(autonomousResult)),
+                  ),
+                { scheduler },
+              ),
+            ),
+            wisp.bind("ordinary", () =>
+              branch(() =>
+                pipe(
+                  cede(),
+                  wisp.chain(() => wisp.of(ordinaryResult)),
+                ),
+              ),
+            ),
+            wisp.bind("autonomousExit", ({ autonomous }) => wait(autonomous.scope.exitFuture)),
+            wisp.bind("ordinaryExit", ({ ordinary }) => wait(ordinary.scope.exitFuture)),
+            wisp.map(({ autonomousExit, ordinaryExit }) => ({
+              autonomousExit,
+              ordinaryExit,
+            })),
+          ),
+        ),
+      );
+      const settled = await waitForSettled(handle);
+      const actual = {
+        assignedCount: assigned.length,
+        settled,
+        settledStatus: handle.status,
+        taskStatuses,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
       given: [new Error("scheduler assignment failed"), "scheduler-entry"] as const,
       outcome: {
         causeMessage: "scheduler assignment failed",
-        settledKind: "failure",
+        resultKind: "left",
+        settledKind: "success",
         settledStatus: "closed",
       },
     },
@@ -161,17 +234,22 @@ describe("/ primitives: autonomy", () => {
       };
 
       expect({
+        resultKind:
+          actual.settled.kind === "success" && either.isLeft(actual.settled.result)
+            ? "left"
+            : "right",
         settledKind: actual.settled.kind,
         settledStatus: actual.settledStatus,
       }).toEqual({
+        resultKind: outcome.resultKind,
         settledKind: outcome.settledKind,
         settledStatus: outcome.settledStatus,
       });
-      if (actual.settled.kind !== "failure") {
-        throw new Error("Expected autonomy settlement to fail");
+      if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
+        throw new Error("Expected autonomous scope failure to be contained");
       }
 
-      expect(findFailureByKind(actual.settled.failure, "interrupted")).toEqual(
+      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
@@ -400,23 +478,20 @@ describe("/ primitives: autonomy", () => {
       outcome: {
         adjudicationCount: 1,
         settled: {
-          failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: expect.objectContaining({
-                  failure: {
-                    kind: "external",
-                    message: "reaped autonomy scope",
-                    raw: "reaper-failure",
-                  },
-                }),
-                kind: "scope",
+          kind: "success",
+          result: left(
+            expect.objectContaining({
+              cause: expect.objectContaining({
+                failure: {
+                  kind: "external",
+                  message: "reaped autonomy scope",
+                  raw: "reaper-failure",
+                },
+                kind: "process",
               }),
               kind: "scope",
             }),
-            kind: "scope",
-          }),
-          kind: "failure",
+          ),
         },
         settledStatus: "closed",
       },
@@ -470,23 +545,20 @@ describe("/ primitives: autonomy", () => {
         assignedAfterSettle: 6,
         assignedBeforeSettle: 2,
         settled: {
-          failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: expect.objectContaining({
-                  failure: {
-                    kind: "external",
-                    message: "reaped composed autonomy scope",
-                    raw: "composed-reaper",
-                  },
-                }),
-                kind: "scope",
+          kind: "success",
+          result: left(
+            expect.objectContaining({
+              cause: expect.objectContaining({
+                failure: {
+                  kind: "external",
+                  message: "reaped composed autonomy scope",
+                  raw: "composed-reaper",
+                },
+                kind: "process",
               }),
               kind: "scope",
             }),
-            kind: "scope",
-          }),
-          kind: "failure",
+          ),
         },
         settledStatus: "closed",
       },
@@ -560,7 +632,8 @@ describe("/ primitives: autonomy", () => {
       given: [new Error("reaper adjudication failed")] as const,
       outcome: {
         causeMessage: "reaper adjudication failed",
-        settledKind: "failure",
+        resultKind: "left",
+        settledKind: "success",
         settledStatus: "closed",
       },
     },
@@ -595,17 +668,22 @@ describe("/ primitives: autonomy", () => {
       };
 
       expect({
+        resultKind:
+          actual.settled.kind === "success" && either.isLeft(actual.settled.result)
+            ? "left"
+            : "right",
         settledKind: actual.settled.kind,
         settledStatus: actual.settledStatus,
       }).toEqual({
+        resultKind: outcome.resultKind,
         settledKind: outcome.settledKind,
         settledStatus: outcome.settledStatus,
       });
-      if (actual.settled.kind !== "failure") {
-        throw new Error("Expected autonomy settlement to fail");
+      if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
+        throw new Error("Expected autonomous scope failure to be contained");
       }
 
-      expect(findFailureByKind(actual.settled.failure, "interrupted")).toEqual(
+      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({

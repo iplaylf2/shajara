@@ -17,7 +17,7 @@ export function resumable<Relic>(entry: Ritual<Relic>): Wisp<ScopedOutcome<Relic
     wisp.bind("outcome", () => future<Relic>()),
     wisp.bind("scope", () =>
       pipe(
-        branch(entry, { failureMode: "contain" }),
+        branch(entry),
         wisp.map(({ scope }) => scope),
       ),
     ),

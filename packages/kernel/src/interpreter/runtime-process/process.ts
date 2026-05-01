@@ -1,11 +1,19 @@
 import type { CleanupTask, ProcessClosure, RuntimeProcessKeeper } from "./keeper";
-import type { FutureKey, FutureResult, ProcessRef, REF_TOKEN, Ritual, ScopeRef } from "#/contracts";
-import type { ProcessDescriptor, SelfHandle, Sigil } from "#/sigils/index";
+import type {
+  FutureKey,
+  FutureResult,
+  ProcessDescriptor,
+  ProcessRef,
+  REF_TOKEN,
+  Ritual,
+  ScopeRef,
+} from "#/contracts";
 import type {
   RuntimeProcessNextEcho,
   RuntimeProcessRunner,
   RuntimeProcessRunnerNext,
 } from "./runner";
+import type { SelfHandle, Sigil } from "#/sigils/index";
 import type { Failure } from "#/failures";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
 import type { RuntimeProcessHandle } from "./handle";

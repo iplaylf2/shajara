@@ -1,8 +1,8 @@
 import {
+  branch,
   cede,
   channel,
   close,
-  enclose,
   receive,
   send,
   spawn,
@@ -256,24 +256,30 @@ describe("/ primitives: channel, close, send, receive", () => {
     },
   );
 
-  const revokedFailure = new Error("rewrite failed");
-
   test.for([
     {
-      given: [1, "old-value", "incoming-value", "after-revoke", revokedFailure] as const,
+      given: [
+        1,
+        "old-value",
+        "incoming-value",
+        "after-revoke",
+        new Error("rewrite failed"),
+      ] as const,
       outcome: {
-        enclosedResult: left(
+        revokedSend: some({ kind: "revoked" }),
+        scopeExit: left(
           expect.objectContaining({
             cause: expect.objectContaining({
               failure: expect.objectContaining({
-                cause: revokedFailure,
+                cause: expect.objectContaining({
+                  message: "rewrite failed",
+                }),
                 kind: "channel",
               }),
             }),
             kind: "scope",
           }),
         ),
-        revokedSend: some({ kind: "revoked" }),
       },
     },
   ])(
@@ -283,7 +289,7 @@ describe("/ primitives: channel, close, send, receive", () => {
 
       await using ritual = interpretRitual(() =>
         pipe(
-          enclose(() =>
+          branch(() =>
             pipe(
               channel<string, string>(capacity, () => {
                 throw failure;
@@ -299,7 +305,7 @@ describe("/ primitives: channel, close, send, receive", () => {
             ),
           ),
           wisp.chain(({ scope }) => wait(scope.exitFuture)),
-          wisp.map((enclosedResult) => ({ enclosedResult })),
+          wisp.map((scopeExit) => ({ scopeExit })),
           wisp.bind("revokedSend", () => {
             if (!revokedSender) {
               throw new Error("Expected sender to be captured before channel failure");
@@ -307,9 +313,9 @@ describe("/ primitives: channel, close, send, receive", () => {
 
             return trySend(revokedSender, lateValue);
           }),
-          wisp.map(({ enclosedResult, revokedSend }) => ({
-            enclosedResult,
+          wisp.map(({ revokedSend, scopeExit }) => ({
             revokedSend,
+            scopeExit,
           })),
         ),
       );

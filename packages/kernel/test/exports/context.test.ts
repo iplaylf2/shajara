@@ -1,4 +1,4 @@
-import { bind, contextKey, enclose, lookup, unbind, wait } from "#/index";
+import { bind, branch, contextKey, lookup, unbind, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { none, some } from "#/utils";
@@ -47,7 +47,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       given: ["root"] as const,
       outcome: some("root"),
     },
-  ])("enclosed lookup inherits the parent binding", async ({ given: [binding], outcome }) => {
+  ])("branched lookup inherits the parent binding", async ({ given: [binding], outcome }) => {
     await using ritual = interpretRitual(() =>
       pipe(
         wisp.of(contextKey<string>()),
@@ -56,7 +56,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
             bind(key, binding),
             wisp.chain(() =>
               pipe(
-                enclose(() => lookup(key)),
+                branch(() => lookup(key)),
                 wisp.chain(({ scope }) => wait(scope.exitFuture)),
               ),
             ),
@@ -76,7 +76,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       outcome: some("child"),
     },
   ])(
-    "enclosed bind shadows the parent binding",
+    "branched bind shadows the parent binding",
     async ({ given: [parentBinding, childBinding], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
@@ -86,7 +86,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
               bind(key, parentBinding),
               wisp.chain(() =>
                 pipe(
-                  enclose(() =>
+                  branch(() =>
                     pipe(
                       bind(key, childBinding),
                       wisp.chain(() => lookup(key)),
@@ -112,7 +112,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
       outcome: some("root"),
     },
   ])(
-    "enclosed unbind falls back to the parent binding",
+    "branched unbind falls back to the parent binding",
     async ({ given: [parentBinding, childBinding], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
@@ -122,7 +122,7 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
               bind(key, parentBinding),
               wisp.chain(() =>
                 pipe(
-                  enclose(() =>
+                  branch(() =>
                     pipe(
                       bind(key, childBinding),
                       wisp.chain(() => unbind(key)),

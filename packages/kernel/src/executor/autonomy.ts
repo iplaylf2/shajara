@@ -1,29 +1,23 @@
-import type { ProcessRef, ScopeRef, Wisp } from "#/contracts";
+import type { ProcessRef, ScopeDescriptor, ScopeRef, Wisp } from "#/contracts";
 import type { Failure } from "#/failures";
 import type { Option } from "#/utils/index";
 import type { Processor } from "./processor";
-import type { ScopeDescriptor } from "#/sigils/index";
 
-export function withAutonomy(options: AutonomyOptions): AutonomyScopeDescriptor {
+export function describeAutonomy(options: AutonomyOptions): AutonomyScopeDescriptor {
   return {
-    autonomy: options,
-    failureMode: "propagate",
+    [autonomyKey]: options,
   };
 }
 
 export function autonomyOf(descriptor: ScopeDescriptor): AutonomyOptions | null {
-  if (!isAutonomyScopeDescriptor(descriptor)) {
-    return null;
-  }
-
-  return descriptor.autonomy;
+  return isAutonomyScope(descriptor) ? descriptor[autonomyKey] : null;
 }
+
+export const autonomyKey: unique symbol = Symbol("shajara.autonomy");
 
 export interface AutonomyScopeDescriptor extends ScopeDescriptor {
-  readonly autonomy: AutonomyOptions;
+  readonly [autonomyKey]: AutonomyOptions;
 }
-
-export type AutonomyOptions = SchedulerOption | ReaperOption | (SchedulerOption & ReaperOption);
 
 export interface SchedulerOption {
   readonly scheduler: Scheduler;
@@ -41,8 +35,8 @@ export interface Reaper {
   adjudicate(scope: ScopeRef<unknown>): Wisp<Option<Failure>>;
 }
 
-function isAutonomyScopeDescriptor(
-  descriptor: ScopeDescriptor,
-): descriptor is AutonomyScopeDescriptor {
-  return "autonomy" in descriptor;
+export type AutonomyOptions = SchedulerOption | ReaperOption | (SchedulerOption & ReaperOption);
+
+function isAutonomyScope(descriptor: ScopeDescriptor): descriptor is AutonomyScopeDescriptor {
+  return autonomyKey in descriptor;
 }

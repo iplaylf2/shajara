@@ -61,7 +61,7 @@ class RuntimeExecutor implements Executor {
     }
 
     using fault = new FaultSink("Out-of-band failures occurred while branching a launched scope");
-    const launched = this.#interpreter.branch(scope, ritual, { failureMode: "contain" }, fault);
+    const launched = this.#interpreter.branch(scope, ritual, {}, fault);
     const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);

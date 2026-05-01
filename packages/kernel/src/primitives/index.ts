@@ -19,7 +19,6 @@ export * from "./race";
 export * from "./resource";
 export * from "./resumable";
 export * from "./guard";
-export * from "./enclose";
 export * from "./self";
 export * from "./send";
 export * from "./try-send";

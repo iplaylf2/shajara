@@ -1,9 +1,16 @@
-import type { ECHO_TOKEN, ProcessRef, Ritual, SigilShape } from "#/contracts";
+import type {
+  CompletionMode,
+  ECHO_TOKEN,
+  ProcessDescriptor,
+  ProcessRef,
+  Ritual,
+  SigilShape,
+} from "#/contracts";
 
-export function spawn<Relic>(
+export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescriptor>(
   entry: Ritual<Relic>,
-  descriptor: ProcessDescriptor = DEFAULT_PROCESS_DESCRIPTOR,
-): SpawnSigil<Relic> {
+  descriptor: Descriptor = DEFAULT_PROCESS_DESCRIPTOR as Descriptor,
+): SpawnSigil<Relic, Descriptor> {
   return {
     descriptor,
     entry,
@@ -11,17 +18,16 @@ export function spawn<Relic>(
   };
 }
 
-export interface SpawnSigil<Relic> extends SigilShape {
+export interface SpawnSigil<
+  Relic,
+  Descriptor extends ProcessDescriptor = ProcessDescriptor,
+> extends SigilShape {
   readonly kind: "spawn";
-  readonly descriptor: ProcessDescriptor;
+  readonly descriptor: Descriptor;
   readonly entry: Ritual<Relic>;
-  readonly [ECHO_TOKEN]?: readonly [ProcessRef<Relic>];
+  readonly [ECHO_TOKEN]?: readonly [ProcessRef<Relic, Descriptor>];
 }
 
-export interface ProcessDescriptor {
-  readonly completionMode: CompletionMode;
-}
-
-export type CompletionMode = "structural" | "detached";
+export type { CompletionMode, ProcessDescriptor };
 
 const DEFAULT_PROCESS_DESCRIPTOR: ProcessDescriptor = { completionMode: "structural" };
