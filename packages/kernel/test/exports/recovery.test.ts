@@ -1,5 +1,5 @@
 import type { ScopeFailure, ScopeRef, ScopedOutcome } from "#/index";
-import { cede, guard, halt, resumable, self, wait } from "#/index";
+import { cede, externalFailure, guard, halt, resumable, self, wait } from "#/index";
 import {
   createManagedExecutor,
   interpretRitual,
@@ -142,20 +142,10 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [
-        {
-          kind: "halted",
-          message: "halted under executor root",
-        },
-      ] as const,
+      given: [externalFailure("halted", "halted under executor root")] as const,
       outcome: {
         kind: "success",
-        result: right(
-          scopeFailureOf({
-            kind: "halted",
-            message: "halted under executor root",
-          }),
-        ),
+        result: right(scopeFailureOf(externalFailure("halted", "halted under executor root"))),
       },
     },
   ])(
@@ -181,10 +171,7 @@ describe("/ primitives: guard, resumable", () => {
     {
       given: [
         "unreachable guarded result",
-        left({
-          kind: "halted",
-          message: "unreachable recovery result",
-        }),
+        left(externalFailure("halted", "unreachable recovery result")),
       ] as const,
       outcome: {
         processExit: left(missingAnchor("recovery-point")),
@@ -255,13 +242,7 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [
-        {
-          kind: "halted",
-          message: "halted for test",
-        },
-        right("recovered:halted"),
-      ] as const,
+      given: [externalFailure("halted", "halted for test"), right("recovered:halted")] as const,
       outcome: {
         guardExit: right(undefined),
         resumableResult: right("recovered:halted"),
@@ -269,21 +250,12 @@ describe("/ primitives: guard, resumable", () => {
     },
     {
       given: [
-        {
-          kind: "halted",
-          message: "halted for rejected recovery",
-        },
-        left({
-          kind: "halted",
-          message: "recovery refused",
-        }),
+        externalFailure("halted", "halted for rejected recovery"),
+        left(externalFailure("halted", "recovery refused")),
       ] as const,
       outcome: {
         guardExit: right(undefined),
-        resumableResult: left({
-          kind: "halted",
-          message: "recovery refused",
-        }),
+        resumableResult: left(externalFailure("halted", "recovery refused")),
       },
     },
   ])(
@@ -340,13 +312,7 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [
-        {
-          kind: "halted",
-          message: "delegated recovery",
-        },
-        right("outer recovered"),
-      ] as const,
+      given: [externalFailure("halted", "delegated recovery"), right("outer recovered")] as const,
       outcome: {
         innerRecovery: none,
         outerRecovery: right("outer recovered"),

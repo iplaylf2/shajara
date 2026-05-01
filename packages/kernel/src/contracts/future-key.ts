@@ -1,5 +1,5 @@
 import type { Either } from "#/utils/index";
-import type { FailureShape } from "./failure";
+import type { Failure } from "#/failures";
 import type { KEY_TOKEN } from "./token";
 
 export interface FutureKey<Result> {
@@ -12,7 +12,7 @@ export interface FutureSettleKey<Result> {
   readonly [RESULT_TOKEN]?: readonly [FutureResult<Result>];
 }
 
-export type FutureResult<Result> = Either<FailureShape, Result>;
+export type FutureResult<Result> = Either<Failure, Result>;
 export type FutureHandle<Result> = readonly [FutureKey<Result>, FutureSettleKey<Result>];
 
 declare const RESULT_TOKEN: unique symbol;

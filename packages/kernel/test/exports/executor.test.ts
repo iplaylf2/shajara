@@ -6,7 +6,19 @@ import type {
   LaunchHandle,
   ReceiveResult,
 } from "#/index";
-import { cancel, channel, defer, future, halt, park, receive, settle, spawn, wait } from "#/index";
+import {
+  cancel,
+  channel,
+  defer,
+  externalFailure,
+  future,
+  halt,
+  park,
+  receive,
+  settle,
+  spawn,
+  wait,
+} from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
 import { iife, isSome, left, right, some } from "#/utils";
@@ -141,18 +153,10 @@ describe("/ interfaces: Executor", () => {
 
     test.for([
       {
-        given: [
-          {
-            kind: "halted",
-            message: "launch-failed",
-          },
-        ] as const,
+        given: [externalFailure("halted", "launch-failed")] as const,
         outcome: {
           failure: expect.objectContaining({
-            cause: {
-              kind: "halted",
-              message: "launch-failed",
-            },
+            cause: externalFailure("halted", "launch-failed"),
           }),
           kind: "failure",
         },
@@ -462,12 +466,7 @@ describe("/ interfaces: Executor", () => {
 
     test.for([
       {
-        given: [
-          {
-            kind: "halted",
-            message: "future-failed",
-          },
-        ] as const,
+        given: [externalFailure("halted", "future-failed")] as const,
         outcome: {
           injected: true,
           settled: {

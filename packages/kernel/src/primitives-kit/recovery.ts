@@ -1,5 +1,6 @@
 import type { ChannelReceiver, ChannelSender, ReceiveResult } from "#/sigils/index";
-import type { FailureShape, FutureResult, FutureSettleKey, Ritual, Wisp } from "#/contracts";
+import type { Failure, ScopeFailure } from "#/failures";
+import type { FutureResult, FutureSettleKey, Ritual, Wisp } from "#/contracts";
 import {
   bind,
   channel,
@@ -14,7 +15,6 @@ import {
 } from "#/sigils/index";
 import { wisp, wispOption } from "#/internal/fp";
 import type { Option } from "fp-ts/Option";
-import type { ScopeFailure } from "#/failures";
 import { contextKey } from "#/contracts";
 import { either } from "fp-ts";
 import { interruptedFailure } from "#/failures";
@@ -63,7 +63,7 @@ export function withRecoveryPoint<Relic>(
           serveRecovery(receiver, (request) =>
             pipe(
               handle(request.failure),
-              wispOption.matchE<unknown, either.Either<FailureShape, unknown>>(
+              wispOption.matchE<unknown, either.Either<Failure, unknown>>(
                 () => wisp.liftF(send(ancestor, request)),
                 (recovery) => wisp.liftF(settle(request.replyTo, recovery)),
               ),
@@ -102,7 +102,7 @@ export function requestRecovery<Relic>(failure: ScopeFailure): Wisp<FutureResult
 
 export type RecoveryHandler = (
   failure: ScopeFailure,
-) => Wisp<Option<either.Either<FailureShape, unknown>>>;
+) => Wisp<Option<either.Either<Failure, unknown>>>;
 
 function serveRecovery(
   receiver: ChannelReceiver<RecoveryRequest, unknown>,
@@ -120,7 +120,7 @@ function serveRecovery(
   };
 }
 
-function missingRecoveryAnchor(site: MissingRecoveryAnchorSite): FailureShape {
+function missingRecoveryAnchor(site: MissingRecoveryAnchorSite): Failure {
   return interruptedFailure({
     reason: "missing-recovery-anchor",
     site,

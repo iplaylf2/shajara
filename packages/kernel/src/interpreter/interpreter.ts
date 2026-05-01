@@ -388,7 +388,7 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "halt": {
-        this.#reconcile(scope, halt(scope, process.keeper(), sigil.failure as Failure), suppressor);
+        this.#reconcile(scope, halt(scope, process.keeper(), sigil.failure), suppressor);
         return processExitedStep(either.left(runner.stateAs("failed").failure));
       }
       case "lookup": {

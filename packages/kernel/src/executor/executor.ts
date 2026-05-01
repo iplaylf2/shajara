@@ -8,7 +8,6 @@ import { halt, park } from "#/primitives/index";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
-import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import { RoundLimitReaper } from "./round-limit-reaper";
@@ -198,7 +197,7 @@ function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Resu
       return { kind: "canceled" };
     }
 
-    return { failure: result.left as Failure, kind: "failure" };
+    return { failure: result.left, kind: "failure" };
   }
   return { kind: "success", result: result.right };
 }

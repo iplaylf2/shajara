@@ -36,16 +36,16 @@ The host layer represents optional results as `Presence<T>`: `[true, value]` whe
 
 Typical rewrites include:
 
-- kernel `wait(future)` returns `Either<FailureShape, T>`
+- kernel `wait(future)` returns `Either<Failure, T>`
 - host `wait(future)` returns `T` and throws on failure
 
 - kernel `lookup(key)` returns `Option<T>`
 - host `lookup(key)` returns `Presence<T>`
 
-- kernel `poll(future)` returns `Option<Either<FailureShape, T>>`
+- kernel `poll(future)` returns `Option<Either<Failure, T>>`
 - host `poll(future)` returns `Presence<T>` and throws when the settled future holds a failure
 
-- kernel `enclose(ritual)` returns `Either<FailureShape, T>`
+- kernel `enclose(ritual)` returns `Either<Failure, T>`
 - host `enclose(ritual)` returns `T` and throws on failure
 
 - kernel `send(sender, value)` returns a terminal channel state when the channel is closed or revoked

@@ -1,4 +1,14 @@
-import { branch, canceledFailure, cede, defer, halt, park, race, spawn } from "#/index";
+import {
+  branch,
+  canceledFailure,
+  cede,
+  defer,
+  externalFailure,
+  halt,
+  park,
+  race,
+  spawn,
+} from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { left, noop } from "#/utils";
@@ -110,25 +120,10 @@ describe("/ primitives: race", () => {
 
   test.for([
     {
-      given: [
-        {
-          kind: "halted",
-          message: "race entrant failed",
-        },
-      ] as const,
+      given: [externalFailure("halted", "race entrant failed")] as const,
       outcome: {
-        scopeExit: left(
-          scopeFailureCausedBy({
-            kind: "halted",
-            message: "race entrant failed",
-          }),
-        ),
-        winner: left(
-          scopeFailureCausedBy({
-            kind: "halted",
-            message: "race entrant failed",
-          }),
-        ),
+        scopeExit: left(scopeFailureCausedBy(externalFailure("halted", "race entrant failed"))),
+        winner: left(scopeFailureCausedBy(externalFailure("halted", "race entrant failed"))),
       },
     },
   ])(

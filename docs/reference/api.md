@@ -215,7 +215,7 @@ The common return forms are:
 
 - `FutureKey<T>` for operations that start concurrent or scoped work and return an observation handle.
 - `[FutureKey<T>, FutureSettleKey<T>]` for operations that create a future and expose separate observation and settlement authority.
-- `Either<FailureShape, T>` for waits or contained boundaries whose success and failure are both part of the result domain.
+- `Either<Failure, T>` for waits or contained boundaries whose success and failure are both part of the result domain.
 - `Option<T>` for non-blocking or optional observations, including context lookup and polling.
 - channel result unions for send and receive outcomes; closed and revoked channel states remain explicit values.
 - `void` for operations that mutate runtime state without producing an observation value.

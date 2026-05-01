@@ -1,4 +1,4 @@
-import { branch, cede, halt } from "#/index";
+import { branch, cede, externalFailure, halt } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
 import { left, right } from "#/utils";
@@ -49,18 +49,10 @@ describe("/ primitives: branch", () => {
 
   test.for([
     {
-      given: [
-        {
-          kind: "halted",
-          message: "halted for test",
-        },
-      ] as const,
+      given: [externalFailure("halted", "halted for test")] as const,
       outcome: left(
         expect.objectContaining({
-          cause: {
-            kind: "halted",
-            message: "halted for test",
-          },
+          cause: externalFailure("halted", "halted for test"),
         }),
       ),
     },

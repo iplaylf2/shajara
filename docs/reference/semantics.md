@@ -77,10 +77,10 @@ type CompletionMode = "structural" | "detached";
 - `FutureKey<T>` is observation-only
 - `FutureSettleKey<T>` is settlement-only
 
-The result domain of a future is fixed to `Either<FailureShape, T>`. Therefore:
+The result domain of a future is fixed to `Either<Failure, T>`. Therefore:
 
-- `wait(future)` returns `Either<FailureShape, T>`
-- `poll(future)` returns `Option<Either<FailureShape, T>>`
+- `wait(future)` returns `Either<Failure, T>`
+- `poll(future)` returns `Option<Either<Failure, T>>`
 - the same future may be observed repeatedly by multiple waiters
 
 When the owner scope finishes, any unfinished futures converge uniformly as `canceled`.
