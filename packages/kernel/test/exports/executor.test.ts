@@ -149,12 +149,10 @@ describe("/ interfaces: Executor", () => {
         ] as const,
         outcome: {
           failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: {
-                kind: "halted",
-                message: "launch-failed",
-              },
-            }),
+            cause: {
+              kind: "halted",
+              message: "launch-failed",
+            },
           }),
           kind: "failure",
         },
@@ -171,9 +169,7 @@ describe("/ interfaces: Executor", () => {
         expect(actual).toEqual({
           ...outcome,
           failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure,
-            }),
+            cause: failure,
           }),
         });
       },
@@ -699,8 +695,7 @@ describe("/ interfaces: Executor", () => {
         expect(actual.settled.kind).toBe("failure");
         expect(
           actual.settled.kind === "failure"
-            ? (actual.settled.failure as { cause?: { failure?: unknown; kind?: string } }).cause
-                ?.failure
+            ? (actual.settled.failure as { cause?: unknown }).cause
             : null,
         ).toEqual(
           expect.objectContaining({
@@ -769,7 +764,7 @@ describe("/ interfaces: Executor", () => {
         expect(actual.firstSettled.kind).toBe("failure");
         expect(
           actual.firstSettled.kind === "failure"
-            ? (actual.firstSettled.failure as { cause?: { failure?: unknown } }).cause?.failure
+            ? (actual.firstSettled.failure as { cause?: unknown }).cause
             : null,
         ).toEqual(
           expect.objectContaining({
@@ -784,7 +779,7 @@ describe("/ interfaces: Executor", () => {
         expect(actual.secondSettled.kind).toBe("failure");
         expect(
           actual.secondSettled.kind === "failure"
-            ? (actual.secondSettled.failure as { cause?: { failure?: unknown } }).cause?.failure
+            ? (actual.secondSettled.failure as { cause?: unknown }).cause
             : null,
         ).toEqual(
           expect.objectContaining({

@@ -270,12 +270,10 @@ describe("/ primitives: channel, close, send, receive", () => {
         scopeExit: left(
           expect.objectContaining({
             cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: expect.objectContaining({
-                  message: "rewrite failed",
-                }),
-                kind: "channel",
+              cause: expect.objectContaining({
+                message: "rewrite failed",
               }),
+              kind: "channel",
             }),
             kind: "scope",
           }),

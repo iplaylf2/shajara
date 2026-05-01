@@ -329,9 +329,7 @@ describe("/ primitives: guard, resumable", () => {
       expect(actual.caught).toEqual(
         right(
           expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: entryFailure,
-            }),
+            cause: entryFailure,
             kind: "scope",
           }),
         ),
@@ -411,9 +409,7 @@ describe("/ primitives: guard, resumable", () => {
 
 function scopeFailureOf(failure: unknown): ScopeFailure {
   return expect.objectContaining({
-    cause: expect.objectContaining({
-      failure,
-    }),
+    cause: failure,
     kind: "scope",
   }) as ScopeFailure;
 }

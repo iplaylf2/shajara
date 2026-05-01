@@ -1,12 +1,9 @@
+import type { UnknownRecord } from "type-fest";
+
 export type CompletionMode = "structural" | "detached";
 
-export interface ScopeDescriptor {
-  readonly [key: string]: unknown;
-  readonly [key: symbol]: unknown;
-}
+export type ScopeDescriptor = Readonly<UnknownRecord>;
 
-export interface ProcessDescriptor {
+export interface ProcessDescriptor extends Readonly<UnknownRecord> {
   readonly completionMode: CompletionMode;
-  readonly [key: string]: unknown;
-  readonly [key: symbol]: unknown;
 }

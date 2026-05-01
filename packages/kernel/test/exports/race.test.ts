@@ -151,9 +151,7 @@ describe("/ primitives: race", () => {
 
 function scopeFailureCausedBy(failure: unknown) {
   return expect.objectContaining({
-    cause: expect.objectContaining({
-      failure,
-    }),
+    cause: failure,
     kind: "scope",
   });
 }

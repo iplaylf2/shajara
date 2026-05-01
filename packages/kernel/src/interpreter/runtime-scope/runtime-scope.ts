@@ -20,10 +20,10 @@ import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import type { FutureSettlement } from "#/interpreter/runtime-future";
+import { PendingScopeFailure } from "./pending-scope-failure";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
 import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
-import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { unreachable } from "#/utils/index";
@@ -53,31 +53,27 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public *halt(process: RuntimeProcessKeeper, failure: Failure): ScopeSync<void> {
-    const failed = "failed";
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
 
     yield this.#defer(closure.settlement);
     yield this.#trackProcess(process);
 
-    const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
+    const runCleanups = () => this.#triggerCleanup(closure.cleanups);
     const state = this.#state;
     if (state.status === "failing") {
-      state.draft.capture(process.stateAs(failed).failure);
-      yield* this.#enterFailing(state.draft, cleanupTrigger);
+      state.failure.suppress(failure);
+      yield* this.#enterFailing(state.failure, runCleanups);
 
       return;
     }
 
-    yield* this.#enterFailing(
-      new ScopeFailureDraft({ kind: "process", process }, () => process.stateAs(failed).failure),
-      cleanupTrigger,
-    );
+    yield* this.#enterFailing(new PendingScopeFailure(failure), runCleanups);
   }
 
   public *cancel(): ScopeSync<void> {
     yield* this.#state.status === "failing"
-      ? this.#enterFailing(this.#state.draft, noopSync)
+      ? this.#enterFailing(this.#state.failure, noopSync)
       : this.#enterCanceling();
   }
 
@@ -215,15 +211,15 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public *forceFailed(failure: Failure): ScopeSync<void> {
-    const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
+    const pendingFailure = new PendingScopeFailure(failure);
     if (this.#state.status === "failing") {
-      draft.capture(this.#state.draft.build());
+      pendingFailure.suppress(this.#state.failure.build());
     }
 
-    yield* this.#enterFailing(draft, noopSync);
+    yield* this.#enterFailing(pendingFailure, noopSync);
 
     while (this.#state.status === "failing") {
-      yield* this.#enterFailing(this.#state.draft, noopSync);
+      yield* this.#enterFailing(this.#state.failure, noopSync);
     }
   }
 
@@ -350,7 +346,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
         return;
       }
       case "failing": {
-        yield* this.#tryFailed(this.#state.draft);
+        yield* this.#tryFailed(this.#state.failure);
         return;
       }
       case "canceled":
@@ -377,10 +373,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield* this.#tryCanceled();
   }
 
-  *#enterFailing(draft: ScopeFailureDraft, failingDefer: () => ScopeSync<void>): ScopeSync<void> {
-    yield* this.#transitionTo({ draft, status: "failing" });
-    yield* failingDefer();
-    yield* this.#tryFailed(draft);
+  *#enterFailing(
+    failure: PendingScopeFailure,
+    runCleanups: () => ScopeSync<void>,
+  ): ScopeSync<void> {
+    yield* this.#transitionTo({ failure, status: "failing" });
+    yield* runCleanups();
+    yield* this.#tryFailed(failure);
   }
 
   *#tryCompleted(): ScopeSync<void> {
@@ -403,9 +402,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  *#tryFailed(draft: ScopeFailureDraft): ScopeSync<void> {
+  *#tryFailed(failure: PendingScopeFailure): ScopeSync<void> {
     if (this.#isIdle) {
-      yield* this.#transitionTo({ failure: draft.build(), status: "failed" });
+      yield* this.#transitionTo({ failure: failure.build(), status: "failed" });
       if (!this.#isRoot) {
         yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
       }
@@ -539,9 +538,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   *#revokeChannelWithFailure(channel: AnyRuntimeChannel, cause: unknown): ScopeSync<void> {
     yield* this.#revoke(channel);
     yield* this.#enterFailing(
-      new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
-        channelFailure(cause, "Channel operation failed"),
-      ),
+      new PendingScopeFailure(channelFailure(cause, "Channel operation failed")),
       noopSync,
     );
   }
@@ -669,7 +666,7 @@ type RuntimeScopeState = TaggedUnion<
     closing: {};
     completed: { readonly result: unknown };
     failed: { readonly failure: Failure };
-    failing: { readonly draft: ScopeFailureDraft };
+    failing: { readonly failure: PendingScopeFailure };
     running: {};
   }
 >;

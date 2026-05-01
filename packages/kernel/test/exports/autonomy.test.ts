@@ -263,6 +263,96 @@ describe("/ primitives: autonomy", () => {
 
   test.for([
     {
+      given: [new Error("scheduler assignment failed"), "cleanup"] as const,
+      outcome: {
+        assignedCount: 3,
+        causeMessage: "scheduler assignment failed",
+        cleanupEvents: ["cleanup"] as const,
+        resultKind: "left",
+        settledKind: "success",
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "force-fails the autonomous scope to closure after deferred cleanup suspends",
+    async ({ given: [cause, cleanup], outcome }) => {
+      const events: string[] = [];
+      const processor = createInlineProcessor();
+      const assigned: ProcessRef<unknown>[] = [];
+      const scheduler: Scheduler = {
+        assign: (process) => {
+          assigned.push(process);
+          if (assigned.length === 2) {
+            throw cause;
+          }
+
+          return processor;
+        },
+      };
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      events.push(cleanup);
+                    }),
+                    wisp.chain(park),
+                  ),
+                ),
+                wisp.chain(() => spawn(() => wisp.of(undefined))),
+              ),
+            { scheduler },
+          ),
+        ),
+      );
+      const settled = await waitForSettled(handle);
+      const actual = {
+        assignedCount: assigned.length,
+        cleanupEvents: [...events] as readonly string[],
+        settled,
+        settledStatus: handle.status,
+      };
+
+      expect({
+        assignedCount: actual.assignedCount,
+        cleanupEvents: actual.cleanupEvents,
+        resultKind:
+          actual.settled.kind === "success" && either.isLeft(actual.settled.result)
+            ? "left"
+            : "right",
+        settledKind: actual.settled.kind,
+        settledStatus: actual.settledStatus,
+      }).toEqual({
+        assignedCount: outcome.assignedCount,
+        cleanupEvents: outcome.cleanupEvents,
+        resultKind: outcome.resultKind,
+        settledKind: outcome.settledKind,
+        settledStatus: outcome.settledStatus,
+      });
+      if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
+        throw new Error("Expected autonomous scope failure to be contained");
+      }
+
+      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
+        expect.objectContaining(
+          interruptedFailure(
+            expect.objectContaining({
+              message: outcome.causeMessage,
+            }),
+          ),
+        ),
+      );
+    },
+  );
+
+  test.for([
+    {
       given: ["autonomy-ready"] as const,
       outcome: {
         assignedAfterWait: 2,
@@ -481,14 +571,11 @@ describe("/ primitives: autonomy", () => {
           kind: "success",
           result: left(
             expect.objectContaining({
-              cause: expect.objectContaining({
-                failure: {
-                  kind: "external",
-                  message: "reaped autonomy scope",
-                  raw: "reaper-failure",
-                },
-                kind: "process",
-              }),
+              cause: {
+                kind: "external",
+                message: "reaped autonomy scope",
+                raw: "reaper-failure",
+              },
               kind: "scope",
             }),
           ),
@@ -548,14 +635,11 @@ describe("/ primitives: autonomy", () => {
           kind: "success",
           result: left(
             expect.objectContaining({
-              cause: expect.objectContaining({
-                failure: {
-                  kind: "external",
-                  message: "reaped composed autonomy scope",
-                  raw: "composed-reaper",
-                },
-                kind: "process",
-              }),
+              cause: {
+                kind: "external",
+                message: "reaped composed autonomy scope",
+                raw: "composed-reaper",
+              },
               kind: "scope",
             }),
           ),

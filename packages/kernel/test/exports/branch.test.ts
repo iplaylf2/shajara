@@ -57,12 +57,10 @@ describe("/ primitives: branch", () => {
       ] as const,
       outcome: left(
         expect.objectContaining({
-          cause: expect.objectContaining({
-            failure: {
-              kind: "halted",
-              message: "halted for test",
-            },
-          }),
+          cause: {
+            kind: "halted",
+            message: "halted for test",
+          },
         }),
       ),
     },
