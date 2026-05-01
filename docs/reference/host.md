@@ -1,72 +1,76 @@
 # Host Adaptation
 
-`@shajara/host` builds a generator-style host layer on top of `Executor` and the semantic baseline.
+`@shajara/host` adapts the kernel executor and semantic model into generator-style
+JavaScript APIs.
 
 ## Host Responsibilities
 
-The host layer adapts kernel execution through four responsibilities:
+The host layer has four responsibilities:
 
-- application-facing host entries: `run`, `createScope`
+- application-facing entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
-- generator-style primitives exposed by `@shajara/host/primitives`
-- result and failure mapping between kernel values and JavaScript-facing values or exceptions
+- generator-style primitives from `@shajara/host/primitives`
+- mapping between kernel in-band values and JavaScript values or errors
 
 ## Ritual Adaptation
 
-The host layer adapts kernel execution through two boundaries:
+The host layer adapts computation through two boundaries:
 
 - `decodeRitual`: `RiteRoutine<T>` -> kernel `Ritual<T>`
 - `encodeRitual`: kernel `Ritual<T>` -> `RiteCoroutine<T>`
 
-The corresponding types are:
+The corresponding host types are:
 
 ```ts
 type RiteRoutine<T> = () => RiteCoroutine<T>;
 type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 ```
 
-In the host layer, `Ritual` means "how application code expresses the same computation as a generator".
-When a started coroutine is unwound, generator control flow continues through `try...finally`. Work that needs its own scoped lifetime is modeled separately with `resource(...)`, whose provider remains attached to its owning scope until release.
+In the host layer, `Ritual` means the generator form of the same computation.
+
+When a started coroutine is unwound, generator control flow continues through
+`try...finally`. Work that needs its own scoped lifetime is modeled separately with
+`resource(...)`, whose provider remains attached to its owning scope until release.
 
 ## Result Model
 
-The host layer adapts kernel result values into application-facing values and exceptions.
+The kernel keeps failure and absence in band. The host layer adapts those values into
+application-facing values, `Presence<T>`, and JavaScript errors.
 
-The host layer represents optional results as `Presence<T>`: `[true, value]` when a value is present and `[false]` when no value is present.
+Host optional results use `Presence<T>`:
 
-Typical rewrites include:
+- `[true, value]`: a value is present
+- `[false]`: no value is present
 
-- kernel `wait(future)` returns `Either<Failure, T>`
-- host `wait(future)` returns `T` and throws on failure
+Typical rewrites:
 
-- kernel `lookup(key)` returns `Option<T>`
-- host `lookup(key)` returns `Presence<T>`
+- `wait(future)`: kernel returns `Either<Failure, T>`; host returns `T` and throws on failure.
+- `lookup(key)`: kernel returns `Option<T>`; host returns `Presence<T>`.
+- `poll(future)`: kernel returns `Option<Either<Failure, T>>`; host returns
+  `Presence<T>` and throws when the settled future failed.
+- `send(sender, value)`: kernel returns a send result; host returns `void` and throws on
+  closed or revoked channels.
+- `receive(receiver)`: kernel returns a receive result; host returns `T` and throws on
+  closed or revoked channels.
+- `trySend(sender, value)`: kernel returns an optional send result; host returns
+  `boolean` and throws on terminal channels.
+- `tryReceive(receiver)`: kernel returns an optional receive result; host returns
+  `Presence<T>` and throws on terminal channels.
 
-- kernel `poll(future)` returns `Option<Either<Failure, T>>`
-- host `poll(future)` returns `Presence<T>` and throws when the settled future holds a failure
+Scoped host primitives adapt kernel handles into host-facing values:
 
-- kernel `enclose(ritual)` returns `Either<Failure, T>`
-- host `enclose(ritual)` returns `T` and throws on failure
-
-- kernel `send(sender, value)` returns a terminal channel state when the channel is closed or revoked
-- host `send(sender, value)` returns `void` and throws on closed or revoked channels
-
-- kernel `receive(receiver)` returns a value or terminal channel state
-- host `receive(receiver)` returns the value and throws on closed or revoked channels
-
-- kernel `trySend(sender, value)` returns an optional channel send state
-- host `trySend(sender, value)` returns `true` when the value is accepted, `false` when the channel is not ready, and throws on closed or revoked channels
-
-- kernel `tryReceive(receiver)` returns an optional channel receive state
-- host `tryReceive(receiver)` returns `Presence<T>` and throws on closed or revoked channels
-
-As a result, `Future`, `Scope`, and `Failure` are exposed on the host side primarily as user-visible results.
+- host `branch(entry)` waits for the child scope's `exitFuture` and returns the child value
+- host `autonomy(entry, options)` waits for the autonomous child scope and returns its value
+- host `guard(entry, recover)` waits for the guarded child scope and returns its value
+- host `race(entries)` waits for the race outcome future and returns the winning value
+- host `resumable(entry)` waits for the recovery outcome future and returns that value
+- host `all(entries)`, `spawn(entry)`, and `resource(body)` return host futures
 
 ## Error Mapping
 
 The host layer maps kernel failures into JavaScript error objects.
 
-### Writing into kernel
+### Writing into Kernel
 
 The following paths write host-side failures into the kernel:
 
@@ -75,10 +79,10 @@ The following paths write host-side failures into the kernel:
 - `action.reject(error)`
 - a promise rejection observed by `until(thunk)`
 
-At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive.
-Other thrown values become the kernel `halt` primitive after failure mapping.
+At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive. Other
+thrown values become the kernel `halt` primitive after failure mapping.
 
-### Returning from kernel
+### Returning from Kernel
 
 The host layer uses `fromFailure(...)` for unified mapping:
 
@@ -93,18 +97,39 @@ returns a closed or revoked terminal state. In that case, `ChannelError.detail` 
 `{ kind: "condition", condition }` and `cause` is `null`. Kernel channel failures use
 `{ kind: "cause", cause }`.
 
-Here, `ScopeError` means the caller observes the structural fact that a scope converged as a failure with that cause.
+`ScopeError` means the caller observes that a scope converged as a failure. The primary
+cause is available through `ScopeError.cause`.
 
-The original cause lives at:
+If that cause comes from an `external` failure, the original external value is in
+`ScopeError.cause.raw`.
 
-- `ScopeError.cause.failure`
-- if that cause comes from an `external` failure, the original external value is in `raw`
+## Recovery
+
+Host recovery is built on the kernel `guard` and `resumable` primitives.
+
+`resumable(entry)` runs `entry` as scoped work and waits for the recovery outcome.
+`guard(entry, recover)` installs a recovery point for resumable work inside the guarded
+entry.
+
+The host recovery handler shape is:
+
+```ts
+type RecoveryHandler = (error: ScopeError) => RiteCoroutine<Presence<unknown>>;
+```
+
+- return `[true, value]` to handle the recovery request with `value`
+- return `[false]` to delegate the request to an ancestor recovery route
+- throw to complete the recovery request with that thrown failure
+
+The executor root provides a final recovery anchor. Installing `guard` creates a
+deliberate recovery boundary for host code.
 
 ## Host Entries
 
 ### `run`
 
-`run` connects a host `ritual` to the long-lived `Executor` and exposes the resulting `LaunchHandle` as a Promise with `status`.
+`run` connects a host ritual to the long-lived executor and exposes the resulting launch
+as a Promise with `status`.
 
 Result semantics:
 
@@ -115,20 +140,19 @@ Result semantics:
 
 ### `createScope`
 
-`createScope` derives a long-lived managed scope from the `Executor` root entry and exposes:
+`createScope` creates a long-lived managed scope from the executor root entry and exposes:
 
 - `run(...)`
 - `cancel()`
 - `status`
 - `closed`
 
-The focus here is the host-side entry boundary. Kernel scope internals remain in the semantic baseline.
-
 Closing semantics:
 
 - `cancel()` waits for the closure result of that scope
 - `closed` settles when that scope has fully closed
-- if the closure result is cancellation or failure, `cancel()` and `closed` reflect the same result
+- if the closure result is cancellation or failure, `cancel()` and `closed` reflect the
+  same result
 
 ## Host Operations
 
@@ -148,7 +172,8 @@ Closing semantics:
 - `trySend(value)`
 - `close(outcome)`
 
-The returned receiver stays inside coroutine code, while the callbacks send or close the channel from host code.
+The returned receiver stays inside coroutine code, while the callbacks send or close the
+channel from host code.
 
 ### `sleep`
 
@@ -156,13 +181,16 @@ The returned receiver stays inside coroutine code, while the callbacks send or c
 
 ### `until`
 
-`until(thunk)` writes the result of a promise back into a future through fulfilled and rejected callbacks.
+`until(thunk)` writes the result of a promise back into a future through fulfilled and
+rejected callbacks.
 
-Together, these operations translate browser or JavaScript host effects into future or channel convergence the `Executor` can observe.
+Together, these operations translate browser or JavaScript host effects into future or
+channel convergence visible to the executor.
 
-## Host Form of Autonomous Governance
+## Host Form of Autonomy
 
-The host form of `autonomy(entry, options)` reuses kernel `autonomy`, but adapts the `reaper` from the host side:
+The host form of `autonomy(entry, options)` reuses kernel `autonomy`, but adapts the
+`reaper` from the host side:
 
 - the host `reaper` shape is `(scope) => RiteCoroutine<void>`
 - returning normally means "keep waiting"

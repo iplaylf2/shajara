@@ -1,63 +1,58 @@
 # Reference Index
 
-## Reference Roles
-
-| Document                     | Role                                                                                                         |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [semantics.md](semantics.md) | Semantic baseline. Defines `Wisp`, `Sigil`, `Scope`, `Process`, `Future`, channel, failure, and convergence. |
-| [executor.md](executor.md)   | Execution environment. Covers `Executor`, `ExecutionScopeRef`, external control, `Pacer`, and autonomy.      |
-| [host.md](host.md)           | Host adaptation. Covers the generator-style API in `@shajara/host`, callback bridges, and result mapping.    |
-| [api.md](api.md)             | Public interface reference. Covers exports, import paths, result shapes, and public entry points.            |
+This directory is the stable reference layer for shajara packages. Each document has a
+single responsibility, and dependencies flow left to right.
 
 ## Dependency Direction
 
-The documents depend on one another in this direction:
+The dependency direction is:
 
 ```text
 semantics -> executor -> host -> api
 ```
 
-- [semantics.md](semantics.md) establishes the core concepts.
-- [executor.md](executor.md) builds on `semantics.md`.
-- [host.md](host.md) builds on `semantics.md` and `executor.md`.
-- [api.md](api.md) summarizes public interfaces and observable results.
+- [semantics.md](semantics.md): kernel semantics, including computation, scopes,
+  processes, futures, channels, failure, recovery, and convergence.
+- [executor.md](executor.md): execution environment, including `Executor`,
+  `ExecutionScopeRef`, entry handles, external control, pacing, and autonomy.
+- [host.md](host.md): host adaptation, including generator routines, JavaScript errors,
+  host operations, and host-facing scoped primitives.
+- [api.md](api.md): public interface, including package export surfaces, entry
+  signatures, primitive return values, and result shapes.
 
-## Concept Placement
+A document may restate a rule from the documents to its left when describing its own
+boundary. Concepts from documents to its right stay outside its scope.
 
-The same concept appears in different documents from different angles:
+## Concept Ownership
 
-- In `semantics.md`, concepts appear as semantic definitions.
-- In `executor.md`, concepts appear as execution-environment and governance concerns.
-- In `host.md`, concepts appear as host adaptation and boundary behavior.
-- In `api.md`, concepts appear as public interfaces and call results.
+| Concept                                                  | Owned by       |
+| -------------------------------------------------------- | -------------- |
+| `Wisp`, `Ritual`, `Sigil`, echo/resonance                | `semantics.md` |
+| scope tree, process ownership, descriptors               | `semantics.md` |
+| future, context, channel semantics                       | `semantics.md` |
+| failure values, scope failure, cancellation              | `semantics.md` |
+| branch result ownership and recovery routes              | `semantics.md` |
+| execution entries, `LaunchHandle`, `LaunchResult`        | `executor.md`  |
+| external future settlement, channel send, cancel         | `executor.md`  |
+| `Pacer`, slice progression, scheduler and reaper         | `executor.md`  |
+| generator routines, `Presence`, JavaScript errors        | `host.md`      |
+| `run`, `createScope`, `action`, `feed`, `sleep`, `until` | `host.md`      |
+| package exports, signatures, return-value tables         | `api.md`       |
 
 ## Core Terms
 
-The glossary is grouped by the model layer that owns each term.
+- **Entry** means a runnable boundary that external code can start, such as `launch(...)`,
+  `run(...)`, or `createScope().run(...)`.
+- **Scope** means the structured concurrency boundary that owns child scopes, processes,
+  context, futures, and channels.
+- **Branch** means a child scope created under the current scope.
+- **Scoped outcome** means a pair of a scope reference and an outcome future.
+- **Convergence** means a process, future, or scope reaching its final result.
+- **Failure** means an in-band kernel failure value.
+- **Scope failure** means a scope converged through its local failure path and reported a
+  `ScopeFailure` through `exitFuture`.
+- **Cancellation** means convergence along the `canceled` path.
+- **Recovery** means failure handling through `resumable`, `guard`, and recovery routes.
 
-### Entry Boundary
-
-- "Entry" means a runnable boundary that can be started from the outside, such as `launch(...)`, `run(...)`, or `createScope().run(...)`.
-
-### Host Boundary
-
-- "Host operation" means an application-facing bridge that connects JavaScript host effects to shajara objects.
-
-### Communication
-
-- "Channel" means an explicit communication object with receiver and sender endpoints.
-
-### Convergence and Lifecycle
-
-- "Convergence" means a future or scope reaching its final result.
-- "Closing" names the scope lifecycle path that moves from `open` through `closing` to `closed`.
-
-### Failure
-
-- "Failure" means a failure result or failure convergence.
-- "Forced failure" means directly pushing a scope into failure convergence.
-- "Cancellation" names convergence along the `canceled` path.
-
-### Governance
-
-- "Adjudication" means the governance decision a `reaper` makes over a scope in the `closing` state.
+Failures are scoped results. A child-scope failure is observed through that child
+scope's `exitFuture`, or through a primitive that waits for and interprets that future.
