@@ -1,4 +1,4 @@
-import { branch, canceledFailure, cede, defer, race, spawn } from "#/index";
+import { branch, canceledFailure, cede, defer, halt, park, race, spawn } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { left, noop } from "#/utils";
@@ -15,7 +15,7 @@ describe("/ primitives: race", () => {
       },
     },
   ])(
-    "returns a branch handle whose entry process exposes the winner future",
+    "returns a scoped outcome whose outcome future is the winner",
     async ({ given: [fast, slow], outcome }) => {
       await using ritual = interpretRitual(() =>
         race([
@@ -33,10 +33,9 @@ describe("/ primitives: race", () => {
         ] as const),
       );
       const step = ritual.driveSync();
-      const handle = unwrapExitedSucceeded(step);
-      const winnerFuture = unwrapRight(await ritual.waitForFuture(handle.process.exitFuture));
+      const [scope, winnerFuture] = unwrapExitedSucceeded(step);
       const actual = unwrapRight(await ritual.waitForFuture(winnerFuture));
-      const scopeExit = await ritual.waitForFuture(handle.scope.exitFuture);
+      const scopeExit = await ritual.waitForFuture(scope.exitFuture);
 
       expect(actual).toBe(outcome.winner);
       expect(scopeExit).toEqual(outcome.scopeExit);
@@ -100,13 +99,61 @@ describe("/ primitives: race", () => {
         ] as const),
       );
       const step = ritual.driveSync();
-      const handle = unwrapExitedSucceeded(step);
-      const winnerFuture = unwrapRight(await ritual.waitForFuture(handle.process.exitFuture));
+      const [scope, winnerFuture] = unwrapExitedSucceeded(step);
 
       expect(unwrapRight(await ritual.waitForFuture(winnerFuture))).toBe(outcome.winner);
-      expect(await ritual.waitForFuture(handle.scope.exitFuture)).toEqual(outcome.scopeExit);
+      expect(await ritual.waitForFuture(scope.exitFuture)).toEqual(outcome.scopeExit);
       expect(events).toHaveLength(outcome.cleanups.length);
       expect(events).toEqual(expect.arrayContaining([...outcome.cleanups]));
     },
   );
+
+  test.for([
+    {
+      given: [
+        {
+          kind: "halted",
+          message: "race entrant failed",
+        },
+      ] as const,
+      outcome: {
+        scopeExit: left(
+          scopeFailureCausedBy({
+            kind: "halted",
+            message: "race entrant failed",
+          }),
+        ),
+        winner: left(
+          scopeFailureCausedBy({
+            kind: "halted",
+            message: "race entrant failed",
+          }),
+        ),
+      },
+    },
+  ])(
+    "settles the outcome future when the race scope fails before a winner",
+    async ({ given: [failure], outcome }) => {
+      await using ritual = interpretRitual(() =>
+        race([() => halt(failure), () => park()] as const),
+      );
+      const step = ritual.driveSync();
+      const [scope, winnerFuture] = unwrapExitedSucceeded(step);
+      const actual = {
+        scopeExit: await ritual.waitForFuture(scope.exitFuture),
+        winner: await ritual.waitForFuture(winnerFuture),
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
 });
+
+function scopeFailureCausedBy(failure: unknown) {
+  return expect.objectContaining({
+    cause: expect.objectContaining({
+      failure,
+    }),
+    kind: "scope",
+  });
+}

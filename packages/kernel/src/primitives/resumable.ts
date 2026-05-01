@@ -1,46 +1,49 @@
-// oxlint-disable import/max-dependencies
-import type { FailureShape, FutureKey, Ritual, Wisp } from "#/contracts";
-import { wisp, wispEither } from "#/internal/fp";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts";
 import type { ScopeFailure } from "#/failures";
+import type { ScopedOutcome } from "./branch";
 import { branch } from "./branch";
 import { either } from "fp-ts";
 import { future } from "./future";
-import { halt } from "./halt";
-import { lookup } from "./lookup";
 import { pipe } from "fp-ts/function";
-import { recoveryChannelKey } from "#/primitives-kit";
-import { send } from "./send";
+import { requestRecovery } from "#/primitives-kit";
+import { settle } from "./settle";
 import { spawn } from "./spawn";
 import { wait } from "./wait";
+import { wisp } from "#/internal/fp";
 
-export function resumable<Relic>(entry: Ritual<Relic>): Wisp<FutureKey<Relic>> {
+export function resumable<Relic>(entry: Ritual<Relic>): Wisp<ScopedOutcome<Relic>> {
   return pipe(
-    branch(entry, { failureMode: "contain" }),
-    wisp.chain(({ scope }) => spawn(resumeAttempt(scope.exitFuture))),
+    wisp.Do,
+    wisp.bind("outcome", () => future<Relic>()),
+    wisp.bind("scope", () =>
+      pipe(
+        branch(entry, { failureMode: "contain" }),
+        wisp.map(({ scope }) => scope),
+      ),
+    ),
+    wisp.chainFirst(({ outcome: [, outcomeSettle], scope }) =>
+      spawn(resumableOutcome(scope.exitFuture, outcomeSettle)),
+    ),
+    wisp.map(({ outcome: [outcomeFuture], scope }) => [scope, outcomeFuture] as const),
   );
 }
 
-function resumeAttempt<Relic>(entryFuture: FutureKey<Relic>) {
+function resumableOutcome<Relic>(
+  scopeExit: FutureKey<Relic>,
+  outcomeSettle: FutureSettleKey<Relic>,
+) {
   return () =>
     pipe(
-      wait(entryFuture),
-      wispEither.orElse((failure) =>
-        pipe(
-          lookup(recoveryChannelKey),
-          wisp.map(either.fromOption(() => failure)),
-          wispEither.map((recoveryChannel) => ({ recoveryChannel })),
-          wispEither.bind("resolver", () => wispEither.rightWisp(future<Relic>())),
-          wispEither.chainFirst(({ resolver: [, recoverySettle], recoveryChannel }) =>
-            wispEither.rightWisp(
-              send(recoveryChannel, {
-                failure: failure as ScopeFailure,
-                recoverySettle,
-              }),
+      wait(scopeExit),
+      wisp.chain(
+        either.match(
+          (failure) =>
+            pipe(
+              requestRecovery<Relic>(failure as ScopeFailure),
+              wisp.chain((recovery) => settle(outcomeSettle, recovery)),
             ),
-          ),
-          wispEither.chain(({ resolver: [recoveryFuture] }) => wait(recoveryFuture)),
+          (value) => settle(outcomeSettle, either.right(value)),
         ),
       ),
-      wispEither.getOrElse<FailureShape, Relic>(halt),
     );
 }

@@ -1,6 +1,6 @@
 import type { Ritual, Wisp } from "#/contracts";
 import type { AutonomyOptions } from "#/executor/autonomy";
-import type { BranchHandle } from "#/sigils/index";
+import type { BranchHandle } from "#/primitives/index";
 import { branch } from "#/primitives/index";
 import { withAutonomy } from "#/executor/autonomy";
 

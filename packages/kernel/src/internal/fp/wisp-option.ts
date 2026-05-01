@@ -13,7 +13,6 @@ declare module "fp-ts/HKT" {
   }
 }
 
-/** @preserveSurface */
 // oxlint-disable-next-line no-namespace
 export namespace wispOption {
   export const URI = "WispOption";
