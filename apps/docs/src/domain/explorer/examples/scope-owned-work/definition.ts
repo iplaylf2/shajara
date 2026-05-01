@@ -11,7 +11,7 @@ import type { ScopeOwnedWorkDemoEvent } from "./runtime";
 export const scopeOwnedWorkExample = {
   descriptionKey: "explorer.examples.scope-owned-work.description",
   guideKeys: [
-    "explorer.examples.scope-owned-work.guide.enclose",
+    "explorer.examples.scope-owned-work.guide.branch",
     "explorer.examples.scope-owned-work.guide.scope",
     "explorer.examples.scope-owned-work.guide.result",
     "explorer.examples.scope-owned-work.guide.wait",
@@ -39,14 +39,14 @@ function createScopeOwnedWorkFlow(): ExplorerFlow<ScopeOwnedWorkDemoEvent> {
 
 function createScopeOwnedWorkFlowLinks(): ExplorerFlow<ScopeOwnedWorkDemoEvent>["links"] {
   return [
-    spawnLink("root", "scope", "enclose(commitArticle)", ["launch-scope"]),
+    spawnLink("root", "scope", "branch(commitArticle)", ["launch-scope"]),
     spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
     waitLink("index", "scope", "owned process", {
       activeEvents: ["scope-wait-index"],
       displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
     }),
-    waitLink("scope", "root", "enclose waits for child scope", {
+    waitLink("scope", "root", "branch waits for child scope", {
       activeEvents: ["scope-wait-root"],
       displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
@@ -59,10 +59,10 @@ function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>[
     parentRoutineNode("root", "publishArticle", {
       activeEvents: [
         "routine",
-        "enclose-open",
+        "branch-open",
         "launch-scope",
         "scope-wait-root",
-        "enclose-close",
+        "branch-close",
         "return-result",
         "done",
       ],
@@ -75,9 +75,9 @@ function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>[
         "spawn-index",
         "inner-return",
         "scope-wait-index",
-        "enclose-close",
+        "branch-close",
       ],
-      completedEvents: ["enclose-close"],
+      completedEvents: ["branch-close"],
       id: "scope",
       kind: "join",
       label: "commitArticle",

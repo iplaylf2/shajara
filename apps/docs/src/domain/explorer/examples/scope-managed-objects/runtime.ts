@@ -1,15 +1,15 @@
 // oxlint-disable max-lines-per-function
 import { CanceledError, ChannelError, sleep } from "@shajara/host";
 import type { RiteCoroutine, RiteFuture } from "@shajara/host";
-import { channel, enclose, future, tryReceive, wait } from "@shajara/host/primitives";
+import { branch, channel, future, tryReceive, wait } from "@shajara/host/primitives";
 import {
+  branchWait,
   clearCursor,
   clearCursors,
   codeLine,
   codeSpacer,
   completeEvents,
   cursorAt,
-  encloseWait,
   setCursor,
 } from "#/domain/explorer/examples-kit";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
@@ -19,11 +19,10 @@ import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 export function createScopeManagedObjectsDemoCode() {
   return [
     codeLine("routine", "function* resumeCheckout() {", ["done"]),
-    codeLine(
-      "enclose-open",
-      "  const [ticket, updates] = yield* enclose(function* openSession() {",
-      ["objects-returned", "scope-closed"],
-    ),
+    codeLine("branch-open", "  const [ticket, updates] = yield* branch(function* openSession() {", [
+      "objects-returned",
+      "scope-closed",
+    ]),
     codeLine("future-open", "    const [ticket] = yield* future<string>();", ["future-open"]),
     codeLine(
       "channel-open",
@@ -32,9 +31,9 @@ export function createScopeManagedObjectsDemoCode() {
     ),
     codeLine("session-sleep", `    yield* sleep(${sessionDelayMs});`, ["session-sleep"]),
     codeLine("return-objects", "    return [ticket, updates];", ["return-objects"]),
-    codeLine("enclose-close", "  });", ["objects-returned", "scope-closed"]),
-    codeLine("after-enclose-sleep", `  yield* sleep(${afterEncloseDelayMs});`, [
-      "after-enclose-sleep",
+    codeLine("branch-close", "  });", ["objects-returned", "scope-closed"]),
+    codeLine("after-branch-sleep", `  yield* sleep(${afterBranchDelayMs});`, [
+      "after-branch-sleep",
     ]),
     codeSpacer(),
     codeLine("wait-ticket", "  try { yield* wait(ticket); }", ["ticket-caught"]),
@@ -51,14 +50,14 @@ export function createScopeManagedObjectsDemoCode() {
 export function* scopeManagedObjectsDemo(
   emit: ExplorerReplayEmit<ScopeManagedObjectsDemoEvent>,
 ): RiteCoroutine<string> {
-  return yield* enclose(function* resumeCheckout(): RiteCoroutine<string> {
+  return yield* branch(function* resumeCheckout(): RiteCoroutine<string> {
     emit({
-      actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
+      actions: [setCursor(cursorAt("root", ["branch-open", "launch-scope"], "running"))],
     });
-    const [ticket, updates] = yield* enclose(
-      encloseWait(
+    const [ticket, updates] = yield* branch(
+      branchWait(
         emit,
-        { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
+        { events: ["branch-open", "scope-wait-root"], routineId: "root" },
         function* openSession(): RiteCoroutine<SessionObjects> {
           emit({
             actions: [setCursor(cursorAt("child", "future-open", "running"))],
@@ -104,14 +103,14 @@ export function* scopeManagedObjectsDemo(
           "ticket-canceled",
           "updates-revoked",
         ]),
-        setCursor(cursorAt("root", "after-enclose-sleep", "running")),
+        setCursor(cursorAt("root", "after-branch-sleep", "running")),
       ],
     });
 
-    yield* sleep(afterEncloseDelayMs);
+    yield* sleep(afterBranchDelayMs);
     emit({
       actions: [
-        completeEvents("after-enclose-sleep"),
+        completeEvents("after-branch-sleep"),
         setCursor(cursorAt("root", "wait-ticket", "running")),
       ],
     });
@@ -166,7 +165,7 @@ export type ScopeManagedObjectsDemoEvent = ExplorerAuthoredEvent<
   ReturnType<typeof createScopeManagedObjectsDemoCode>,
   | "objects-returned"
   | "object-sleep"
-  | "after-enclose-sleep"
+  | "after-branch-sleep"
   | "launch-scope"
   | "scope-closed"
   | "scope-wait-root"
@@ -179,7 +178,7 @@ type ManagedReceiver = Parameters<typeof tryReceive<string, never>>[typeof first
 type SessionObjects = readonly [RiteFuture<string>, ManagedReceiver];
 
 const channelCapacity = 0;
-const afterEncloseDelayMs = 1000;
+const afterBranchDelayMs = 1000;
 const firstParameterIndex = 0;
 const objectDelayMs = 1000;
 const sessionDelayMs = 1000;

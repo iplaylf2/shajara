@@ -47,9 +47,9 @@ export function setCursors<TEvent extends ExplorerEventId>(
   return { cursors, kind: "set-cursors" };
 }
 
-export function encloseWait<TEvent extends ExplorerEventId, TResult>(
+export function branchWait<TEvent extends ExplorerEventId, TResult>(
   emit: ExplorerReplayEmit<TEvent>,
-  replay: EncloseWaitReplay<TEvent>,
+  replay: BranchWaitReplay<TEvent>,
   routine: RiteRoutine<TResult>,
 ): RiteRoutine<TResult> {
   emit({
@@ -100,7 +100,7 @@ interface BranchOutcome {
   didReturn: boolean;
 }
 
-export interface EncloseWaitReplay<TEvent extends ExplorerEventId> {
+export interface BranchWaitReplay<TEvent extends ExplorerEventId> {
   readonly events: TEvent | readonly TEvent[];
   readonly routineId: ExplorerRoutineId;
 }

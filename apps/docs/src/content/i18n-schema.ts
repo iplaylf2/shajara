@@ -49,7 +49,7 @@ export const explorerUiI18nSchema = z.object(
     "explorer.examples.scope-managed-objects.guide.observe",
     "explorer.examples.scope-managed-objects.title",
     "explorer.examples.scope-owned-work.description",
-    "explorer.examples.scope-owned-work.guide.enclose",
+    "explorer.examples.scope-owned-work.guide.branch",
     "explorer.examples.scope-owned-work.guide.result",
     "explorer.examples.scope-owned-work.guide.scope",
     "explorer.examples.scope-owned-work.guide.wait",

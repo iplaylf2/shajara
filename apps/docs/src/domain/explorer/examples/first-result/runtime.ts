@@ -1,4 +1,5 @@
 // oxlint-disable max-lines-per-function
+import { branch, race } from "@shajara/host/primitives";
 import {
   clearCursor,
   codeLine,
@@ -9,7 +10,6 @@ import {
   setCursor,
   setCursors,
 } from "#/domain/explorer/examples-kit";
-import { enclose, race, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -19,7 +19,7 @@ import { sleep } from "@shajara/host";
 export function createFirstResultDemoCode() {
   return [
     codeLine("routine", "function* loadProfile() {", ["done"]),
-    codeLine("race-open", "  const firstProfile = yield* race([", ["wait-race"]),
+    codeLine("race-open", "  const profile = yield* race([", ["race-wait-result"]),
     codeLine("cache-open", "    function* readCache() {", ["cache-canceled", "cache-return"]),
     codeLine("cache-sleep", `      yield* sleep(${cacheDelayMs});`, [
       "cache-canceled",
@@ -38,9 +38,8 @@ export function createFirstResultDemoCode() {
     ]),
     codeLine("network-return", '      return "fresh profile";', ["network-return"]),
     codeLine("network-close", "    },", ["network-return"]),
-    codeLine("race-close", "  ] as const);", ["wait-race"]),
+    codeLine("race-close", "  ] as const);", ["race-wait-result"]),
     codeSpacer(),
-    codeLine("wait-race", "  const profile = yield* wait(firstProfile);", ["wait-race"]),
     codeLine("return-profile", "  return profile;", ["done"]),
     codeLine("done", "}", ["done"]),
   ];
@@ -49,16 +48,16 @@ export function createFirstResultDemoCode() {
 export function* firstResultDemo(
   emit: ExplorerReplayEmit<FirstResultDemoEvent>,
 ): RiteCoroutine<string> {
-  return yield* enclose(function* loadProfile(): RiteCoroutine<string> {
+  return yield* branch(function* loadProfile(): RiteCoroutine<string> {
     emit({
       actions: [
         setCursors([
-          cursorAt("root", "race-open", "running"),
+          cursorAt("root", ["race-open", "race-wait-result"], "blocked"),
           cursorAt("race", ["launch-cache", "launch-network"], "running"),
         ]),
       ],
     });
-    const firstProfile = yield* race([
+    const profile = yield* race([
       raceBranch(
         emit,
         {
@@ -131,12 +130,10 @@ export function* firstResultDemo(
       ),
     ] as const);
 
-    emit({ actions: [setCursor(cursorAt("root", "wait-race", "blocked"))] });
-    const profile = yield* wait(firstProfile);
     emit({
       actions: [
         clearCursor("race"),
-        completeEvents("wait-race"),
+        completeEvents("race-wait-result"),
         setCursor(cursorAt("root", "return-profile", "running")),
       ],
     });
@@ -151,7 +148,7 @@ export function* firstResultDemo(
 
 export type FirstResultDemoEvent = ExplorerAuthoredEvent<
   ReturnType<typeof createFirstResultDemoCode>,
-  "launch-cache" | "launch-network" | "race-wait-cache" | "race-wait-network"
+  "launch-cache" | "launch-network" | "race-wait-cache" | "race-wait-network" | "race-wait-result"
 >;
 
 const cacheDelayMs = 1000;

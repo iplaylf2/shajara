@@ -1,4 +1,5 @@
 // oxlint-disable max-lines-per-function
+import { branch, spawn } from "@shajara/host/primitives";
 import {
   clearCursors,
   codeLine,
@@ -7,7 +8,6 @@ import {
   cursorAt,
   setCursor,
 } from "#/domain/explorer/examples-kit";
-import { enclose, spawn } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -30,7 +30,7 @@ export function createSingleSpawnDemoCode() {
 export function* singleSpawnDemo(
   emit: ExplorerReplayEmit<SingleSpawnDemoEvent>,
 ): RiteCoroutine<string> {
-  return yield* enclose(function* submitOrder(): RiteCoroutine<string> {
+  return yield* branch(function* submitOrder(): RiteCoroutine<string> {
     emit({ actions: [setCursor(cursorAt("root", "spawn-receipt", "running"))] });
     yield* spawn(function* sendReceiptEmail(): RiteCoroutine<string> {
       emit({ actions: [setCursor(cursorAt("receipt", "receipt-sleep", "running"))] });

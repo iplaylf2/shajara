@@ -1,4 +1,5 @@
 // oxlint-disable max-lines-per-function
+import { branch, future, settle, spawn, wait } from "@shajara/host/primitives";
 import {
   clearCursor,
   codeLine,
@@ -7,7 +8,6 @@ import {
   cursorAt,
   setCursor,
 } from "#/domain/explorer/examples-kit";
-import { enclose, future, settle, spawn, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -32,7 +32,7 @@ export function createFutureSettlementDemoCode() {
 export function* futureSettlementDemo(
   emit: ExplorerReplayEmit<FutureSettlementDemoEvent>,
 ): RiteCoroutine<string> {
-  return yield* enclose(function* verifyPhoneNumber(): RiteCoroutine<string> {
+  return yield* branch(function* verifyPhoneNumber(): RiteCoroutine<string> {
     emit({ actions: [setCursor(cursorAt("root", "future", "running"))] });
     const [smsCode, provideSmsCode] = yield* future<string>();
     emit({

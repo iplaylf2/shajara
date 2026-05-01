@@ -43,8 +43,8 @@ function createScopeManagedObjectsFlow(): ExplorerFlow<ScopeManagedObjectsDemoEv
 
 function createScopeManagedObjectsFlowLinks(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["links"] {
   return [
-    spawnLink("root", "child", "enclose(openSession)", ["launch-scope"]),
-    waitLink("child", "root", "enclose waits for openSession", {
+    spawnLink("root", "child", "branch(openSession)", ["launch-scope"]),
+    waitLink("child", "root", "branch waits for openSession", {
       activeEvents: ["scope-wait-root"],
       displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
@@ -77,11 +77,11 @@ function createRootNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][n
   return parentRoutineNode("root", "resumeCheckout", {
     activeEvents: [
       "routine",
-      "enclose-open",
+      "branch-open",
       "launch-scope",
       "scope-wait-root",
       "objects-returned",
-      "after-enclose-sleep",
+      "after-branch-sleep",
       "wait-ticket",
       "ticket-caught",
       "object-sleep",

@@ -1,4 +1,5 @@
 // oxlint-disable max-lines-per-function
+import { branch, spawn, wait } from "@shajara/host/primitives";
 import {
   clearCursor,
   codeLine,
@@ -7,7 +8,6 @@ import {
   cursorAt,
   setCursor,
 } from "#/domain/explorer/examples-kit";
-import { enclose, spawn, wait } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -42,7 +42,7 @@ export function createLoadPageDemoCode() {
 export function* loadPageDemo(
   emit: ExplorerReplayEmit<LoadPageDemoEvent>,
 ): RiteCoroutine<LoadPageDemoResult> {
-  return yield* enclose(function* loadPage(): RiteCoroutine<LoadPageDemoResult> {
+  return yield* branch(function* loadPage(): RiteCoroutine<LoadPageDemoResult> {
     emit({ actions: [setCursor(cursorAt("root", "spawn-header", "running"))] });
     const header = yield* spawn(function* loadHeader(): RiteCoroutine<string> {
       emit({ actions: [setCursor(cursorAt("header", "header-sleep", "running"))] });
