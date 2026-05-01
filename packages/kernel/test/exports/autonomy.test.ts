@@ -26,7 +26,7 @@ import {
 import {
   createInlineProcessor,
   createManagedExecutor,
-  createManagedQueuedProcessor,
+  createQueuedProcessor,
   findFailureByKind,
   unwrapSome,
   waitForSettled,
@@ -41,7 +41,7 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentCount: 0,
+        assignedCount: 0,
         settled: {
           kind: "success",
           result: right("autonomy-ready"),
@@ -54,9 +54,9 @@ describe("/ primitives: autonomy", () => {
     "runs autonomy inline when the autonomous ritual settles synchronously",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const processor = createInlineProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+      const scheduler = trackAssignments(assigned, processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -67,7 +67,7 @@ describe("/ primitives: autonomy", () => {
       );
 
       const actual = {
-        assignmentCount: assignedProcesses.length,
+        assignedCount: assigned.length,
         settled: await waitForSettled(handle),
         settledStatus: handle.status,
         taskStatuses,
@@ -96,9 +96,9 @@ describe("/ primitives: autonomy", () => {
     "returns the branch handle for the autonomous scope",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const processor = createInlineProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+      const scheduler = trackAssignments(assigned, processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -133,7 +133,7 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("scheduler assignment failed"), "scheduler-entry"] as const,
       outcome: {
-        interruptedCauseMessage: "scheduler assignment failed",
+        causeMessage: "scheduler assignment failed",
         settledKind: "failure",
         settledStatus: "closed",
       },
@@ -175,7 +175,7 @@ describe("/ primitives: autonomy", () => {
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
-              message: outcome.interruptedCauseMessage,
+              message: outcome.causeMessage,
             }),
           ),
         ),
@@ -187,8 +187,8 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentsAfterWait: 2,
-        assignmentsBeforeWait: 2,
+        assignedAfterWait: 2,
+        assignedBeforeWait: 2,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -201,9 +201,9 @@ describe("/ primitives: autonomy", () => {
     "routes suspended autonomy through the provided inline scheduler",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const processor = createInlineProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+      const scheduler = trackAssignments(assigned, processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -229,11 +229,11 @@ describe("/ primitives: autonomy", () => {
         ),
       );
       executor.settle(await futureSettle.promise, right(entryResult));
-      const assignmentsBeforeWait = assignedProcesses.length;
+      const assignedBeforeWait = assigned.length;
       const settled = await waitForSettled(handle);
       const actual = {
-        assignmentsAfterWait: assignedProcesses.length,
-        assignmentsBeforeWait,
+        assignedAfterWait: assigned.length,
+        assignedBeforeWait,
         settled,
         settledStatus: handle.status,
         taskStatuses,
@@ -247,8 +247,8 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentsAfterWait: 2,
-        assignmentsBeforeWait: 2,
+        assignedAfterWait: 2,
+        assignedBeforeWait: 2,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -261,10 +261,10 @@ describe("/ primitives: autonomy", () => {
     "routes suspended autonomy through the provided queued scheduler",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
 
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -290,11 +290,11 @@ describe("/ primitives: autonomy", () => {
         ),
       );
       executor.settle(await futureSettle.promise, right(entryResult));
-      const assignmentsBeforeWait = assignedProcesses.length;
+      const assignedBeforeWait = assigned.length;
       const settled = await waitForSettled(handle);
       const actual = {
-        assignmentsAfterWait: assignedProcesses.length,
-        assignmentsBeforeWait,
+        assignedAfterWait: assigned.length,
+        assignedBeforeWait,
         settled,
         settledStatus: handle.status,
         taskStatuses,
@@ -312,7 +312,7 @@ describe("/ primitives: autonomy", () => {
         [right("alpha"), right("beta")] as const,
       ] as const,
       outcome: {
-        assignmentCount: 2,
+        assignedCount: 2,
         settled: {
           kind: "success",
           result: right([right("alpha"), right("beta")]),
@@ -325,11 +325,11 @@ describe("/ primitives: autonomy", () => {
     "routes ceded autonomous tasks through the shared queued scheduler in admission order",
     async ({ given: [labels, eventOrder, resultOrder], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const events: string[] = [];
 
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -379,7 +379,7 @@ describe("/ primitives: autonomy", () => {
       const settled = await waitForSettled(handle);
 
       const actual = {
-        assignmentCount: assignedProcesses.length,
+        assignedCount: assigned.length,
         events,
         settled,
         settledStatus: handle.status,
@@ -390,7 +390,7 @@ describe("/ primitives: autonomy", () => {
         ...outcome,
         events: [...eventOrder],
       });
-      expect(assignedProcesses).toHaveLength(resultOrder.length);
+      expect(assigned).toHaveLength(resultOrder.length);
     },
   );
 
@@ -467,8 +467,8 @@ describe("/ primitives: autonomy", () => {
       ] as const,
       outcome: {
         adjudicationCount: 1,
-        assignmentsAfterSettle: 6,
-        assignmentsBeforeSettle: 2,
+        assignedAfterSettle: 6,
+        assignedBeforeSettle: 2,
         settled: {
           failure: expect.objectContaining({
             cause: expect.objectContaining({
@@ -495,12 +495,12 @@ describe("/ primitives: autonomy", () => {
     "composes scheduler and reaper governance within the same autonomous scope",
     async ({ given: [entryResult, failure], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
       let adjudicationCount = 0;
 
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
       const reaper: Reaper = {
         adjudicate: () => {
           adjudicationCount += 1;
@@ -540,13 +540,13 @@ describe("/ primitives: autonomy", () => {
       );
 
       executor.settle(await futureSettle.promise, right(entryResult));
-      const assignmentsBeforeSettle = assignedProcesses.length;
+      const assignedBeforeSettle = assigned.length;
       const settled = await waitForSettled(handle);
 
       const actual = {
         adjudicationCount,
-        assignmentsAfterSettle: assignedProcesses.length,
-        assignmentsBeforeSettle,
+        assignedAfterSettle: assigned.length,
+        assignedBeforeSettle,
         settled,
         settledStatus: handle.status,
       };
@@ -559,7 +559,7 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("reaper adjudication failed")] as const,
       outcome: {
-        interruptedCauseMessage: "reaper adjudication failed",
+        causeMessage: "reaper adjudication failed",
         settledKind: "failure",
         settledStatus: "closed",
       },
@@ -609,7 +609,7 @@ describe("/ primitives: autonomy", () => {
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
-              message: outcome.interruptedCauseMessage,
+              message: outcome.causeMessage,
             }),
           ),
         ),
@@ -628,13 +628,10 @@ function awaitAutonomy<Relic>(
   );
 }
 
-function createTrackingScheduler(
-  assignedProcesses: ProcessRef<unknown>[],
-  processor: Processor,
-): Scheduler {
+function trackAssignments(assigned: ProcessRef<unknown>[], processor: Processor): Scheduler {
   return {
     assign: (process) => {
-      assignedProcesses.push(process);
+      assigned.push(process);
       return processor;
     },
   };

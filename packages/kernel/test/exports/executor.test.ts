@@ -392,11 +392,11 @@ describe("/ interfaces: Executor", () => {
             ),
           ),
         );
-        const capturedFutureSettle = await futureSettle.promise;
+        const settleKey = await futureSettle.promise;
 
         const actual = {
-          firstSettle: executor.settle(capturedFutureSettle, right(value)),
-          secondSettle: executor.settle(capturedFutureSettle, right(value)),
+          firstSettle: executor.settle(settleKey, right(value)),
+          secondSettle: executor.settle(settleKey, right(value)),
           settled: await waitForSettled(handle),
           settledStatus: handle.status,
         };
@@ -422,7 +422,7 @@ describe("/ interfaces: Executor", () => {
       async ({ given: [value], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
-        const { handle, sender } = await launchReceivingChannel(executor);
+        const { handle, sender } = await launchReceiver(executor);
 
         const actual = {
           sendResult: executor.trySend(sender, value),
@@ -451,7 +451,7 @@ describe("/ interfaces: Executor", () => {
       async ({ given: [closeOutcome, lateValue], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
-        const { handle, sender } = await launchReceivingChannel(executor);
+        const { handle, sender } = await launchReceiver(executor);
 
         executor.close(sender, closeOutcome);
         const actual = {
@@ -503,10 +503,10 @@ describe("/ interfaces: Executor", () => {
             ),
           ),
         );
-        const capturedFutureSettle = await futureSettle.promise;
+        const settleKey = await futureSettle.promise;
 
         const actual = {
-          injected: executor.settle(capturedFutureSettle, left(failure)),
+          injected: executor.settle(settleKey, left(failure)),
           settled: await waitForSettled(handle),
           settledStatus: handle.status,
         };
@@ -555,11 +555,11 @@ describe("/ interfaces: Executor", () => {
             ),
           ),
         );
-        const capturedFutureSettle = await futureSettle.promise;
+        const settleKey = await futureSettle.promise;
         const settled = await waitForSettled(handle);
 
         const actual = {
-          lateSettleAccepted: executor.settle(capturedFutureSettle, right(lateValue)),
+          lateSettleAccepted: executor.settle(settleKey, right(lateValue)),
           settled,
           settledStatus: handle.status,
         };
@@ -801,9 +801,7 @@ describe("/ interfaces: Executor", () => {
   });
 });
 
-async function launchReceivingChannel(
-  executor: Executor,
-): Promise<LaunchedChannelReceiver<string, string>> {
+async function launchReceiver(executor: Executor): Promise<LaunchedReceiver<string, string>> {
   const sender = Promise.withResolvers<ChannelSender<string, string>>();
   const handle = unwrapSome(
     executor.launch(executor.scope, () =>
@@ -825,7 +823,7 @@ async function launchReceivingChannel(
   return { handle, sender: await sender.promise };
 }
 
-interface LaunchedChannelReceiver<Value, Outcome> {
+interface LaunchedReceiver<Value, Outcome> {
   readonly handle: LaunchHandle<ReceiveResult<Value, Outcome>>;
   readonly sender: ChannelSender<Value, Outcome>;
 }

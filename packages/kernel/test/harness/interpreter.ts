@@ -2,9 +2,16 @@ import type { FutureKey, FutureResult, ProcessRef, Ritual, Suppressor } from "#/
 import { Interpreter } from "#/interpreter";
 import type { ProcessStep } from "#/interpreter";
 import { option } from "fp-ts";
+import { withRecoveryAnchor } from "#/primitives-kit";
 
 export function interpretRitual<Relic>(ritual: Ritual<Relic>): RitualInterpreterHandle<Relic> {
   return new RitualInterpreter(ritual);
+}
+
+export function interpretWithRecovery<Relic>(
+  ritual: Ritual<Relic>,
+): RitualInterpreterHandle<Relic> {
+  return interpretRitual(withRecoveryAnchor(ritual));
 }
 
 export interface RitualInterpreterHandle<Relic> extends AsyncDisposable {

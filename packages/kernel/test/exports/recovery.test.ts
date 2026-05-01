@@ -1,16 +1,15 @@
-import type { FailureShape, Ritual, ScopeFailure, ScopeRef, ScopedOutcome } from "#/index";
+import type { ScopeFailure, ScopeRef, ScopedOutcome } from "#/index";
 import { cede, guard, halt, resumable, self, wait } from "#/index";
 import {
   createManagedExecutor,
   interpretRitual,
-  unwrapExited,
+  interpretWithRecovery,
   unwrapExitedSucceeded,
   unwrapSome,
   waitForSettled,
 } from "#test/harness";
 import { describe, expect, test } from "vitest";
 import { left, none, noop, right, some } from "#/utils";
-import { requestRecovery, withRecoveryAnchor, withRecoveryPoint } from "#/primitives-kit";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -30,7 +29,7 @@ describe("/ primitives: guard, resumable", () => {
         entryScope: null as ScopeRef<string> | null,
       };
 
-      await using ritual = interpretRitualWithRecoveryAnchor(() =>
+      await using ritual = interpretWithRecovery(() =>
         pipe(
           resumable(() =>
             pipe(
@@ -76,7 +75,7 @@ describe("/ primitives: guard, resumable", () => {
     async ({ given: [returned, settled, entryResult], outcome }) => {
       const events: string[] = [];
 
-      await using ritual = interpretRitualWithRecoveryAnchor(() =>
+      await using ritual = interpretWithRecovery(() =>
         pipe(
           resumable(() =>
             pipe(
@@ -124,7 +123,7 @@ describe("/ primitives: guard, resumable", () => {
   ])(
     "guard preserves the guarded entry result",
     async ({ given: [entryResult, unusedRecovery], outcome }) => {
-      await using ritual = interpretRitualWithRecoveryAnchor(() =>
+      await using ritual = interpretWithRecovery(() =>
         guard(
           () => wisp.of(entryResult),
           () => wisp.of(some(right(unusedRecovery))),
@@ -152,7 +151,7 @@ describe("/ primitives: guard, resumable", () => {
       outcome: {
         kind: "success",
         result: right(
-          scopeFailureCausedBy({
+          scopeFailureOf({
             kind: "halted",
             message: "halted under executor root",
           }),
@@ -181,31 +180,32 @@ describe("/ primitives: guard, resumable", () => {
   test.for([
     {
       given: [
-        withRecoveryPoint<unknown>(
-          () => wisp.of("unreachable"),
-          () => wisp.of(none),
-        ),
+        "unreachable guarded result",
+        left({
+          kind: "halted",
+          message: "unreachable recovery result",
+        }),
       ] as const,
-      outcome: missingRecoveryAnchorFailure("recovery-point"),
-    },
-    {
-      given: [
-        () =>
-          requestRecovery(
-            scopeFailureFixture({
-              kind: "halted",
-              message: "unhandled recovery request",
-            }),
-          ),
-      ] as const,
-      outcome: missingRecoveryAnchorFailure("recovery-request"),
+      outcome: {
+        processExit: left(missingAnchor("recovery-point")),
+        scopeExit: left(scopeFailureOf(missingAnchor("recovery-point"))),
+      },
     },
   ])(
-    "halts recovery points and requests that run outside an executor anchor",
-    async ({ given: [entry], outcome }) => {
-      await using ritual = interpretRitual(entry);
+    "guard branches fail when they run outside an executor recovery anchor",
+    async ({ given: [entryResult, recoveryResult], outcome }) => {
+      await using ritual = interpretRitual(() =>
+        guard(
+          () => wisp.of(entryResult),
+          () => wisp.of(some(recoveryResult)),
+        ),
+      );
       const step = ritual.driveSync();
-      const actual = unwrapExited(step);
+      const handle = unwrapExitedSucceeded(step);
+      const actual = {
+        processExit: await ritual.waitForFuture(handle.process.exitFuture),
+        scopeExit: await ritual.waitForFuture(handle.scope.exitFuture),
+      };
 
       expect(actual).toEqual(outcome);
     },
@@ -223,17 +223,17 @@ describe("/ primitives: guard, resumable", () => {
     "resumable returns its entry result when it runs inside the guarded entry scope",
     async ({ given: [ready, unexpected], outcome }) => {
       const captured = {
-        resumableHandle: null as ScopedOutcome<string> | null,
+        handle: null as ScopedOutcome<string> | null,
       };
 
-      await using ritual = interpretRitualWithRecoveryAnchor(() =>
+      await using ritual = interpretWithRecovery(() =>
         guard(
           () =>
             pipe(
               resumable(() => wisp.of(ready)),
-              wisp.chain((capturedHandle) =>
+              wisp.chain((handle) =>
                 wisp.fromIO(() => {
-                  captured.resumableHandle = capturedHandle;
+                  captured.handle = handle;
                 }),
               ),
             ),
@@ -242,8 +242,8 @@ describe("/ primitives: guard, resumable", () => {
       );
       const step = ritual.driveSync();
       const guardHandle = unwrapExitedSucceeded(step);
-      assertCaptured(captured.resumableHandle);
-      const [, resumableFuture] = captured.resumableHandle;
+      assertCaptured(captured.handle);
+      const [, resumableFuture] = captured.handle;
       const actual = {
         guardExit: await ritual.waitForFuture(guardHandle.scope.exitFuture),
         resumableResult: await ritual.waitForFuture(resumableFuture),
@@ -290,25 +290,25 @@ describe("/ primitives: guard, resumable", () => {
     "guard receives resumable failures as scope failures and applies the recovery result",
     async ({ given: [entryFailure, recoveryResult], outcome }) => {
       const captured = {
-        caughtFailure: null as ScopeFailure | null,
-        resumableHandle: null as ScopedOutcome<string> | null,
+        failure: null as ScopeFailure | null,
+        handle: null as ScopedOutcome<string> | null,
       };
 
-      await using ritual = interpretRitualWithRecoveryAnchor(() =>
+      await using ritual = interpretWithRecovery(() =>
         guard(
           () =>
             pipe(
               resumable<string>(() => halt(entryFailure)),
-              wisp.chain((capturedHandle) =>
+              wisp.chain((handle) =>
                 wisp.fromIO(() => {
-                  captured.resumableHandle = capturedHandle;
+                  captured.handle = handle;
                 }),
               ),
             ),
           (caught) =>
             pipe(
               wisp.fromIO(() => {
-                captured.caughtFailure = caught;
+                captured.failure = caught;
               }),
               wisp.chain(() => wisp.of(some(recoveryResult))),
             ),
@@ -316,17 +316,17 @@ describe("/ primitives: guard, resumable", () => {
       );
       const step = ritual.driveSync();
       const guardHandle = unwrapExitedSucceeded(step);
-      assertCaptured(captured.caughtFailure);
-      assertCaptured(captured.resumableHandle);
-      const [, resumableFuture] = captured.resumableHandle;
+      assertCaptured(captured.failure);
+      assertCaptured(captured.handle);
+      const [, resumableFuture] = captured.handle;
       const actual = {
-        caughtFailure: right(captured.caughtFailure),
+        caught: right(captured.failure),
         guardExit: await ritual.waitForFuture(guardHandle.scope.exitFuture),
         resumableResult: await ritual.waitForFuture(resumableFuture),
       };
 
       expect(actual.resumableResult).toEqual(outcome.resumableResult);
-      expect(actual.caughtFailure).toEqual(
+      expect(actual.caught).toEqual(
         right(
           expect.objectContaining({
             cause: expect.objectContaining({
@@ -359,12 +359,12 @@ describe("/ primitives: guard, resumable", () => {
     "guard delegates recovery to an ancestor when its handler returns none",
     async ({ given: [entryFailure, outerRecovery], outcome }) => {
       const captured = {
-        innerCaughtFailure: null as ScopeFailure | null,
-        outerCaughtFailure: null as ScopeFailure | null,
-        resumableHandle: null as ScopedOutcome<string> | null,
+        handle: null as ScopedOutcome<string> | null,
+        inner: null as ScopeFailure | null,
+        outer: null as ScopeFailure | null,
       };
 
-      await using ritual = interpretRitualWithRecoveryAnchor(() =>
+      await using ritual = interpretWithRecovery(() =>
         guard(
           () =>
             pipe(
@@ -372,16 +372,16 @@ describe("/ primitives: guard, resumable", () => {
                 () =>
                   pipe(
                     resumable<string>(() => halt(entryFailure)),
-                    wisp.chain((capturedHandle) =>
+                    wisp.chain((handle) =>
                       wisp.fromIO(() => {
-                        captured.resumableHandle = capturedHandle;
+                        captured.handle = handle;
                       }),
                     ),
                   ),
                 (caught) =>
                   pipe(
                     wisp.fromIO(() => {
-                      captured.innerCaughtFailure = caught;
+                      captured.inner = caught;
                     }),
                     wisp.chain(() => wisp.of(outcome.innerRecovery)),
                   ),
@@ -391,25 +391,25 @@ describe("/ primitives: guard, resumable", () => {
           (caught) =>
             pipe(
               wisp.fromIO(() => {
-                captured.outerCaughtFailure = caught;
+                captured.outer = caught;
               }),
               wisp.chain(() => wisp.of(some(outerRecovery))),
             ),
         ),
       );
       ritual.driveSync();
-      assertCaptured(captured.resumableHandle);
-      const [, resumableFuture] = captured.resumableHandle;
+      assertCaptured(captured.handle);
+      const [, resumableFuture] = captured.handle;
 
       expect(await ritual.waitForFuture(resumableFuture)).toEqual(outcome.resumableResult);
-      assertCaptured(captured.innerCaughtFailure);
-      assertCaptured(captured.outerCaughtFailure);
-      expect(captured.innerCaughtFailure).toEqual(captured.outerCaughtFailure);
+      assertCaptured(captured.inner);
+      assertCaptured(captured.outer);
+      expect(captured.inner).toEqual(captured.outer);
     },
   );
 });
 
-function scopeFailureCausedBy(failure: unknown): ScopeFailure {
+function scopeFailureOf(failure: unknown): ScopeFailure {
   return expect.objectContaining({
     cause: expect.objectContaining({
       failure,
@@ -418,33 +418,14 @@ function scopeFailureCausedBy(failure: unknown): ScopeFailure {
   }) as ScopeFailure;
 }
 
-function scopeFailureFixture(failure: FailureShape): ScopeFailure {
-  return {
-    cause: {
-      failure,
-      kind: "process",
-      process: null as never,
-    },
-    kind: "scope",
-    message: "Scope failed during closing",
-    suppressed: [],
-  };
-}
-
-function missingRecoveryAnchorFailure(site: "recovery-point" | "recovery-request") {
-  return left(
-    expect.objectContaining({
-      cause: expect.objectContaining({
-        reason: "missing-recovery-anchor",
-        site,
-      }),
-      kind: "interrupted",
+function missingAnchor(site: "recovery-point" | "recovery-request") {
+  return expect.objectContaining({
+    cause: expect.objectContaining({
+      reason: "missing-recovery-anchor",
+      site,
     }),
-  );
-}
-
-function interpretRitualWithRecoveryAnchor<Relic>(ritual: Ritual<Relic>) {
-  return interpretRitual(withRecoveryAnchor(ritual));
+    kind: "interrupted",
+  });
 }
 
 function assertCaptured<Captured>(value: Captured | null): asserts value is NonNullable<Captured> {

@@ -273,13 +273,13 @@ describe("/ primitives: channel, close, send, receive", () => {
             kind: "scope",
           }),
         ),
-        sendResultAfterRevoked: some({ kind: "revoked" }),
+        revokedSend: some({ kind: "revoked" }),
       },
     },
   ])(
     "returns revoked for subsequent sends after overload rewrite failure",
-    async ({ given: [capacity, oldValue, incomingValue, afterRevokeValue, failure], outcome }) => {
-      let senderAfterFailure: ChannelSender<string, string> | null = null;
+    async ({ given: [capacity, oldValue, incomingValue, lateValue, failure], outcome }) => {
+      let revokedSender: ChannelSender<string, string> | null = null;
 
       await using ritual = interpretRitual(() =>
         pipe(
@@ -291,7 +291,7 @@ describe("/ primitives: channel, close, send, receive", () => {
               wisp.map(([, sender]) => ({ sender })),
               wisp.chainFirst(({ sender }) =>
                 wisp.fromIO(() => {
-                  senderAfterFailure = sender;
+                  revokedSender = sender;
                 }),
               ),
               wisp.chainFirst(({ sender }) => send(sender, oldValue)),
@@ -300,16 +300,16 @@ describe("/ primitives: channel, close, send, receive", () => {
           ),
           wisp.chain(({ scope }) => wait(scope.exitFuture)),
           wisp.map((enclosedResult) => ({ enclosedResult })),
-          wisp.bind("sendResultAfterRevoked", () => {
-            if (!senderAfterFailure) {
+          wisp.bind("revokedSend", () => {
+            if (!revokedSender) {
               throw new Error("Expected sender to be captured before channel failure");
             }
 
-            return trySend(senderAfterFailure, afterRevokeValue);
+            return trySend(revokedSender, lateValue);
           }),
-          wisp.map(({ enclosedResult, sendResultAfterRevoked }) => ({
+          wisp.map(({ enclosedResult, revokedSend }) => ({
             enclosedResult,
-            sendResultAfterRevoked,
+            revokedSend,
           })),
         ),
       );
