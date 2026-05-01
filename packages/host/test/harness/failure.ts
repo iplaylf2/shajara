@@ -1,4 +1,4 @@
-import type { Failure } from "#/contracts";
+import type { Failure } from "#/index";
 
 export function findFailureByKind<Kind extends Failure["kind"]>(
   value: unknown,

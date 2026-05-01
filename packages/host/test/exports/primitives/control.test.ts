@@ -23,7 +23,15 @@ describe("/ primitives: cede", () => {
     },
   );
 
-  test("unsettled waits are canceled when their scope closes", async () => {
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        cancelKind: "canceled",
+        status: "closed",
+      } as const,
+    },
+  ])("unsettled waits are canceled when their scope closes", async ({ outcome }) => {
     const scope = createScope();
 
     try {
@@ -34,10 +42,10 @@ describe("/ primitives: cede", () => {
 
       await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
       await expect(settled).rejects.toBeInstanceOf(CanceledError);
-      expect(scope.status).toBe("closed");
+      expect(scope.status).toBe(outcome.status);
     } finally {
-      if (scope.status !== "closed") {
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      if (scope.status !== outcome.status) {
+        await expect(scope.cancel()).rejects.toMatchObject({ kind: outcome.cancelKind });
       }
     }
   });

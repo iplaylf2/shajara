@@ -62,7 +62,7 @@ describe("/ primitives: guard, resumable", () => {
           },
           function* recoverResumable(error) {
             seenError.resolve(error);
-            return [true, value] as const;
+            return handled(value);
           },
         );
       });
@@ -107,7 +107,7 @@ describe("/ primitives: guard, resumable", () => {
       const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, "external")).toMatchObject({
+      expect(findFailureByKind(actual, outcome.external.kind)).toMatchObject({
         ...outcome.external,
         raw: recoveryCause,
       });
@@ -132,7 +132,7 @@ describe("/ primitives: guard, resumable", () => {
             values.push(item);
           },
           function* recoverResumable() {
-            return [true, value] as const;
+            return handled(value);
           },
         );
 
@@ -146,7 +146,12 @@ describe("/ primitives: guard, resumable", () => {
   test.for([
     {
       given: [new Error("failed before delegated recovery"), "delegated:recovered"] as const,
-      outcome: "delegated:recovered",
+      outcome: {
+        error: {
+          kind: "scope",
+        },
+        value: "delegated:recovered",
+      } as const,
     },
   ])(
     "delegates recovery to an ancestor guard when the handler declines recovery",
@@ -164,20 +169,28 @@ describe("/ primitives: guard, resumable", () => {
               },
               function* delegateRecovery(error) {
                 innerError.resolve(error);
-                return [false] as const;
+                return delegate();
               },
             );
           },
           function* recoverInAncestor(error) {
             outerError.resolve(error);
-            return [true, value] as const;
+            return handled(value);
           },
         );
       });
 
-      await expect(settled).resolves.toBe(outcome);
-      await expect(innerError.promise).resolves.toMatchObject({ kind: "scope" });
-      await expect(outerError.promise).resolves.toMatchObject({ kind: "scope" });
+      await expect(settled).resolves.toBe(outcome.value);
+      await expect(innerError.promise).resolves.toMatchObject(outcome.error);
+      await expect(outerError.promise).resolves.toMatchObject(outcome.error);
     },
   );
 });
+
+function handled<Value>(value: Value): readonly [true, Value] {
+  return [true, value];
+}
+
+function delegate(): readonly [false] {
+  return [false];
+}

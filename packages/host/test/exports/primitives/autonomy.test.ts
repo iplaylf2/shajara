@@ -98,7 +98,7 @@ describe("/ primitives: autonomy", () => {
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, "interrupted")).toMatchObject({
+      expect(findFailureByKind(actual, outcome.interrupted.kind)).toMatchObject({
         ...outcome.interrupted,
         cause,
       });
@@ -140,7 +140,7 @@ describe("/ primitives: autonomy", () => {
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, "external")).toMatchObject({
+      expect(findFailureByKind(actual, outcome.external.kind)).toMatchObject({
         ...outcome.external,
         raw: cause,
       });

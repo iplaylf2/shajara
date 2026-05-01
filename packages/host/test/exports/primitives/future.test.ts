@@ -5,21 +5,21 @@ import { run } from "#/index";
 describe("/ primitives: future, poll, wait", () => {
   test.for([
     {
-      given: [false] as const,
+      given: [false, "ready"] as const,
       outcome: [false],
     },
     {
-      given: [true] as const,
+      given: [true, "ready"] as const,
       outcome: [true, "ready"],
     },
   ])(
     "returns the visible future state for the current settlement state",
-    async ({ given: [isSettled], outcome }) => {
+    async ({ given: [isSettled, value], outcome }) => {
       const settled = run(function* inspectFutureState() {
         const [futureKey, futureSettle] = yield* future<string>();
 
         if (isSettled) {
-          yield* settle(futureSettle, "ready");
+          yield* settle(futureSettle, value);
         }
 
         return yield* poll(futureKey);

@@ -40,22 +40,19 @@ describe("/ operations: until", () => {
     {
       given: ["until-failed"] as const,
       outcome: {
-        message: "until-failed",
-        raw: "until-failed",
+        cause: {
+          kind: "external",
+          message: "until-failed",
+          name: "ExternalError",
+          raw: "until-failed",
+        },
+        kind: "scope",
       },
     },
   ])("wraps non-Error rejections as ExternalError", async ({ given: [cause], outcome }) => {
     const settled = run(() => until(() => Promise.reject(cause)));
 
     await expect(settled).rejects.toBeInstanceOf(ScopeError);
-    await expect(settled).rejects.toMatchObject({
-      cause: {
-        kind: "external",
-        message: outcome.message,
-        name: "ExternalError",
-        raw: outcome.raw,
-      },
-      kind: "scope",
-    });
+    await expect(settled).rejects.toMatchObject(outcome);
   });
 });

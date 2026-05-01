@@ -85,17 +85,17 @@ describe("/ entries: createScope", () => {
 
   test.for([
     {
-      given: [] as const,
+      given: ["late"] as const,
       outcome: "Cannot launch ritual with an illegal scope.",
     },
   ])(
     "throws when asked to run a ritual after the scope has already closed",
-    async ({ outcome }) => {
+    async ({ given: [value], outcome }) => {
       const scope = createScope();
 
       await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
 
-      expect(() => scope.run(() => until(() => Promise.resolve("late")))).toThrow(outcome);
+      expect(() => scope.run(() => until(() => Promise.resolve(value)))).toThrow(outcome);
     },
   );
 

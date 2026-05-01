@@ -150,7 +150,7 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
 
   test.for([
     {
-      given: [] as const,
+      given: [0] as const,
       outcome: {
         cause: null,
         detail: {
@@ -163,25 +163,28 @@ describe("/ primitives: channel, close, send, receive, trySend, tryReceive", () 
         message: "Channel is revoked",
       },
     },
-  ])("throws ChannelError when receiving from a revoked channel", async ({ outcome }) => {
-    const settled = run(function* catchRevokedReceive() {
-      const receiver = yield* branch(function* createOwnedReceiver() {
-        const [ownedReceiver] = yield* channel<string, string>(0);
-        return ownedReceiver;
+  ])(
+    "throws ChannelError when receiving from a revoked channel",
+    async ({ given: [capacity], outcome }) => {
+      const settled = run(function* catchRevokedReceive() {
+        const receiver = yield* branch(function* createOwnedReceiver() {
+          const [ownedReceiver] = yield* channel<string, string>(capacity);
+          return ownedReceiver;
+        });
+
+        try {
+          yield* receive(receiver);
+        } catch (error) {
+          return error;
+        }
+
+        return null;
       });
 
-      try {
-        yield* receive(receiver);
-      } catch (error) {
-        return error;
-      }
-
-      return null;
-    });
-
-    await expect(settled).resolves.toBeInstanceOf(ChannelError);
-    await expect(settled).resolves.toMatchObject(outcome);
-  });
+      await expect(settled).resolves.toBeInstanceOf(ChannelError);
+      await expect(settled).resolves.toMatchObject(outcome);
+    },
+  );
 
   test.for([
     {
