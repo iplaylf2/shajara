@@ -1,4 +1,4 @@
-import { bind, contextKey, enclose, lookup, unbind } from "#/index";
+import { bind, contextKey, enclose, lookup, unbind, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
 import { none, some } from "#/utils";
@@ -54,7 +54,12 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
         wisp.chain((key) =>
           pipe(
             bind(key, binding),
-            wisp.chain(() => enclose(() => lookup(key))),
+            wisp.chain(() =>
+              pipe(
+                enclose(() => lookup(key)),
+                wisp.chain(({ scope }) => wait(scope.exitFuture)),
+              ),
+            ),
           ),
         ),
       ),
@@ -80,11 +85,14 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
             pipe(
               bind(key, parentBinding),
               wisp.chain(() =>
-                enclose(() =>
-                  pipe(
-                    bind(key, childBinding),
-                    wisp.chain(() => lookup(key)),
+                pipe(
+                  enclose(() =>
+                    pipe(
+                      bind(key, childBinding),
+                      wisp.chain(() => lookup(key)),
+                    ),
                   ),
+                  wisp.chain(({ scope }) => wait(scope.exitFuture)),
                 ),
               ),
             ),
@@ -113,12 +121,15 @@ describe("/ primitives: bind, contextKey, lookup, unbind", () => {
             pipe(
               bind(key, parentBinding),
               wisp.chain(() =>
-                enclose(() =>
-                  pipe(
-                    bind(key, childBinding),
-                    wisp.chain(() => unbind(key)),
-                    wisp.chain(() => lookup(key)),
+                pipe(
+                  enclose(() =>
+                    pipe(
+                      bind(key, childBinding),
+                      wisp.chain(() => unbind(key)),
+                      wisp.chain(() => lookup(key)),
+                    ),
                   ),
+                  wisp.chain(({ scope }) => wait(scope.exitFuture)),
                 ),
               ),
             ),

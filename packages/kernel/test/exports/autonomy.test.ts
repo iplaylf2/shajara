@@ -1,10 +1,14 @@
 import type {
+  AutonomyOptions,
+  FutureResult,
   FutureSettleKey,
   ProcessRef,
   Processor,
   ProcessorTaskStatus,
   Reaper,
+  Ritual,
   Scheduler,
+  Wisp,
 } from "#/index";
 import {
   all,
@@ -58,10 +62,7 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(() => wisp.of(entryResult), { scheduler }),
-            wisp.chain(wait),
-          ),
+          awaitAutonomy(() => wisp.of(entryResult), { scheduler }),
         ),
       );
 
@@ -70,6 +71,58 @@ describe("/ primitives: autonomy", () => {
         settled: await waitForSettled(handle),
         settledStatus: handle.status,
         taskStatuses,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: ["autonomy-ready"] as const,
+      outcome: {
+        settled: {
+          kind: "success",
+          result: {
+            hasProcessExitFuture: true,
+            hasScopeExitFuture: true,
+            outcome: right("autonomy-ready"),
+          },
+        },
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "returns the branch handle for the autonomous scope",
+    async ({ given: [entryResult], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const processor = createInlineProcessor(taskStatuses);
+      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            autonomy(() => wisp.of(entryResult), { scheduler }),
+            wisp.chain((branchHandle) =>
+              pipe(
+                wait(branchHandle.scope.exitFuture),
+                wisp.map((settled) => ({
+                  hasProcessExitFuture: branchHandle.process.exitFuture !== undefined,
+                  hasScopeExitFuture: branchHandle.scope.exitFuture !== undefined,
+                  outcome: settled,
+                })),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      const actual = {
+        settled: await waitForSettled(handle),
+        settledStatus: handle.status,
       };
 
       expect(actual).toEqual(outcome);
@@ -98,10 +151,7 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(() => wisp.of(entryResult), { scheduler }),
-            wisp.chain(wait),
-          ),
+          awaitAutonomy(() => wisp.of(entryResult), { scheduler }),
         ),
       );
 
@@ -160,24 +210,21 @@ describe("/ primitives: autonomy", () => {
       const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  future<string>(),
-                  wisp.chain(([futureKey, nextFutureSettle]) =>
-                    pipe(
-                      wisp.fromIO(() => {
-                        futureSettle.resolve(nextFutureSettle);
-                        return futureKey;
-                      }),
-                      wisp.chain(wait),
-                    ),
+          awaitAutonomy(
+            () =>
+              pipe(
+                future<string>(),
+                wisp.chain(([futureKey, nextFutureSettle]) =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      futureSettle.resolve(nextFutureSettle);
+                      return futureKey;
+                    }),
+                    wisp.chain(wait),
                   ),
                 ),
-              { scheduler },
-            ),
-            wisp.chain(wait),
+              ),
+            { scheduler },
           ),
         ),
       );
@@ -224,24 +271,21 @@ describe("/ primitives: autonomy", () => {
       const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  future<string>(),
-                  wisp.chain(([futureKey, nextFutureSettle]) =>
-                    pipe(
-                      wisp.fromIO(() => {
-                        futureSettle.resolve(nextFutureSettle);
-                        return futureKey;
-                      }),
-                      wisp.chain(wait),
-                    ),
+          awaitAutonomy(
+            () =>
+              pipe(
+                future<string>(),
+                wisp.chain(([futureKey, nextFutureSettle]) =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      futureSettle.resolve(nextFutureSettle);
+                      return futureKey;
+                    }),
+                    wisp.chain(wait),
                   ),
                 ),
-              { scheduler },
-            ),
-            wisp.chain(wait),
+              ),
+            { scheduler },
           ),
         ),
       );
@@ -294,44 +338,38 @@ describe("/ primitives: autonomy", () => {
           pipe(
             all([
               () =>
-                pipe(
-                  autonomy(
-                    () =>
-                      pipe(
+                awaitAutonomy(
+                  () =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        events.push(`${labels[0]}-before`);
+                      }),
+                      wisp.chain(() => cede()),
+                      wisp.chain(() =>
                         wisp.fromIO(() => {
-                          events.push(`${labels[0]}-before`);
+                          events.push(`${labels[0]}-after`);
+                          return labels[0];
                         }),
-                        wisp.chain(() => cede()),
-                        wisp.chain(() =>
-                          wisp.fromIO(() => {
-                            events.push(`${labels[0]}-after`);
-                            return labels[0];
-                          }),
-                        ),
                       ),
-                    { scheduler },
-                  ),
-                  wisp.chain(wait),
+                    ),
+                  { scheduler },
                 ),
               () =>
-                pipe(
-                  autonomy(
-                    () =>
-                      pipe(
+                awaitAutonomy(
+                  () =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        events.push(`${labels[1]}-before`);
+                      }),
+                      wisp.chain(() => cede()),
+                      wisp.chain(() =>
                         wisp.fromIO(() => {
-                          events.push(`${labels[1]}-before`);
+                          events.push(`${labels[1]}-after`);
+                          return labels[1];
                         }),
-                        wisp.chain(() => cede()),
-                        wisp.chain(() =>
-                          wisp.fromIO(() => {
-                            events.push(`${labels[1]}-after`);
-                            return labels[1];
-                          }),
-                        ),
                       ),
-                    { scheduler },
-                  ),
-                  wisp.chain(wait),
+                    ),
+                  { scheduler },
                 ),
             ]),
             wisp.chain(wait),
@@ -398,17 +436,14 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  defer(() => park()),
-                  wisp.chain(() => spawn(cancel)),
-                  wisp.chain(() => park()),
-                ),
-              { reaper },
-            ),
-            wisp.chain(wait),
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() => park()),
+                wisp.chain(() => spawn(cancel)),
+                wisp.chain(() => park()),
+              ),
+            { reaper },
           ),
         ),
       );
@@ -477,32 +512,29 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  future<string>(),
-                  wisp.chain(([futureKey, nextFutureSettle]) =>
-                    pipe(
-                      wisp.fromIO(() => {
-                        futureSettle.resolve(nextFutureSettle);
-                        return futureKey;
-                      }),
-                      wisp.chain(wait),
-                      wisp.chain(() => wisp.of(entryResult)),
-                      wisp.chain(() =>
-                        pipe(
-                          defer(() => park()),
-                          wisp.chain(() => spawn(cancel)),
-                          wisp.chain(() => park()),
-                        ),
+          awaitAutonomy(
+            () =>
+              pipe(
+                future<string>(),
+                wisp.chain(([futureKey, nextFutureSettle]) =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      futureSettle.resolve(nextFutureSettle);
+                      return futureKey;
+                    }),
+                    wisp.chain(wait),
+                    wisp.chain(() => wisp.of(entryResult)),
+                    wisp.chain(() =>
+                      pipe(
+                        defer(() => park()),
+                        wisp.chain(() => spawn(cancel)),
+                        wisp.chain(() => park()),
                       ),
                     ),
                   ),
                 ),
-              { reaper, scheduler },
-            ),
-            wisp.chain(wait),
+              ),
+            { reaper, scheduler },
           ),
         ),
       );
@@ -545,17 +577,14 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  defer(() => park()),
-                  wisp.chain(() => spawn(cancel)),
-                  wisp.chain(() => park()),
-                ),
-              { reaper },
-            ),
-            wisp.chain(wait),
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() => park()),
+                wisp.chain(() => spawn(cancel)),
+                wisp.chain(() => park()),
+              ),
+            { reaper },
           ),
         ),
       );
@@ -588,6 +617,16 @@ describe("/ primitives: autonomy", () => {
     },
   );
 });
+
+function awaitAutonomy<Relic>(
+  entry: Ritual<Relic>,
+  options: AutonomyOptions,
+): Wisp<FutureResult<Relic>> {
+  return pipe(
+    autonomy(entry, options),
+    wisp.chain(({ scope }) => wait(scope.exitFuture)),
+  );
+}
 
 function createTrackingScheduler(
   assignedProcesses: ProcessRef<unknown>[],

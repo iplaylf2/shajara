@@ -1,13 +1,7 @@
-import type { FailureShape, Ritual, Wisp } from "#/contracts";
-import type { Either } from "#/utils/index";
+import type { Ritual, Wisp } from "#/contracts";
+import type { BranchHandle } from "#/sigils/index";
 import { branch } from "./branch";
-import { pipe } from "fp-ts/function";
-import { wait } from "./wait";
-import { wisp } from "#/internal/fp";
 
-export function enclose<Relic>(entry: Ritual<Relic>): Wisp<Either<FailureShape, Relic>> {
-  return pipe(
-    branch(entry, { failureMode: "contain" }),
-    wisp.chain(({ scope }) => wait(scope.exitFuture)),
-  );
+export function enclose<Relic>(entry: Ritual<Relic>): Wisp<BranchHandle<Relic>> {
+  return branch(entry, { failureMode: "contain" });
 }

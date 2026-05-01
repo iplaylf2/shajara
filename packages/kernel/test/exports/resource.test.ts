@@ -42,25 +42,28 @@ describe("/ primitives: resource", () => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
-        enclose(() =>
-          pipe(
-            resource<string>((provide) =>
-              pipe(
-                defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
-                wisp.chain(() => recordTrace(events, providedEntry)),
-                wisp.chain(() => provide(resourceValue)),
-              ),
-            ),
-            wisp.chainFirst((resourceFuture) =>
-              spawn(() =>
+        pipe(
+          enclose(() =>
+            pipe(
+              resource<string>((provide) =>
                 pipe(
-                  wait(resourceFuture),
-                  wisp.chain(() => cancel()),
+                  defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
+                  wisp.chain(() => recordTrace(events, providedEntry)),
+                  wisp.chain(() => provide(resourceValue)),
                 ),
               ),
+              wisp.chainFirst((resourceFuture) =>
+                spawn(() =>
+                  pipe(
+                    wait(resourceFuture),
+                    wisp.chain(() => cancel()),
+                  ),
+                ),
+              ),
+              wisp.chain(wait),
             ),
-            wisp.chain(wait),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
         ),
       );
       const step = await ritual.waitForClosed();

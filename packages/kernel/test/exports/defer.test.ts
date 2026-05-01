@@ -1,4 +1,4 @@
-import { defer, enclose } from "#/index";
+import { defer, enclose, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
 import { noop, right } from "#/utils";
@@ -20,11 +20,14 @@ describe("/ primitives: defer", () => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
-        enclose(() =>
-          pipe(
-            defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
-            wisp.chain(() => recordTrace(events, bodyEntry)),
+        pipe(
+          enclose(() =>
+            pipe(
+              defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
+              wisp.chain(() => recordTrace(events, bodyEntry)),
+            ),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
         ),
       );
       const step = ritual.driveSync();
@@ -51,14 +54,17 @@ describe("/ primitives: defer", () => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
-        enclose(() =>
-          pipe(
-            defer(() => pipe(recordTrace(events, firstCleanupEntry), wisp.map(noop))),
-            wisp.chain(() =>
-              defer(() => pipe(recordTrace(events, secondCleanupEntry), wisp.map(noop))),
+        pipe(
+          enclose(() =>
+            pipe(
+              defer(() => pipe(recordTrace(events, firstCleanupEntry), wisp.map(noop))),
+              wisp.chain(() =>
+                defer(() => pipe(recordTrace(events, secondCleanupEntry), wisp.map(noop))),
+              ),
+              wisp.chain(() => recordTrace(events, bodyEntry)),
             ),
-            wisp.chain(() => recordTrace(events, bodyEntry)),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
         ),
       );
       const step = ritual.driveSync();

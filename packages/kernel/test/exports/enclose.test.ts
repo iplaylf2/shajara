@@ -1,7 +1,8 @@
+import { cede, enclose, halt } from "#/index";
 import { describe, expect, test } from "vitest";
-import { enclose, halt } from "#/index";
 import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
 import { left, right } from "#/utils";
+import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
 describe("/ primitives: enclose", () => {
@@ -11,11 +12,19 @@ describe("/ primitives: enclose", () => {
       outcome: right("enclosed"),
     },
   ])(
-    "enclose returns the child result when the enclosed scope completes",
+    "enclose returns the branch handle without waiting for the child scope",
     async ({ given: [enclosed], outcome }) => {
-      await using ritual = interpretRitual(() => enclose(() => wisp.of(enclosed)));
+      await using ritual = interpretRitual(() =>
+        enclose(() =>
+          pipe(
+            cede(),
+            wisp.chain(() => wisp.of(enclosed)),
+          ),
+        ),
+      );
       const step = ritual.driveSync();
-      const actual = unwrapExitedSucceeded(step);
+      const handle = unwrapExitedSucceeded(step);
+      const actual = await ritual.waitForFuture(handle.scope.exitFuture);
 
       expect(actual).toEqual(outcome);
     },
@@ -33,7 +42,8 @@ describe("/ primitives: enclose", () => {
   ])("enclose contains halt failures inside its result channel", async ({ given: [failure] }) => {
     await using ritual = interpretRitual(() => enclose(() => halt(failure)));
     const step = ritual.driveSync();
-    const actual = unwrapExitedSucceeded(step);
+    const handle = unwrapExitedSucceeded(step);
+    const actual = await ritual.waitForFuture(handle.scope.exitFuture);
 
     expect(actual).toEqual(
       left(

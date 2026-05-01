@@ -298,6 +298,7 @@ describe("/ primitives: channel, close, send, receive", () => {
               wisp.chainFirst(({ sender }) => trySend(sender, incomingValue)),
             ),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
           wisp.map((enclosedResult) => ({ enclosedResult })),
           wisp.bind("sendResultAfterRevoked", () => {
             if (!senderAfterFailure) {
