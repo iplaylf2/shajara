@@ -37,7 +37,7 @@ function createFirstResultFlow(): ExplorerFlow<FirstResultDemoEvent> {
 
 function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links"] {
   return [
-    spawnLink("root", "winner", "race(readCache, fetchNetwork)", ["race-open"]),
+    spawnLink("root", "winner", "race(readCache, fetchNetwork)", ["launch-race"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
     spawnLink("winner", "network", "fetchNetwork", ["launch-network"]),
     waitLink("cache", "winner", "winner", {
@@ -75,6 +75,7 @@ function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes
     {
       activeEvents: [
         "race-open",
+        "launch-race",
         "launch-cache",
         "launch-network",
         "race-wait-cache",

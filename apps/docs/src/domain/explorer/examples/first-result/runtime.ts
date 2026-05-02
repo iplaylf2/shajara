@@ -6,7 +6,7 @@ import {
   codeSpacer,
   completeEvents,
   cursorAt,
-  raceBranch,
+  raceWait,
   setCursor,
   setCursors,
 } from "#/domain/explorer/examples-kit";
@@ -52,83 +52,72 @@ export function* firstResultDemo(
     emit({
       actions: [
         setCursors([
-          cursorAt("root", ["race-open", "race-wait-result"], "blocked"),
+          cursorAt("root", ["race-open", "launch-race"], "running"),
           cursorAt("race", ["launch-cache", "launch-network"], "running"),
         ]),
       ],
     });
-    const profile = yield* race([
-      raceBranch(
+    const profile = yield* race(
+      raceWait(
         emit,
         {
-          cancelEvent: "cache-canceled",
-          routineId: "cache",
-          waitEvent: "race-wait-cache",
+          caller: cursorAt("root", ["race-open", "race-wait-result"], "blocked"),
+          coordinator: cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
         },
-        function* readCache(): RiteCoroutine<string> {
-          emit({
-            actions: [
-              setCursors([
-                cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
-                cursorAt("cache", "cache-sleep", "running"),
-              ]),
-            ],
-          });
-          yield* sleep(cacheDelayMs);
-          emit({
-            actions: [setCursor(cursorAt("cache", ["cache-return", "cache-close"], "running"))],
-          });
+        [
+          {
+            cancelEvent: "cache-canceled",
+            *routine(): RiteCoroutine<string> {
+              emit({ actions: [setCursor(cursorAt("cache", "cache-sleep", "running"))] });
+              yield* sleep(cacheDelayMs);
+              emit({
+                actions: [setCursor(cursorAt("cache", ["cache-return", "cache-close"], "running"))],
+              });
 
-          try {
-            return "cached profile";
-          } finally {
-            emit({
-              actions: [
-                clearCursor("cache"),
-                completeEvents(["cache-return", "race-wait-cache"]),
-                setCursor(cursorAt("race", "race-wait-network", "blocked")),
-              ],
-            });
-          }
-        },
-      ),
-      raceBranch(
-        emit,
-        {
-          cancelEvent: "network-canceled",
-          routineId: "network",
-          waitEvent: "race-wait-network",
-        },
-        function* fetchNetwork(): RiteCoroutine<string> {
-          emit({
-            actions: [
-              setCursors([
-                cursorAt("race", ["race-wait-cache", "race-wait-network"], "blocked"),
-                cursorAt("network", "network-sleep", "running"),
-              ]),
-            ],
-          });
-          yield* sleep(networkDelayMs);
-          emit({
-            actions: [
-              setCursor(cursorAt("network", ["network-return", "network-close"], "running")),
-            ],
-          });
+              try {
+                return "cached profile";
+              } finally {
+                emit({
+                  actions: [
+                    clearCursor("cache"),
+                    completeEvents(["cache-return", "race-wait-cache"]),
+                    setCursor(cursorAt("race", "race-wait-network", "blocked")),
+                  ],
+                });
+              }
+            },
+            routineId: "cache",
+            waitEvent: "race-wait-cache",
+          },
+          {
+            cancelEvent: "network-canceled",
+            *routine(): RiteCoroutine<string> {
+              emit({ actions: [setCursor(cursorAt("network", "network-sleep", "running"))] });
+              yield* sleep(networkDelayMs);
+              emit({
+                actions: [
+                  setCursor(cursorAt("network", ["network-return", "network-close"], "running")),
+                ],
+              });
 
-          try {
-            return "fresh profile";
-          } finally {
-            emit({
-              actions: [
-                clearCursor("network"),
-                completeEvents(["network-return", "race-wait-network"]),
-                setCursor(cursorAt("race", "race-wait-cache", "blocked")),
-              ],
-            });
-          }
-        },
+              try {
+                return "fresh profile";
+              } finally {
+                emit({
+                  actions: [
+                    clearCursor("network"),
+                    completeEvents(["network-return", "race-wait-network"]),
+                    setCursor(cursorAt("race", "race-wait-cache", "blocked")),
+                  ],
+                });
+              }
+            },
+            routineId: "network",
+            waitEvent: "race-wait-network",
+          },
+        ] as const,
       ),
-    ] as const);
+    );
 
     emit({
       actions: [
@@ -148,7 +137,12 @@ export function* firstResultDemo(
 
 export type FirstResultDemoEvent = ExplorerAuthoredEvent<
   ReturnType<typeof createFirstResultDemoCode>,
-  "launch-cache" | "launch-network" | "race-wait-cache" | "race-wait-network" | "race-wait-result"
+  | "launch-race"
+  | "launch-cache"
+  | "launch-network"
+  | "race-wait-cache"
+  | "race-wait-network"
+  | "race-wait-result"
 >;
 
 const cacheDelayMs = 1000;
