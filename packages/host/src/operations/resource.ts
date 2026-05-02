@@ -1,19 +1,11 @@
 import type { RiteCoroutine, RiteFuture, RiteFutureSettle } from "#/contracts";
-import { decodeRitual, encodeRitual } from "#/boundary/index";
 import { future, settle } from "#/primitives/index";
-import { park, spawn } from "@shajara/kernel";
+import { park, spawnDetached } from "#/operations-kit";
 
 export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteFuture<Value>> {
   const [providedValue, providedValueSettle] = yield* future<Value>();
 
-  yield* encodeRitual(() =>
-    spawn(
-      decodeRitual(() => body(toResourceProvide(providedValueSettle))),
-      {
-        completionMode: "detached",
-      },
-    ),
-  )();
+  yield* spawnDetached(() => body(toResourceProvide(providedValueSettle)));
 
   return providedValue;
 }
@@ -26,6 +18,6 @@ function toResourceProvide<Value>(
 ): ResourceProvide<Value> {
   return function* provideResourceValue(value) {
     yield* settle(providedValueSettle, value);
-    return yield* encodeRitual(() => park())();
+    return yield* park();
   };
 }

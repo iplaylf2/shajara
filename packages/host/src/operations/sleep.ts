@@ -1,17 +1,15 @@
-import { future, wait } from "#/primitives/index";
 import type { RiteCoroutine } from "#/contracts";
-import { ensureExecutor } from "#/executor";
-import { right } from "@shajara/kernel/utils";
+import { action } from "./action";
+import { wait } from "#/primitives/index";
 
 export function* sleep(milliseconds: number): RiteCoroutine<void> {
-  const executor = ensureExecutor();
-  const [wakeSignal, wakeSettle] = yield* future<null>();
+  const { future, resolve } = yield* action<null>();
   const timeoutId = globalThis.setTimeout(() => {
-    executor.settle(wakeSettle, right(null));
+    resolve(null);
   }, milliseconds);
 
   try {
-    yield* wait(wakeSignal);
+    yield* wait(future);
   } finally {
     globalThis.clearTimeout(timeoutId);
   }

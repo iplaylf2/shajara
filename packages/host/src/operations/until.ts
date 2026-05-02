@@ -1,19 +1,16 @@
-import { future, wait } from "#/primitives/index";
-import { left, right } from "@shajara/kernel/utils";
+import { fromFailure, toFailureUnknown } from "#/boundary/index";
 import type { RiteCoroutine } from "#/contracts";
-import { ensureExecutor } from "#/executor";
-import { toFailureUnknown } from "#/boundary/index";
+import { action } from "./action";
+import { wait } from "#/primitives/index";
 
 export function* until<Return>(thunk: PromiseThunk<Return>): RiteCoroutine<Return> {
-  const executor = ensureExecutor();
-  const [thunkResult, resultSettle] = yield* future<Return>();
+  const { future, reject, resolve } = yield* action<Return>();
 
-  thunk().then(
-    (value: Return) => executor.settle(resultSettle, right(value)),
-    (error: unknown) => executor.settle(resultSettle, left(toFailureUnknown(error))),
-  );
+  thunk().then(resolve, (error: unknown) => {
+    reject(fromFailure(toFailureUnknown(error)));
+  });
 
-  return yield* wait(thunkResult);
+  return yield* wait(future);
 }
 
 export type PromiseThunk<Return> = () => PromiseLike<Return>;

@@ -16,7 +16,7 @@ The root entry is intended for application code. It re-exports:
 Names available from the root entry include:
 
 - host entries: `run`, `createScope`
-- host operations: `action`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `action`, `feed`, `resource`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
   `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
@@ -126,6 +126,15 @@ Result semantics:
 
 ## Host Operations
 
+### `abortSignal`
+
+```ts
+yield * abortSignal();
+```
+
+Returns an `AbortSignal` tied to the current scope. The signal aborts when that scope
+closes, fails, or is canceled.
+
 ### `action`
 
 ```ts
@@ -178,13 +187,14 @@ yield * until(thunk);
 
 ## Host Operation Return Values
 
-| Operation  | Return value           |
-| ---------- | ---------------------- |
-| `action`   | `Action<Return>`       |
-| `feed`     | `Feed<Value, Outcome>` |
-| `resource` | `RiteFuture<Value>`    |
-| `sleep`    | `void`                 |
-| `until`    | `Return`               |
+| Operation     | Return value           |
+| ------------- | ---------------------- |
+| `abortSignal` | `AbortSignal`          |
+| `action`      | `Action<Return>`       |
+| `feed`        | `Feed<Value, Outcome>` |
+| `resource`    | `RiteFuture<Value>`    |
+| `sleep`       | `void`                 |
+| `until`       | `Return`               |
 
 ## Host Primitive Return Values
 

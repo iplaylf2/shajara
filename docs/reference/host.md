@@ -8,7 +8,7 @@ JavaScript APIs.
 The host layer has four responsibilities:
 
 - application-facing entries: `run`, `createScope`
-- host operations: `action`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `action`, `feed`, `resource`, `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
 - mapping between kernel in-band values and JavaScript values or errors
 
@@ -159,6 +159,12 @@ Closing semantics:
   same result
 
 ## Host Operations
+
+### `abortSignal`
+
+`abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
+aborted while the scope is open; it aborts when the scope closes, fails, or is canceled.
+It does not provide a way to cancel the scope from host code.
 
 ### `action`
 
