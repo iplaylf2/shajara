@@ -24,6 +24,7 @@
     "version-packages": "changeset version"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.31.0",
     "@shajara/forge": "workspace:^",
     "@shajara/presets": "workspace:^",
