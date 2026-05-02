@@ -8,11 +8,16 @@ export function* waitChild<Return>(child: BranchHandle<Return>): RiteCoroutine<R
   return yield* waitFuture(child.scope.exitFuture);
 }
 
-export function* waitOutcome<Return>([, future]: OwnedOutcome<Return>): RiteCoroutine<Return> {
+export function* waitOutcome<Return>([scope, future]: OwnedOutcome<Return>): RiteCoroutine<Return> {
+  yield* waitSettled(scope.exitFuture);
   return yield* waitFuture(future);
 }
 
 function* waitFuture<Return>(future: RiteFuture<Return>): RiteCoroutine<Return> {
   const settlement = yield* encodeRitual(() => kernelWait(future))();
   return unwrapEither(settlement as Either<Failure, Return>);
+}
+
+function* waitSettled<Return>(future: RiteFuture<Return>): RiteCoroutine<void> {
+  yield* encodeRitual(() => kernelWait(future))();
 }

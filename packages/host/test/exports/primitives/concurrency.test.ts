@@ -55,6 +55,43 @@ describe("/ primitives: all, branch, race, spawn", () => {
 
   test.for([
     {
+      given: ["fast", "slow", "cleanup-start", "cleanup-end", "after-race"] as const,
+      outcome: ["cleanup-start", "cleanup-end", "after-race"] as const,
+    },
+  ])(
+    "race waits for losing routine cleanup before resuming the caller",
+    async ({ given: [fast, slow, cleanupStart, cleanupEnd, afterRace], outcome }) => {
+      const events: string[] = [];
+      const settled = run(function* awaitRaceCleanup() {
+        const winner = yield* race([
+          function* slowRoutine() {
+            try {
+              yield* cede();
+              yield* cede();
+              return slow;
+            } finally {
+              events.push(cleanupStart);
+              yield* cede();
+              events.push(cleanupEnd);
+            }
+          },
+          function* fastRoutine() {
+            return fast;
+          },
+        ] as const);
+
+        events.push(afterRace);
+
+        return winner;
+      });
+
+      await expect(settled).resolves.toBe(fast);
+      expect(events).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
       given: ["branched"] as const,
       outcome: "branched",
     },
