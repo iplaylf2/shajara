@@ -16,28 +16,28 @@ semantics -> executor -> host -> api
 - [executor.md](executor.md): execution environment, including `Executor`,
   `ExecutionScopeRef`, entry handles, external control, pacing, and autonomy.
 - [host.md](host.md): host adaptation, including generator routines, JavaScript errors,
-  host operations, and host-facing scoped primitives.
+  host operations, and host-facing primitives.
 - [api.md](api.md): public interface, including package export surfaces, entry
-  signatures, primitive return values, and result shapes.
+  signatures, operation and primitive return values, and result shapes.
 
 A document may restate a rule from the documents to its left when describing its own
 boundary. Concepts from documents to its right stay outside its scope.
 
 ## Concept Ownership
 
-| Concept                                                  | Owned by       |
-| -------------------------------------------------------- | -------------- |
-| `Wisp`, `Ritual`, `Sigil`, echo/resonance                | `semantics.md` |
-| scope tree, process ownership, descriptors               | `semantics.md` |
-| future, context, channel semantics                       | `semantics.md` |
-| failure values, scope failure, cancellation              | `semantics.md` |
-| branch result ownership and recovery routes              | `semantics.md` |
-| execution entries, `LaunchHandle`, `LaunchResult`        | `executor.md`  |
-| external future settlement, channel send, cancel         | `executor.md`  |
-| `Pacer`, slice progression, scheduler and reaper         | `executor.md`  |
-| generator routines, `Presence`, JavaScript errors        | `host.md`      |
-| `run`, `createScope`, `action`, `feed`, `sleep`, `until` | `host.md`      |
-| package exports, signatures, return-value tables         | `api.md`       |
+| Concept                                           | Owned by       |
+| ------------------------------------------------- | -------------- |
+| `Wisp`, `Ritual`, `Sigil`, echo/resonance         | `semantics.md` |
+| scope tree, process ownership, descriptors        | `semantics.md` |
+| future, context, channel semantics                | `semantics.md` |
+| failure values, scope failure, cancellation       | `semantics.md` |
+| branch result ownership and recovery routes       | `semantics.md` |
+| execution entries, `LaunchHandle`, `LaunchResult` | `executor.md`  |
+| external future settlement, channel send, cancel  | `executor.md`  |
+| `Pacer`, slice progression, scheduler and reaper  | `executor.md`  |
+| generator routines, `Presence`, JavaScript errors | `host.md`      |
+| host entries and operations                       | `host.md`      |
+| package exports, signatures, return-value tables  | `api.md`       |
 
 ## Core Terms
 

@@ -6,7 +6,7 @@ Explorer 示例集合是一组渐进式视觉课程，用动画和代码片段�
 
 Explorer 的示例专注于 shajara 边界内的并发编排关系。它关注多个 process、future、scope、channel、failure 和 cancellation 如何在同一个运行世界中互相影响；API 名称作为读者进入这些关系的入口。
 
-宿主边界或适配 API 适合出现在示例外壳或触发条件里。`run`、`createScope`、`sleep`、`until`、`action` 这类接口服务示例入口；示例主题由 shajara 边界内的 future、scope、channel、failure 和 cancellation 关系承载。
+宿主边界或适配 API 适合承担示例入口和触发条件，也可以参与生命周期关系的表达。`run`、`createScope`、`action`、`feed`、`resource`、`sleep`、`until` 可以出现在示例外壳或代码片段里；示例主题由 shajara 边界内的 future、scope、channel、process、failure 和 cancellation 关系承载。
 
 Explorer 选择静态文档难以说明的时间关系、所有权关系和收敛关系。Single Spawn、Future Settlement 和 Scope-Owned Work 建立基础运行语言，后续示例在这个基础上展开组合、通信、收束和治理关系。
 
@@ -17,7 +17,7 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 1. **基本编排关系**：先解释 spawned process、future、wait、scope 如何形成可观察的运行关系。
 2. **结构化并发关系**：随后展示 fork join、all、race 如何把多份工作组织成有明确汇合或竞争意图的运行树。
 3. **显式通信关系**：再进入 channel，展示值传递和节奏控制。
-4. **收束与治理关系**：最后展示 scope-managed objects、cancellation、recovery、resource、autonomy 如何决定系统的结束、恢复和治理方式。
+4. **收束与治理关系**：最后展示 scope-managed objects、cancellation、recovery、`resource` 生命周期、autonomy 如何决定系统的结束、恢复和治理方式。
 
 ## Example Sequence
 
@@ -26,7 +26,7 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 | Order | Example               | What It Shows                                                                                                            | Why It Exists                                                                                                                                                           |
 | ----- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Single Spawn          | 一个 process 发起独立工作，随后返回自己的结果；spawned process 继续运行并结算自己的 future。                             | 这是最小的边界内并发关系。它把 spawn 发起关系、future 和结果独立收敛串起来，让发起者结果和 spawned process future 各自保持独立。                                        |
-| 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。                                        | future 是 `spawn`、`all`、`race`、resource 和外部输入共同使用的收敛对象。单独展示它可以把“结果收敛”作为独立主题呈现。                                                   |
+| 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。                                        | future 是 `spawn`、`all`、`race`、host operation 和外部输入共同使用的收敛对象。单独展示它可以把“结果收敛”作为独立主题呈现。                                             |
 | 3     | Scope-Owned Work      | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。                                       | scope 是 shajara 的结构化并发边界。这个示例说明 scope-owned work 对完成和收敛的影响。                                                                                   |
 | 4     | Fork Join             | 一个 process 启动多个并发 process，并在汇合点等待所有需要的结果。                                                        | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                    |
 | 5     | All Results           | `all` 同时发起多份并发工作，并把全部结果聚合到一个组合 future。                                                          | 它把一组并发工作表达为一个整体等待点。示例重点是“全部结果共同结算”这个收敛关系。                                                                                        |
@@ -35,7 +35,7 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 | 8     | Scope-Managed Objects | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 退出时自动收束这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理；外层流程后续使用这些 handle 时，观察的是 child scope 已经完成的 future cancellation 和 channel revocation。 |
 | 9     | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收敛为 canceled。                                       | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消沿 scope 结构传播并最终收束。                                                                              |
 | 10    | Guarded Recovery      | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。                                         | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界。                                                                                     |
-| 11    | Scoped Resource       | resource provider 暴露一个 ready value 后保持挂起，直到 owning scope 收束时完成清理。                                    | resource 适合展示“可用值”和“生命周期所有权”分离。读者会看到资源作为被 scope 持有和释放的长期对象。                                                                      |
+| 11    | Scoped Resource       | `resource` 启动 provider；provider 暴露 ready value 后保持挂起，直到 owning scope 收束时完成清理。                       | 它展示 future settlement、detached process 和 scope-owned cleanup 如何组合出“可用值”和“生命周期所有权”分离的关系。                                                      |
 | 12    | Autonomous Scheduling | autonomous scope 把可运行 process 交给 scheduler 分配。                                                                  | scheduler 是从常规边界内编排走向高级执行治理的第一步。这个示例展示“谁来推进 process”可以在保持 scope 核心语义的前提下被治理。                                           |
 | 13    | Reaper Adjudication   | 一个 closing scope 持续停留在 closing 状态时，reaper 决定继续等待或提交失败裁决。                                        | reaper 是 explorer 的最高阶示例。它解释 autonomy 在 closing 状态下的治理关系。                                                                                          |
 
@@ -55,7 +55,7 @@ Example 7 专门讲 channel。channel 表达流程之间的值传递和节奏控
 
 ### Lifecycle
 
-Examples 8-11 讲系统如何结束：scope-managed objects、cancellation、recovery、resource。它们共同回答成功返回之外的运行树如何保持可解释。Scope-Managed Objects 先展示 scope 退出会自动收束它创建的 future 和 channel：pending future 被取消，仍打开的 channel 被撤销。返回到外层流程的 handle 是观察入口；外层流程通过其他 primitive 使用这些 handle 并捕获异常时，看到的是 owner scope 已经完成运行对象收束后的结果。后续示例把收束过程展示为结构化关系，让异常、取消和清理都回到 scope 结构中。
+Examples 8-11 讲系统如何结束：scope-managed objects、cancellation、recovery、`resource` 生命周期。它们共同回答成功返回之外的运行树如何保持可解释。Scope-Managed Objects 先展示 scope 退出会自动收束它创建的 future 和 channel：pending future 被取消，仍打开的 channel 被撤销。返回到外层流程的 handle 是观察入口；外层流程后续触碰这些 handle 并捕获异常时，看到的是 owner scope 已经完成运行对象收束后的结果。后续示例把收束过程展示为结构化关系，让异常、取消和清理都回到 scope 结构中。
 
 ### Scope Boundary Objects
 
@@ -71,7 +71,7 @@ Examples 12-13 放在最后。scheduler 和 reaper 需要读者已经理解 proc
 
 示例标题命名动画真正演出的关系。API 名称、代码形状和中间结构作为支撑材料出现；标题、导航名称和本地化文案共同指向同一个主题。不同 locale 的标题各自本地化，同时保留同一个概念边界。
 
-命名的信息密度来自语义和长度的平衡。处在明确示例、业务故事或 primitive 调用上下文里的名字，应利用上下文保留区分度，减少层级关系的重复铺陈。
+命名的信息密度来自语义和长度的平衡。处在明确示例、业务故事或 API 调用上下文里的名字，应利用上下文保留区分度，减少层级关系的重复铺陈。
 
 命名区分 shajara 术语、场景对象和视觉叙事角色。`branch`、`scope`、`future`、`channel`、`process` 用于对应的运行语义；普通并发工作、汇合位置、等待对象或通信对象按它们在演出中的关系命名。branch 指向 child scope，routine 保持在 host routine 语境中，图中运行块使用 process 语言。
 
@@ -107,7 +107,7 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - Scope-Managed Objects 使用 scope box 展示对象本体和 handle 的分离。future 和 channel 的对象本体留在创建它们的 child scope box 内；返回给外层流程的 handle 可以用细线、端点或标签表示。
 - Scope box 的 lifecycle 状态驱动内部对象状态。child scope 进入 closing 或 closed 时，box 触发 pending future 的 canceled 状态和仍打开 channel 的 revoked 状态。
 - Scope-Managed Objects 展示 scope 退出时自动收束它创建的 future 和 channel。child scope 创建 future 和 channel 后返回观察或通信 handle；child scope 收束事件触发 future cancellation 和 channel revocation。外层流程之后用 `wait`、`send`、`receive`、`trySend` 或 `tryReceive` 触碰这些 handle，并通过异常处理路径观察运行对象已经关闭。
-- 当一个 primitive 创建或进入新的运行边界时，发起 process 的等待状态停留在发起侧，被创建 process 的运行状态从它自己的起始位置展开。跨 process 的等待线可以使用独立演出时刻，光标位置跟随实际停留的 process。
+- 当一个 primitive 或 operation 创建或进入新的运行边界时，发起 process 的等待状态停留在发起侧，被创建 process 的运行状态从它自己的起始位置展开。跨 process 的等待线可以使用独立演出时刻，光标位置跟随实际停留的 process。
 - Channel 作为独立通信对象出现。channel 的形状、容量状态和两侧数据动线共同表达通信关系；process 之间的执行顺序仍由 process 块自己的线承担。
 - Channel 示例可以包含普通 send 或 receive，作为发送等待和接收等待的对照。这个对照应来自真实代码节奏，例如缓冲中已有值，并帮助读者辨认等待究竟发生在哪里。
 - Channel 示例应同时让发送等待和接收等待拥有可辨识的演出位置。发送等待来自缓冲满或无接收者，接收等待来自空 channel；二者可以共享同一个 channel 图形，并使用不同等待痕迹。

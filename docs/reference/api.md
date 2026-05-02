@@ -16,22 +16,22 @@ The root entry is intended for application code. It re-exports:
 Names available from the root entry include:
 
 - host entries: `run`, `createScope`
-- host operations: `action`, `feed`, `sleep`, `until`
+- host operations: `action`, `feed`, `resource`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
   `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
   `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Action`, `Feed`, `Scope`, `ScopeStatus`, `RunOptions`,
-  `StatefulPromise`, `PromiseThunk`, `Disposer`
+- other root-level types: `Action`, `Feed`, `ResourceBody`, `ResourceProvide`, `Scope`,
+  `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
-- concurrency and boundaries: `all`, `autonomy`, `branch`, `guard`, `race`, `resource`,
-  `resumable`, `spawn`
-- future operations: `future`, `poll`, `settle`, `settleError`, `wait`
-- channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
+- concurrency and boundaries: `all`, `autonomy`, `branch`, `guard`, `race`, `resumable`,
+  `spawn`
+- future primitives: `future`, `poll`, `settle`, `settleError`, `wait`
+- channel primitives: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
 - control: `cede`
 
@@ -154,6 +154,16 @@ Returns:
 The receiver is consumed by coroutine channel primitives; the callbacks send or close the
 channel from host code.
 
+### `resource`
+
+```ts
+yield * resource<Value>(body);
+```
+
+Returns a `RiteFuture<Value>`. The body receives `provide(value)`, which settles the
+returned future and keeps the provider attached to the owning scope until that scope
+closes.
+
 ### `sleep`
 
 ```ts
@@ -165,6 +175,16 @@ yield * sleep(milliseconds);
 ```ts
 yield * until(thunk);
 ```
+
+## Host Operation Return Values
+
+| Operation  | Return value           |
+| ---------- | ---------------------- |
+| `action`   | `Action<Return>`       |
+| `feed`     | `Feed<Value, Outcome>` |
+| `resource` | `RiteFuture<Value>`    |
+| `sleep`    | `void`                 |
+| `until`    | `Return`               |
 
 ## Host Primitive Return Values
 
@@ -180,7 +200,6 @@ when no value is present.
 | `branch`    | `T`               |
 | `guard`     | `T`               |
 | `race`      | `T`               |
-| `resource`  | `RiteFuture<T>`   |
 | `resumable` | `T`               |
 | `spawn`     | `RiteFuture<T>`   |
 
@@ -235,7 +254,6 @@ these values in band; host callers receive JavaScript values, exceptions, or
 | `branch`    | `BranchHandle<T>`  |
 | `guard`     | `BranchHandle<T>`  |
 | `race`      | `ScopedOutcome<T>` |
-| `resource`  | `FutureKey<T>`     |
 | `resumable` | `ScopedOutcome<T>` |
 | `spawn`     | `FutureKey<T>`     |
 
@@ -258,4 +276,4 @@ The common kernel result forms are:
 - `void` for operations that mutate runtime state without producing an observation value
 - `never` for termination or indefinite parking paths such as cancellation, halt, and park
 
-Host primitives adapt these forms into JavaScript values, `Presence<T>`, and exceptions.
+Host-facing APIs adapt these forms into JavaScript values, `Presence<T>`, and exceptions.

@@ -8,7 +8,7 @@ JavaScript APIs.
 The host layer has four responsibilities:
 
 - application-facing entries: `run`, `createScope`
-- host operations: `action`, `feed`, `sleep`, `until`
+- host operations: `action`, `feed`, `resource`, `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
 - mapping between kernel in-band values and JavaScript values or errors
 
@@ -29,8 +29,8 @@ type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 In the host layer, `Ritual` means the generator form of the same computation.
 
 When a started coroutine is unwound, generator control flow continues through
-`try...finally`. Work that needs its own scoped lifetime is modeled separately with
-`resource(...)`, whose provider remains attached to its owning scope until release.
+`try...finally`. The host `resource(...)` operation uses that same generator cleanup
+model for provider work that remains attached to its owning scope until release.
 
 ## Result Model
 
@@ -64,7 +64,11 @@ Scoped host primitives adapt kernel handles into host-facing values:
 - host `guard(entry, recover)` waits for the guarded child scope and returns its value
 - host `race(entries)` waits for the race scope, then returns the winning value
 - host `resumable(entry)` waits for the recovery outcome future and returns that value
-- host `all(entries)`, `spawn(entry)`, and `resource(body)` return host futures
+
+Host APIs that expose independently observed results keep future handles:
+
+- host primitives `all(entries)` and `spawn(entry)` return host futures
+- host operation `resource(body)` returns a host future for the provided value
 
 ## Error Mapping
 
@@ -175,6 +179,16 @@ Closing semantics:
 The returned receiver stays inside coroutine code, while the callbacks send or close the
 channel from host code.
 
+### `resource`
+
+`resource(body)` models provider work that publishes a ready value and then stays owned by
+the current scope until release. The operation returns a future for the provided value.
+
+The body receives `provide(value)`. Calling `provide` settles the returned future and
+then parks the provider process. When the owning scope closes or is canceled, the provider
+is released through normal generator unwinding, so `try...finally` cleanup in the provider
+body runs on the same scope lifecycle.
+
 ### `sleep`
 
 `sleep(milliseconds)` uses a host timer to resume a waiting computation.
@@ -184,8 +198,8 @@ channel from host code.
 `until(thunk)` writes the result of a promise back into a future through fulfilled and
 rejected callbacks.
 
-Together, these operations translate browser or JavaScript host effects into future or
-channel convergence visible to the executor.
+Together, these operations translate browser or JavaScript host effects and host-owned
+lifecycle patterns into future, channel, or process convergence visible to the executor.
 
 ## Host Form of Autonomy
 
