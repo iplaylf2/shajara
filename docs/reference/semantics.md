@@ -117,7 +117,7 @@ The result domain of a future is fixed to `Either<Failure, T>`. Therefore:
 - `poll(future)` returns `Option<Either<Failure, T>>`
 - the same future may be observed repeatedly by multiple waiters
 
-When the owner scope closes, any unfinished futures owned by that scope converge as
+When the owner scope converges, any unfinished futures owned by that scope converge as
 `canceled`.
 
 ### `ContextKey`
@@ -176,7 +176,7 @@ Send and receive operations each have blocking and non-blocking forms:
 
 Terminal channel states are `{ kind: "closed", outcome }` and `{ kind: "revoked" }`.
 
-`close(endpoint, outcome)` closes the channel explicitly. A scope that closes while it
+`close(endpoint, outcome)` closes the channel explicitly. A scope that converges while it
 still owns open channels revokes them. Closing and revocation both wake blocked senders
 and receivers; close represents an explicit channel operation, while revoke represents
 owner-scope disposal.
@@ -217,7 +217,8 @@ The externally observable lifecycle states of a scope are:
 - `closing`
 - `closed`
 
-Internally, `closing` covers normal completion, cancellation, and failure convergence.
+The lifecycle state is separate from the result carried by `exitFuture`. Internally,
+`closing` covers normal completion, cancellation, and failure convergence.
 
 ### Normal Completion
 
@@ -240,9 +241,9 @@ runtime control action. Failure cancels structural processes, detached processes
 child scopes owned by that scope. When the scope is idle, it settles `exitFuture` with a
 `ScopeFailure`.
 
-A child-scope failure closes the child scope and settles the child's `exitFuture`. The
-parent waits for child scope closure as part of structured concurrency, then continues
-according to its own processes and wait operations.
+A child-scope failure converges that child scope as a failure and settles the child's
+`exitFuture`. The parent waits for that child scope to reach `closed` as part of
+structured concurrency, then continues according to its own processes and wait operations.
 
 ### Recovery Routes
 
@@ -271,7 +272,7 @@ The runtime can force a scope directly into failure convergence. Forced failure 
 the target scope:
 
 - it ends blocked processes within that scope
-- it converges any unfinished futures owned by that scope when the scope closes
+- it converges any unfinished futures owned by that scope when the target scope converges
 - it settles the target scope with a `ScopeFailure` caused by the given failure
 
 ## Stepping

@@ -10,7 +10,7 @@ describe("/ operations: abortSignal", () => {
         beforeClose: false,
       },
     },
-  ])("aborts the returned signal when the owning scope closes", async ({ outcome }) => {
+  ])("aborts the returned signal during normal owner-scope convergence", async ({ outcome }) => {
     const capturedSignal = Promise.withResolvers<AbortSignal>();
 
     await expect(
@@ -32,7 +32,7 @@ describe("/ operations: abortSignal", () => {
         beforeCancel: false,
       },
     },
-  ])("aborts the returned signal when the owning scope is canceled", async ({ outcome }) => {
+  ])("aborts the returned signal during owner-scope cancellation", async ({ outcome }) => {
     const scope = createScope();
     const capturedSignal = Promise.withResolvers<AbortSignal>();
 

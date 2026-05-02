@@ -151,19 +151,18 @@ Result semantics:
 - `status`
 - `closed`
 
-Closing semantics:
+Convergence semantics:
 
-- `cancel()` waits for the closure result of that scope
-- `closed` settles when that scope has fully closed
-- if the closure result is cancellation or failure, `cancel()` and `closed` reflect the
-  same result
+- `cancel()` requests cancellation and waits for the scope's convergence result
+- `closed` settles with that same result once the scope reaches `closed`
+- cancellation and failure settle as rejections through the corresponding host error mapping
 
 ## Host Operations
 
 ### `abortSignal`
 
 `abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
-aborted while the scope is open; it aborts when the scope closes, fails, or is canceled.
+aborted while the scope is open; it aborts when the scope starts closing.
 It does not provide a way to cancel the scope from host code.
 
 ### `action`
@@ -191,8 +190,8 @@ channel from host code.
 the current scope until release. The operation returns a future for the provided value.
 
 The body receives `provide(value)`. Calling `provide` settles the returned future and
-then parks the provider process. When the owning scope closes or is canceled, the provider
-is released through normal generator unwinding, so `try...finally` cleanup in the provider
+then parks the provider process. When the owning scope starts closing, the provider is
+released through normal generator unwinding, so `try...finally` cleanup in the provider
 body runs on the same scope lifecycle.
 
 ### `sleep`

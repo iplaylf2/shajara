@@ -48,6 +48,10 @@ boundary. Concepts from documents to its right stay outside its scope.
 - **Branch** means a child scope created under the current scope.
 - **Scoped outcome** means a pair of a scope reference and an outcome future.
 - **Convergence** means a process, future, or scope reaching its final result.
+- **Lifecycle state** means an observable progress state, such as `open`, `closing`, or
+  `closed`.
+- **Convergence result** means the final branch exposed through `exitFuture` or
+  `LaunchResult`, such as success, failure, or cancellation.
 - **Failure** means an in-band kernel failure value.
 - **Scope failure** means a scope converged through its local failure path and reported a
   `ScopeFailure` through `exitFuture`.

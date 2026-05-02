@@ -44,7 +44,7 @@ describe("/ entries: createScope", () => {
         beforeCancel: "open",
       } as const,
     },
-  ])("cancels pending rituals when the scope closes", async ({ outcome }) => {
+  ])("cancels pending rituals during scope cancellation", async ({ outcome }) => {
     const scope = createScope();
     const settled = expect(
       scope.run(() => until(() => createPendingPromise())),

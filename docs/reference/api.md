@@ -118,10 +118,9 @@ The returned scope exposes:
 
 Result semantics:
 
-- `cancel()` waits for the scope's closure result
-- `closed` represents that same closure result
-- if the scope ends in cancellation or failure, `cancel()` and `closed` reject with the
-  corresponding error
+- `cancel()` requests cancellation and waits for the scope's convergence result
+- `closed` settles with that same result once the scope reaches `closed`
+- cancellation and failure settle as rejections with the corresponding error
 - calling `run(...)` on a closed scope throws synchronously
 
 ## Host Operations
@@ -133,7 +132,7 @@ yield * abortSignal();
 ```
 
 Returns an `AbortSignal` tied to the current scope. The signal aborts when that scope
-closes, fails, or is canceled.
+starts closing.
 
 ### `action`
 
@@ -171,7 +170,7 @@ yield * resource<Value>(body);
 
 Returns a `RiteFuture<Value>`. The body receives `provide(value)`, which settles the
 returned future and keeps the provider attached to the owning scope until that scope
-closes.
+starts closing.
 
 ### `sleep`
 

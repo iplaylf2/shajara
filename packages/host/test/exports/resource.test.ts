@@ -29,7 +29,7 @@ describe("/ operations: resource", () => {
       },
     },
   ])(
-    "releases the provider when the owning scope closes after its entry returns",
+    "releases the provider during normal owner-scope convergence",
     async ({ given: [providedEntry, cleanupEntry, resourceValue], outcome }) => {
       const events: string[] = [];
 
@@ -60,7 +60,7 @@ describe("/ operations: resource", () => {
       },
     },
   ])(
-    "releases the provider when the owning scope is canceled",
+    "releases the provider during owner-scope cancellation",
     async ({ given: [providedEntry, cleanupEntry, resourceValue], outcome }) => {
       const events: string[] = [];
       const scope = createScope();

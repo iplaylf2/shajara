@@ -5,7 +5,7 @@
 
 shajara offers a style of concurrency orchestration that differs from scattered `async`/`await`, timers, and callbacks.
 
-It organizes concurrent work into a bounded tree: each start has an owner, each wait or communication point has a place, and completion, failure, and cancellation all converge through structure instead of drifting outside the call graph. Here, structured concurrency means that concurrent tasks belong to a boundary and finish, fail, or cancel with that boundary.
+It organizes concurrent work into a bounded tree: each start has an owner, each wait or communication point has a place, and completion, failure, and cancellation all converge through structure instead of drifting outside the call graph. Here, structured concurrency means that concurrent tasks belong to a boundary, and their results converge through that boundary.
 
 For most users, the entry point is `@shajara/host`. It turns that model into a generator-style JavaScript API where concurrency relationships appear directly in the code structure.
 
