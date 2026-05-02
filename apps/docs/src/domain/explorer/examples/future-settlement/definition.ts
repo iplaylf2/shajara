@@ -40,7 +40,7 @@ function createFutureSettlementFlow(): ExplorerFlow<FutureSettlementDemoEvent> {
 function createFutureSettlementFlowLinks(): ExplorerFlow<FutureSettlementDemoEvent>["links"] {
   return [
     spawnLink("root", "resolver", "spawn(receiveSmsCode)", ["spawn-resolver"]),
-    dataLink("resolver", "sms-code", "settle future", ["settle-code"]),
+    dataLink("resolver", "sms-code", "settle smsCode", ["settle-code"]),
     waitLink("sms-code", "root", "wait(smsCode)", {
       activeEvents: ["wait-code"],
       displayLabel: { kind: "hidden" },
@@ -59,7 +59,7 @@ function createFutureSettlementFlowNodes(): ExplorerFlow<FutureSettlementDemoEve
       activeEvents: ["spawn-resolver", "resolver-sleep", "settle-code"],
       completedEvents: ["settle-code"],
     }),
-    futureNode("sms-code", "future", {
+    futureNode("sms-code", "smsCode", {
       activeEvents: ["future", "wait-code"],
       completedEvents: ["settle-code"],
     }),

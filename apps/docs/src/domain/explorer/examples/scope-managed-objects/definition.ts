@@ -124,7 +124,7 @@ function createChildNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][
 }
 
 function createTicketNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][number] {
-  return futureNode("ticket", "future", {
+  return futureNode("ticket", "ticket", {
     activeEvents: [
       "future-open",
       "channel-open",
@@ -139,7 +139,7 @@ function createTicketNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"]
 function createUpdatesNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][number] {
   return channelNode(
     "updates",
-    "channel",
+    "updates",
     {
       activeEvents: ["channel-open", "session-sleep", "objects-returned", "receive-updates"],
       completedEvents: ["updates-revoked"],
