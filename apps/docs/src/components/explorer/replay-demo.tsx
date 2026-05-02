@@ -155,14 +155,14 @@ class ExplorerReplaySession {
     syncCodeLines(this.#codeView, pendingState.cursors, pendingState.completed);
 
     yield* sleep(this.#stage.replay.replayDelayMs);
-    yield* this.#playReplayRoutine(pendingState);
+    yield* this.#playReplayProgram(pendingState);
   }
 
-  *#playReplayRoutine(
+  *#playReplayProgram(
     pendingState: ExplorerReplayState<ExplorerExampleEvent>,
   ): RiteCoroutine<void> {
     const frameStream = yield* createReplayFrameStream<ExplorerExampleEvent>(pendingState);
-    const replayRoutine = this.#replayRuntime.createRoutine();
+    const replayProgram = this.#replayRuntime.createProgram();
     const playback = yield* spawn(() =>
       playbackReplayFrames(
         frameStream,
@@ -176,7 +176,7 @@ class ExplorerReplaySession {
     );
 
     try {
-      yield* replayRoutine(frameStream.emit);
+      yield* replayProgram(frameStream.emit);
     } finally {
       frameStream.finish();
       yield* wait(playback);

@@ -16,7 +16,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createBoundedChannelDemoCode() {
   return [
-    codeLine("routine", "function* queueBatches() {", ["done"]),
+    codeLine("function-open", "function* queueBatches() {", ["done"]),
     codeLine(
       "channel-open",
       `  const [receiver, sender] = yield* channel<string, never>(${channelCapacity});`,

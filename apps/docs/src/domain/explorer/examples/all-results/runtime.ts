@@ -17,7 +17,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createAllResultsDemoCode() {
   return [
-    codeLine("routine", "function* renderDashboard() {", ["done"]),
+    codeLine("function-open", "function* renderDashboard() {", ["done"]),
     codeLine("all-open", "  const pageData = yield* all([", ["wait-all"]),
     codeLine("user-open", "    function* loadUser() {", ["user-return"]),
     codeLine("user-sleep", `      yield* sleep(${userDelayMs});`, ["user-return"]),

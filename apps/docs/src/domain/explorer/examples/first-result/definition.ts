@@ -1,9 +1,10 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
-  branchRoutineNode,
-  parentRoutineNode,
+  callerNode,
+  coordinatorNode,
   spawnLink,
   waitLink,
+  workerNode,
 } from "#/domain/explorer/examples-kit";
 import { createFirstResultDemoCode, firstResultDemo } from "./runtime";
 import type { FirstResultDemoEvent } from "./runtime";
@@ -21,7 +22,7 @@ export const firstResultExample = {
     replay: {
       replayDelayMs: 1400,
       runtime: {
-        createRoutine: () => firstResultDemo,
+        createProgram: () => firstResultDemo,
       },
     },
   },
@@ -45,7 +46,7 @@ function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links
       displayLabel: { kind: "hidden" },
       interruption: { events: ["cache-canceled"], kind: "interruptible" },
     }),
-    waitLink("network", "winner", "remaining branch", {
+    waitLink("network", "winner", "remaining work", {
       activeEvents: ["race-wait-network"],
       displayLabel: { kind: "hidden" },
       interruption: { events: ["network-canceled"], kind: "interruptible" },
@@ -60,37 +61,38 @@ function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links
 
 function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes"] {
   return [
-    parentRoutineNode("root", "loadProfile", {
-      activeEvents: ["routine", "race-open", "race-wait-result", "return-profile", "done"],
+    callerNode("root", "loadProfile", {
+      activeEvents: ["function-open", "race-open", "race-wait-result", "return-profile", "done"],
       completedEvents: ["done"],
     }),
-    branchRoutineNode("cache", "readCache", {
+    workerNode("cache", "readCache", {
       activeEvents: ["cache-open", "cache-sleep", "cache-return", "cache-canceled"],
       completedEvents: ["cache-return", "cache-canceled"],
     }),
-    branchRoutineNode("network", "fetchNetwork", {
+    workerNode("network", "fetchNetwork", {
       activeEvents: ["network-open", "network-sleep", "network-return", "network-canceled"],
       completedEvents: ["network-return", "network-canceled"],
     }),
-    {
-      activeEvents: [
-        "race-open",
-        "launch-race",
-        "launch-cache",
-        "launch-network",
-        "race-wait-cache",
-        "race-wait-network",
-        "cache-return",
-        "cache-canceled",
-        "network-return",
-        "race-wait-result",
-        "network-canceled",
-      ],
-      completedEvents: ["race-wait-result"],
-      id: "winner",
-      kind: "join",
-      label: "race result",
-      statusRoutineIds: ["root", "race"],
-    },
+    coordinatorNode(
+      "winner",
+      "race result",
+      {
+        activeEvents: [
+          "race-open",
+          "launch-race",
+          "launch-cache",
+          "launch-network",
+          "race-wait-cache",
+          "race-wait-network",
+          "cache-return",
+          "cache-canceled",
+          "network-return",
+          "race-wait-result",
+          "network-canceled",
+        ],
+        completedEvents: ["race-wait-result"],
+      },
+      ["root", "race"],
+    ),
   ];
 }

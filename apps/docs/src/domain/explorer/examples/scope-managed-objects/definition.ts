@@ -1,13 +1,13 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
-  branchRoutineNode,
+  callerNode,
   channelNode,
   dataLink,
   futureNode,
-  parentRoutineNode,
   scopeNode,
   spawnLink,
   waitLink,
+  workerNode,
 } from "#/domain/explorer/examples-kit";
 import { createScopeManagedObjectsDemoCode, scopeManagedObjectsDemo } from "./runtime";
 import type { ScopeManagedObjectsDemoEvent } from "./runtime";
@@ -27,7 +27,7 @@ export const scopeManagedObjectsExample = {
     replay: {
       replayDelayMs: 1300,
       runtime: {
-        createRoutine: () => scopeManagedObjectsDemo,
+        createProgram: () => scopeManagedObjectsDemo,
       },
     },
   },
@@ -74,9 +74,9 @@ function createScopeManagedObjectsFlowNodes(): ExplorerFlow<ScopeManagedObjectsD
 }
 
 function createRootNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][number] {
-  return parentRoutineNode("root", "resumeCheckout", {
+  return callerNode("root", "resumeCheckout", {
     activeEvents: [
-      "routine",
+      "function-open",
       "branch-open",
       "launch-scope",
       "scope-wait-root",
@@ -110,7 +110,7 @@ function createSessionScopeNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["n
 }
 
 function createChildNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][number] {
-  return branchRoutineNode("child", "openSession", {
+  return workerNode("child", "openSession", {
     activeEvents: [
       "launch-scope",
       "future-open",

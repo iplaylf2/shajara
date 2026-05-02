@@ -1,10 +1,5 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
-import {
-  branchRoutineNode,
-  parentRoutineNode,
-  spawnLink,
-  waitLink,
-} from "#/domain/explorer/examples-kit";
+import { callerNode, spawnLink, waitLink, workerNode } from "#/domain/explorer/examples-kit";
 import { createSingleSpawnDemoCode, singleSpawnDemo } from "./runtime";
 import type { SingleSpawnDemoEvent } from "./runtime";
 
@@ -12,7 +7,7 @@ export const singleSpawnExample = {
   descriptionKey: "explorer.examples.single-spawn.description",
   guideKeys: [
     "explorer.examples.single-spawn.guide.spawn",
-    "explorer.examples.single-spawn.guide.parent",
+    "explorer.examples.single-spawn.guide.caller",
   ],
   id: "single-spawn",
   stage: {
@@ -21,7 +16,7 @@ export const singleSpawnExample = {
     replay: {
       replayDelayMs: 1200,
       runtime: {
-        createRoutine: () => singleSpawnDemo,
+        createProgram: () => singleSpawnDemo,
       },
     },
   },
@@ -48,11 +43,11 @@ function createSingleSpawnFlowLinks(): ExplorerFlow<SingleSpawnDemoEvent>["links
 
 function createSingleSpawnFlowNodes(): ExplorerFlow<SingleSpawnDemoEvent>["nodes"] {
   return [
-    parentRoutineNode("root", "submitOrder", {
-      activeEvents: ["routine", "spawn-receipt", "return-accepted", "wait-receipt", "done"],
+    callerNode("root", "submitOrder", {
+      activeEvents: ["function-open", "spawn-receipt", "return-accepted", "wait-receipt", "done"],
       completedEvents: ["done"],
     }),
-    branchRoutineNode("receipt", "sendReceiptEmail", {
+    workerNode("receipt", "sendReceiptEmail", {
       activeEvents: ["spawn-receipt", "receipt-sleep", "receipt-return"],
       completedEvents: ["receipt-return"],
     }),

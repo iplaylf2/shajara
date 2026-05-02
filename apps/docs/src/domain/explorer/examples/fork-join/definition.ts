@@ -1,11 +1,6 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import type { LoadPageDemoEvent, LoadPageDemoResult } from "./runtime";
-import {
-  branchRoutineNode,
-  parentRoutineNode,
-  spawnLink,
-  waitLink,
-} from "#/domain/explorer/examples-kit";
+import { callerNode, spawnLink, waitLink, workerNode } from "#/domain/explorer/examples-kit";
 import { createLoadPageDemoCode, loadPageDemo } from "./runtime";
 
 export const forkJoinExample = {
@@ -18,7 +13,7 @@ export const forkJoinExample = {
     replay: {
       replayDelayMs: 1400,
       runtime: {
-        createRoutine: () => loadPageDemo,
+        createProgram: () => loadPageDemo,
       },
     },
   },
@@ -51,9 +46,9 @@ function createForkJoinFlowLinks(): ExplorerFlow<LoadPageDemoEvent>["links"] {
 
 function createForkJoinFlowNodes(): ExplorerFlow<LoadPageDemoEvent>["nodes"] {
   return [
-    parentRoutineNode("root", "loadPage", {
+    callerNode("root", "loadPage", {
       activeEvents: [
-        "routine",
+        "function-open",
         "spawn-header",
         "spawn-sidebar",
         "wait-header",
@@ -63,11 +58,11 @@ function createForkJoinFlowNodes(): ExplorerFlow<LoadPageDemoEvent>["nodes"] {
       ],
       completedEvents: ["done"],
     }),
-    branchRoutineNode("header", "loadHeader", {
+    workerNode("header", "loadHeader", {
       activeEvents: ["spawn-header", "header-sleep", "wait-header", "header-return"],
       completedEvents: ["header-return"],
     }),
-    branchRoutineNode("sidebar", "loadSidebar", {
+    workerNode("sidebar", "loadSidebar", {
       activeEvents: ["spawn-sidebar", "sidebar-sleep", "wait-sidebar", "sidebar-return"],
       completedEvents: ["sidebar-return"],
     }),

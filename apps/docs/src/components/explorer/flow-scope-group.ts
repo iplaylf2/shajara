@@ -32,7 +32,7 @@ function createScopeGroup<TEvent extends ExplorerEventId>(
     label: node.label,
     left,
     ownedNodeIds: node.ownedNodeIds,
-    statusRoutineIds: node.statusRoutineIds,
+    statusTargetIds: node.statusTargetIds,
     top,
     variant: node.kind,
     width: right - left,

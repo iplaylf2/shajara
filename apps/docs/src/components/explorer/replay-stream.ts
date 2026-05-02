@@ -42,14 +42,14 @@ function applyReplayTrace<TEvent extends ExplorerEventId>(
   state: ExplorerReplayState<TEvent>,
   trace: ExplorerReplayTrace<TEvent>,
 ): ExplorerReplayFrame<TEvent> {
-  const cursorsByRoutine = new Map(state.cursors.map((cursor) => [cursor.routineId, cursor]));
+  const cursorsByTarget = new Map(state.cursors.map((cursor) => [cursor.targetId, cursor]));
   const completed = appendCompletedEvents(state.completed, trace.actions);
 
   for (const action of trace.actions) {
-    applyReplayCursorAction(cursorsByRoutine, action);
+    applyReplayCursorAction(cursorsByTarget, action);
   }
 
-  const cursors = [...cursorsByRoutine.values()];
+  const cursors = [...cursorsByTarget.values()];
 
   return {
     active: cursors.flatMap((cursor) => cursor.events),
@@ -59,19 +59,19 @@ function applyReplayTrace<TEvent extends ExplorerEventId>(
 }
 
 function applyReplayCursorAction<TEvent extends ExplorerEventId>(
-  cursorsByRoutine: Map<string, ExplorerReplayCursor<TEvent>>,
+  cursorsByTarget: Map<string, ExplorerReplayCursor<TEvent>>,
   action: ExplorerReplayAction<TEvent>,
 ): void {
   switch (action.kind) {
     case "clear-cursors": {
-      for (const routineId of action.routineIds) {
-        cursorsByRoutine.delete(routineId);
+      for (const targetId of action.targetIds) {
+        cursorsByTarget.delete(targetId);
       }
       return;
     }
     case "set-cursors": {
       for (const cursor of action.cursors) {
-        cursorsByRoutine.set(cursor.routineId, cursor);
+        cursorsByTarget.set(cursor.targetId, cursor);
       }
       return;
     }
@@ -155,7 +155,7 @@ function sameCursors<TEvent extends ExplorerEventId>(
       return (
         sameEvents(cursor.events, target.events) &&
         cursor.mode === target.mode &&
-        cursor.routineId === target.routineId
+        cursor.targetId === target.targetId
       );
     })
   );

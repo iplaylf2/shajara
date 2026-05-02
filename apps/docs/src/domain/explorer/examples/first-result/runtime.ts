@@ -18,7 +18,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createFirstResultDemoCode() {
   return [
-    codeLine("routine", "function* loadProfile() {", ["done"]),
+    codeLine("function-open", "function* loadProfile() {", ["done"]),
     codeLine("race-open", "  const profile = yield* race([", ["race-wait-result"]),
     codeLine("cache-open", "    function* readCache() {", ["cache-canceled", "cache-return"]),
     codeLine("cache-sleep", `      yield* sleep(${cacheDelayMs});`, [
@@ -67,7 +67,7 @@ export function* firstResultDemo(
         [
           {
             cancelEvent: "cache-canceled",
-            *routine(): RiteCoroutine<string> {
+            *program(): RiteCoroutine<string> {
               emit({ actions: [setCursor(cursorAt("cache", "cache-sleep", "running"))] });
               yield* sleep(cacheDelayMs);
               emit({
@@ -86,12 +86,12 @@ export function* firstResultDemo(
                 });
               }
             },
-            routineId: "cache",
+            targetId: "cache",
             waitEvent: "race-wait-cache",
           },
           {
             cancelEvent: "network-canceled",
-            *routine(): RiteCoroutine<string> {
+            *program(): RiteCoroutine<string> {
               emit({ actions: [setCursor(cursorAt("network", "network-sleep", "running"))] });
               yield* sleep(networkDelayMs);
               emit({
@@ -112,7 +112,7 @@ export function* firstResultDemo(
                 });
               }
             },
-            routineId: "network",
+            targetId: "network",
             waitEvent: "race-wait-network",
           },
         ] as const,

@@ -27,14 +27,14 @@ export function resolveFlowScene<TEvent extends ExplorerEventId>(
   };
 }
 
-const parentColumnX = 68;
-const branchColumnX = 394;
-const joinColumnX = 680;
+const callerColumnX = 68;
+const coordinatorColumnX = 394;
+const workerColumnX = 680;
 const channelX = 334;
 const futureX = 350;
 const scopedChannelX = 362;
 const scopedFutureX = 574;
-const futureBranchColumnX = 506;
+const futureWorkerColumnX = 506;
 const topLaneY = 48;
 const centerLaneY = 76;
 const bottomLaneY = 156;
@@ -42,45 +42,45 @@ const auxiliaryLaneY = 164;
 const futureLaneY = auxiliaryLaneY;
 const scopedChannelLaneY = 204;
 const scopedFutureLaneY = 195;
-const parentColumn = 0;
-const branchColumn = 1;
-const joinColumn = 2;
-const futureBranchColumn = 3;
+const callerColumn = 0;
+const coordinatorColumn = 1;
+const workerColumn = 2;
+const futureWorkerColumn = 3;
 const topLaneIndex = 0;
 const centerLaneIndex = 1;
 const bottomLaneIndex = 2;
-const branchNodeHeight = 80;
-const branchNodeWidth = 248;
+const workerNodeHeight = 80;
+const workerNodeWidth = 248;
 const channelNodeHeight = 54;
 const channelNodeWidth = 144;
-const futureBranchNodeHeight = 108;
-const futureBranchNodeWidth = 214;
+const futureWorkerNodeHeight = 108;
+const futureWorkerNodeWidth = 214;
 const futureNodeHeight = 72;
 const futureNodeWidth = 84;
 const tallNodeHeight = 154;
-const parentNodeWidth = 214;
-const joinNodeWidth = 154;
+const callerNodeWidth = 214;
+const coordinatorNodeWidth = 154;
 const halfDivisor = 2;
-const firstBranchIndex = 0;
+const firstWorkerIndex = 0;
 const noFutureNodeCount = 0;
-const noJoinNodeCount = 0;
+const noCoordinatorNodeCount = 0;
 const noScopeNodeCount = 0;
-const singleBranchCount = 1;
-const pairedBranchCount = 2;
+const singleWorkerCount = 1;
+const pairedWorkerCount = 2;
 
 const defaultLayout = {
-  columns: [parentColumnX, branchColumnX, joinColumnX, futureBranchColumnX],
+  columns: [callerColumnX, coordinatorColumnX, workerColumnX, futureWorkerColumnX],
   lanes: [topLaneY, centerLaneY, bottomLaneY],
   markerId: "explorer-flow-arrow",
 } as const;
 
 const nodeSize = {
-  branch: { height: branchNodeHeight, width: branchNodeWidth },
+  caller: { height: tallNodeHeight, width: callerNodeWidth },
   channel: { height: channelNodeHeight, width: channelNodeWidth },
+  coordinator: { height: tallNodeHeight, width: coordinatorNodeWidth },
   future: { height: futureNodeHeight, width: futureNodeWidth },
-  join: { height: tallNodeHeight, width: joinNodeWidth },
-  parent: { height: tallNodeHeight, width: parentNodeWidth },
   scope: { height: 0, width: 0 },
+  worker: { height: workerNodeHeight, width: workerNodeWidth },
 } as const satisfies Record<
   FlowNodeSpec<ExplorerEventId>["kind"],
   { readonly height: number; readonly width: number }
@@ -89,32 +89,30 @@ const nodeSize = {
 function resolveNodeLayout<TEvent extends ExplorerEventId>(
   graphNodes: readonly FlowNodeSpec<TEvent>[],
 ): FlowNode<TEvent>[] {
-  const parentNodes = graphNodes.filter((node) => node.kind === "parent");
-  const branchNodes = graphNodes.filter((node) => node.kind === "branch");
+  const callerNodes = graphNodes.filter((node) => node.kind === "caller");
   const channelNodes = graphNodes.filter((node) => node.kind === "channel");
+  const coordinatorNodes = graphNodes.filter((node) => node.kind === "coordinator");
   const futureNodes = graphNodes.filter((node) => node.kind === "future");
-  const joinNodes = graphNodes.filter((node) => node.kind === "join");
   const scopeNodes = graphNodes.filter((node) => node.kind === "scope");
-  const resolvedCenterLane = readCenterLane(branchNodes.length);
+  const workerNodes = graphNodes.filter((node) => node.kind === "worker");
+  const resolvedCenterLane = readCenterLane(workerNodes.length);
   const hasFutureNode = futureNodes.length > noFutureNodeCount;
-  const hasJoinNode = joinNodes.length > noJoinNodeCount;
+  const hasCoordinatorNode = coordinatorNodes.length > noCoordinatorNodeCount;
   const hasScopeNode = scopeNodes.length > noScopeNodeCount;
 
   return [
-    ...parentNodes.map((node) => createFlowNode(node, resolvedCenterLane, parentColumn)),
+    ...callerNodes.map((node) => createFlowNode(node, resolvedCenterLane, callerColumn)),
     ...channelNodes.map((node) => createAuxiliaryChannelNode(node, { hasScopeNode })),
     ...futureNodes.map((node) => createAuxiliaryFutureNode(node, { hasScopeNode })),
-    ...branchNodes.map((node, index) =>
-      createBranchFlowNode(
+    ...workerNodes.map((node, index) =>
+      createWorkerFlowNode(
         node,
-        readBranchLane(index, branchNodes.length),
-        readBranchColumn({ hasFutureNode, hasJoinNode, hasScopeNode }),
-        { hasFutureNode, hasJoinNode, hasScopeNode },
+        readWorkerLane(index, workerNodes.length),
+        readWorkerColumn({ hasCoordinatorNode, hasFutureNode, hasScopeNode }),
+        { hasCoordinatorNode, hasFutureNode, hasScopeNode },
       ),
     ),
-    ...joinNodes.map((node) =>
-      createFlowNode(node, resolvedCenterLane, hasJoinNode ? branchColumn : joinColumn),
-    ),
+    ...coordinatorNodes.map((node) => createFlowNode(node, resolvedCenterLane, coordinatorColumn)),
   ];
 }
 
@@ -155,15 +153,15 @@ function createFlowNode<TEvent extends ExplorerEventId>(
   return createPositionedFlowNode(node, left, top);
 }
 
-function createBranchFlowNode<TEvent extends ExplorerEventId>(
+function createWorkerFlowNode<TEvent extends ExplorerEventId>(
   node: FlowNodeSpec<TEvent>,
   lane: number,
   column: number,
-  options: BranchColumnOptions,
+  options: WorkerColumnOptions,
 ): FlowNode<TEvent> {
   const left = defaultLayout.columns[column]!;
   const top = defaultLayout.lanes[lane]!;
-  const size = readBranchNodeSize(options);
+  const size = readWorkerNodeSize(options);
 
   return createPositionedFlowNode(node, left, top, { size });
 }
@@ -195,7 +193,7 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
       ...positionedNode,
       channelDirection: node.direction,
       channelState: node.channelState,
-      statusRoutineIds: node.statusRoutineIds,
+      statusTargetIds: node.statusTargetIds,
       variant: node.kind,
     };
   }
@@ -203,7 +201,7 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
   if (node.kind === "future") {
     return {
       ...positionedNode,
-      statusRoutineIds: node.statusRoutineIds,
+      statusTargetIds: node.statusTargetIds,
       variant: node.kind,
     };
   }
@@ -214,65 +212,65 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
 
   return {
     ...positionedNode,
-    statusRoutineIds: node.statusRoutineIds,
+    statusTargetIds: node.statusTargetIds,
     variant: node.kind,
   };
 }
 
-function readCenterLane(branchCount: number): number {
-  if (branchCount <= singleBranchCount) {
+function readCenterLane(workerCount: number): number {
+  if (workerCount <= singleWorkerCount) {
     return centerLaneIndex;
   }
 
-  if (branchCount > defaultLayout.lanes.length) {
-    throw new Error("Too many explorer flow branches.");
+  if (workerCount > defaultLayout.lanes.length) {
+    throw new Error("Too many explorer flow workers.");
   }
 
-  return Math.floor(branchCount / halfDivisor);
+  return Math.floor(workerCount / halfDivisor);
 }
 
-function readBranchLane(index: number, branchCount: number): number {
-  if (branchCount <= singleBranchCount) {
+function readWorkerLane(index: number, workerCount: number): number {
+  if (workerCount <= singleWorkerCount) {
     return centerLaneIndex;
   }
 
-  if (branchCount === pairedBranchCount) {
-    return index === firstBranchIndex ? topLaneIndex : bottomLaneIndex;
+  if (workerCount === pairedWorkerCount) {
+    return index === firstWorkerIndex ? topLaneIndex : bottomLaneIndex;
   }
 
   return index;
 }
 
-function readBranchColumn(options: BranchColumnOptions): number {
-  if (options.hasJoinNode) {
-    return joinColumn;
+function readWorkerColumn(options: WorkerColumnOptions): number {
+  if (options.hasCoordinatorNode) {
+    return workerColumn;
   }
 
   if (options.hasFutureNode) {
     if (options.hasScopeNode) {
-      return branchColumn;
+      return coordinatorColumn;
     }
 
-    return futureBranchColumn;
+    return futureWorkerColumn;
   }
 
-  return branchColumn;
+  return coordinatorColumn;
 }
 
-function readBranchNodeSize(options: BranchColumnOptions): FlowNodeSize {
-  if (options.hasFutureNode && !options.hasJoinNode && !options.hasScopeNode) {
+function readWorkerNodeSize(options: WorkerColumnOptions): FlowNodeSize {
+  if (options.hasFutureNode && !options.hasCoordinatorNode && !options.hasScopeNode) {
     return {
-      height: futureBranchNodeHeight,
-      width: futureBranchNodeWidth,
+      height: futureWorkerNodeHeight,
+      width: futureWorkerNodeWidth,
     };
   }
 
-  return nodeSize.branch;
+  return nodeSize.worker;
 }
 
-interface BranchColumnOptions {
+interface WorkerColumnOptions {
+  readonly hasCoordinatorNode: boolean;
   readonly hasFutureNode: boolean;
-  readonly hasJoinNode: boolean;
   readonly hasScopeNode: boolean;
 }
 
