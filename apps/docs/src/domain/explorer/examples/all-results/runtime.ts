@@ -1,5 +1,5 @@
 // oxlint-disable max-lines-per-function
-import { all, enclose, wait } from "@shajara/host/primitives";
+import { all, branch, wait } from "@shajara/host/primitives";
 import {
   clearCursor,
   codeLine,
@@ -39,7 +39,7 @@ export function createAllResultsDemoCode() {
 export function* allResultsDemo(
   emit: ExplorerReplayEmit<AllResultsDemoEvent>,
 ): RiteCoroutine<AllResultsDemoResult> {
-  return yield* enclose(function* renderDashboard(): RiteCoroutine<AllResultsDemoResult> {
+  return yield* branch(function* renderDashboard(): RiteCoroutine<AllResultsDemoResult> {
     emit({
       actions: [
         setCursors([

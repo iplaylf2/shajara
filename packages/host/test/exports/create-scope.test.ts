@@ -85,17 +85,17 @@ describe("/ entries: createScope", () => {
 
   test.for([
     {
-      given: [] as const,
+      given: ["late"] as const,
       outcome: "Cannot launch ritual with an illegal scope.",
     },
   ])(
     "throws when asked to run a ritual after the scope has already closed",
-    async ({ outcome }) => {
+    async ({ given: [value], outcome }) => {
       const scope = createScope();
 
       await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
 
-      expect(() => scope.run(() => until(() => Promise.resolve("late")))).toThrow(outcome);
+      expect(() => scope.run(() => until(() => Promise.resolve(value)))).toThrow(outcome);
     },
   );
 
@@ -189,10 +189,7 @@ describe("/ entries: createScope", () => {
       given: [new Error("finally-failed-during-close")] as const,
       outcome: {
         cause: {
-          failure: {
-            kind: "external",
-          },
-          kind: "process",
+          kind: "external",
         },
         kind: "scope",
       } as const,
@@ -223,10 +220,7 @@ describe("/ entries: createScope", () => {
         ...outcome,
         cause: {
           ...outcome.cause,
-          failure: {
-            ...outcome.cause.failure,
-            raw: cause,
-          },
+          raw: cause,
         },
       });
     },

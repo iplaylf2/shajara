@@ -6,6 +6,7 @@ import type {
   ExplorerRoutineId,
 } from "#/domain/explorer/contract";
 import type { RiteCoroutine, RiteRoutine } from "@shajara/host";
+import type { NonEmptyTuple } from "type-fest";
 
 export function cursorAt<TEvent extends string>(
   routineId: string,
@@ -47,9 +48,9 @@ export function setCursors<TEvent extends ExplorerEventId>(
   return { cursors, kind: "set-cursors" };
 }
 
-export function encloseWait<TEvent extends ExplorerEventId, TResult>(
+export function branchWait<TEvent extends ExplorerEventId, TResult>(
   emit: ExplorerReplayEmit<TEvent>,
-  replay: EncloseWaitReplay<TEvent>,
+  replay: BranchWaitReplay<TEvent>,
   routine: RiteRoutine<TResult>,
 ): RiteRoutine<TResult> {
   emit({
@@ -59,27 +60,37 @@ export function encloseWait<TEvent extends ExplorerEventId, TResult>(
   return routine;
 }
 
-export function raceBranch<TEvent extends ExplorerEventId, TResult>(
+export function raceWait<TEvent extends ExplorerEventId, TReturns extends NonEmptyTuple<unknown>>(
   emit: ExplorerReplayEmit<TEvent>,
-  replay: RaceBranchReplay<TEvent>,
-  routine: RiteRoutine<TResult>,
+  replay: RaceWaitReplay<NoInfer<TEvent>>,
+  entries: RaceEntryTuple<NoInfer<TEvent>, TReturns>,
+): RaceRoutineTuple<TReturns> {
+  emit({
+    actions: [setCursors([replay.caller, replay.coordinator])],
+  });
+
+  return entries.map((entry) => createRaceEntryRoutine(emit, entry)) as RaceRoutineTuple<TReturns>;
+}
+
+function createRaceEntryRoutine<TEvent extends ExplorerEventId, TResult>(
+  emit: ExplorerReplayEmit<TEvent>,
+  entry: RaceEntryReplay<TEvent, TResult>,
 ): RiteRoutine<TResult> {
-  return function* runRaceBranch(): RiteCoroutine<TResult> {
-    return yield* playRaceBranch(emit, replay, routine);
+  return function* runRaceEntry(): RiteCoroutine<TResult> {
+    return yield* playRaceEntry(emit, entry);
   };
 }
 
-function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
+function* playRaceEntry<TEvent extends ExplorerEventId, TResult>(
   emit: ExplorerReplayEmit<TEvent>,
-  replay: RaceBranchReplay<TEvent>,
-  routine: RiteRoutine<TResult>,
+  entry: RaceEntryReplay<TEvent, TResult>,
 ): RiteCoroutine<TResult> {
-  const outcome: BranchOutcome = {
+  const outcome: RaceEntryOutcome = {
     didReturn: false,
   };
 
   try {
-    const result = yield* routine();
+    const result = yield* entry.routine();
 
     outcome.didReturn = true;
 
@@ -88,25 +99,39 @@ function* playRaceBranch<TEvent extends ExplorerEventId, TResult>(
     if (!outcome.didReturn) {
       emit({
         actions: [
-          clearCursor(replay.routineId),
-          completeEvents([replay.cancelEvent, replay.waitEvent]),
+          clearCursor(entry.routineId),
+          completeEvents([entry.cancelEvent, entry.waitEvent]),
         ],
       });
     }
   }
 }
 
-interface BranchOutcome {
+interface RaceEntryOutcome {
   didReturn: boolean;
 }
 
-export interface EncloseWaitReplay<TEvent extends ExplorerEventId> {
+export interface BranchWaitReplay<TEvent extends ExplorerEventId> {
   readonly events: TEvent | readonly TEvent[];
   readonly routineId: ExplorerRoutineId;
 }
 
-export interface RaceBranchReplay<TEvent extends ExplorerEventId> {
+export interface RaceWaitReplay<TEvent extends ExplorerEventId> {
+  readonly caller: ExplorerReplayCursor<TEvent>;
+  readonly coordinator: ExplorerReplayCursor<TEvent>;
+}
+
+export interface RaceEntryReplay<TEvent extends ExplorerEventId, TResult> {
   readonly cancelEvent: TEvent;
+  readonly routine: RiteRoutine<TResult>;
   readonly routineId: ExplorerRoutineId;
   readonly waitEvent: TEvent;
 }
+
+type RaceEntryTuple<TEvent extends ExplorerEventId, TReturns extends NonEmptyTuple> = {
+  readonly [Index in keyof TReturns]: RaceEntryReplay<TEvent, TReturns[Index]>;
+};
+
+type RaceRoutineTuple<TReturns extends NonEmptyTuple> = {
+  readonly [Index in keyof TReturns]: RiteRoutine<TReturns[Index]>;
+};

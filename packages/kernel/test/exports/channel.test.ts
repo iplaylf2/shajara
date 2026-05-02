@@ -1,8 +1,8 @@
 import {
+  branch,
   cede,
   channel,
   close,
-  enclose,
   receive,
   send,
   spawn,
@@ -256,34 +256,38 @@ describe("/ primitives: channel, close, send, receive", () => {
     },
   );
 
-  const revokedFailure = new Error("rewrite failed");
-
   test.for([
     {
-      given: [1, "old-value", "incoming-value", "after-revoke", revokedFailure] as const,
+      given: [
+        1,
+        "old-value",
+        "incoming-value",
+        "after-revoke",
+        new Error("rewrite failed"),
+      ] as const,
       outcome: {
-        enclosedResult: left(
+        revokedSend: some({ kind: "revoked" }),
+        scopeExit: left(
           expect.objectContaining({
             cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: revokedFailure,
-                kind: "channel",
+              cause: expect.objectContaining({
+                message: "rewrite failed",
               }),
+              kind: "channel",
             }),
             kind: "scope",
           }),
         ),
-        sendResultAfterRevoked: some({ kind: "revoked" }),
       },
     },
   ])(
     "returns revoked for subsequent sends after overload rewrite failure",
-    async ({ given: [capacity, oldValue, incomingValue, afterRevokeValue, failure], outcome }) => {
-      let senderAfterFailure: ChannelSender<string, string> | null = null;
+    async ({ given: [capacity, oldValue, incomingValue, lateValue, failure], outcome }) => {
+      let revokedSender: ChannelSender<string, string> | null = null;
 
       await using ritual = interpretRitual(() =>
         pipe(
-          enclose(() =>
+          branch(() =>
             pipe(
               channel<string, string>(capacity, () => {
                 throw failure;
@@ -291,24 +295,25 @@ describe("/ primitives: channel, close, send, receive", () => {
               wisp.map(([, sender]) => ({ sender })),
               wisp.chainFirst(({ sender }) =>
                 wisp.fromIO(() => {
-                  senderAfterFailure = sender;
+                  revokedSender = sender;
                 }),
               ),
               wisp.chainFirst(({ sender }) => send(sender, oldValue)),
               wisp.chainFirst(({ sender }) => trySend(sender, incomingValue)),
             ),
           ),
-          wisp.map((enclosedResult) => ({ enclosedResult })),
-          wisp.bind("sendResultAfterRevoked", () => {
-            if (!senderAfterFailure) {
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
+          wisp.map((scopeExit) => ({ scopeExit })),
+          wisp.bind("revokedSend", () => {
+            if (!revokedSender) {
               throw new Error("Expected sender to be captured before channel failure");
             }
 
-            return trySend(senderAfterFailure, afterRevokeValue);
+            return trySend(revokedSender, lateValue);
           }),
-          wisp.map(({ enclosedResult, sendResultAfterRevoked }) => ({
-            enclosedResult,
-            sendResultAfterRevoked,
+          wisp.map(({ revokedSend, scopeExit }) => ({
+            revokedSend,
+            scopeExit,
           })),
         ),
       );

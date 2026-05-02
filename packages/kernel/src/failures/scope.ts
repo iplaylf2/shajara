@@ -1,7 +1,7 @@
-import type { FailureShape, ProcessRef, ScopeRef } from "#/contracts";
+import type { FailureShape } from "#/contracts";
 
 export function scopeFailure(
-  cause: ScopeFailureCause,
+  cause: FailureShape,
   suppressed: readonly FailureShape[],
 ): ScopeFailure {
   return {
@@ -13,21 +13,7 @@ export function scopeFailure(
 }
 
 export interface ScopeFailure extends FailureShape {
-  readonly cause: ScopeFailureCause;
+  readonly cause: FailureShape;
   readonly suppressed: readonly FailureShape[];
   readonly kind: "scope";
-}
-
-export type ScopeFailureCause = ProcessCause | ScopeCause;
-
-export interface ProcessCause {
-  readonly failure: FailureShape;
-  readonly kind: "process";
-  readonly process: ProcessRef<unknown>;
-}
-
-export interface ScopeCause {
-  readonly failure: FailureShape;
-  readonly kind: "scope";
-  readonly scope: ScopeRef<unknown>;
 }

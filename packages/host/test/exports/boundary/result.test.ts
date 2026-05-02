@@ -23,10 +23,12 @@ describe("/ boundary: fromFailure, toFailure, unwrapEither, unwrapOption", () =>
   test.for([
     {
       given: [new Error("failed")] as const,
-      outcome: "same-error",
+      outcome: {
+        sameInstance: true,
+      },
     },
-  ])("fromFailure preserves external Error instances", ({ given: [cause] }) => {
-    expect(fromFailure(toFailure(cause))).toBe(cause);
+  ])("fromFailure preserves external Error instances", ({ given: [cause], outcome }) => {
+    expect(fromFailure(toFailure(cause)) === cause).toBe(outcome.sameInstance);
   });
 
   test.for([

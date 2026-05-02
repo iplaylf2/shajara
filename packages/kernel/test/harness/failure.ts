@@ -13,7 +13,7 @@ export function findFailureByKind<Kind extends Failure["kind"]>(
     return failure as Extract<Failure, { kind: Kind }>;
   }
 
-  const nested = failure.cause?.failure;
+  const nested = failure.cause;
   if (nested) {
     const foundNested = findFailureByKind(nested, kind);
     if (foundNested !== null) {
@@ -32,7 +32,7 @@ export function findFailureByKind<Kind extends Failure["kind"]>(
 }
 
 interface FailureTree {
-  cause?: { failure?: unknown };
+  cause?: unknown;
   kind?: string;
   suppressed?: readonly unknown[];
 }

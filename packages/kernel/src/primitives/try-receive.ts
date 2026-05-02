@@ -1,5 +1,6 @@
-import type { ChannelReceiver, ReceiveResult } from "#/sigils/index";
+import type { ChannelReceiver } from "./channel";
 import type { Option } from "#/utils/index";
+import type { ReceiveResult } from "./receive";
 import type { Wisp } from "#/contracts";
 import { tryReceive as tryReceiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";

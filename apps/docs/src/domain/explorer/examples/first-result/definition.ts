@@ -37,7 +37,7 @@ function createFirstResultFlow(): ExplorerFlow<FirstResultDemoEvent> {
 
 function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links"] {
   return [
-    spawnLink("root", "winner", "race(firstProfile)", ["race-open"]),
+    spawnLink("root", "winner", "race(readCache, fetchNetwork)", ["launch-race"]),
     spawnLink("winner", "cache", "readCache", ["launch-cache"]),
     spawnLink("winner", "network", "fetchNetwork", ["launch-network"]),
     waitLink("cache", "winner", "winner", {
@@ -50,8 +50,8 @@ function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links
       displayLabel: { kind: "hidden" },
       interruption: { events: ["network-canceled"], kind: "interruptible" },
     }),
-    waitLink("winner", "root", "wait(firstProfile)", {
-      activeEvents: ["wait-race"],
+    waitLink("winner", "root", "first result", {
+      activeEvents: ["race-wait-result"],
       displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
     }),
@@ -61,7 +61,7 @@ function createFirstResultFlowLinks(): ExplorerFlow<FirstResultDemoEvent>["links
 function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes"] {
   return [
     parentRoutineNode("root", "loadProfile", {
-      activeEvents: ["routine", "race-open", "wait-race", "return-profile", "done"],
+      activeEvents: ["routine", "race-open", "race-wait-result", "return-profile", "done"],
       completedEvents: ["done"],
     }),
     branchRoutineNode("cache", "readCache", {
@@ -75,6 +75,7 @@ function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes
     {
       activeEvents: [
         "race-open",
+        "launch-race",
         "launch-cache",
         "launch-network",
         "race-wait-cache",
@@ -82,13 +83,13 @@ function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes
         "cache-return",
         "cache-canceled",
         "network-return",
-        "wait-race",
+        "race-wait-result",
         "network-canceled",
       ],
-      completedEvents: ["wait-race"],
+      completedEvents: ["race-wait-result"],
       id: "winner",
       kind: "join",
-      label: "firstProfile",
+      label: "race result",
       statusRoutineIds: ["root", "race"],
     },
   ];

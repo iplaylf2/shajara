@@ -1,4 +1,4 @@
-import { cede, future, poll, settle, spawn, wait } from "#/index";
+import { cede, externalFailure, future, poll, settle, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
 import { isSome, left, none, right, some } from "#/utils";
@@ -42,16 +42,12 @@ describe("/ primitives: future, poll, wait", () => {
       outcome: right("ready"),
     },
     {
-      given: [
-        left({
-          kind: "halted",
-          message: "future-failed",
-        }),
-      ] as const,
+      given: [left(externalFailure("halted", "future-failed"))] as const,
+      outcome: left(externalFailure("halted", "future-failed")),
     },
   ])(
     "returns the result produced by a spawned settlement",
-    async ({ given: [settled], outcome = settled }) => {
+    async ({ given: [settled], outcome }) => {
       await using ritual = interpretRitual(() =>
         pipe(
           future<string>(),

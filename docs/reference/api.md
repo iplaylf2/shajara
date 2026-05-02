@@ -1,12 +1,12 @@
 # Public Interface
 
-This document summarizes the public export surfaces and call results.
+This document summarizes public exports and observable call results.
 
 ## Published Packages
 
 ### `@shajara/host`
 
-The root entry is intended for application code and re-exports:
+The root entry is intended for application code. It re-exports:
 
 - `contracts`
 - `entries`
@@ -17,20 +17,26 @@ Names available from the root entry include:
 
 - host entries: `run`, `createScope`
 - host operations: `action`, `feed`, `sleep`, `until`
-- error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`, `InterruptedError`, `ScopeError`
-- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`, `RiteFutureHandle`, `Presence`
-- re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`, `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Action`, `Feed`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
+- error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
+  `InterruptedError`, `ScopeError`
+- host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
+  `RiteFutureHandle`, `Presence`
+- re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
+  `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
+- other root-level types: `Action`, `Feed`, `Scope`, `ScopeStatus`, `RunOptions`,
+  `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
-- concurrency and boundaries: `all`, `autonomy`, `enclose`, `guard`, `race`, `resource`, `resumable`, `spawn`
+- concurrency and boundaries: `all`, `autonomy`, `branch`, `guard`, `race`, `resource`,
+  `resumable`, `spawn`
 - future operations: `future`, `poll`, `settle`, `settleError`, `wait`
 - channel operations: `channel`, `close`, `send`, `receive`, `trySend`, `tryReceive`
 - context and introspection: `bind`, `lookup`, `self`, `unbind`
 - control: `cede`
 
-The subpath `@shajara/host/boundary` exposes host/kernel adapter helpers for extension libraries:
+The subpath `@shajara/host/boundary` exposes host/kernel adapter helpers for extension
+libraries:
 
 - ritual adapters: `decodeRitual`, `decodeRituals`, `encodeRitual`, `RiteRoutineTuple`
 - failure mapping: `toFailure`, `toFailureUnknown`, `fromFailure`
@@ -48,11 +54,17 @@ This package is intended for lower-level integrations. Its root entry re-exports
 
 Names available from the root entry include:
 
-- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `FutureKey`, `FutureSettleKey`, `FutureHandle`, `ContextKey`, `contextKey`
-- failures: `Failure`, `canceledFailure`, `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
+- contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `ScopeDescriptor`,
+  `ProcessDescriptor`, `CompletionMode`, `FutureKey`, `FutureSettleKey`, `FutureHandle`,
+  `FutureResult`, `ContextKey`, `contextKey`
+- failures: `Failure`, `FailureShape`, `canceledFailure`, `channelFailure`,
+  `externalFailure`, `interruptedFailure`, `scopeFailure`
+- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`,
+  `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`,
+  `Reaper`, `Processor`
 - executor primitives: `autonomy`
-- primitives: `Wisp` primitives for concurrency, futures, channels, context, control, termination, cleanup, parking, and introspection
+- primitives: `Wisp` primitives for concurrency, futures, channels, context, control,
+  termination, cleanup, parking, recovery, and introspection
 
 Public subpaths:
 
@@ -80,11 +92,8 @@ run<Return>(
 ): StatefulPromise<Return>
 ```
 
-Return value:
-
-- it is a Promise
-- it also carries a read-only `status`
-- `status` can be `open | closing | closed`
+The returned value is a Promise with a read-only `status`. The status can be
+`open | closing | closed`.
 
 Result:
 
@@ -99,7 +108,7 @@ Result:
 createScope(): Scope
 ```
 
-The returned object exposes:
+The returned scope exposes:
 
 - `run(ritual, options?)`
 - `cancel()`
@@ -111,7 +120,8 @@ Result semantics:
 
 - `cancel()` waits for the scope's closure result
 - `closed` represents that same closure result
-- if the scope ends in cancellation or failure, `cancel()` and `closed` reject with the corresponding error
+- if the scope ends in cancellation or failure, `cancel()` and `closed` reject with the
+  corresponding error
 - calling `run(...)` on a closed scope throws synchronously
 
 ## Host Operations
@@ -131,7 +141,8 @@ Returns:
 ### `feed`
 
 ```ts
-yield * feed<Value, Outcome>(capacity, overloadRewrite?);
+yield * feed<Value, Outcome>(capacity);
+yield * feed<Value, Outcome>(capacity, overloadRewrite);
 ```
 
 Returns:
@@ -140,7 +151,8 @@ Returns:
 - `trySend(value)`
 - `close(outcome)`
 
-The receiver is consumed by coroutine channel primitives; the callbacks send or close the channel from host code.
+The receiver is consumed by coroutine channel primitives; the callbacks send or close the
+channel from host code.
 
 ### `sleep`
 
@@ -156,22 +168,23 @@ yield * until(thunk);
 
 ## Host Primitive Return Values
 
-A `Presence<T>` return value is `[true, value]` when a value is present and `[false]` when no value is present.
+A `Presence<T>` return value is `[true, value]` when a value is present and `[false]`
+when no value is present.
 
-### Concurrency and boundaries
+### Concurrency, Scope, and Recovery
 
-| Primitive   | Return value       |
-| ----------- | ------------------ |
-| `spawn`     | `RiteFuture<T>`    |
-| `all`       | `RiteFuture<T[]>`  |
-| `race`      | `RiteFuture<T>`    |
-| `enclose`   | `T`                |
-| `resumable` | `RiteFuture<T>`    |
-| `guard`     | `RiteFuture<void>` |
-| `resource`  | `RiteFuture<T>`    |
-| `autonomy`  | `RiteFuture<T>`    |
+| Primitive   | Return value      |
+| ----------- | ----------------- |
+| `all`       | `RiteFuture<T[]>` |
+| `autonomy`  | `T`               |
+| `branch`    | `T`               |
+| `guard`     | `T`               |
+| `race`      | `T`               |
+| `resource`  | `RiteFuture<T>`   |
+| `resumable` | `T`               |
+| `spawn`     | `RiteFuture<T>`   |
 
-### `future` primitives
+### Future Primitives
 
 | Primitive     | Return value                           |
 | ------------- | -------------------------------------- |
@@ -181,7 +194,7 @@ A `Presence<T>` return value is `[true, value]` when a value is present and `[fa
 | `settleError` | `void`                                 |
 | `wait`        | `T`                                    |
 
-### Channel primitives
+### Channel Primitives
 
 | Primitive    | Return value                                   |
 | ------------ | ---------------------------------------------- |
@@ -194,7 +207,7 @@ A `Presence<T>` return value is `[true, value]` when a value is present and `[fa
 
 For channels, `T` is the value type and `O` is the close outcome type.
 
-### Context, introspection, and control
+### Context, Introspection, and Control
 
 | Primitive | Return value  |
 | --------- | ------------- |
@@ -204,21 +217,45 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `self`    | `SelfHandle`  |
 | `cede`    | `void`        |
 
-Host rituals use JavaScript exceptions for current-process termination:
-throw a `CanceledError` to cancel, or throw any other value to fail.
+Host rituals use JavaScript exceptions for current-process termination: throw a
+`CanceledError` to cancel, or throw any other value to fail.
 
-## Kernel Result Model
+## Kernel Primitive Return Values
 
-Kernel APIs preserve runtime state in returned values. Callers that consume kernel directly handle these values in band instead of relying on host exceptions or `Presence<T>` tuples.
+Kernel APIs preserve runtime state in returned values. Direct kernel callers handle
+these values in band; host callers receive JavaScript values, exceptions, or
+`Presence<T>` tuples.
 
-The common return forms are:
+### Concurrency, Scope, and Recovery
 
-- `FutureKey<T>` for operations that start concurrent or scoped work and return an observation handle.
-- `[FutureKey<T>, FutureSettleKey<T>]` for operations that create a future and expose separate observation and settlement authority.
-- `Either<FailureShape, T>` for waits or contained boundaries whose success and failure are both part of the result domain.
-- `Option<T>` for non-blocking or optional observations, including context lookup and polling.
-- channel result unions for send and receive outcomes; closed and revoked channel states remain explicit values.
-- `void` for operations that mutate runtime state without producing an observation value.
-- `never` for termination or indefinite parking paths such as cancellation, halt, and park.
+| Primitive   | Return value       |
+| ----------- | ------------------ |
+| `all`       | `FutureKey<T[]>`   |
+| `autonomy`  | `BranchHandle<T>`  |
+| `branch`    | `BranchHandle<T>`  |
+| `guard`     | `BranchHandle<T>`  |
+| `race`      | `ScopedOutcome<T>` |
+| `resource`  | `FutureKey<T>`     |
+| `resumable` | `ScopedOutcome<T>` |
+| `spawn`     | `FutureKey<T>`     |
+
+### Result Forms
+
+The common kernel result forms are:
+
+- `FutureKey<T>` for operations that start concurrent or scoped work and return an
+  observation handle
+- `[FutureKey<T>, FutureSettleKey<T>]` for operations that create a future and expose
+  separate observation and settlement authority
+- `Either<Failure, T>` for waits or outcome boundaries where success and failure are
+  both part of the result domain
+- `Option<T>` for non-blocking or optional observations, including context lookup and polling
+- channel result unions for send and receive outcomes; closed and revoked channel states
+  remain in band
+- `BranchHandle<T>` for operations that expose a child scope and its entry process
+- `ScopedOutcome<T>` for operations that expose owned scope lifetime separately from the
+  chosen outcome future
+- `void` for operations that mutate runtime state without producing an observation value
+- `never` for termination or indefinite parking paths such as cancellation, halt, and park
 
 Host primitives adapt these forms into JavaScript values, `Presence<T>`, and exceptions.

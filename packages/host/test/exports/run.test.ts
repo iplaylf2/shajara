@@ -47,10 +47,7 @@ describe("/ entries: run", () => {
       given: [new Error("routine-startup-failed")] as const,
       outcome: {
         cause: {
-          failure: {
-            kind: "external",
-          },
-          kind: "process",
+          kind: "external",
         },
         kind: "scope",
       } as const,
@@ -67,10 +64,7 @@ describe("/ entries: run", () => {
         ...outcome,
         cause: {
           ...outcome.cause,
-          failure: {
-            ...outcome.cause.failure,
-            raw: cause,
-          },
+          raw: cause,
         },
       });
     },

@@ -5,9 +5,7 @@ import type {
   ChannelReceiver,
   ChannelSender,
   OverloadRewrite,
-  ProcessDescriptor,
   ReceiveResult,
-  ScopeDescriptor,
   SelfHandle,
   SendResult,
   Sigil,
@@ -26,8 +24,10 @@ import type {
   FutureKey,
   FutureResult,
   FutureSettleKey,
+  ProcessDescriptor,
   ProcessRef,
   Ritual,
+  ScopeDescriptor,
   ScopeRef,
   Suppressor,
 } from "#/contracts";
@@ -118,12 +118,12 @@ export class Interpreter {
     return this.#resolve(futureKey).wait(onSettled);
   }
 
-  public spawn<Relic>(
+  public spawn<Relic, Descriptor extends ProcessDescriptor>(
     scope: ScopeRef<unknown>,
     entry: Ritual<Relic>,
-    descriptor: ProcessDescriptor,
+    descriptor: Descriptor,
     suppressor: Suppressor,
-  ): ProcessRef<Relic> {
+  ): ProcessRef<Relic, Descriptor> {
     return this.#reconcile(
       scope,
       spawn(this.#resolve(scope), this.#provideProcess(entry), descriptor),
@@ -131,18 +131,18 @@ export class Interpreter {
     );
   }
 
-  public branch<Relic>(
+  public branch<Relic, Descriptor extends ScopeDescriptor>(
     scope: ScopeRef<unknown>,
     entry: Ritual<Relic>,
-    descriptor: ScopeDescriptor,
+    descriptor: Descriptor,
     suppressor: Suppressor,
-  ): BranchHandle<Relic> {
+  ): BranchHandle<Relic, Descriptor> {
     const child = this.scopeBranch(scope, entry, descriptor, this.#resolve(scope).zone, suppressor);
     const childScope = this.#resolve(child);
 
     return {
       process: childScope.entryProcess as ProcessRef<Relic>,
-      scope: childScope as ScopeRef<Relic>,
+      scope: childScope as unknown as ScopeRef<Relic, Descriptor>,
     };
   }
 
@@ -287,31 +287,27 @@ export class Interpreter {
   ) {}
 
   // oxlint-disable-next-line max-params
-  protected scopeBranch(
+  protected scopeBranch<Descriptor extends ScopeDescriptor>(
     scope: ScopeRef<unknown>,
     entry: Ritual<unknown>,
-    descriptor: ScopeDescriptor,
+    descriptor: Descriptor,
     zone: ScopeZone,
     suppressor: Suppressor,
-  ): ScopeRef<unknown> {
+  ): ScopeRef<unknown, Descriptor> {
     const childScope = this.#reconcile(
       scope,
       branch(this.#resolve(scope), this.#provideProcess(entry), descriptor, zone),
       suppressor,
     );
     this.#touch(childScope);
-    return childScope;
+    return childScope as unknown as ScopeRef<unknown, Descriptor>;
   }
 
   protected initialize(): void {
     // oxlint-disable-next-line no-explicit-any
     (this as any).#scopeRoot = this.#reconcile(
       null as unknown as ScopeRef<unknown>,
-      RuntimeScope.root(
-        this.#provideProcess(this.entry),
-        { failureMode: "contain" },
-        this.zoneRoot,
-      ),
+      RuntimeScope.root(this.#provideProcess(this.entry), {}, this.zoneRoot),
       { capture: unreachable },
     );
 
@@ -392,7 +388,7 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "halt": {
-        this.#reconcile(scope, halt(scope, process.keeper(), sigil.failure as Failure), suppressor);
+        this.#reconcile(scope, halt(scope, process.keeper(), sigil.failure), suppressor);
         return processExitedStep(either.left(runner.stateAs("failed").failure));
       }
       case "lookup": {
@@ -634,11 +630,11 @@ function settle<Result>(
   return runtimeFuture.settle(result)(suppressor);
 }
 
-function spawn<Relic>(
+function spawn<Relic, Descriptor extends ProcessDescriptor>(
   scope: RuntimeScope,
   provideProcess: ProvideRuntimeProcess,
-  descriptor: ProcessDescriptor,
-): ScopeSync<ProcessRef<Relic>> {
+  descriptor: Descriptor,
+): ScopeSync<ProcessRef<Relic, Descriptor>> {
   return scope.spawn(provideProcess, descriptor);
 }
 

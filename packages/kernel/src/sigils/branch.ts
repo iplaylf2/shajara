@@ -1,9 +1,16 @@
-import type { ECHO_TOKEN, ProcessRef, Ritual, ScopeRef, SigilShape } from "#/contracts";
+import type {
+  ECHO_TOKEN,
+  ProcessRef,
+  Ritual,
+  ScopeDescriptor,
+  ScopeRef,
+  SigilShape,
+} from "#/contracts";
 
-export function branch<Relic>(
+export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
   entry: Ritual<Relic>,
-  descriptor: ScopeDescriptor = DEFAULT_SCOPE_DESCRIPTOR,
-): BranchSigil<Relic> {
+  descriptor: Descriptor = DEFAULT_SCOPE_DESCRIPTOR as Descriptor,
+): BranchSigil<Relic, Descriptor> {
   return {
     descriptor,
     entry,
@@ -11,22 +18,21 @@ export function branch<Relic>(
   };
 }
 
-export interface BranchSigil<Relic> extends SigilShape {
+export interface BranchSigil<
+  Relic,
+  Descriptor extends ScopeDescriptor = ScopeDescriptor,
+> extends SigilShape {
   readonly kind: "branch";
+  readonly descriptor: Descriptor;
   readonly entry: Ritual<Relic>;
-  readonly descriptor: ScopeDescriptor;
-  readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic>];
+  readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic, Descriptor>];
 }
 
-export interface ScopeDescriptor {
-  readonly failureMode: FailureMode;
-}
-
-export interface BranchHandle<Relic> {
-  readonly scope: ScopeRef<Relic>;
+export interface BranchHandle<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor> {
+  readonly scope: ScopeRef<Relic, Descriptor>;
   readonly process: ProcessRef<Relic>;
 }
 
-export type FailureMode = "propagate" | "contain";
+export type { ScopeDescriptor };
 
-const DEFAULT_SCOPE_DESCRIPTOR: ScopeDescriptor = { failureMode: "propagate" };
+const DEFAULT_SCOPE_DESCRIPTOR: ScopeDescriptor = {};

@@ -1,4 +1,4 @@
-import { cancel, canceledFailure, defer, enclose, resource, spawn, wait } from "#/index";
+import { branch, cancel, canceledFailure, defer, resource, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
 import { left, noop, right } from "#/utils";
@@ -42,25 +42,28 @@ describe("/ primitives: resource", () => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
-        enclose(() =>
-          pipe(
-            resource<string>((provide) =>
-              pipe(
-                defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
-                wisp.chain(() => recordTrace(events, providedEntry)),
-                wisp.chain(() => provide(resourceValue)),
-              ),
-            ),
-            wisp.chainFirst((resourceFuture) =>
-              spawn(() =>
+        pipe(
+          branch(() =>
+            pipe(
+              resource<string>((provide) =>
                 pipe(
-                  wait(resourceFuture),
-                  wisp.chain(() => cancel()),
+                  defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
+                  wisp.chain(() => recordTrace(events, providedEntry)),
+                  wisp.chain(() => provide(resourceValue)),
                 ),
               ),
+              wisp.chainFirst((resourceFuture) =>
+                spawn(() =>
+                  pipe(
+                    wait(resourceFuture),
+                    wisp.chain(() => cancel()),
+                  ),
+                ),
+              ),
+              wisp.chain(wait),
             ),
-            wisp.chain(wait),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
         ),
       );
       const step = await ritual.waitForClosed();

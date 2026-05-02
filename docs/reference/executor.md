@@ -1,14 +1,17 @@
 # Execution Environment
 
-The execution environment builds on the semantic baseline.
+The execution environment drives the semantic model from a long-lived root scope. This
+document covers execution ownership and external control; scope and failure semantics
+remain in the semantic baseline.
 
 ## Executor
 
 `Executor` is a long-lived execution environment object. It provides:
 
 - a stable root execution entry
-- the ability to start new entry rituals
+- the ability to launch new entry rituals under registered execution scopes
 - external control over future settlement, channel operations, and entry cancellation
+- scheduler and reaper governance through autonomy
 
 Creation:
 
@@ -20,17 +23,15 @@ const executor = createExecutor(bindTurn);
 
 The executor introduces `ExecutionScopeRef` on top of `ScopeRef`.
 
-It is a scope reference that can serve as an execution entry and an external control target. The `Executor` registers selected scopes as entries that can be `launch`ed and `cancel`ed.
-
-The executor itself exposes one long-lived root entry:
+An `ExecutionScopeRef` is a scope reference that has been registered as an execution
+entry and can be used as an external control target. The executor itself exposes one
+long-lived root entry:
 
 - `executor.scope`
 
-All subsequent entry launches begin from an `ExecutionScopeRef`.
+Subsequent launches begin from an `ExecutionScopeRef`.
 
-## Launching
-
-The core `Executor` interface is:
+## Core Interface
 
 ```ts
 interface Executor extends LaunchHandle<never> {
@@ -52,11 +53,13 @@ interface Executor extends LaunchHandle<never> {
 }
 ```
 
-`launch(...)` creates a new entry computation under a given `ExecutionScopeRef` and returns its `LaunchHandle`.
+`launch(scope, ritual)` branches a new child scope under a registered open execution
+scope and returns a `LaunchHandle` for that child. If the target scope is invalid or
+closed, it returns `none`.
 
-If the target scope is invalid or closed, it returns `none`.
-
-Each `launch` first establishes an entry scope with `failureMode: "contain"`, then runs the target `ritual` within that boundary. `LaunchHandle.scope` refers to that entry scope.
+Each launched entry uses the normal branch semantics from `semantics.md`. The launched
+scope has the default scope descriptor `{}`. `LaunchHandle.scope` refers to that
+launched child scope.
 
 ## Entry Handle
 
@@ -70,54 +73,77 @@ interface LaunchHandle<Result> {
 }
 ```
 
-It answers three questions:
+It identifies:
 
-- which `ExecutionScopeRef` this `launch` created
-- which lifecycle state the entry is currently in
-- how that entry eventually converged
+- the `ExecutionScopeRef` created for the launch
+- the current lifecycle state of the entry
+- the entry's final convergence result
 
-`LaunchResult<Result>` has only three result kinds:
+`LaunchResult<Result>` has three result kinds:
 
 - `success`
 - `failure`
 - `canceled`
 
-The executor itself is also the `LaunchHandle` view of the root scope, so it exposes `status` and `onSettled(...)` as well.
+The executor itself is also the `LaunchHandle` view of the root scope, so it exposes
+`status` and `onSettled(...)` as well.
+
+## Result Mapping
+
+The executor maps the launched scope's `exitFuture` into `LaunchResult`:
+
+- `right(value)` becomes `{ kind: "success", result: value }`
+- `left(canceledFailure)` becomes `{ kind: "canceled" }`
+- any other `left(failure)` becomes `{ kind: "failure", failure }`
+
+A launched child scope owns its convergence result. Parent code observes that result by
+waiting for or receiving the child's `exitFuture`.
 
 ## External Control
 
 ### Future Settlement
 
-`settle(futureSettle, result)` writes a result into a running `future` from outside the execution environment.
+`settle(futureSettle, result)` writes a result into a running `future` from outside the
+execution environment.
 
 - returns `true`: the injection was accepted
 - returns `false`: the `future` already converged, or the environment rejects the injection
 
 ### Channel Operations
 
-`trySend(sender, value)` attempts a non-blocking channel send from outside the execution environment.
+`trySend(sender, value)` attempts a non-blocking channel send from outside the execution
+environment.
 
 - returns `some({ kind: "sent" })`: the value was accepted
 - returns `none`: the channel cannot accept the value without blocking
-- returns `some({ kind: "closed", outcome })` or `some({ kind: "revoked" })`: the channel is terminal
+- returns `some({ kind: "closed", outcome })` or `some({ kind: "revoked" })`: the channel
+  is terminal
 
-`close(endpoint, outcome)` closes a channel from outside the execution environment. Blocked senders and receivers resume with `{ kind: "closed", outcome }`.
+`close(endpoint, outcome)` closes a channel from outside the execution environment.
+Blocked senders and receivers resume with `{ kind: "closed", outcome }`.
 
 ### Scope Cancellation
 
-`cancel(scope)` requests cancellation for an execution-entry scope from outside the execution environment.
+`cancel(scope)` requests cancellation for an execution-entry scope from outside the
+execution environment.
 
 If the scope is invalid, unregistered, or closed, the request is ignored.
 
+## Recovery Anchor
+
+The executor root runs with a recovery anchor. Recovery requests that reach the root are
+resolved through this final route.
+
 ## Slice Progression
 
-`Executor` is created through `BindTurn`, then collaborates with the host through the returned `Pacer`:
+`Executor` is created through `BindTurn`, then collaborates with the embedding
+environment through the returned `Pacer`:
 
 ```ts
 type BindTurn = (flushTurn: () => void) => Pacer;
 ```
 
-`flushTurn` is the callback the host promises to poll on its own turn cadence.
+`flushTurn` is the callback the embedding environment polls on its own turn cadence.
 
 The returned `Pacer` handles slice progression and deferred follow-up work:
 
@@ -134,11 +160,13 @@ interface Slice {
 
 - `beginSlice()` starts a new synchronous slice
 - `shouldYield()` decides whether the current slice should yield
-- `continueLater(work)` posts subsequent work back to the host side
+- `continueLater(work)` posts subsequent work back to the embedding environment
 
 ## Autonomy
 
-`autonomy` adds governance capabilities to selected scopes within the `Executor`. Scope semantics still come from the semantic baseline; autonomy governs scheduling ownership and adjudication for closing scopes.
+`autonomy` adds governance capabilities to selected scopes within the executor. Scope
+semantics still come from the semantic baseline; autonomy controls scheduling ownership
+and adjudication for closing scopes.
 
 ### `scheduler`
 
@@ -148,7 +176,8 @@ interface Scheduler {
 }
 ```
 
-When a process in an autonomous scope becomes runnable, the `Executor` calls `scheduler.assign(process)` and routes it to a `Processor`.
+When a process in an autonomous scope becomes runnable, the executor calls
+`scheduler.assign(process)` and routes it to a `Processor`.
 
 Here, `ProcessRef` is the scheduling target.
 
@@ -160,9 +189,11 @@ interface Reaper {
 }
 ```
 
-When natural convergence stalls for a `closing` scope, the `Executor` can submit it to a `reaper` for adjudication:
+When natural convergence stalls for a closing scope, the executor can submit that scope
+to a `reaper` for adjudication:
 
 - return `none`: keep waiting for natural convergence
-- return `some(failure)`: initiate failure convergence for the target scope with that failure
+- return `some(failure)`: initiate local failure convergence for the target scope with
+  that failure
 
-The `reaper` is responsible for governance decisions.
+The reaper makes governance decisions for the adjudicated scope.

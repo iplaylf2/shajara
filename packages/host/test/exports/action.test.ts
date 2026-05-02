@@ -30,10 +30,7 @@ describe("/ operations: action", () => {
       given: [new Error("action-failed")] as const,
       outcome: {
         cause: {
-          failure: {
-            kind: "external",
-          },
-          kind: "process",
+          kind: "external",
         },
         kind: "scope",
       } as const,
@@ -56,10 +53,7 @@ describe("/ operations: action", () => {
         ...outcome,
         cause: {
           ...outcome.cause,
-          failure: {
-            ...outcome.cause.failure,
-            raw: cause,
-          },
+          raw: cause,
         },
       });
     },

@@ -14,7 +14,14 @@
     "vite",
     "vitest",
   ],
-  "ignoreDependencies": ["@astrojs/check", "@shajara/forge", "cspell-cli", "oxfmt", "vite"],
+  "ignoreDependencies": [
+    "@astrojs/check",
+    "@changesets/cli",
+    "@shajara/forge",
+    "cspell-cli",
+    "oxfmt",
+    "vite",
+  ],
   "ignoreExportsUsedInFile": {
     "interface": true,
     "type": true,

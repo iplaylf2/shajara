@@ -8,26 +8,22 @@ import type {
   ContextKey,
   FutureKey,
   FutureResult,
+  ProcessDescriptor,
   ProcessRef,
   REF_TOKEN,
+  ScopeDescriptor,
   ScopeRef,
   Suppressor,
 } from "#/contracts";
-import type {
-  OverloadRewrite,
-  ProcessDescriptor,
-  ReceiveResult,
-  ScopeDescriptor,
-  SendResult,
-} from "#/sigils/index";
+import type { OverloadRewrite, ReceiveResult, SendResult } from "#/sigils/index";
 import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import type { FutureSettlement } from "#/interpreter/runtime-future";
+import { PendingScopeFailure } from "./pending-scope-failure";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
 import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
 import { RuntimeFuture } from "#/interpreter/runtime-future";
-import { ScopeFailureDraft } from "./scope-failure-draft";
 import type { ScopeZone } from "#/interpreter/scope-zone";
 import type { TaggedUnion } from "type-fest";
 import { unreachable } from "#/utils/index";
@@ -57,34 +53,27 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public *halt(process: RuntimeProcessKeeper, failure: Failure): ScopeSync<void> {
-    const failed = "failed";
     const closure = process.fail(failure);
     this.#processContainerFor(process).delete(process);
 
     yield this.#defer(closure.settlement);
     yield this.#trackProcess(process);
 
-    const cleanupTrigger = () => this.#triggerCleanup(closure.cleanups);
+    const runCleanups = () => this.#triggerCleanup(closure.cleanups);
     const state = this.#state;
     if (state.status === "failing") {
-      state.draft.capture(process.stateAs(failed).failure);
-      yield* this.#enterFailing(state.draft, cleanupTrigger, {
-        propagateFailure: this.#propagatesFailure,
-      });
+      state.failure.suppress(failure);
+      yield* this.#enterFailing(state.failure, runCleanups);
 
       return;
     }
 
-    yield* this.#enterFailing(
-      new ScopeFailureDraft({ kind: "process", process }, () => process.stateAs(failed).failure),
-      cleanupTrigger,
-      { propagateFailure: this.#propagatesFailure },
-    );
+    yield* this.#enterFailing(new PendingScopeFailure(failure), runCleanups);
   }
 
   public *cancel(): ScopeSync<void> {
     yield* this.#state.status === "failing"
-      ? this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false })
+      ? this.#enterFailing(this.#state.failure, noopSync)
       : this.#enterCanceling();
   }
 
@@ -102,17 +91,17 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return child;
   }
 
-  public *spawn<Relic>(
+  public *spawn<Relic, Descriptor extends ProcessDescriptor>(
     provideProcess: ProvideRuntimeProcess,
-    descriptor: ProcessDescriptor,
-  ): ScopeSync<ProcessRef<Relic>> {
+    descriptor: Descriptor,
+  ): ScopeSync<ProcessRef<Relic, Descriptor>> {
     const process = provideProcess(this, descriptor);
 
     this.#processContainerFor(process).add(process);
 
     yield this.#trackProcess(process);
 
-    return process as ProcessRef<Relic>;
+    return process as unknown as ProcessRef<Relic, Descriptor>;
   }
 
   public *wait(future: RuntimeFuture<unknown>, process: RuntimeProcessKeeper): ScopeSync<void> {
@@ -222,15 +211,15 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   public *forceFailed(failure: Failure): ScopeSync<void> {
-    const draft = new ScopeFailureDraft({ kind: "scope", scope: this }, () => failure);
+    const pendingFailure = new PendingScopeFailure(failure);
     if (this.#state.status === "failing") {
-      draft.capture(this.#state.draft.build());
+      pendingFailure.suppress(this.#state.failure.build());
     }
 
-    yield* this.#enterFailing(draft, noopSync, { propagateFailure: this.#propagatesFailure });
+    yield* this.#enterFailing(pendingFailure, noopSync);
 
     while (this.#state.status === "failing") {
-      yield* this.#enterFailing(this.#state.draft, noopSync, { propagateFailure: false });
+      yield* this.#enterFailing(this.#state.failure, noopSync);
     }
   }
 
@@ -357,7 +346,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
         return;
       }
       case "failing": {
-        yield* this.#tryFailed(this.#state.draft);
+        yield* this.#tryFailed(this.#state.failure);
         return;
       }
       case "canceled":
@@ -385,16 +374,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   *#enterFailing(
-    draft: ScopeFailureDraft,
-    failingDefer: () => ScopeSync<void>,
-    control: FailingControl,
+    failure: PendingScopeFailure,
+    runCleanups: () => ScopeSync<void>,
   ): ScopeSync<void> {
-    yield* this.#transitionTo({ draft, status: "failing" });
-    yield* failingDefer();
-    if (control.propagateFailure) {
-      yield this.#signal(this.parentScope, () => this.parentScope.#enterFailingByChild(this));
-    }
-    yield* this.#tryFailed(draft);
+    yield* this.#transitionTo({ failure, status: "failing" });
+    yield* runCleanups();
+    yield* this.#tryFailed(failure);
   }
 
   *#tryCompleted(): ScopeSync<void> {
@@ -417,9 +402,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  *#tryFailed(draft: ScopeFailureDraft): ScopeSync<void> {
+  *#tryFailed(failure: PendingScopeFailure): ScopeSync<void> {
     if (this.#isIdle) {
-      yield* this.#transitionTo({ failure: draft.build(), status: "failed" });
+      yield* this.#transitionTo({ failure: failure.build(), status: "failed" });
       if (!this.#isRoot) {
         yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
       }
@@ -521,24 +506,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  *#enterFailingByChild(child: RuntimeScope): ScopeSync<void> {
-    if (this.#state.status === "failing") {
-      yield* this.#enterFailing(this.#state.draft, noopSync, {
-        propagateFailure: this.#propagatesFailure,
-      });
-      return;
-    }
-
-    yield* this.#enterFailing(
-      new ScopeFailureDraft(
-        { kind: "scope", scope: child },
-        () => child.#stateAs("failed").failure,
-      ),
-      noopSync,
-      { propagateFailure: this.#propagatesFailure },
-    );
-  }
-
   // oxlint-disable-next-line class-methods-use-this
   *#resumeChannelWaiters(
     waiters: RuntimeChannelWaiters,
@@ -571,11 +538,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
   *#revokeChannelWithFailure(channel: AnyRuntimeChannel, cause: unknown): ScopeSync<void> {
     yield* this.#revoke(channel);
     yield* this.#enterFailing(
-      new ScopeFailureDraft({ kind: "scope", scope: this }, () =>
-        channelFailure(cause, "Channel operation failed"),
-      ),
+      new PendingScopeFailure(channelFailure(cause, "Channel operation failed")),
       noopSync,
-      { propagateFailure: this.#propagatesFailure },
     );
   }
 
@@ -626,19 +590,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   #removeChild(child: RuntimeScope): void {
-    if (
-      this.#state.status === "failing" &&
-      child.status === "failed" &&
-      child.descriptor.failureMode === "propagate"
-    ) {
-      this.#state.draft.capture(child.#stateAs(child.status).failure);
-    }
-
     this.#children.delete(child);
-  }
-
-  #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
-    return this.#state as RuntimeScopeStateOf<Status>;
   }
 
   // oxlint-disable-next-line class-methods-use-this
@@ -660,10 +612,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   get #isIdle(): boolean {
     return this.#isQuiet && readonlySet.isEmpty(this.#detachedProcesses);
-  }
-
-  get #propagatesFailure(): boolean {
-    return this.scopeDescriptor.failureMode === "propagate";
   }
 
   get #isRoot(): boolean {
@@ -718,7 +666,7 @@ type RuntimeScopeState = TaggedUnion<
     closing: {};
     completed: { readonly result: unknown };
     failed: { readonly failure: Failure };
-    failing: { readonly draft: ScopeFailureDraft };
+    failing: { readonly failure: PendingScopeFailure };
     running: {};
   }
 >;
@@ -733,10 +681,6 @@ interface RuntimeChannelWaiters {
   readonly senders: readonly RuntimeChannelWaiter[];
 }
 
-interface FailingControl {
-  readonly propagateFailure: boolean;
-}
-
 // oxlint-disable-next-line no-explicit-any
 type AnyRuntimeFuture = RuntimeFuture<any>;
 // oxlint-disable-next-line no-explicit-any
@@ -745,8 +689,3 @@ type AnyRuntimeChannel = RuntimeChannel<RuntimeChannelWaiter, any, any>;
 type ChannelClosedResult =
   | Exclude<ReceiveResult<unknown, unknown>, { readonly kind: "value" }>
   | Exclude<SendResult<unknown>, { readonly kind: "sent" }>;
-
-type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
-  RuntimeScopeState,
-  { readonly status: Status }
->;

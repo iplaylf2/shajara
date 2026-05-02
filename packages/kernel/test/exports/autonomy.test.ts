@@ -1,14 +1,19 @@
 import type {
+  AutonomyOptions,
+  FutureResult,
   FutureSettleKey,
   ProcessRef,
   Processor,
   ProcessorTaskStatus,
   Reaper,
+  Ritual,
   Scheduler,
+  Wisp,
 } from "#/index";
 import {
   all,
   autonomy,
+  branch,
   cancel,
   cede,
   defer,
@@ -22,13 +27,14 @@ import {
 import {
   createInlineProcessor,
   createManagedExecutor,
-  createManagedQueuedProcessor,
+  createQueuedProcessor,
   findFailureByKind,
   unwrapSome,
   waitForSettled,
 } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { right, some } from "#/utils";
+import { left, right, some } from "#/utils";
+import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -37,7 +43,7 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentCount: 0,
+        assignedCount: 0,
         settled: {
           kind: "success",
           result: right("autonomy-ready"),
@@ -50,9 +56,51 @@ describe("/ primitives: autonomy", () => {
     "runs autonomy inline when the autonomous ritual settles synchronously",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const processor = createInlineProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+      const scheduler = trackAssignments(assigned, processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          awaitAutonomy(() => wisp.of(entryResult), { scheduler }),
+        ),
+      );
+
+      const actual = {
+        assignedCount: assigned.length,
+        settled: await waitForSettled(handle),
+        settledStatus: handle.status,
+        taskStatuses,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: ["autonomy-ready"] as const,
+      outcome: {
+        settled: {
+          kind: "success",
+          result: {
+            hasProcessExitFuture: true,
+            hasScopeExitFuture: true,
+            outcome: right("autonomy-ready"),
+          },
+        },
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "returns the branch handle for the autonomous scope",
+    async ({ given: [entryResult], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
+      const processor = createInlineProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -60,14 +108,91 @@ describe("/ primitives: autonomy", () => {
         executor.launch(executor.scope, () =>
           pipe(
             autonomy(() => wisp.of(entryResult), { scheduler }),
-            wisp.chain(wait),
+            wisp.chain((branchHandle) =>
+              pipe(
+                wait(branchHandle.scope.exitFuture),
+                wisp.map((settled) => ({
+                  hasProcessExitFuture: branchHandle.process.exitFuture !== undefined,
+                  hasScopeExitFuture: branchHandle.scope.exitFuture !== undefined,
+                  outcome: settled,
+                })),
+              ),
+            ),
           ),
         ),
       );
 
       const actual = {
-        assignmentCount: assignedProcesses.length,
         settled: await waitForSettled(handle),
+        settledStatus: handle.status,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: ["autonomy-sibling", "ordinary-sibling"] as const,
+      outcome: {
+        assignedCount: 1,
+        settled: {
+          kind: "success",
+          result: {
+            autonomousExit: right("autonomy-sibling"),
+            ordinaryExit: right("ordinary-sibling"),
+          },
+        },
+        settledStatus: "closed",
+        taskStatuses: ["ready", "cede", "exited"],
+      },
+    },
+  ])(
+    "keeps autonomous scheduler routing scoped to the autonomous branch",
+    async ({ given: [autonomousResult, ordinaryResult], outcome }) => {
+      const taskStatuses: ProcessorTaskStatus[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
+
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          pipe(
+            wisp.Do,
+            wisp.bind("autonomous", () =>
+              autonomy(
+                () =>
+                  pipe(
+                    cede(),
+                    wisp.chain(() => wisp.of(autonomousResult)),
+                  ),
+                { scheduler },
+              ),
+            ),
+            wisp.bind("ordinary", () =>
+              branch(() =>
+                pipe(
+                  cede(),
+                  wisp.chain(() => wisp.of(ordinaryResult)),
+                ),
+              ),
+            ),
+            wisp.bind("autonomousExit", ({ autonomous }) => wait(autonomous.scope.exitFuture)),
+            wisp.bind("ordinaryExit", ({ ordinary }) => wait(ordinary.scope.exitFuture)),
+            wisp.map(({ autonomousExit, ordinaryExit }) => ({
+              autonomousExit,
+              ordinaryExit,
+            })),
+          ),
+        ),
+      );
+      const settled = await waitForSettled(handle);
+      const actual = {
+        assignedCount: assigned.length,
+        settled,
         settledStatus: handle.status,
         taskStatuses,
       };
@@ -80,8 +205,9 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("scheduler assignment failed"), "scheduler-entry"] as const,
       outcome: {
-        interruptedCauseMessage: "scheduler assignment failed",
-        settledKind: "failure",
+        causeMessage: "scheduler assignment failed",
+        resultKind: "left",
+        settledKind: "success",
         settledStatus: "closed",
       },
     },
@@ -98,10 +224,7 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(() => wisp.of(entryResult), { scheduler }),
-            wisp.chain(wait),
-          ),
+          awaitAutonomy(() => wisp.of(entryResult), { scheduler }),
         ),
       );
 
@@ -111,21 +234,116 @@ describe("/ primitives: autonomy", () => {
       };
 
       expect({
+        resultKind:
+          actual.settled.kind === "success" && either.isLeft(actual.settled.result)
+            ? "left"
+            : "right",
         settledKind: actual.settled.kind,
         settledStatus: actual.settledStatus,
       }).toEqual({
+        resultKind: outcome.resultKind,
         settledKind: outcome.settledKind,
         settledStatus: outcome.settledStatus,
       });
-      if (actual.settled.kind !== "failure") {
-        throw new Error("Expected autonomy settlement to fail");
+      if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
+        throw new Error("Expected autonomous scope failure to be contained");
       }
 
-      expect(findFailureByKind(actual.settled.failure, "interrupted")).toEqual(
+      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
-              message: outcome.interruptedCauseMessage,
+              message: outcome.causeMessage,
+            }),
+          ),
+        ),
+      );
+    },
+  );
+
+  test.for([
+    {
+      given: [new Error("scheduler assignment failed"), "cleanup"] as const,
+      outcome: {
+        assignedCount: 3,
+        causeMessage: "scheduler assignment failed",
+        cleanupEvents: ["cleanup"] as const,
+        resultKind: "left",
+        settledKind: "success",
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "force-fails the autonomous scope to closure after deferred cleanup suspends",
+    async ({ given: [cause, cleanup], outcome }) => {
+      const events: string[] = [];
+      const processor = createInlineProcessor();
+      const assigned: ProcessRef<unknown>[] = [];
+      const scheduler: Scheduler = {
+        assign: (process) => {
+          assigned.push(process);
+          if (assigned.length === 2) {
+            throw cause;
+          }
+
+          return processor;
+        },
+      };
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      events.push(cleanup);
+                    }),
+                    wisp.chain(park),
+                  ),
+                ),
+                wisp.chain(() => spawn(() => wisp.of(undefined))),
+              ),
+            { scheduler },
+          ),
+        ),
+      );
+      const settled = await waitForSettled(handle);
+      const actual = {
+        assignedCount: assigned.length,
+        cleanupEvents: [...events] as readonly string[],
+        settled,
+        settledStatus: handle.status,
+      };
+
+      expect({
+        assignedCount: actual.assignedCount,
+        cleanupEvents: actual.cleanupEvents,
+        resultKind:
+          actual.settled.kind === "success" && either.isLeft(actual.settled.result)
+            ? "left"
+            : "right",
+        settledKind: actual.settled.kind,
+        settledStatus: actual.settledStatus,
+      }).toEqual({
+        assignedCount: outcome.assignedCount,
+        cleanupEvents: outcome.cleanupEvents,
+        resultKind: outcome.resultKind,
+        settledKind: outcome.settledKind,
+        settledStatus: outcome.settledStatus,
+      });
+      if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
+        throw new Error("Expected autonomous scope failure to be contained");
+      }
+
+      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
+        expect.objectContaining(
+          interruptedFailure(
+            expect.objectContaining({
+              message: outcome.causeMessage,
             }),
           ),
         ),
@@ -137,8 +355,8 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentsAfterWait: 2,
-        assignmentsBeforeWait: 2,
+        assignedAfterWait: 2,
+        assignedBeforeWait: 2,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -151,42 +369,39 @@ describe("/ primitives: autonomy", () => {
     "routes suspended autonomy through the provided inline scheduler",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const processor = createInlineProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, processor);
+      const scheduler = trackAssignments(assigned, processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
       const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  future<string>(),
-                  wisp.chain(([futureKey, nextFutureSettle]) =>
-                    pipe(
-                      wisp.fromIO(() => {
-                        futureSettle.resolve(nextFutureSettle);
-                        return futureKey;
-                      }),
-                      wisp.chain(wait),
-                    ),
+          awaitAutonomy(
+            () =>
+              pipe(
+                future<string>(),
+                wisp.chain(([futureKey, nextFutureSettle]) =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      futureSettle.resolve(nextFutureSettle);
+                      return futureKey;
+                    }),
+                    wisp.chain(wait),
                   ),
                 ),
-              { scheduler },
-            ),
-            wisp.chain(wait),
+              ),
+            { scheduler },
           ),
         ),
       );
       executor.settle(await futureSettle.promise, right(entryResult));
-      const assignmentsBeforeWait = assignedProcesses.length;
+      const assignedBeforeWait = assigned.length;
       const settled = await waitForSettled(handle);
       const actual = {
-        assignmentsAfterWait: assignedProcesses.length,
-        assignmentsBeforeWait,
+        assignedAfterWait: assigned.length,
+        assignedBeforeWait,
         settled,
         settledStatus: handle.status,
         taskStatuses,
@@ -200,8 +415,8 @@ describe("/ primitives: autonomy", () => {
     {
       given: ["autonomy-ready"] as const,
       outcome: {
-        assignmentsAfterWait: 2,
-        assignmentsBeforeWait: 2,
+        assignedAfterWait: 2,
+        assignedBeforeWait: 2,
         settled: {
           kind: "success",
           result: right(right("autonomy-ready")),
@@ -214,43 +429,40 @@ describe("/ primitives: autonomy", () => {
     "routes suspended autonomy through the provided queued scheduler",
     async ({ given: [entryResult], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
 
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
       const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  future<string>(),
-                  wisp.chain(([futureKey, nextFutureSettle]) =>
-                    pipe(
-                      wisp.fromIO(() => {
-                        futureSettle.resolve(nextFutureSettle);
-                        return futureKey;
-                      }),
-                      wisp.chain(wait),
-                    ),
+          awaitAutonomy(
+            () =>
+              pipe(
+                future<string>(),
+                wisp.chain(([futureKey, nextFutureSettle]) =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      futureSettle.resolve(nextFutureSettle);
+                      return futureKey;
+                    }),
+                    wisp.chain(wait),
                   ),
                 ),
-              { scheduler },
-            ),
-            wisp.chain(wait),
+              ),
+            { scheduler },
           ),
         ),
       );
       executor.settle(await futureSettle.promise, right(entryResult));
-      const assignmentsBeforeWait = assignedProcesses.length;
+      const assignedBeforeWait = assigned.length;
       const settled = await waitForSettled(handle);
       const actual = {
-        assignmentsAfterWait: assignedProcesses.length,
-        assignmentsBeforeWait,
+        assignedAfterWait: assigned.length,
+        assignedBeforeWait,
         settled,
         settledStatus: handle.status,
         taskStatuses,
@@ -268,7 +480,7 @@ describe("/ primitives: autonomy", () => {
         [right("alpha"), right("beta")] as const,
       ] as const,
       outcome: {
-        assignmentCount: 2,
+        assignedCount: 2,
         settled: {
           kind: "success",
           result: right([right("alpha"), right("beta")]),
@@ -281,11 +493,11 @@ describe("/ primitives: autonomy", () => {
     "routes ceded autonomous tasks through the shared queued scheduler in admission order",
     async ({ given: [labels, eventOrder, resultOrder], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const events: string[] = [];
 
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
 
       await using managed = createManagedExecutor();
       const { executor } = managed;
@@ -294,44 +506,38 @@ describe("/ primitives: autonomy", () => {
           pipe(
             all([
               () =>
-                pipe(
-                  autonomy(
-                    () =>
-                      pipe(
+                awaitAutonomy(
+                  () =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        events.push(`${labels[0]}-before`);
+                      }),
+                      wisp.chain(() => cede()),
+                      wisp.chain(() =>
                         wisp.fromIO(() => {
-                          events.push(`${labels[0]}-before`);
+                          events.push(`${labels[0]}-after`);
+                          return labels[0];
                         }),
-                        wisp.chain(() => cede()),
-                        wisp.chain(() =>
-                          wisp.fromIO(() => {
-                            events.push(`${labels[0]}-after`);
-                            return labels[0];
-                          }),
-                        ),
                       ),
-                    { scheduler },
-                  ),
-                  wisp.chain(wait),
+                    ),
+                  { scheduler },
                 ),
               () =>
-                pipe(
-                  autonomy(
-                    () =>
-                      pipe(
+                awaitAutonomy(
+                  () =>
+                    pipe(
+                      wisp.fromIO(() => {
+                        events.push(`${labels[1]}-before`);
+                      }),
+                      wisp.chain(() => cede()),
+                      wisp.chain(() =>
                         wisp.fromIO(() => {
-                          events.push(`${labels[1]}-before`);
+                          events.push(`${labels[1]}-after`);
+                          return labels[1];
                         }),
-                        wisp.chain(() => cede()),
-                        wisp.chain(() =>
-                          wisp.fromIO(() => {
-                            events.push(`${labels[1]}-after`);
-                            return labels[1];
-                          }),
-                        ),
                       ),
-                    { scheduler },
-                  ),
-                  wisp.chain(wait),
+                    ),
+                  { scheduler },
                 ),
             ]),
             wisp.chain(wait),
@@ -341,7 +547,7 @@ describe("/ primitives: autonomy", () => {
       const settled = await waitForSettled(handle);
 
       const actual = {
-        assignmentCount: assignedProcesses.length,
+        assignedCount: assigned.length,
         events,
         settled,
         settledStatus: handle.status,
@@ -352,7 +558,7 @@ describe("/ primitives: autonomy", () => {
         ...outcome,
         events: [...eventOrder],
       });
-      expect(assignedProcesses).toHaveLength(resultOrder.length);
+      expect(assigned).toHaveLength(resultOrder.length);
     },
   );
 
@@ -362,23 +568,17 @@ describe("/ primitives: autonomy", () => {
       outcome: {
         adjudicationCount: 1,
         settled: {
-          failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: expect.objectContaining({
-                  failure: {
-                    kind: "external",
-                    message: "reaped autonomy scope",
-                    raw: "reaper-failure",
-                  },
-                }),
-                kind: "scope",
-              }),
+          kind: "success",
+          result: left(
+            expect.objectContaining({
+              cause: {
+                kind: "external",
+                message: "reaped autonomy scope",
+                raw: "reaper-failure",
+              },
               kind: "scope",
             }),
-            kind: "scope",
-          }),
-          kind: "failure",
+          ),
         },
         settledStatus: "closed",
       },
@@ -398,17 +598,14 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  defer(() => park()),
-                  wisp.chain(() => spawn(cancel)),
-                  wisp.chain(() => park()),
-                ),
-              { reaper },
-            ),
-            wisp.chain(wait),
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() => park()),
+                wisp.chain(() => spawn(cancel)),
+                wisp.chain(() => park()),
+              ),
+            { reaper },
           ),
         ),
       );
@@ -432,26 +629,20 @@ describe("/ primitives: autonomy", () => {
       ] as const,
       outcome: {
         adjudicationCount: 1,
-        assignmentsAfterSettle: 6,
-        assignmentsBeforeSettle: 2,
+        assignedAfterSettle: 6,
+        assignedBeforeSettle: 2,
         settled: {
-          failure: expect.objectContaining({
-            cause: expect.objectContaining({
-              failure: expect.objectContaining({
-                cause: expect.objectContaining({
-                  failure: {
-                    kind: "external",
-                    message: "reaped composed autonomy scope",
-                    raw: "composed-reaper",
-                  },
-                }),
-                kind: "scope",
-              }),
+          kind: "success",
+          result: left(
+            expect.objectContaining({
+              cause: {
+                kind: "external",
+                message: "reaped composed autonomy scope",
+                raw: "composed-reaper",
+              },
               kind: "scope",
             }),
-            kind: "scope",
-          }),
-          kind: "failure",
+          ),
         },
         settledStatus: "closed",
       },
@@ -460,12 +651,12 @@ describe("/ primitives: autonomy", () => {
     "composes scheduler and reaper governance within the same autonomous scope",
     async ({ given: [entryResult, failure], outcome }) => {
       const taskStatuses: ProcessorTaskStatus[] = [];
-      const assignedProcesses: ProcessRef<unknown>[] = [];
+      const assigned: ProcessRef<unknown>[] = [];
       const futureSettle = Promise.withResolvers<FutureSettleKey<string>>();
       let adjudicationCount = 0;
 
-      await using queued = createManagedQueuedProcessor(taskStatuses);
-      const scheduler = createTrackingScheduler(assignedProcesses, queued.processor);
+      await using queued = createQueuedProcessor(taskStatuses);
+      const scheduler = trackAssignments(assigned, queued.processor);
       const reaper: Reaper = {
         adjudicate: () => {
           adjudicationCount += 1;
@@ -477,44 +668,41 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  future<string>(),
-                  wisp.chain(([futureKey, nextFutureSettle]) =>
-                    pipe(
-                      wisp.fromIO(() => {
-                        futureSettle.resolve(nextFutureSettle);
-                        return futureKey;
-                      }),
-                      wisp.chain(wait),
-                      wisp.chain(() => wisp.of(entryResult)),
-                      wisp.chain(() =>
-                        pipe(
-                          defer(() => park()),
-                          wisp.chain(() => spawn(cancel)),
-                          wisp.chain(() => park()),
-                        ),
+          awaitAutonomy(
+            () =>
+              pipe(
+                future<string>(),
+                wisp.chain(([futureKey, nextFutureSettle]) =>
+                  pipe(
+                    wisp.fromIO(() => {
+                      futureSettle.resolve(nextFutureSettle);
+                      return futureKey;
+                    }),
+                    wisp.chain(wait),
+                    wisp.chain(() => wisp.of(entryResult)),
+                    wisp.chain(() =>
+                      pipe(
+                        defer(() => park()),
+                        wisp.chain(() => spawn(cancel)),
+                        wisp.chain(() => park()),
                       ),
                     ),
                   ),
                 ),
-              { reaper, scheduler },
-            ),
-            wisp.chain(wait),
+              ),
+            { reaper, scheduler },
           ),
         ),
       );
 
       executor.settle(await futureSettle.promise, right(entryResult));
-      const assignmentsBeforeSettle = assignedProcesses.length;
+      const assignedBeforeSettle = assigned.length;
       const settled = await waitForSettled(handle);
 
       const actual = {
         adjudicationCount,
-        assignmentsAfterSettle: assignedProcesses.length,
-        assignmentsBeforeSettle,
+        assignedAfterSettle: assigned.length,
+        assignedBeforeSettle,
         settled,
         settledStatus: handle.status,
       };
@@ -527,8 +715,9 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("reaper adjudication failed")] as const,
       outcome: {
-        interruptedCauseMessage: "reaper adjudication failed",
-        settledKind: "failure",
+        causeMessage: "reaper adjudication failed",
+        resultKind: "left",
+        settledKind: "success",
         settledStatus: "closed",
       },
     },
@@ -545,17 +734,14 @@ describe("/ primitives: autonomy", () => {
       const { executor } = managed;
       const handle = unwrapSome(
         executor.launch(executor.scope, () =>
-          pipe(
-            autonomy(
-              () =>
-                pipe(
-                  defer(() => park()),
-                  wisp.chain(() => spawn(cancel)),
-                  wisp.chain(() => park()),
-                ),
-              { reaper },
-            ),
-            wisp.chain(wait),
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() => park()),
+                wisp.chain(() => spawn(cancel)),
+                wisp.chain(() => park()),
+              ),
+            { reaper },
           ),
         ),
       );
@@ -566,21 +752,26 @@ describe("/ primitives: autonomy", () => {
       };
 
       expect({
+        resultKind:
+          actual.settled.kind === "success" && either.isLeft(actual.settled.result)
+            ? "left"
+            : "right",
         settledKind: actual.settled.kind,
         settledStatus: actual.settledStatus,
       }).toEqual({
+        resultKind: outcome.resultKind,
         settledKind: outcome.settledKind,
         settledStatus: outcome.settledStatus,
       });
-      if (actual.settled.kind !== "failure") {
-        throw new Error("Expected autonomy settlement to fail");
+      if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
+        throw new Error("Expected autonomous scope failure to be contained");
       }
 
-      expect(findFailureByKind(actual.settled.failure, "interrupted")).toEqual(
+      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
         expect.objectContaining(
           interruptedFailure(
             expect.objectContaining({
-              message: outcome.interruptedCauseMessage,
+              message: outcome.causeMessage,
             }),
           ),
         ),
@@ -589,13 +780,20 @@ describe("/ primitives: autonomy", () => {
   );
 });
 
-function createTrackingScheduler(
-  assignedProcesses: ProcessRef<unknown>[],
-  processor: Processor,
-): Scheduler {
+function awaitAutonomy<Relic>(
+  entry: Ritual<Relic>,
+  options: AutonomyOptions,
+): Wisp<FutureResult<Relic>> {
+  return pipe(
+    autonomy(entry, options),
+    wisp.chain(({ scope }) => wait(scope.exitFuture)),
+  );
+}
+
+function trackAssignments(assigned: ProcessRef<unknown>[], processor: Processor): Scheduler {
   return {
     assign: (process) => {
-      assignedProcesses.push(process);
+      assigned.push(process);
       return processor;
     },
   };

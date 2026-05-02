@@ -13,6 +13,7 @@ declare module "fp-ts/HKT" {
   }
 }
 
+/** @preserveSurface */
 // oxlint-disable-next-line no-namespace
 export namespace wispEither {
   export const URI = "WispEither";

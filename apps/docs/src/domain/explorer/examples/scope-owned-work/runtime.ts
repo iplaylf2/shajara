@@ -1,14 +1,14 @@
 // oxlint-disable max-lines-per-function
+import { branch, spawn } from "@shajara/host/primitives";
 import {
+  branchWait,
   clearCursor,
   codeLine,
   codeSpacer,
   completeEvents,
   cursorAt,
-  encloseWait,
   setCursor,
 } from "#/domain/explorer/examples-kit";
-import { enclose, spawn } from "@shajara/host/primitives";
 import type { ExplorerAuthoredEvent } from "#/domain/explorer/examples-kit";
 import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 import type { RiteCoroutine } from "@shajara/host";
@@ -18,15 +18,15 @@ import { sleep } from "@shajara/host";
 export function createScopeOwnedWorkDemoCode() {
   return [
     codeLine("routine", "function* publishArticle() {", ["done"]),
-    codeLine("enclose-open", "  const result = yield* enclose(function* commitArticle() {", [
-      "enclose-close",
+    codeLine("branch-open", "  const result = yield* branch(function* commitArticle() {", [
+      "branch-close",
     ]),
     codeLine("spawn-index", "    yield* spawn(function* updateSearchIndex() {", ["index-close"]),
     codeLine("index-sleep", `      yield* sleep(${indexDelayMs});`, ["index-close"]),
     codeLine("index-close", "    });", ["index-close"]),
     codeSpacer(),
     codeLine("inner-return", '    return "published";', ["inner-return"]),
-    codeLine("enclose-close", "  });", ["enclose-close"]),
+    codeLine("branch-close", "  });", ["branch-close"]),
     codeSpacer(),
     codeLine("return-result", "  return result;", ["done"]),
     codeLine("done", "}", ["done"]),
@@ -36,14 +36,14 @@ export function createScopeOwnedWorkDemoCode() {
 export function* scopeOwnedWorkDemo(
   emit: ExplorerReplayEmit<ScopeOwnedWorkDemoEvent>,
 ): RiteCoroutine<string> {
-  return yield* enclose(function* publishArticle(): RiteCoroutine<string> {
+  return yield* branch(function* publishArticle(): RiteCoroutine<string> {
     emit({
-      actions: [setCursor(cursorAt("root", ["enclose-open", "launch-scope"], "running"))],
+      actions: [setCursor(cursorAt("root", ["branch-open", "launch-scope"], "running"))],
     });
-    const result = yield* enclose(
-      encloseWait(
+    const result = yield* branch(
+      branchWait(
         emit,
-        { events: ["enclose-open", "scope-wait-root"], routineId: "root" },
+        { events: ["branch-open", "scope-wait-root"], routineId: "root" },
         function* commitArticle(): RiteCoroutine<string> {
           emit({
             actions: [setCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))],
@@ -74,7 +74,7 @@ export function* scopeOwnedWorkDemo(
     emit({
       actions: [
         clearCursor("scope"),
-        completeEvents(["enclose-close", "scope-wait-root"]),
+        completeEvents(["branch-close", "scope-wait-root"]),
         setCursor(cursorAt("root", "return-result", "running")),
       ],
     });

@@ -1,4 +1,4 @@
-import type { Failure } from "#/contracts";
+import type { Failure } from "#/index";
 
 export function findFailureByKind<Kind extends Failure["kind"]>(
   value: unknown,
@@ -13,8 +13,7 @@ export function findFailureByKind<Kind extends Failure["kind"]>(
     return failure as Extract<Failure, { kind: Kind }>;
   }
 
-  const nested = failure.cause?.failure;
-  if (nested) {
+  for (const nested of nestedFailures(failure.cause)) {
     const foundNested = findFailureByKind(nested, kind);
     if (foundNested !== null) {
       return foundNested;
@@ -31,8 +30,21 @@ export function findFailureByKind<Kind extends Failure["kind"]>(
   return null;
 }
 
+function nestedFailures(cause: unknown): readonly unknown[] {
+  if (!cause || typeof cause !== "object") {
+    return [];
+  }
+
+  const legacyCause = cause as { failure?: unknown };
+  if (legacyCause.failure) {
+    return [legacyCause.failure, cause];
+  }
+
+  return [cause];
+}
+
 interface FailureTree {
-  cause?: { failure?: unknown };
+  cause?: unknown;
   kind?: string;
   suppressed?: readonly unknown[];
 }

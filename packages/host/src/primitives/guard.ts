@@ -1,33 +1,42 @@
-import type { Failure, RiteCoroutine, RiteFuture, RiteRoutine } from "#/contracts";
+import type { Either, Option } from "@shajara/kernel/utils";
+import type { Failure, Presence, RiteCoroutine, RiteRoutine } from "#/contracts";
+import type { RecoveryHandler as KernelRecoveryHandler, ScopeFailure } from "@shajara/kernel";
 import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index";
-import { left, right } from "@shajara/kernel/utils";
-import type { Either } from "@shajara/kernel/utils";
+import { left, none, right, some } from "@shajara/kernel/utils";
 import { ScopeError } from "#/errors";
-import type { ScopeFailure } from "@shajara/kernel";
 import { guard as kernelGuard } from "@shajara/kernel";
+import { waitChild } from "#/primitives-kit";
 
-export type RecoveryHandler = (error: ScopeError) => RiteCoroutine<unknown>;
-
-export function guard(
-  entry: RiteRoutine<void>,
+export function* guard<Return>(
+  entry: RiteRoutine<Return>,
   recover: RecoveryHandler,
-): RiteCoroutine<RiteFuture<void>> {
-  return encodeRitual(() => kernelGuard(decodeRitual(entry), toKernelRecoveryHandler(recover)))();
+): RiteCoroutine<Return> {
+  const child = yield* encodeRitual(() =>
+    kernelGuard(decodeRitual(entry), toKernelRecoveryHandler(recover)),
+  )();
+  return yield* waitChild(child);
 }
 
-function toKernelRecoveryHandler(recover: RecoveryHandler) {
+export type RecoveryDecision = Presence<unknown>;
+export type RecoveryHandler = (error: ScopeError) => RiteCoroutine<RecoveryDecision>;
+
+function toKernelRecoveryHandler(recover: RecoveryHandler): KernelRecoveryHandler {
   return (failure: ScopeFailure) =>
-    decodeRitual(() => hostRecovery(recover, new ScopeError(failure)))();
+    decodeRitual(() => runRecoveryHandler(recover, new ScopeError(failure)))();
 }
 
-function* hostRecovery(
+function* runRecoveryHandler(
   recover: RecoveryHandler,
-  cause: ScopeError,
-): RiteCoroutine<Either<Failure, unknown>> {
+  scopeError: ScopeError,
+): RiteCoroutine<Option<Either<Failure, unknown>>> {
   try {
-    const replacement = yield* recover(cause);
-    return right(replacement);
+    const [handled, value] = yield* recover(scopeError);
+    if (!handled) {
+      return none;
+    }
+
+    return some(right(value));
   } catch (error) {
-    return left(toFailureUnknown(error));
+    return some(left(toFailureUnknown(error)));
   }
 }

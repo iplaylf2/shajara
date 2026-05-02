@@ -1,4 +1,4 @@
-import { defer, enclose } from "#/index";
+import { branch, defer, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, recordTrace, unwrapExitedSucceeded } from "#test/harness";
 import { noop, right } from "#/utils";
@@ -15,16 +15,19 @@ describe("/ primitives: defer", () => {
       },
     },
   ])(
-    "runs cleanup after the enclosed process exits",
+    "runs cleanup after the branched process exits",
     async ({ given: [bodyEntry, cleanupEntry], outcome }) => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
-        enclose(() =>
-          pipe(
-            defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
-            wisp.chain(() => recordTrace(events, bodyEntry)),
+        pipe(
+          branch(() =>
+            pipe(
+              defer(() => pipe(recordTrace(events, cleanupEntry), wisp.map(noop))),
+              wisp.chain(() => recordTrace(events, bodyEntry)),
+            ),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
         ),
       );
       const step = ritual.driveSync();
@@ -46,19 +49,22 @@ describe("/ primitives: defer", () => {
       },
     },
   ])(
-    "runs multiple cleanups in registration order after the enclosed process exits",
+    "runs multiple cleanups in registration order after the branched process exits",
     async ({ given: [bodyEntry, firstCleanupEntry, secondCleanupEntry], outcome }) => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
-        enclose(() =>
-          pipe(
-            defer(() => pipe(recordTrace(events, firstCleanupEntry), wisp.map(noop))),
-            wisp.chain(() =>
-              defer(() => pipe(recordTrace(events, secondCleanupEntry), wisp.map(noop))),
+        pipe(
+          branch(() =>
+            pipe(
+              defer(() => pipe(recordTrace(events, firstCleanupEntry), wisp.map(noop))),
+              wisp.chain(() =>
+                defer(() => pipe(recordTrace(events, secondCleanupEntry), wisp.map(noop))),
+              ),
+              wisp.chain(() => recordTrace(events, bodyEntry)),
             ),
-            wisp.chain(() => recordTrace(events, bodyEntry)),
           ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
         ),
       );
       const step = ritual.driveSync();

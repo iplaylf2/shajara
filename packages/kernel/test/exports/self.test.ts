@@ -1,6 +1,6 @@
+import { branch, self, spawn, wait } from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded, unwrapRight } from "#test/harness";
-import { self, spawn, wait } from "#/index";
 import type { SelfHandle } from "#/index";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
@@ -31,4 +31,42 @@ describe("/ primitives: self", () => {
       sharesExitFuture: actual.process.exitFuture === actual.scope.exitFuture,
     }).toEqual(outcome);
   });
+
+  test.for([
+    {
+      given: [
+        { label: "self-scope" },
+        { completionMode: "structural", label: "self-process" },
+      ] as const,
+      outcome: {
+        processDescriptor: { completionMode: "structural", label: "self-process" },
+        scopeDescriptor: { label: "self-scope" },
+      },
+    },
+  ])(
+    "returns refs with the current scope and process descriptors",
+    async ({ given: [scopeDescriptor, processDescriptor], outcome }) => {
+      await using ritual = interpretRitual(() =>
+        pipe(
+          branch(
+            () =>
+              pipe(
+                spawn(() => self(), processDescriptor),
+                wisp.chain(wait),
+              ),
+            scopeDescriptor,
+          ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
+        ),
+      );
+      const step = ritual.driveSync();
+      const branchExit = unwrapRight(unwrapExitedSucceeded(step));
+      const actual = unwrapRight(branchExit);
+
+      expect({
+        processDescriptor: actual.process.descriptor,
+        scopeDescriptor: actual.scope.descriptor,
+      }).toEqual(outcome);
+    },
+  );
 });

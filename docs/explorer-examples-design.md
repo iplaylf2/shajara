@@ -30,7 +30,7 @@ Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档�
 | 3     | Scope-Owned Work      | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。                                       | scope 是 shajara 的结构化并发边界。这个示例说明 scope-owned work 对完成和收敛的影响，不需要依赖 `run` 或 `createScope` 这类宿主入口。                                                     |
 | 4     | Fork Join             | 一个 process 启动多个并发分支，并在汇合点等待所有需要的结果。                                                            | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                                      |
 | 5     | All Results           | `all` 同时发起多个分支，并把全部结果聚合到一个组合 future。                                                              | 它把一组并发分支表达为一个整体等待点。示例重点是“全部结果共同结算”这个收敛关系，而不是逐个等待每个分支。                                                                                  |
-| 6     | First Result          | `race` 同时发起多个分支，并让首个完成结果结算到一个竞争 future。                                                         | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
+| 6     | First Result          | `race` 同时发起多个分支，并让首个完成结果成为竞争结果。                                                                  | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
 | 7     | Bounded Channel       | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。                                     | channel 是流程之间传递值的显式通信对象。容量不是配置细节，而是发送和接收互相调节推进节奏的运行关系。                                                                                      |
 | 8     | Scope-Managed Objects | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 退出时自动收束这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理，而不是由 handle 的可达位置决定；外层流程后续使用这些 handle 时，只是在观察 child scope 已经取消 future、撤销 channel 的事实。 |
 | 9     | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收敛为 canceled。                                       | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消不是单点事件，而是沿 scope 结构传播并最终收束。                                                                              |
@@ -99,9 +99,9 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - 正向启动线和反向等待线不应在同一个事件上同时点亮。`launch-*` 或 `spawn-*` 事件只表达创建方向；等待关系应使用独立的 `wait-*`、`scope-wait-*` 或同类事件。
 - 如果等待关系没有对应的代码行，可以使用只服务 flow 的内部事件。内部事件可以出现在 cursor 的事件集合里，用来点亮等待线，但不需要伪造一行代码。
 - Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 routine 间的等待关系。
-- 当一个组合 primitive 产生代表整体关系的 future 时，图中应给这个 future 稳定的汇合位置。分支发起线从汇合位置展开，分支结果或竞争结果回到汇合位置，发起者再等待这个整体 future。
+- 当一个组合 primitive 产生代表整体关系的 future 或竞争结果时，图中应给这个整体关系稳定的汇合位置。分支发起线从汇合位置展开，分支结果或竞争结果回到汇合位置，发起者再等待 future 或接收竞争结果。
 - Future Settlement 等待的是 `smsCode` 这个独立 future。future 本体应像 channel 一样以通用对象名 `future` 承担对象类型和状态表达；示例变量名可以留在代码和旁白里，但关系线不再用可见 label 标记变量。
-- Scope-Owned Work 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `enclose` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
+- Scope-Owned Work 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `branch` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
 - Scope box 表示 scope 的运行所有权边界。box 可以容纳该 scope 内的 process 块、future、channel 和其他 scope-owned objects；它不应被用作普通布局容器，也不应把外层流程或只持有 handle 的流程包入 owner scope。
 - Scope-Managed Objects 应使用 scope box 展示对象本体和 handle 的分离。future 和 channel 的对象本体留在创建它们的 child scope box 内；返回给外层流程的 handle 可以用细线、端点或标签表示，但不能让对象本体随 handle 移出 box。
 - Scope box 的 lifecycle 状态应驱动内部对象状态。child scope 进入 closing 或 closed 时，box 触发未完成 future 的 canceled 状态和仍打开 channel 的 revoked 状态；这些状态变化不应从外层 handle 发出。
@@ -120,7 +120,7 @@ Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器
 - 当动画需要在 `return` 发生后标记完成时，可以使用 `try` / `finally` 让完成事件绑定到返回点。此时 `finally` 表达的是返回语义的收尾，而不是单纯的动画延迟。
 - 代码示例中的控制流应优先服务读者理解。当一个操作同时承担等待和返回两个叙事动作时，可以拆成中间变量和显式返回，让两个阶段在代码回放里都清楚可见；但不能为了制造动画帧而引入没有领域语义的中间步骤。
 - 代码行 id、flow event 和 node lifecycle 应共同表达同一个概念。事件命名应服务动画语义，不应为了复用某个代码行 id 而模糊启动、等待或完成关系。
-- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：为 `race` 分支补充取消演出时，helper 作用于分支 routine；为 `enclose` 边界补充等待演出时，helper 作用于传给 `enclose` 的 routine，并在边界调用点记录父 routine 的等待状态。helper 可以封装重复 replay 细节，但不应把父 routine 的 cursor 归属转移给 child routine，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
+- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：为 `race` 分支补充取消演出时，helper 作用于分支 routine；为 `branch` 边界补充等待演出时，helper 作用于传给 `branch` 的 routine，并在边界调用点记录父 routine 的等待状态。helper 可以封装重复 replay 细节，但不应把父 routine 的 cursor 归属转移给 child routine，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
 - 渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。组件可以负责把 node、link、scope box、future 和 channel 渲染成统一图形语言；但“哪个 routine 正在运行或等待”“哪个事件使对象进入终止状态”应由 runtime 与 examples-kit 明确给出。
 
 ## Inclusion Criteria

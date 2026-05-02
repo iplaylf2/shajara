@@ -1,6 +1,7 @@
 export * from "./all";
 export * from "./wait";
 export * from "./bind";
+export * from "./branch";
 export * from "./cancel";
 export * from "./cede";
 export * from "./channel";
@@ -18,7 +19,6 @@ export * from "./race";
 export * from "./resource";
 export * from "./resumable";
 export * from "./guard";
-export * from "./enclose";
 export * from "./self";
 export * from "./send";
 export * from "./try-send";

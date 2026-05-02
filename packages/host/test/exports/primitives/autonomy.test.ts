@@ -10,25 +10,20 @@ describe("/ primitives: autonomy", () => {
       given: ["autonomy-ready"] as const,
       outcome: "autonomy-ready",
     },
-  ])(
-    "returns a future whose result resolves from the autonomous ritual",
-    async ({ given: [value], outcome }) => {
-      const settled = run(function* awaitAutonomousResult() {
-        const autonomousResult = yield* autonomy(
-          function* runAutonomousEntry() {
-            return value;
-          },
-          {
-            reaper: keepWaiting,
-          },
-        );
+  ])("returns the autonomous ritual result", async ({ given: [value], outcome }) => {
+    const settled = run(function* awaitAutonomousResult() {
+      return yield* autonomy(
+        function* runAutonomousEntry() {
+          return value;
+        },
+        {
+          reaper: keepWaiting,
+        },
+      );
+    });
 
-        return yield* wait(autonomousResult);
-      });
-
-      await expect(settled).resolves.toBe(outcome);
-    },
-  );
+    await expect(settled).resolves.toBe(outcome);
+  });
 
   test.for([
     {
@@ -45,7 +40,7 @@ describe("/ primitives: autonomy", () => {
       const release = Promise.withResolvers<void>();
       const reaped = Promise.withResolvers<unknown>();
       const settled = run(function* awaitReapedAutonomy() {
-        const reapedResult = yield* autonomy(
+        return yield* autonomy(
           function* runAutonomousEntry() {
             try {
               yield* spawn(throwCancellation);
@@ -61,8 +56,6 @@ describe("/ primitives: autonomy", () => {
             },
           },
         );
-
-        return yield* wait(reapedResult);
       });
 
       await expect(reaped.promise).resolves.toEqual(outcome.reaped ? expect.anything() : null);
@@ -87,7 +80,7 @@ describe("/ primitives: autonomy", () => {
     "rejects with a scope failure that records scheduler assignment interruption",
     async ({ given: [cause, value], outcome }) => {
       const settled = run(function* awaitInterruptedAutonomy() {
-        const scheduledResult = yield* autonomy(
+        return yield* autonomy(
           function* runAutonomousEntry() {
             return value;
           },
@@ -99,15 +92,13 @@ describe("/ primitives: autonomy", () => {
             },
           },
         );
-
-        return yield* wait(scheduledResult);
       });
 
       const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, "interrupted")).toMatchObject({
+      expect(findFailureByKind(actual, outcome.interrupted.kind)).toMatchObject({
         ...outcome.interrupted,
         cause,
       });
@@ -128,7 +119,7 @@ describe("/ primitives: autonomy", () => {
     "rejects with a scope failure that preserves the reaper exception as an external cause",
     async ({ given: [cause], outcome }) => {
       const settled = run(function* awaitInterruptedAutonomy() {
-        const reaperResult = yield* autonomy(
+        return yield* autonomy(
           function* runAutonomousEntry() {
             try {
               yield* spawn(throwCancellation);
@@ -143,15 +134,13 @@ describe("/ primitives: autonomy", () => {
             },
           },
         );
-
-        return yield* wait(reaperResult);
       });
 
       const actual = await settled.catch((error: unknown) => error);
 
       expect(actual).toBeInstanceOf(ScopeError);
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, "external")).toMatchObject({
+      expect(findFailureByKind(actual, outcome.external.kind)).toMatchObject({
         ...outcome.external,
         raw: cause,
       });

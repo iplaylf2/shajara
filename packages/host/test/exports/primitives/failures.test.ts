@@ -1,6 +1,6 @@
 import { CanceledError, ScopeError, run } from "#/index";
+import { branch, future, settleError, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
-import { enclose, future, settleError, wait } from "#/primitives";
 
 describe("/ primitives: thrown termination, settleError", () => {
   test.for([
@@ -24,17 +24,14 @@ describe("/ primitives: thrown termination, settleError", () => {
       given: [new Error("failed for test")] as const,
       outcome: {
         cause: {
-          failure: {
-            kind: "scope",
-          },
-          kind: "process",
+          kind: "scope",
         },
         kind: "scope",
       } as const,
     },
-  ])("enclose surfaces thrown errors as scope failures", async ({ given: [cause], outcome }) => {
-    const settled = run(function* awaitFailedEnclosure() {
-      return yield* enclose(function* failChildScope() {
+  ])("branch surfaces thrown errors as scope failures", async ({ given: [cause], outcome }) => {
+    const settled = run(function* awaitFailedBranch() {
+      return yield* branch(function* failChildScope() {
         throw cause;
       });
     });
@@ -48,7 +45,7 @@ describe("/ primitives: thrown termination, settleError", () => {
       given: [new Error("future-failed")] as const,
       outcome: {
         cause: {
-          kind: "process",
+          kind: "external",
         },
         kind: "scope",
       } as const,
@@ -64,7 +61,13 @@ describe("/ primitives: thrown termination, settleError", () => {
       });
 
       await expect(settled).rejects.toBeInstanceOf(ScopeError);
-      await expect(settled).rejects.toMatchObject(outcome);
+      await expect(settled).rejects.toMatchObject({
+        ...outcome,
+        cause: {
+          ...outcome.cause,
+          raw: cause,
+        },
+      });
     },
   );
 });

@@ -39,7 +39,10 @@ describe("/ primitives: resource", () => {
   test.for([
     {
       given: ["provided", "cleanup", "resource-ready"] as const,
-      outcome: ["provided", "cleanup"],
+      outcome: {
+        events: ["provided", "cleanup"],
+        value: "resource-ready",
+      },
     },
   ])(
     "remains attached to the scope until cancellation unwinds the provider finally block",
@@ -64,10 +67,10 @@ describe("/ primitives: resource", () => {
           yield* waitForCancellation();
         });
 
-        await expect(captured.promise).resolves.toBe(resourceValue);
+        await expect(captured.promise).resolves.toBe(outcome.value);
         await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
         await expect(settled).rejects.toBeInstanceOf(CanceledError);
-        expect(events).toEqual(outcome);
+        expect(events).toEqual(outcome.events);
       } finally {
         if (scope.status !== "closed") {
           await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);

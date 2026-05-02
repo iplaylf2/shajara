@@ -1,20 +1,19 @@
 import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
 import type { Disposer, Option } from "#/utils/index";
-import type { FailureShape, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
+import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
 import { canceledFailure, interruptedFailure } from "#/failures";
-import { either, io, option } from "fp-ts";
+import { either, option } from "fp-ts";
 import { halt, park } from "#/primitives/index";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
-import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import { RoundLimitReaper } from "./round-limit-reaper";
 import { RuntimeLaunchHandle } from "./launch-handle";
 import { noop } from "#/utils/index";
-import { pipe } from "fp-ts/function";
+import { withRecoveryAnchor } from "#/primitives-kit";
 
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
@@ -42,7 +41,7 @@ class RuntimeExecutor implements Executor {
       this.#startReaperRound();
     });
     this.#driver = new ExecutorDriver(pacer);
-    this.#interpreter = DomainInterpreter.createByAutonomy(park, {
+    this.#interpreter = DomainInterpreter.createByAutonomy(withRecoveryAnchor(park), {
       reaper: new RoundLimitReaper(DEFAULT_REAPER_ROUND_LIMIT),
       scheduler: { assign: () => this.#driver.processor },
     });
@@ -61,7 +60,7 @@ class RuntimeExecutor implements Executor {
     }
 
     using fault = new FaultSink("Out-of-band failures occurred while branching a launched scope");
-    const launched = this.#interpreter.branch(scope, ritual, { failureMode: "contain" }, fault);
+    const launched = this.#interpreter.branch(scope, ritual, {}, fault);
     const cause = fault.drain();
     if (option.isSome(cause)) {
       this.#interruptScope(scope, cause.value);
@@ -129,23 +128,16 @@ class RuntimeExecutor implements Executor {
           return;
         }
 
-        pipe(
-          result,
-          either.chain(
-            option.match(
-              () => either.right(io.Do),
-              (id: FailureShape) => either.left(id),
-            ),
-          ),
-          either.getOrElse((failure) => () => {
-            this.#interpreter.spawn(
-              scope,
-              () => halt(failure),
-              { completionMode: "structural" },
-              suppressor,
-            );
-          }),
-          (run) => run(),
+        const failure = either.isLeft(result) ? option.some(result.left) : result.right;
+        if (option.isNone(failure)) {
+          return;
+        }
+
+        this.#interpreter.spawn(
+          scope,
+          () => halt(failure.value),
+          { completionMode: "structural" },
+          suppressor,
         );
       });
     }
@@ -205,7 +197,7 @@ function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Resu
       return { kind: "canceled" };
     }
 
-    return { failure: result.left as Failure, kind: "failure" };
+    return { failure: result.left, kind: "failure" };
   }
   return { kind: "success", result: result.right };
 }

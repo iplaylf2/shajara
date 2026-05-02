@@ -1,5 +1,5 @@
 // oxlint-disable max-lines-per-function
-import { channel, enclose, receive, send, spawn } from "@shajara/host/primitives";
+import { branch, channel, receive, send, spawn } from "@shajara/host/primitives";
 import {
   clearCursor,
   codeLine,
@@ -46,7 +46,7 @@ export function createBoundedChannelDemoCode() {
 export function* boundedChannelDemo(
   emit: ExplorerReplayEmit<BoundedChannelDemoEvent>,
 ): RiteCoroutine<number> {
-  return yield* enclose(function* queueBatches(): RiteCoroutine<number> {
+  return yield* branch(function* queueBatches(): RiteCoroutine<number> {
     emit({ actions: [setCursor(cursorAt("root", "channel-open", "running"))] });
     const [receiver, sender] = yield* channel<string, never>(channelCapacity);
     emit({

@@ -7,8 +7,13 @@ describe("/ boundary: decodeRitual, encodeRitual", () => {
     {
       given: ["decoded"] as const,
       outcome: {
-        bearing: "resting",
-        relic: "decoded",
+        decoded: {
+          bearing: "resting",
+          relic: "decoded",
+        },
+        yielded: {
+          bearing: "stirring",
+        },
       },
     },
   ])("decodeRitual adapts a host routine into a kernel ritual", ({ given: [value], outcome }) => {
@@ -18,15 +23,13 @@ describe("/ boundary: decodeRitual, encodeRitual", () => {
 
     const decoded = ritual();
 
-    expect(decoded).toMatchObject({
-      bearing: "stirring",
-    });
+    expect(decoded).toMatchObject(outcome.yielded);
 
     if (decoded.bearing !== "stirring") {
       expect.unreachable();
     }
 
-    expect(decoded.resonate(null)).toMatchObject(outcome);
+    expect(decoded.resonate(null)).toMatchObject(outcome.decoded);
   });
 
   test.for([

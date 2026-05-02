@@ -1,4 +1,4 @@
-import type { FailureShape, ScopeFailure, ScopeFailureCause } from "@shajara/kernel";
+import type { FailureShape, ScopeFailure } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 
 export class ScopeError extends ShajaraError implements ScopeFailure {
@@ -10,6 +10,6 @@ export class ScopeError extends ShajaraError implements ScopeFailure {
 
   public override readonly name = "ScopeError";
   public readonly kind = "scope" as const;
-  public override readonly cause: ScopeFailureCause;
+  public override readonly cause: FailureShape;
   public readonly suppressed: readonly FailureShape[];
 }
