@@ -73,8 +73,8 @@ interface ProcessDescriptor extends Readonly<UnknownRecord> {
 ```
 
 - `structural`: participates in the enclosing scope's completion condition
-- `detached`: is excluded from that completion condition and is canceled when the scope
-  starts closing
+- `detached`: is excluded from that completion condition and is canceled during scope
+  convergence
 
 ### `BranchHandle`
 

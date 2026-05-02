@@ -131,8 +131,8 @@ Result semantics:
 yield * abortSignal();
 ```
 
-Returns an `AbortSignal` tied to the current scope. The signal aborts when that scope
-starts closing.
+Returns an `AbortSignal` tied to the current scope. The signal aborts during that
+scope's convergence.
 
 ### `action`
 
@@ -169,8 +169,8 @@ yield * resource<Value>(body);
 ```
 
 Returns a `RiteFuture<Value>`. The body receives `provide(value)`, which settles the
-returned future and keeps the provider attached to the owning scope until that scope
-starts closing.
+returned future and keeps the provider attached to the current scope until that scope
+releases it during convergence.
 
 ### `sleep`
 

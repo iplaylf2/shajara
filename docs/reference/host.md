@@ -162,7 +162,7 @@ Convergence semantics:
 ### `abortSignal`
 
 `abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
-aborted while the scope is open; it aborts when the scope starts closing.
+aborted while the scope is open; it aborts during that scope's convergence.
 It does not provide a way to cancel the scope from host code.
 
 ### `action`
@@ -190,7 +190,7 @@ channel from host code.
 the current scope until release. The operation returns a future for the provided value.
 
 The body receives `provide(value)`. Calling `provide` settles the returned future and
-then parks the provider process. When the owning scope starts closing, the provider is
+then parks the provider process. During convergence of that scope, the provider is
 released through normal generator unwinding, so `try...finally` cleanup in the provider
 body runs on the same scope lifecycle.
 
