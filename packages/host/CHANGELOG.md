@@ -1,5 +1,25 @@
 # @shajara/host
 
+## 0.5.0
+
+### Minor Changes
+
+- [#27](https://github.com/iplaylf2/shajara/pull/27) [`5876ac5`](https://github.com/iplaylf2/shajara/commit/5876ac5d696f40e3757cd8a697aeb2c06a39ab5c) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Move `resource` to host operations and fix provider cleanup.
+
+  `resource(...)` is now exported from the root `@shajara/host` entry with the
+  other host operations, and is no longer exported from `@shajara/host/primitives`.
+  Resource providers no longer keep their owning scope open after providing a
+  value. They remain scope-owned for cleanup and are released during convergence
+  of the owning scope.
+
+  The host package also exposes `abortSignal()`, which returns an `AbortSignal`
+  tied to the current scope. The signal aborts during that scope's convergence.
+
+### Patch Changes
+
+- Updated dependencies [[`5876ac5`](https://github.com/iplaylf2/shajara/commit/5876ac5d696f40e3757cd8a697aeb2c06a39ab5c)]:
+  - @shajara/kernel@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
