@@ -62,7 +62,7 @@ Scoped host primitives adapt kernel handles into host-facing values:
 - host `branch(entry)` waits for the child scope's `exitFuture` and returns the child value
 - host `autonomy(entry, options)` waits for the autonomous child scope and returns its value
 - host `guard(entry, recover)` waits for the guarded child scope and returns its value
-- host `race(entries)` waits for the race outcome future and returns the winning value
+- host `race(entries)` waits for the race scope, then returns the winning value
 - host `resumable(entry)` waits for the recovery outcome future and returns that value
 - host `all(entries)`, `spawn(entry)`, and `resource(body)` return host futures
 

@@ -6,9 +6,10 @@ Adapt scoped outcomes into host control flow.
 
 The host package adapts the kernel's scoped outcomes into the generator API used
 by application code. `@shajara/host/primitives` now exposes `branch` instead of
-`enclose`; `branch`, `autonomy`, `guard`, `race`, and `resumable` return the
-child or selected value directly after waiting for the owned scope and cleanup
-where appropriate.
+`enclose`; scoped primitives return host values directly from the scope or
+outcome future that determines their result. `branch`, `autonomy`, and `guard`
+wait for their child scopes, `race` waits for the race scope before returning
+the winning outcome, and `resumable` returns the recovery outcome.
 
 Because kernel child-scope failures are local to the child scope, the host layer
 keeps those failures on the exception path instead of returning future handles

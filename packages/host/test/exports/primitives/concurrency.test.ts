@@ -1,6 +1,6 @@
+import { ScopeError, run } from "#/index";
 import { all, branch, cede, race, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
-import { run } from "#/index";
 
 describe("/ primitives: all, branch, race, spawn", () => {
   test.for([
@@ -92,6 +92,57 @@ describe("/ primitives: all, branch, race, spawn", () => {
 
   test.for([
     {
+      given: ["fast", "slow", new Error("losing cleanup failed")] as const,
+      outcome: {
+        cause: {
+          kind: "external",
+        },
+        kind: "scope",
+      },
+    },
+  ])(
+    "race reports non-cancellation scope failure before returning a winner",
+    async ({ given: [fast, slow, cause], outcome }) => {
+      const settled = run(function* catchRaceScopeFailure() {
+        try {
+          return yield* race([
+            function* slowRoutine() {
+              try {
+                yield* cede();
+                yield* cede();
+                return slow;
+              } finally {
+                failCleanup(cause);
+              }
+            },
+            function* fastRoutine() {
+              return fast;
+            },
+          ] as const);
+        } catch (error) {
+          if (!(error instanceof ScopeError)) {
+            throw error;
+          }
+
+          return {
+            cause: error.cause,
+            kind: error.kind,
+          };
+        }
+      });
+
+      await expect(settled).resolves.toMatchObject({
+        ...outcome,
+        cause: {
+          ...outcome.cause,
+          raw: cause,
+        },
+      });
+    },
+  );
+
+  test.for([
+    {
       given: ["branched"] as const,
       outcome: "branched",
     },
@@ -150,3 +201,7 @@ describe("/ primitives: all, branch, race, spawn", () => {
     },
   );
 });
+
+function failCleanup(cause: Error): never {
+  throw cause;
+}
