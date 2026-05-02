@@ -5,7 +5,7 @@ export interface CodeScroller {
 
 export function createCodeScroller(isEnabled: () => boolean): CodeScroller {
   let lastLine: HTMLElement | null = null;
-  let scrollFrame = emptyLength;
+  let scrollFrame = EMPTY_LENGTH;
 
   return {
     scrollToLine(line) {
@@ -31,19 +31,19 @@ export function createCodeScroller(isEnabled: () => boolean): CodeScroller {
       scheduleScroll(() => {
         container.scrollTo({
           behavior: prefersReducedMotion() ? "auto" : "smooth",
-          top: emptyLength,
+          top: EMPTY_LENGTH,
         });
       });
     },
   };
 
   function scheduleScroll(scroll: () => void): void {
-    if (scrollFrame !== emptyLength) {
+    if (scrollFrame !== EMPTY_LENGTH) {
       globalThis.cancelAnimationFrame(scrollFrame);
     }
 
     scrollFrame = globalThis.requestAnimationFrame(() => {
-      scrollFrame = emptyLength;
+      scrollFrame = EMPTY_LENGTH;
       scroll();
     });
   }
@@ -58,7 +58,7 @@ function scrollCodeLineIntoView(line: HTMLElement): void {
 
   const containerRect = container.getBoundingClientRect();
   const lineRect = line.getBoundingClientRect();
-  const comfortZone = container.clientHeight * codeScrollComfortRatio;
+  const comfortZone = container.clientHeight * CODE_SCROLL_COMFORT_RATIO;
   const isComfortablyVisible =
     lineRect.top >= containerRect.top + comfortZone &&
     lineRect.bottom <= containerRect.bottom - comfortZone;
@@ -71,12 +71,12 @@ function scrollCodeLineIntoView(line: HTMLElement): void {
     container.scrollTop +
     lineRect.top -
     containerRect.top -
-    container.clientHeight * codeScrollTargetRatio +
-    lineRect.height / half;
+    container.clientHeight * CODE_SCROLL_TARGET_RATIO +
+    lineRect.height / HALF;
 
   container.scrollTo({
     behavior: prefersReducedMotion() ? "auto" : "smooth",
-    top: Math.max(emptyLength, targetTop),
+    top: Math.max(EMPTY_LENGTH, targetTop),
   });
 }
 
@@ -84,7 +84,7 @@ function prefersReducedMotion(): boolean {
   return globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-const emptyLength = 0;
-const codeScrollComfortRatio = 0.18;
-const codeScrollTargetRatio = 0.42;
-const half = 2;
+const EMPTY_LENGTH = 0;
+const CODE_SCROLL_COMFORT_RATIO = 0.18;
+const CODE_SCROLL_TARGET_RATIO = 0.42;
+const HALF = 2;

@@ -10,7 +10,7 @@ import { feed, sleep } from "@shajara/host";
 import type { RiteCoroutine } from "@shajara/host";
 import { receive } from "@shajara/host/primitives";
 
-const emptyEventCount = 0;
+const EMPTY_EVENT_COUNT = 0;
 
 export interface ReplayFrameStream<TEvent extends ExplorerEventId> {
   emit: (trace: ExplorerReplayTrace<TEvent>) => void;
@@ -89,13 +89,13 @@ function appendCompletedEvents<TEvent extends ExplorerEventId>(
     action.kind === "complete-events" ? action.events : [],
   );
 
-  if (entries.length === emptyEventCount) {
+  if (entries.length === EMPTY_EVENT_COUNT) {
     return completed;
   }
 
   const nextEntries = entries.filter((event) => !completed.includes(event));
 
-  if (nextEntries.length === emptyEventCount) {
+  if (nextEntries.length === EMPTY_EVENT_COUNT) {
     return completed;
   }
 
@@ -180,7 +180,7 @@ function* waitForRenderSlot(
   const elapsedRenderGapMs = globalThis.performance.now() - previousRenderTimestampMs;
   const remainingRenderGapMs = minRenderGapMs - elapsedRenderGapMs;
 
-  if (remainingRenderGapMs > emptyLength) {
+  if (remainingRenderGapMs > EMPTY_LENGTH) {
     yield* sleep(remainingRenderGapMs);
   }
 }
@@ -190,4 +190,4 @@ interface ReplayFrameSink<TEvent extends ExplorerEventId> {
   write: (frame: ExplorerReplayFrame<TEvent>) => void;
 }
 
-const emptyLength = 0;
+const EMPTY_LENGTH = 0;

@@ -31,7 +31,7 @@ describe("/ primitives: cede", () => {
         status: "closed",
       } as const,
     },
-  ])("unsettled waits are canceled when their scope closes", async ({ outcome }) => {
+  ])("unsettled waits are canceled during scope convergence", async ({ outcome }) => {
     const scope = createScope();
 
     try {

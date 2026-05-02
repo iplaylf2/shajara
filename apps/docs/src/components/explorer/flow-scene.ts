@@ -27,60 +27,60 @@ export function resolveFlowScene<TEvent extends ExplorerEventId>(
   };
 }
 
-const callerColumnX = 68;
-const coordinatorColumnX = 394;
-const workerColumnX = 680;
-const channelX = 334;
-const futureX = 350;
-const scopedChannelX = 362;
-const scopedFutureX = 574;
-const futureWorkerColumnX = 506;
-const topLaneY = 48;
-const centerLaneY = 76;
-const bottomLaneY = 156;
-const auxiliaryLaneY = 164;
-const futureLaneY = auxiliaryLaneY;
-const scopedChannelLaneY = 204;
-const scopedFutureLaneY = 195;
-const callerColumn = 0;
-const coordinatorColumn = 1;
-const workerColumn = 2;
-const futureWorkerColumn = 3;
-const topLaneIndex = 0;
-const centerLaneIndex = 1;
-const bottomLaneIndex = 2;
-const workerNodeHeight = 80;
-const workerNodeWidth = 248;
-const channelNodeHeight = 54;
-const channelNodeWidth = 144;
-const futureWorkerNodeHeight = 108;
-const futureWorkerNodeWidth = 214;
-const futureNodeHeight = 72;
-const futureNodeWidth = 84;
-const tallNodeHeight = 154;
-const callerNodeWidth = 214;
-const coordinatorNodeWidth = 154;
-const halfDivisor = 2;
-const firstWorkerIndex = 0;
-const noFutureNodeCount = 0;
-const noCoordinatorNodeCount = 0;
-const noScopeNodeCount = 0;
-const singleWorkerCount = 1;
-const pairedWorkerCount = 2;
+const CALLER_COLUMN_X = 68;
+const COORDINATOR_COLUMN_X = 394;
+const WORKER_COLUMN_X = 680;
+const CHANNEL_X = 334;
+const FUTURE_X = 350;
+const SCOPED_CHANNEL_X = 362;
+const SCOPED_FUTURE_X = 574;
+const FUTURE_WORKER_COLUMN_X = 506;
+const TOP_LANE_Y = 48;
+const CENTER_LANE_Y = 76;
+const BOTTOM_LANE_Y = 156;
+const AUXILIARY_LANE_Y = 164;
+const futureLaneY = AUXILIARY_LANE_Y;
+const SCOPED_CHANNEL_LANE_Y = 204;
+const SCOPED_FUTURE_LANE_Y = 195;
+const CALLER_COLUMN = 0;
+const COORDINATOR_COLUMN = 1;
+const WORKER_COLUMN = 2;
+const FUTURE_WORKER_COLUMN = 3;
+const TOP_LANE_INDEX = 0;
+const CENTER_LANE_INDEX = 1;
+const BOTTOM_LANE_INDEX = 2;
+const WORKER_NODE_HEIGHT = 80;
+const WORKER_NODE_WIDTH = 248;
+const CHANNEL_NODE_HEIGHT = 54;
+const CHANNEL_NODE_WIDTH = 144;
+const FUTURE_WORKER_NODE_HEIGHT = 108;
+const FUTURE_WORKER_NODE_WIDTH = 214;
+const FUTURE_NODE_HEIGHT = 72;
+const FUTURE_NODE_WIDTH = 84;
+const TALL_NODE_HEIGHT = 154;
+const CALLER_NODE_WIDTH = 214;
+const COORDINATOR_NODE_WIDTH = 154;
+const HALF_DIVISOR = 2;
+const FIRST_WORKER_INDEX = 0;
+const NO_FUTURE_NODE_COUNT = 0;
+const NO_COORDINATOR_NODE_COUNT = 0;
+const NO_SCOPE_NODE_COUNT = 0;
+const SINGLE_WORKER_COUNT = 1;
+const PAIRED_WORKER_COUNT = 2;
 
 const defaultLayout = {
-  columns: [callerColumnX, coordinatorColumnX, workerColumnX, futureWorkerColumnX],
-  lanes: [topLaneY, centerLaneY, bottomLaneY],
+  columns: [CALLER_COLUMN_X, COORDINATOR_COLUMN_X, WORKER_COLUMN_X, FUTURE_WORKER_COLUMN_X],
+  lanes: [TOP_LANE_Y, CENTER_LANE_Y, BOTTOM_LANE_Y],
   markerId: "explorer-flow-arrow",
 } as const;
 
 const nodeSize = {
-  caller: { height: tallNodeHeight, width: callerNodeWidth },
-  channel: { height: channelNodeHeight, width: channelNodeWidth },
-  coordinator: { height: tallNodeHeight, width: coordinatorNodeWidth },
-  future: { height: futureNodeHeight, width: futureNodeWidth },
+  caller: { height: TALL_NODE_HEIGHT, width: CALLER_NODE_WIDTH },
+  channel: { height: CHANNEL_NODE_HEIGHT, width: CHANNEL_NODE_WIDTH },
+  coordinator: { height: TALL_NODE_HEIGHT, width: COORDINATOR_NODE_WIDTH },
+  future: { height: FUTURE_NODE_HEIGHT, width: FUTURE_NODE_WIDTH },
   scope: { height: 0, width: 0 },
-  worker: { height: workerNodeHeight, width: workerNodeWidth },
+  worker: { height: WORKER_NODE_HEIGHT, width: WORKER_NODE_WIDTH },
 } as const satisfies Record<
   FlowNodeSpec<ExplorerEventId>["kind"],
   { readonly height: number; readonly width: number }
@@ -96,12 +96,12 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
   const scopeNodes = graphNodes.filter((node) => node.kind === "scope");
   const workerNodes = graphNodes.filter((node) => node.kind === "worker");
   const resolvedCenterLane = readCenterLane(workerNodes.length);
-  const hasFutureNode = futureNodes.length > noFutureNodeCount;
-  const hasCoordinatorNode = coordinatorNodes.length > noCoordinatorNodeCount;
-  const hasScopeNode = scopeNodes.length > noScopeNodeCount;
+  const hasFutureNode = futureNodes.length > NO_FUTURE_NODE_COUNT;
+  const hasCoordinatorNode = coordinatorNodes.length > NO_COORDINATOR_NODE_COUNT;
+  const hasScopeNode = scopeNodes.length > NO_SCOPE_NODE_COUNT;
 
   return [
-    ...callerNodes.map((node) => createFlowNode(node, resolvedCenterLane, callerColumn)),
+    ...callerNodes.map((node) => createFlowNode(node, resolvedCenterLane, CALLER_COLUMN)),
     ...channelNodes.map((node) => createAuxiliaryChannelNode(node, { hasScopeNode })),
     ...futureNodes.map((node) => createAuxiliaryFutureNode(node, { hasScopeNode })),
     ...workerNodes.map((node, index) =>
@@ -112,7 +112,7 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
         { hasCoordinatorNode, hasFutureNode, hasScopeNode },
       ),
     ),
-    ...coordinatorNodes.map((node) => createFlowNode(node, resolvedCenterLane, coordinatorColumn)),
+    ...coordinatorNodes.map((node) => createFlowNode(node, resolvedCenterLane, COORDINATOR_COLUMN)),
   ];
 }
 
@@ -121,12 +121,12 @@ function createAuxiliaryChannelNode<TEvent extends ExplorerEventId>(
   options: AuxiliaryChannelOptions,
 ): FlowNode<TEvent> {
   if (options.hasScopeNode) {
-    return createPositionedFlowNode(node, scopedChannelX, scopedChannelLaneY, {
+    return createPositionedFlowNode(node, SCOPED_CHANNEL_X, SCOPED_CHANNEL_LANE_Y, {
       objectEnterFrom: "top",
     });
   }
 
-  return createPositionedFlowNode(node, channelX, auxiliaryLaneY, { objectEnterFrom: "left" });
+  return createPositionedFlowNode(node, CHANNEL_X, AUXILIARY_LANE_Y, { objectEnterFrom: "left" });
 }
 
 function createAuxiliaryFutureNode<TEvent extends ExplorerEventId>(
@@ -134,12 +134,12 @@ function createAuxiliaryFutureNode<TEvent extends ExplorerEventId>(
   options: AuxiliaryFutureOptions,
 ): FlowNode<TEvent> {
   if (options.hasScopeNode) {
-    return createPositionedFlowNode(node, scopedFutureX, scopedFutureLaneY, {
+    return createPositionedFlowNode(node, SCOPED_FUTURE_X, SCOPED_FUTURE_LANE_Y, {
       objectEnterFrom: "top",
     });
   }
 
-  return createPositionedFlowNode(node, futureX, futureLaneY, { objectEnterFrom: "left" });
+  return createPositionedFlowNode(node, FUTURE_X, futureLaneY, { objectEnterFrom: "left" });
 }
 
 function createFlowNode<TEvent extends ExplorerEventId>(
@@ -173,7 +173,7 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
   options: FlowNodeLayoutOptions = {},
 ): FlowNode<TEvent> {
   const size = options.size ?? nodeSize[node.kind];
-  const centerY = top + size.height / halfDivisor;
+  const centerY = top + size.height / HALF_DIVISOR;
 
   const positionedNode = {
     activeEvents: node.activeEvents,
@@ -218,24 +218,24 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
 }
 
 function readCenterLane(workerCount: number): number {
-  if (workerCount <= singleWorkerCount) {
-    return centerLaneIndex;
+  if (workerCount <= SINGLE_WORKER_COUNT) {
+    return CENTER_LANE_INDEX;
   }
 
   if (workerCount > defaultLayout.lanes.length) {
     throw new Error("Too many explorer flow workers.");
   }
 
-  return Math.floor(workerCount / halfDivisor);
+  return Math.floor(workerCount / HALF_DIVISOR);
 }
 
 function readWorkerLane(index: number, workerCount: number): number {
-  if (workerCount <= singleWorkerCount) {
-    return centerLaneIndex;
+  if (workerCount <= SINGLE_WORKER_COUNT) {
+    return CENTER_LANE_INDEX;
   }
 
-  if (workerCount === pairedWorkerCount) {
-    return index === firstWorkerIndex ? topLaneIndex : bottomLaneIndex;
+  if (workerCount === PAIRED_WORKER_COUNT) {
+    return index === FIRST_WORKER_INDEX ? TOP_LANE_INDEX : BOTTOM_LANE_INDEX;
   }
 
   return index;
@@ -243,25 +243,25 @@ function readWorkerLane(index: number, workerCount: number): number {
 
 function readWorkerColumn(options: WorkerColumnOptions): number {
   if (options.hasCoordinatorNode) {
-    return workerColumn;
+    return WORKER_COLUMN;
   }
 
   if (options.hasFutureNode) {
     if (options.hasScopeNode) {
-      return coordinatorColumn;
+      return COORDINATOR_COLUMN;
     }
 
-    return futureWorkerColumn;
+    return FUTURE_WORKER_COLUMN;
   }
 
-  return coordinatorColumn;
+  return COORDINATOR_COLUMN;
 }
 
 function readWorkerNodeSize(options: WorkerColumnOptions): FlowNodeSize {
   if (options.hasFutureNode && !options.hasCoordinatorNode && !options.hasScopeNode) {
     return {
-      height: futureWorkerNodeHeight,
-      width: futureWorkerNodeWidth,
+      height: FUTURE_WORKER_NODE_HEIGHT,
+      width: FUTURE_WORKER_NODE_WIDTH,
     };
   }
 

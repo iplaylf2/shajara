@@ -41,7 +41,7 @@
   "explorer.examples.future-settlement.title": "Future Settlement",
   "explorer.examples.scope-managed-objects.description": "scope-managed future and channel life cycles",
   "explorer.examples.scope-managed-objects.guide.boundary": "openSession creates ticket and updates inside its child scope.",
-  "explorer.examples.scope-managed-objects.guide.close": "When openSession finishes, the owner scope cancels the unfinished future and revokes the open channel.",
+  "explorer.examples.scope-managed-objects.guide.close": "When the openSession child scope converges, it cancels the unfinished future and revokes the open channel.",
   "explorer.examples.scope-managed-objects.guide.objects": "resumeCheckout can still use ticket and updates, but the runtime objects stay owned by the scope that created them.",
   "explorer.examples.scope-managed-objects.guide.observe": "Later wait and tryReceive only observe those terminal states.",
   "explorer.examples.scope-managed-objects.title": "Scope-Managed Objects",

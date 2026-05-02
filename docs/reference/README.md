@@ -16,28 +16,28 @@ semantics -> executor -> host -> api
 - [executor.md](executor.md): execution environment, including `Executor`,
   `ExecutionScopeRef`, entry handles, external control, pacing, and autonomy.
 - [host.md](host.md): host adaptation, including generator routines, JavaScript errors,
-  host operations, and host-facing scoped primitives.
+  host operations, and host-facing primitives.
 - [api.md](api.md): public interface, including package export surfaces, entry
-  signatures, primitive return values, and result shapes.
+  signatures, operation and primitive return values, and result shapes.
 
 A document may restate a rule from the documents to its left when describing its own
 boundary. Concepts from documents to its right stay outside its scope.
 
 ## Concept Ownership
 
-| Concept                                                  | Owned by       |
-| -------------------------------------------------------- | -------------- |
-| `Wisp`, `Ritual`, `Sigil`, echo/resonance                | `semantics.md` |
-| scope tree, process ownership, descriptors               | `semantics.md` |
-| future, context, channel semantics                       | `semantics.md` |
-| failure values, scope failure, cancellation              | `semantics.md` |
-| branch result ownership and recovery routes              | `semantics.md` |
-| execution entries, `LaunchHandle`, `LaunchResult`        | `executor.md`  |
-| external future settlement, channel send, cancel         | `executor.md`  |
-| `Pacer`, slice progression, scheduler and reaper         | `executor.md`  |
-| generator routines, `Presence`, JavaScript errors        | `host.md`      |
-| `run`, `createScope`, `action`, `feed`, `sleep`, `until` | `host.md`      |
-| package exports, signatures, return-value tables         | `api.md`       |
+| Concept                                           | Owned by       |
+| ------------------------------------------------- | -------------- |
+| `Wisp`, `Ritual`, `Sigil`, echo/resonance         | `semantics.md` |
+| scope tree, process ownership, descriptors        | `semantics.md` |
+| future, context, channel semantics                | `semantics.md` |
+| failure values, scope failure, cancellation       | `semantics.md` |
+| branch result ownership and recovery routes       | `semantics.md` |
+| execution entries, `LaunchHandle`, `LaunchResult` | `executor.md`  |
+| external future settlement, channel send, cancel  | `executor.md`  |
+| `Pacer`, slice progression, scheduler and reaper  | `executor.md`  |
+| generator routines, `Presence`, JavaScript errors | `host.md`      |
+| host entries and operations                       | `host.md`      |
+| package exports, signatures, return-value tables  | `api.md`       |
 
 ## Core Terms
 
@@ -48,6 +48,10 @@ boundary. Concepts from documents to its right stay outside its scope.
 - **Branch** means a child scope created under the current scope.
 - **Scoped outcome** means a pair of a scope reference and an outcome future.
 - **Convergence** means a process, future, or scope reaching its final result.
+- **Lifecycle state** means an observable progress state, such as `open`, `closing`, or
+  `closed`.
+- **Convergence result** means the final branch exposed through `exitFuture` or
+  `LaunchResult`, such as success, failure, or cancellation.
 - **Failure** means an in-band kernel failure value.
 - **Scope failure** means a scope converged through its local failure path and reported a
   `ScopeFailure` through `exitFuture`.

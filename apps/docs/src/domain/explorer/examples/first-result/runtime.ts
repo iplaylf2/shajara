@@ -21,7 +21,7 @@ export function createFirstResultDemoCode() {
     codeLine("function-open", "function* loadProfile() {", ["done"]),
     codeLine("race-open", "  const profile = yield* race([", ["race-wait-result"]),
     codeLine("cache-open", "    function* readCache() {", ["cache-canceled", "cache-return"]),
-    codeLine("cache-sleep", `      yield* sleep(${cacheDelayMs});`, [
+    codeLine("cache-sleep", `      yield* sleep(${CACHE_DELAY_MS});`, [
       "cache-canceled",
       "cache-return",
     ]),
@@ -32,7 +32,7 @@ export function createFirstResultDemoCode() {
       "network-canceled",
       "network-return",
     ]),
-    codeLine("network-sleep", `      yield* sleep(${networkDelayMs});`, [
+    codeLine("network-sleep", `      yield* sleep(${NETWORK_DELAY_MS});`, [
       "network-canceled",
       "network-return",
     ]),
@@ -69,7 +69,7 @@ export function* firstResultDemo(
             cancelEvent: "cache-canceled",
             *program(): RiteCoroutine<string> {
               emit({ actions: [setCursor(cursorAt("cache", "cache-sleep", "running"))] });
-              yield* sleep(cacheDelayMs);
+              yield* sleep(CACHE_DELAY_MS);
               emit({
                 actions: [setCursor(cursorAt("cache", ["cache-return", "cache-close"], "running"))],
               });
@@ -93,7 +93,7 @@ export function* firstResultDemo(
             cancelEvent: "network-canceled",
             *program(): RiteCoroutine<string> {
               emit({ actions: [setCursor(cursorAt("network", "network-sleep", "running"))] });
-              yield* sleep(networkDelayMs);
+              yield* sleep(NETWORK_DELAY_MS);
               emit({
                 actions: [
                   setCursor(cursorAt("network", ["network-return", "network-close"], "running")),
@@ -145,5 +145,5 @@ export type FirstResultDemoEvent = ExplorerAuthoredEvent<
   | "race-wait-result"
 >;
 
-const cacheDelayMs = 1000;
-const networkDelayMs = 6000;
+const CACHE_DELAY_MS = 1000;
+const NETWORK_DELAY_MS = 6000;

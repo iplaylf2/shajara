@@ -16,7 +16,6 @@ export * from "./receive";
 export * from "./try-receive";
 export * from "./park";
 export * from "./race";
-export * from "./resource";
 export * from "./resumable";
 export * from "./guard";
 export * from "./self";

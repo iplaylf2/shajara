@@ -19,13 +19,13 @@ export function createBoundedChannelDemoCode() {
     codeLine("function-open", "function* queueBatches() {", ["done"]),
     codeLine(
       "channel-open",
-      `  const [receiver, sender] = yield* channel<string, never>(${channelCapacity});`,
+      `  const [receiver, sender] = yield* channel<string, never>(${CHANNEL_CAPACITY});`,
       ["channel-open"],
     ),
     codeSpacer(),
     codeLine("spawn-worker", "  yield* spawn(function* writeBatches() {", ["worker-return"]),
     codeLine("receive-first", "    const first = yield* receive(receiver);", ["worker-return"]),
-    codeLine("worker-sleep", `    yield* sleep(${workerDelayMs});`, ["worker-return"]),
+    codeLine("worker-sleep", `    yield* sleep(${WORKER_DELAY_MS});`, ["worker-return"]),
     codeLine("receive-second", "    const second = yield* receive(receiver);", ["worker-return"]),
     codeLine("receive-third", "    const third = yield* receive(receiver);", ["worker-return"]),
     codeLine("receive-fourth", "    const fourth = yield* receive(receiver);", ["worker-return"]),
@@ -35,10 +35,10 @@ export function createBoundedChannelDemoCode() {
     codeLine("send-first", '  yield* send(sender, "draft");', ["send-first"]),
     codeLine("send-second", '  yield* send(sender, "review");', ["second-sent"]),
     codeLine("send-third", '  yield* send(sender, "publish");', ["third-sent"]),
-    codeLine("sender-sleep", `  yield* sleep(${senderDelayMs});`, ["sender-sleep"]),
+    codeLine("sender-sleep", `  yield* sleep(${SENDER_DELAY_MS});`, ["sender-sleep"]),
     codeLine("send-fourth", '  yield* send(sender, "archive");', ["send-fourth"]),
     codeSpacer(),
-    codeLine("done-return", `  return ${batchCount};`, ["done"]),
+    codeLine("done-return", `  return ${BATCH_COUNT};`, ["done"]),
     codeLine("done", "}", ["done"]),
   ];
 }
@@ -48,7 +48,7 @@ export function* boundedChannelDemo(
 ): RiteCoroutine<number> {
   return yield* branch(function* queueBatches(): RiteCoroutine<number> {
     emit({ actions: [setCursor(cursorAt("root", "channel-open", "running"))] });
-    const [receiver, sender] = yield* channel<string, never>(channelCapacity);
+    const [receiver, sender] = yield* channel<string, never>(CHANNEL_CAPACITY);
     emit({
       actions: [
         completeEvents("channel-open"),
@@ -64,7 +64,7 @@ export function* boundedChannelDemo(
           setCursor(cursorAt("worker", "worker-sleep", "running")),
         ],
       });
-      yield* sleep(workerDelayMs);
+      yield* sleep(WORKER_DELAY_MS);
       emit({ actions: [setCursor(cursorAt("worker", "receive-second", "running"))] });
       const second = yield* receive(receiver);
       emit({
@@ -119,7 +119,7 @@ export function* boundedChannelDemo(
         setCursor(cursorAt("root", "sender-sleep", "running")),
       ],
     });
-    yield* sleep(senderDelayMs);
+    yield* sleep(SENDER_DELAY_MS);
     emit({
       actions: [
         completeEvents("sender-sleep"),
@@ -135,7 +135,7 @@ export function* boundedChannelDemo(
     });
 
     try {
-      return batchCount;
+      return BATCH_COUNT;
     } finally {
       emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
@@ -146,7 +146,7 @@ export type BoundedChannelDemoEvent = ExplorerAuthoredEvent<
   ReturnType<typeof createBoundedChannelDemoCode>
 >;
 
-const batchCount = 4;
-const channelCapacity = 1;
-const senderDelayMs = 1000;
-const workerDelayMs = 1000;
+const BATCH_COUNT = 4;
+const CHANNEL_CAPACITY = 1;
+const SENDER_DELAY_MS = 1000;
+const WORKER_DELAY_MS = 1000;

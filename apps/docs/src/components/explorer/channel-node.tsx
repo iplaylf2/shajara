@@ -11,7 +11,7 @@ export function ChannelNode<TEvent extends string>(props: {
 }): JSX.Element {
   const status = createMemo(() => readChannelNodeStatus(props.node, props.state));
   const meterLabel = createMemo(() => readChannelMeterLabel(props.node, props.state));
-  const centerX = props.node.left + props.node.width / half;
+  const centerX = props.node.left + props.node.width / HALF;
 
   return (
     <g
@@ -41,7 +41,7 @@ function ChannelLabel<TEvent extends string>(props: {
       <text
         class={styles["flowChannelText"]}
         x={String(props.centerX)}
-        y={String(props.node.centerY - channelMeterStackOffsetY)}
+        y={String(props.node.centerY - CHANNEL_METER_STACK_OFFSET_Y)}
       >
         {props.node.label}
       </text>
@@ -49,7 +49,7 @@ function ChannelLabel<TEvent extends string>(props: {
         <text
           class={styles["flowChannelMeter"]}
           x={String(props.centerX)}
-          y={String(props.node.centerY + channelMeterStackOffsetY)}
+          y={String(props.node.centerY + CHANNEL_METER_STACK_OFFSET_Y)}
         >
           {props.meterLabel}
         </text>
@@ -66,27 +66,27 @@ function createChannelBodyPath<TEvent extends string>(node: FlowNode<TEvent>): s
   if (node.variant === "channel" && node.channelDirection === "left") {
     return [
       `M${right} ${top}`,
-      `L${left + channelPointInset} ${top}`,
+      `L${left + CHANNEL_POINT_INSET} ${top}`,
       `L${left} ${centerY}`,
-      `L${left + channelPointInset} ${bottom}`,
+      `L${left + CHANNEL_POINT_INSET} ${bottom}`,
       `L${right} ${bottom}`,
-      `L${right - channelConcaveInset} ${centerY}`,
+      `L${right - CHANNEL_CONCAVE_INSET} ${centerY}`,
       "Z",
     ].join(" ");
   }
 
   return [
     `M${left} ${top}`,
-    `L${right - channelPointInset} ${top}`,
+    `L${right - CHANNEL_POINT_INSET} ${top}`,
     `L${right} ${centerY}`,
-    `L${right - channelPointInset} ${bottom}`,
+    `L${right - CHANNEL_POINT_INSET} ${bottom}`,
     `L${left} ${bottom}`,
-    `L${left + channelConcaveInset} ${centerY}`,
+    `L${left + CHANNEL_CONCAVE_INSET} ${centerY}`,
     "Z",
   ].join(" ");
 }
 
-const half = 2;
-const channelMeterStackOffsetY = 10;
-const channelConcaveInset = 24;
-const channelPointInset = 20;
+const HALF = 2;
+const CHANNEL_METER_STACK_OFFSET_Y = 10;
+const CHANNEL_CONCAVE_INSET = 24;
+const CHANNEL_POINT_INSET = 20;

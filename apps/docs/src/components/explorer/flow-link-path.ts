@@ -13,8 +13,8 @@ export function resolveFlowLinkPath<TEvent extends ExplorerEventId>(
   const toY = bottomEntry?.anchorY ?? points.toY;
 
   return {
-    labelX: (fromX + toX) / halfDivisor,
-    labelY: (fromY + toY) / halfDivisor,
+    labelX: (fromX + toX) / HALF_DIVISOR,
+    labelY: (fromY + toY) / HALF_DIVISOR,
     path: bottomEntry
       ? createBottomEntryPath(fromX, fromY, toX, toY)
       : createSideEntryPath({ ...points, fromX, fromY, toX, toY }),
@@ -34,19 +34,19 @@ function createSideEntryPath(points: FlowLinkControlPoints): string {
 
 function resolveSideEntryControlOffsets(points: FlowLinkControlPoints): FlowLinkControlOffsets {
   const linkDistanceX = Math.abs(points.toX - points.fromX);
-  const maxOffsetX = Math.max(minSideEntryControlOffsetX, linkDistanceX / halfDivisor);
+  const maxOffsetX = Math.max(MIN_SIDE_ENTRY_CONTROL_OFFSET_X, linkDistanceX / HALF_DIVISOR);
 
   return {
-    fromX: Math.min(linkControlFromOffsetX, maxOffsetX),
-    toX: Math.min(linkControlToOffsetX, maxOffsetX),
+    fromX: Math.min(LINK_CONTROL_FROM_OFFSET_X, maxOffsetX),
+    toX: Math.min(LINK_CONTROL_TO_OFFSET_X, maxOffsetX),
   };
 }
 
 function createBottomEntryPath(fromX: number, fromY: number, toX: number, toY: number): string {
   return [
     `M${fromX} ${fromY}`,
-    `C${fromX + bottomLinkFromControlOffsetX} ${fromY - bottomLinkControlOffsetY}`,
-    `${toX - bottomLinkToControlOffsetX} ${toY + bottomLinkControlOffsetY}`,
+    `C${fromX + BOTTOM_LINK_FROM_CONTROL_OFFSET_X} ${fromY - BOTTOM_LINK_CONTROL_OFFSET_Y}`,
+    `${toX - BOTTOM_LINK_TO_CONTROL_OFFSET_X} ${toY + BOTTOM_LINK_CONTROL_OFFSET_Y}`,
     `${toX} ${toY}`,
   ].join(" ");
 }
@@ -66,7 +66,7 @@ function readBottomEntryLink<TEvent extends ExplorerEventId>(
   return {
     anchorX: readBottomEntryX(points),
     anchorY: points.to.top + points.to.height,
-    fromX: points.fromX + bottomLinkExitOffsetX,
+    fromX: points.fromX + BOTTOM_LINK_EXIT_OFFSET_X,
     fromY: points.fromY,
   };
 }
@@ -74,9 +74,9 @@ function readBottomEntryLink<TEvent extends ExplorerEventId>(
 function readBottomEntryX<TEvent extends ExplorerEventId>(
   points: FlowLinkPathPoints<TEvent>,
 ): number {
-  const preferredX = points.fromX + bottomLinkAnchorOffsetX;
-  const minX = points.to.left + bottomLinkAnchorInsetX;
-  const maxX = points.to.left + points.to.width - bottomLinkAnchorInsetX;
+  const preferredX = points.fromX + BOTTOM_LINK_ANCHOR_OFFSET_X;
+  const minX = points.to.left + BOTTOM_LINK_ANCHOR_INSET_X;
+  const maxX = points.to.left + points.to.width - BOTTOM_LINK_ANCHOR_INSET_X;
 
   return Math.min(maxX, Math.max(minX, preferredX));
 }
@@ -117,13 +117,13 @@ interface FlowLinkControlOffsets {
   toX: number;
 }
 
-const bottomLinkControlOffsetY = 34;
-const bottomLinkAnchorInsetX = 32;
-const bottomLinkAnchorOffsetX = 54;
-const bottomLinkExitOffsetX = 12;
-const bottomLinkFromControlOffsetX = 18;
-const bottomLinkToControlOffsetX = 22;
-const halfDivisor = 2;
-const linkControlFromOffsetX = 76;
-const linkControlToOffsetX = 84;
-const minSideEntryControlOffsetX = 18;
+const BOTTOM_LINK_CONTROL_OFFSET_Y = 34;
+const BOTTOM_LINK_ANCHOR_INSET_X = 32;
+const BOTTOM_LINK_ANCHOR_OFFSET_X = 54;
+const BOTTOM_LINK_EXIT_OFFSET_X = 12;
+const BOTTOM_LINK_FROM_CONTROL_OFFSET_X = 18;
+const BOTTOM_LINK_TO_CONTROL_OFFSET_X = 22;
+const HALF_DIVISOR = 2;
+const LINK_CONTROL_FROM_OFFSET_X = 76;
+const LINK_CONTROL_TO_OFFSET_X = 84;
+const MIN_SIDE_ENTRY_CONTROL_OFFSET_X = 18;

@@ -47,9 +47,9 @@ export function ExplorerFlowView<TEvent extends ExplorerEventId>(
   );
 }
 
-const half = 2;
-const flowLinkInterruptMarkRadius = 4;
-const nodeTextStackOffsetY = 12;
+const HALF = 2;
+const FLOW_LINK_INTERRUPT_MARK_RADIUS = 4;
+const NODE_TEXT_STACK_OFFSET_Y = 12;
 
 const flowNodeClasses = {
   caller: styles["flowNodeCaller"]!,
@@ -137,8 +137,8 @@ function FlowNode<TEvent extends string>(props: {
 }
 
 function FlowNodeLabel<TEvent extends string>(props: { node: FlowNode<TEvent> }): JSX.Element {
-  const centerX = props.node.left + props.node.width / half;
-  const centerY = props.node.centerY - nodeTextStackOffsetY;
+  const centerX = props.node.left + props.node.width / HALF;
+  const centerY = props.node.centerY - NODE_TEXT_STACK_OFFSET_Y;
 
   return (
     <text class={styles["flowNodeText"]} x={String(centerX)} y={String(centerY)}>
@@ -159,8 +159,8 @@ function FlowNodeStatus<TEvent extends string>(props: {
         [styles["flowNodeStatusDone"]!]: props.status === "done",
         [styles["flowNodeStatusPending"]!]: props.status === "pending",
       }}
-      x={String(props.node.left + props.node.width / half)}
-      y={String(props.node.centerY + nodeTextStackOffsetY)}
+      x={String(props.node.left + props.node.width / HALF)}
+      y={String(props.node.centerY + NODE_TEXT_STACK_OFFSET_Y)}
     >
       {props.status}
     </text>
@@ -233,7 +233,7 @@ function GenericFlowLink<TEvent extends string>(props: {
       {isInterruptedWaitTrail() && (
         <path
           class={styles["flowLinkInterruptMark"]}
-          d={`M${props.link.labelX - flowLinkInterruptMarkRadius} ${props.link.labelY - flowLinkInterruptMarkRadius} L${props.link.labelX + flowLinkInterruptMarkRadius} ${props.link.labelY + flowLinkInterruptMarkRadius} M${props.link.labelX + flowLinkInterruptMarkRadius} ${props.link.labelY - flowLinkInterruptMarkRadius} L${props.link.labelX - flowLinkInterruptMarkRadius} ${props.link.labelY + flowLinkInterruptMarkRadius}`}
+          d={`M${props.link.labelX - FLOW_LINK_INTERRUPT_MARK_RADIUS} ${props.link.labelY - FLOW_LINK_INTERRUPT_MARK_RADIUS} L${props.link.labelX + FLOW_LINK_INTERRUPT_MARK_RADIUS} ${props.link.labelY + FLOW_LINK_INTERRUPT_MARK_RADIUS} M${props.link.labelX + FLOW_LINK_INTERRUPT_MARK_RADIUS} ${props.link.labelY - FLOW_LINK_INTERRUPT_MARK_RADIUS} L${props.link.labelX - FLOW_LINK_INTERRUPT_MARK_RADIUS} ${props.link.labelY + FLOW_LINK_INTERRUPT_MARK_RADIUS}`}
         />
       )}
       <FlowLinkLabel link={props.link} />

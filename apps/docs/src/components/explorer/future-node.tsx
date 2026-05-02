@@ -38,19 +38,19 @@ function FutureTarget(props: { target: FutureTargetGeometry }): JSX.Element {
     <>
       <rect
         class={styles["flowFutureSlot"]}
-        height={futureSlotHeight}
-        rx={futureSlotRadius}
-        width={futureSlotWidth}
+        height={FUTURE_SLOT_HEIGHT}
+        rx={FUTURE_SLOT_RADIUS}
+        width={FUTURE_SLOT_WIDTH}
         x={String(slot.left)}
         y={String(slot.top)}
       />
       <rect
         class={styles["flowFutureFill"]}
-        height={futureFillHeight}
-        rx={futureFillRadius}
-        width={futureFillWidth}
-        x={String(slot.left + futureFillInsetX)}
-        y={String(props.target.centerY - futureFillHeight / half)}
+        height={FUTURE_FILL_HEIGHT}
+        rx={FUTURE_FILL_RADIUS}
+        width={FUTURE_FILL_WIDTH}
+        x={String(slot.left + FUTURE_FILL_INSET_X)}
+        y={String(props.target.centerY - FUTURE_FILL_HEIGHT / HALF)}
       />
     </>
   );
@@ -61,7 +61,7 @@ function FutureLabel(props: { label: string; target: FutureTargetGeometry }): JS
     <text
       class={styles["flowFutureText"]}
       x={String(props.target.centerX)}
-      y={String(props.target.centerY - futureLabelOffsetY)}
+      y={String(props.target.centerY - FUTURE_LABEL_OFFSET_Y)}
     >
       {props.label}
     </text>
@@ -70,8 +70,8 @@ function FutureLabel(props: { label: string; target: FutureTargetGeometry }): JS
 
 function readFutureSlot(target: FutureTargetGeometry): FutureSlotGeometry {
   return {
-    left: target.centerX - futureSlotWidth / half,
-    top: target.centerY - futureSlotHeight / half,
+    left: target.centerX - FUTURE_SLOT_WIDTH / HALF,
+    top: target.centerY - FUTURE_SLOT_HEIGHT / HALF,
   };
 }
 
@@ -79,7 +79,7 @@ function readFutureTarget<TEvent extends string>(
   node: FutureFlowNode<TEvent>,
 ): FutureTargetGeometry {
   return {
-    centerX: node.left + node.width / half,
+    centerX: node.left + node.width / HALF,
     centerY: node.centerY,
   };
 }
@@ -94,12 +94,12 @@ interface FutureSlotGeometry {
   readonly top: number;
 }
 
-const half = 2;
-const futureLabelOffsetY = 26;
-const futureFillHeight = 8;
-const futureFillInsetX = 8;
-const futureFillRadius = 4;
-const futureFillWidth = 48;
-const futureSlotHeight = 18;
-const futureSlotRadius = 9;
-const futureSlotWidth = 64;
+const HALF = 2;
+const FUTURE_LABEL_OFFSET_Y = 26;
+const FUTURE_FILL_HEIGHT = 8;
+const FUTURE_FILL_INSET_X = 8;
+const FUTURE_FILL_RADIUS = 4;
+const FUTURE_FILL_WIDTH = 48;
+const FUTURE_SLOT_HEIGHT = 18;
+const FUTURE_SLOT_RADIUS = 9;
+const FUTURE_SLOT_WIDTH = 64;

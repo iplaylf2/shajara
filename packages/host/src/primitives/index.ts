@@ -11,7 +11,6 @@ export * from "./lookup";
 export * from "./poll";
 export * from "./race";
 export * from "./receive";
-export * from "./resource";
 export * from "./resumable";
 export * from "./self";
 export * from "./send";

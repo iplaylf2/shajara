@@ -20,12 +20,12 @@ export function createAllResultsDemoCode() {
     codeLine("function-open", "function* renderDashboard() {", ["done"]),
     codeLine("all-open", "  const pageData = yield* all([", ["wait-all"]),
     codeLine("user-open", "    function* loadUser() {", ["user-return"]),
-    codeLine("user-sleep", `      yield* sleep(${userDelayMs});`, ["user-return"]),
+    codeLine("user-sleep", `      yield* sleep(${USER_DELAY_MS});`, ["user-return"]),
     codeLine("user-return", '      return "user";', ["user-return"]),
     codeLine("user-close", "    },", ["user-return"]),
     codeSpacer(),
     codeLine("settings-open", "    function* loadSettings() {", ["settings-return"]),
-    codeLine("settings-sleep", `      yield* sleep(${settingsDelayMs});`, ["settings-return"]),
+    codeLine("settings-sleep", `      yield* sleep(${SETTINGS_DELAY_MS});`, ["settings-return"]),
     codeLine("settings-return", '      return "settings";', ["settings-return"]),
     codeLine("settings-close", "    },", ["settings-return"]),
     codeLine("all-close", "  ] as const);", ["wait-all"]),
@@ -58,7 +58,7 @@ export function* allResultsDemo(
             ]),
           ],
         });
-        yield* sleep(userDelayMs);
+        yield* sleep(USER_DELAY_MS);
         emit({
           actions: [setCursor(cursorAt("user", ["user-return", "user-close"], "running"))],
         });
@@ -83,7 +83,7 @@ export function* allResultsDemo(
             ]),
           ],
         });
-        yield* sleep(settingsDelayMs);
+        yield* sleep(SETTINGS_DELAY_MS);
         emit({
           actions: [
             setCursor(cursorAt("settings", ["settings-return", "settings-close"], "running")),
@@ -130,5 +130,5 @@ export type AllResultsDemoEvent = ExplorerAuthoredEvent<
   "all-wait-settings" | "all-wait-user" | "launch-settings" | "launch-user"
 >;
 
-const userDelayMs = 1000;
-const settingsDelayMs = 2000;
+const USER_DELAY_MS = 1000;
+const SETTINGS_DELAY_MS = 2000;
