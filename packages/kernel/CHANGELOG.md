@@ -1,5 +1,15 @@
 # @shajara/kernel
 
+## 0.5.0
+
+### Minor Changes
+
+- [#27](https://github.com/iplaylf2/shajara/pull/27) [`5876ac5`](https://github.com/iplaylf2/shajara/commit/5876ac5d696f40e3757cd8a697aeb2c06a39ab5c) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Refine kernel ownership boundaries.
+
+  `resource(...)` did not add a separate kernel semantic beyond composing existing
+  primitives, so the kernel package no longer publishes it. Scope cancellation and failure
+  now cancel child scopes before local processes during convergence.
+
 ## 0.4.0
 
 ### Minor Changes
