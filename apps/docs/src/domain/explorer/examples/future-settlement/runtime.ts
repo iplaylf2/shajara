@@ -16,7 +16,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createFutureSettlementDemoCode() {
   return [
-    codeLine("routine", "function* verifyPhoneNumber() {", ["done"]),
+    codeLine("function-open", "function* verifyPhoneNumber() {", ["done"]),
     codeLine("future", "  const [smsCode, provideSmsCode] = yield* future<string>();", ["future"]),
     codeSpacer(),
     codeLine("spawn-resolver", "  yield* spawn(function* receiveSmsCode() {", ["settle-code"]),

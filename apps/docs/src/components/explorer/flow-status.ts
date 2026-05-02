@@ -86,7 +86,7 @@ export function readNodeStatus<TEvent extends ExplorerEventId>(
 
   const activeCursor = state.cursors.find(
     (cursor) =>
-      node.statusRoutineIds.includes(cursor.routineId) &&
+      node.statusTargetIds.includes(cursor.targetId) &&
       includesAny(cursor.events, node.activeEvents),
   );
 

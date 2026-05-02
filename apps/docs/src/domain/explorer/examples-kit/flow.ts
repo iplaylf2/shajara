@@ -69,14 +69,14 @@ export function channelNode<TEvent extends string>(
     id,
     kind: "channel",
     label,
-    statusRoutineIds: [],
+    statusTargetIds: [],
   };
 }
 
 export function futureNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: RoutineNodeLifecycle<TEvent>,
+  lifecycle: FlowNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
@@ -84,24 +84,40 @@ export function futureNode<TEvent extends string>(
     id,
     kind: "future",
     label,
-    statusRoutineIds: [],
+    statusTargetIds: [],
   };
 }
 
-export function parentRoutineNode<TEvent extends string>(
+export function callerNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: RoutineNodeLifecycle<TEvent>,
+  lifecycle: FlowNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
-  return routineNode("parent", id, label, lifecycle);
+  return processNode("caller", id, label, lifecycle);
 }
 
-export function branchRoutineNode<TEvent extends string>(
+export function workerNode<TEvent extends string>(
   id: string,
   label: string,
-  lifecycle: RoutineNodeLifecycle<TEvent>,
+  lifecycle: FlowNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
-  return routineNode("branch", id, label, lifecycle);
+  return processNode("worker", id, label, lifecycle);
+}
+
+export function coordinatorNode<TEvent extends string>(
+  id: string,
+  label: string,
+  lifecycle: FlowNodeLifecycle<TEvent>,
+  statusTargetIds: readonly string[] = [id],
+): ExplorerFlowNode<TEvent> {
+  return {
+    activeEvents: lifecycle.activeEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "coordinator",
+    label,
+    statusTargetIds,
+  };
 }
 
 export function scopeNode<TEvent extends string>(
@@ -118,15 +134,15 @@ export function scopeNode<TEvent extends string>(
     kind: "scope",
     label,
     ownedNodeIds,
-    statusRoutineIds: [],
+    statusTargetIds: [],
   };
 }
 
-function routineNode<TEvent extends string>(
-  kind: "branch" | "join" | "parent",
+function processNode<TEvent extends string>(
+  kind: "caller" | "worker",
   id: string,
   label: string,
-  lifecycle: RoutineNodeLifecycle<TEvent>,
+  lifecycle: FlowNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
@@ -134,7 +150,7 @@ function routineNode<TEvent extends string>(
     id,
     kind,
     label,
-    statusRoutineIds: [id],
+    statusTargetIds: [id],
   };
 }
 
@@ -144,15 +160,15 @@ interface WaitLinkOptions<TEvent extends string> {
   interruption: ExplorerWaitInterruption<TEvent>;
 }
 
-interface RoutineNodeLifecycle<TEvent extends string> {
+interface FlowNodeLifecycle<TEvent extends string> {
   activeEvents: readonly TEvent[];
   completedEvents: readonly TEvent[];
 }
 
-interface ChannelNodeLifecycle<TEvent extends string> extends RoutineNodeLifecycle<TEvent> {
+interface ChannelNodeLifecycle<TEvent extends string> extends FlowNodeLifecycle<TEvent> {
   direction?: ExplorerChannelDirection;
 }
 
-interface ScopeNodeLifecycle<TEvent extends string> extends RoutineNodeLifecycle<TEvent> {
+interface ScopeNodeLifecycle<TEvent extends string> extends FlowNodeLifecycle<TEvent> {
   closedEvents: readonly TEvent[];
 }

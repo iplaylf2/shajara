@@ -18,7 +18,7 @@ import type { ExplorerReplayEmit } from "#/domain/explorer/contract";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createScopeManagedObjectsDemoCode() {
   return [
-    codeLine("routine", "function* resumeCheckout() {", ["done"]),
+    codeLine("function-open", "function* resumeCheckout() {", ["done"]),
     codeLine("branch-open", "  const [ticket, updates] = yield* branch(function* openSession() {", [
       "objects-returned",
       "scope-closed",
@@ -57,7 +57,7 @@ export function* scopeManagedObjectsDemo(
     const [ticket, updates] = yield* branch(
       branchWait(
         emit,
-        { events: ["branch-open", "scope-wait-root"], routineId: "root" },
+        { events: ["branch-open", "scope-wait-root"], targetId: "root" },
         function* openSession(): RiteCoroutine<SessionObjects> {
           emit({
             actions: [setCursor(cursorAt("child", "future-open", "running"))],

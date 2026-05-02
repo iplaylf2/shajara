@@ -17,7 +17,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createScopeOwnedWorkDemoCode() {
   return [
-    codeLine("routine", "function* publishArticle() {", ["done"]),
+    codeLine("function-open", "function* publishArticle() {", ["done"]),
     codeLine("branch-open", "  const result = yield* branch(function* commitArticle() {", [
       "branch-close",
     ]),
@@ -43,10 +43,10 @@ export function* scopeOwnedWorkDemo(
     const result = yield* branch(
       branchWait(
         emit,
-        { events: ["branch-open", "scope-wait-root"], routineId: "root" },
+        { events: ["branch-open", "scope-wait-root"], targetId: "root" },
         function* commitArticle(): RiteCoroutine<string> {
           emit({
-            actions: [setCursor(cursorAt("scope", ["launch-index", "spawn-index"], "running"))],
+            actions: [setCursor(cursorAt("commit", ["launch-index", "spawn-index"], "running"))],
           });
           yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
             emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
@@ -56,14 +56,14 @@ export function* scopeOwnedWorkDemo(
             });
           });
 
-          emit({ actions: [setCursor(cursorAt("scope", "inner-return", "running"))] });
+          emit({ actions: [setCursor(cursorAt("commit", "inner-return", "running"))] });
           try {
             return "published";
           } finally {
             emit({
               actions: [
                 completeEvents("inner-return"),
-                setCursor(cursorAt("scope", "scope-wait-index", "blocked")),
+                setCursor(cursorAt("commit", "scope-wait-index", "blocked")),
               ],
             });
           }
@@ -73,7 +73,7 @@ export function* scopeOwnedWorkDemo(
 
     emit({
       actions: [
-        clearCursor("scope"),
+        clearCursor("commit"),
         completeEvents(["branch-close", "scope-wait-root"]),
         setCursor(cursorAt("root", "return-result", "running")),
       ],

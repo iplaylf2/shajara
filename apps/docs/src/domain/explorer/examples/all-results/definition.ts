@@ -2,16 +2,17 @@ import type { AllResultsDemoEvent, AllResultsDemoResult } from "./runtime";
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import { allResultsDemo, createAllResultsDemoCode } from "./runtime";
 import {
-  branchRoutineNode,
-  parentRoutineNode,
+  callerNode,
+  coordinatorNode,
   spawnLink,
   waitLink,
+  workerNode,
 } from "#/domain/explorer/examples-kit";
 
 export const allResultsExample = {
   descriptionKey: "explorer.examples.all-results.description",
   guideKeys: [
-    "explorer.examples.all-results.guide.branches",
+    "explorer.examples.all-results.guide.work",
     "explorer.examples.all-results.guide.future",
   ],
   id: "all-results",
@@ -21,7 +22,7 @@ export const allResultsExample = {
     replay: {
       replayDelayMs: 1400,
       runtime: {
-        createRoutine: () => allResultsDemo,
+        createProgram: () => allResultsDemo,
       },
     },
   },
@@ -60,34 +61,35 @@ function createAllResultsFlowLinks(): ExplorerFlow<AllResultsDemoEvent>["links"]
 
 function createAllResultsFlowNodes(): ExplorerFlow<AllResultsDemoEvent>["nodes"] {
   return [
-    parentRoutineNode("root", "renderDashboard", {
-      activeEvents: ["routine", "all-open", "wait-all", "return-page", "done"],
+    callerNode("root", "renderDashboard", {
+      activeEvents: ["function-open", "all-open", "wait-all", "return-page", "done"],
       completedEvents: ["done"],
     }),
-    branchRoutineNode("user", "loadUser", {
+    workerNode("user", "loadUser", {
       activeEvents: ["user-open", "user-sleep", "user-return"],
       completedEvents: ["user-return"],
     }),
-    branchRoutineNode("settings", "loadSettings", {
+    workerNode("settings", "loadSettings", {
       activeEvents: ["settings-open", "settings-sleep", "settings-return"],
       completedEvents: ["settings-return"],
     }),
-    {
-      activeEvents: [
-        "all-open",
-        "launch-user",
-        "launch-settings",
-        "all-wait-user",
-        "all-wait-settings",
-        "wait-all",
-        "user-return",
-        "settings-return",
-      ],
-      completedEvents: ["wait-all"],
-      id: "result",
-      kind: "join",
-      label: "pageData",
-      statusRoutineIds: ["root", "all"],
-    },
+    coordinatorNode(
+      "result",
+      "pageData",
+      {
+        activeEvents: [
+          "all-open",
+          "launch-user",
+          "launch-settings",
+          "all-wait-user",
+          "all-wait-settings",
+          "wait-all",
+          "user-return",
+          "settings-return",
+        ],
+        completedEvents: ["wait-all"],
+      },
+      ["root", "all"],
+    ),
   ];
 }

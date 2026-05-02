@@ -52,9 +52,9 @@ const flowLinkInterruptMarkRadius = 4;
 const nodeTextStackOffsetY = 12;
 
 const flowNodeClasses = {
-  branch: styles["flowNodeBranch"]!,
-  join: styles["flowNodeJoin"]!,
-  parent: styles["flowNodeParent"]!,
+  caller: styles["flowNodeCaller"]!,
+  coordinator: styles["flowNodeCoordinator"]!,
+  worker: styles["flowNodeWorker"]!,
 } as const;
 
 const flowLinkClasses = {

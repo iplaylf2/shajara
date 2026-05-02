@@ -277,16 +277,16 @@
   opacity: 0.5;
 }
 
-.flowNodeParent .flowNode {
+.flowNodeCaller .flowNode {
   fill: #f4f9ff;
   stroke: #86a8cb;
 }
 
-.flowNodeBranch .flowNode {
+.flowNodeWorker .flowNode {
   stroke: #5196a1;
 }
 
-.flowNodeJoin .flowNode {
+.flowNodeCoordinator .flowNode {
   stroke: #ad7464;
 }
 

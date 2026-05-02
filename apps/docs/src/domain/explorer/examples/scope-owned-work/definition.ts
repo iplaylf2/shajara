@@ -1,9 +1,10 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
-  branchRoutineNode,
-  parentRoutineNode,
+  callerNode,
+  coordinatorNode,
   spawnLink,
   waitLink,
+  workerNode,
 } from "#/domain/explorer/examples-kit";
 import { createScopeOwnedWorkDemoCode, scopeOwnedWorkDemo } from "./runtime";
 import type { ScopeOwnedWorkDemoEvent } from "./runtime";
@@ -23,7 +24,7 @@ export const scopeOwnedWorkExample = {
     replay: {
       replayDelayMs: 1200,
       runtime: {
-        createRoutine: () => scopeOwnedWorkDemo,
+        createProgram: () => scopeOwnedWorkDemo,
       },
     },
   },
@@ -39,14 +40,14 @@ function createScopeOwnedWorkFlow(): ExplorerFlow<ScopeOwnedWorkDemoEvent> {
 
 function createScopeOwnedWorkFlowLinks(): ExplorerFlow<ScopeOwnedWorkDemoEvent>["links"] {
   return [
-    spawnLink("root", "scope", "branch(commitArticle)", ["launch-scope"]),
-    spawnLink("scope", "index", "spawn(updateSearchIndex)", ["launch-index"]),
-    waitLink("index", "scope", "owned process", {
+    spawnLink("root", "commit", "branch(commitArticle)", ["launch-scope"]),
+    spawnLink("commit", "index", "spawn(updateSearchIndex)", ["launch-index"]),
+    waitLink("index", "commit", "owned process", {
       activeEvents: ["scope-wait-index"],
       displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
     }),
-    waitLink("scope", "root", "branch waits for child scope", {
+    waitLink("commit", "root", "branch waits for child scope", {
       activeEvents: ["scope-wait-root"],
       displayLabel: { kind: "hidden" },
       interruption: { kind: "none" },
@@ -56,9 +57,9 @@ function createScopeOwnedWorkFlowLinks(): ExplorerFlow<ScopeOwnedWorkDemoEvent>[
 
 function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>["nodes"] {
   return [
-    parentRoutineNode("root", "publishArticle", {
+    callerNode("root", "publishArticle", {
       activeEvents: [
-        "routine",
+        "function-open",
         "branch-open",
         "launch-scope",
         "scope-wait-root",
@@ -68,22 +69,23 @@ function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>[
       ],
       completedEvents: ["done"],
     }),
-    {
-      activeEvents: [
-        "launch-scope",
-        "launch-index",
-        "spawn-index",
-        "inner-return",
-        "scope-wait-index",
-        "branch-close",
-      ],
-      completedEvents: ["branch-close"],
-      id: "scope",
-      kind: "join",
-      label: "commitArticle",
-      statusRoutineIds: ["scope", "root"],
-    },
-    branchRoutineNode("index", "updateSearchIndex", {
+    coordinatorNode(
+      "commit",
+      "commitArticle",
+      {
+        activeEvents: [
+          "launch-scope",
+          "launch-index",
+          "spawn-index",
+          "inner-return",
+          "scope-wait-index",
+          "branch-close",
+        ],
+        completedEvents: ["branch-close"],
+      },
+      ["commit", "root"],
+    ),
+    workerNode("index", "updateSearchIndex", {
       activeEvents: ["spawn-index", "index-sleep", "scope-wait-index", "index-close"],
       completedEvents: ["index-close"],
     }),

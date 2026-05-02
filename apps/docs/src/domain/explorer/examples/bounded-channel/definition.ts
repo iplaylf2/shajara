@@ -1,11 +1,11 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import { boundedChannelDemo, createBoundedChannelDemoCode } from "./runtime";
 import {
-  branchRoutineNode,
+  callerNode,
   channelNode,
   dataLink,
-  parentRoutineNode,
   spawnLink,
+  workerNode,
 } from "#/domain/explorer/examples-kit";
 import type { BoundedChannelDemoEvent } from "./runtime";
 
@@ -24,7 +24,7 @@ export const boundedChannelExample = {
     replay: {
       replayDelayMs: 1200,
       runtime: {
-        createRoutine: () => boundedChannelDemo,
+        createProgram: () => boundedChannelDemo,
       },
     },
   },
@@ -63,9 +63,9 @@ function createBoundedChannelFlowNodes(): ExplorerFlow<BoundedChannelDemoEvent>[
 }
 
 function createQueueBatchesNode() {
-  return parentRoutineNode("root", "queueBatches", {
+  return callerNode("root", "queueBatches", {
     activeEvents: [
-      "routine",
+      "function-open",
       "channel-open",
       "spawn-worker",
       "send-first",
@@ -85,7 +85,7 @@ function createQueueBatchesNode() {
 function createChannelNode() {
   return channelNode(
     "channel",
-    "batchQueue",
+    "channel",
     {
       activeEvents: [
         "channel-open",
@@ -133,7 +133,7 @@ function createChannelNode() {
 }
 
 function createWriteBatchesNode() {
-  return branchRoutineNode("worker", "writeBatches", {
+  return workerNode("worker", "writeBatches", {
     activeEvents: [
       "spawn-worker",
       "receive-first",

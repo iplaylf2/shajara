@@ -15,7 +15,7 @@ Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档�
 示例顺序遵循四个层次：
 
 1. **基本编排关系**：先解释 spawned process、future、wait、scope 如何形成可观察的运行关系。
-2. **结构化并发关系**：随后展示 fork join、all、race 如何把多个流程组织成有明确汇合或竞争意图的运行树。
+2. **结构化并发关系**：随后展示 fork join、all、race 如何把多份工作组织成有明确汇合或竞争意图的运行树。
 3. **显式通信关系**：再进入 channel，展示值传递和节奏控制。
 4. **收束与治理关系**：最后展示 scope-managed objects、cancellation、failure、recovery、resource、autonomy 如何决定系统的结束、恢复和治理方式。
 
@@ -28,9 +28,9 @@ Explorer 不需要覆盖所有公开 API。只有当一个概念在静态文档�
 | 1     | Single Spawn          | 一个 process 发起独立工作，随后返回自己的结果；spawned process 继续运行并结算自己的 future。                             | 这是最小的边界内并发关系。它把 spawn 发起关系、future 和结果独立收敛串起来，让发起者结果和 spawned process future 各自保持独立。                                                          |
 | 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。                                        | future 是 `spawn`、`all`、`race`、resource 和外部输入共同使用的收敛对象。单独展示它可以把“结果收敛”作为独立主题呈现。                                                                     |
 | 3     | Scope-Owned Work      | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。                                       | scope 是 shajara 的结构化并发边界。这个示例说明 scope-owned work 对完成和收敛的影响，不需要依赖 `run` 或 `createScope` 这类宿主入口。                                                     |
-| 4     | Fork Join             | 一个 process 启动多个并发分支，并在汇合点等待所有需要的结果。                                                            | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                                      |
-| 5     | All Results           | `all` 同时发起多个分支，并把全部结果聚合到一个组合 future。                                                              | 它把一组并发分支表达为一个整体等待点。示例重点是“全部结果共同结算”这个收敛关系，而不是逐个等待每个分支。                                                                                  |
-| 6     | First Result          | `race` 同时发起多个分支，并让首个完成结果成为竞争结果。                                                                  | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
+| 4     | Fork Join             | 一个 process 启动多个并发 process，并在汇合点等待所有需要的结果。                                                        | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                                      |
+| 5     | All Results           | `all` 同时发起多份并发工作，并把全部结果聚合到一个组合 future。                                                          | 它把一组并发工作表达为一个整体等待点。示例重点是“全部结果共同结算”这个收敛关系，而不是逐个等待每份工作。                                                                                  |
+| 6     | First Result          | `race` 同时发起多份并发工作，并让首个完成结果成为竞争结果。                                                              | 它与 All Results 构成对照：不是所有结果都需要被消费。示例重点是“首个结果足够”这个竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
 | 7     | Bounded Channel       | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。                                     | channel 是流程之间传递值的显式通信对象。容量不是配置细节，而是发送和接收互相调节推进节奏的运行关系。                                                                                      |
 | 8     | Scope-Managed Objects | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 退出时自动收束这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理，而不是由 handle 的可达位置决定；外层流程后续使用这些 handle 时，只是在观察 child scope 已经取消 future、撤销 channel 的事实。 |
 | 9     | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收敛为 canceled。                                       | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消不是单点事件，而是沿 scope 结构传播并最终收束。                                                                              |
@@ -48,7 +48,7 @@ Examples 1-3 建立 explorer 的基础语言：spawn、future、wait、scope。�
 
 ### Structured Concurrency
 
-Examples 4-6 展示流程树如何分叉、组合和竞争。Fork Join 是显式展开的基线：父流程创建多个 spawned process，并逐个等待它们的结果。All Results 与 First Result 在同一图形语言中表达两种组合意图：前者把多个结果聚合为一个整体，后者让多个分支竞争一个结果。它们的差异应体现在收敛关系上，而不是体现在不必要的业务细节上。
+Examples 4-6 展示流程树如何分叉、组合和竞争。Fork Join 是显式展开的基线：发起流程创建多个 spawned process，并逐个等待它们的结果。All Results 与 First Result 在同一图形语言中表达两种组合意图：前者把多个结果聚合为一个整体，后者让多份工作竞争一个结果。它们的差异应体现在收敛关系上，而不是体现在不必要的业务细节上。
 
 ### Communication
 
@@ -72,7 +72,9 @@ Examples 13-14 放在最后。scheduler 和 reaper 需要读者已经理解 proc
 
 示例标题应命名动画真正演出的关系，而不是命名某个 API、代码形状或中间实现。标题、example id、目录名、导出符号和 i18n key 应使用同一组概念词，让读者看到的标题、路由中的名称和代码里的示例边界指向同一个主题。不同 locale 的标题应各自本地化，同时保留同一个概念边界；重命名 id 或导出符号时，也应同步校准各 locale 的标题表达。
 
-命名的信息密度来自语义和长度的平衡。处在明确模块、示例或 primitive 调用上下文里的名字，应利用上下文保留区分度，而不是重复写出调用点已经提供的层级关系。共享 helper 的名字尤其应命名它增加的运行关系；配置字段只保留调用者必须显式决定的部分，避免把 parent、child、scope、wait 等上下文词机械堆叠成冗长标识符。
+命名的信息密度来自语义和长度的平衡。处在明确模块、示例或 primitive 调用上下文里的名字，应利用上下文保留区分度，而不是重复写出调用点已经提供的层级关系。共享 helper 的名字尤其应命名它增加的运行关系；配置字段只保留调用者必须显式决定的部分，避免把 caller、worker、coordinator、scope、wait 等上下文词机械堆叠成冗长标识符。
+
+实现命名应把 shajara 术语和 explorer 展示角色分开。`branch`、`scope`、`future`、`channel`、`process` 只在对应真实运行对象或 primitive 边界上使用；用于布局、样式或 replay cursor 归属的展示角色应使用 caller、worker、coordinator、cursor target 这类 explorer 自己的词。不要用 branch 表示普通并发工作，也不要用 routine 表示图里的 process 块或 cursor 归属；routine 只保留给 host `RiteRoutine` 这类真实类型。
 
 业务函数名应帮助读者理解谁在发起、谁在等待、谁在完成。优先选择能表达实际动作的业务词，例如订单提交、短信接收、文章发布、索引更新。不要把 `scope`、`future`、`runtime` 这类 shajara 概念塞进业务函数名里，避免读者误以为业务动作是 API 或 runtime 概念。
 
@@ -84,7 +86,7 @@ Guide list 的长度由示例需要解释的职责数量决定。每条 guide �
 
 Guide copy 应面向示例，而不是写成 API reference。它可以使用示例里的业务名和必要的 shajara 术语，但不应把一条句子写成“动作；解释”的拼接。中文文案中标点应自然服务阅读，不用分号承载硬切换。
 
-同一示例里的业务名应有足够区分度。发起者、边界内工作和 cleanup routine 不应只靠很长的后缀区分；它们应在动词和对象上呈现不同职责，让读者扫过代码和图形时能快速分辨谁在等待、谁在产出、谁在清理。
+同一示例里的业务名应有足够区分度。发起者、边界内工作和 cleanup 工作不应只靠很长的后缀区分；它们应在动词和对象上呈现不同职责，让读者扫过代码和图形时能快速分辨谁在等待、谁在产出、谁在清理。
 
 ## Animation Language
 
@@ -92,22 +94,22 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 
 - 初始帧属于 pending 状态。正式动画开始后，cursor 才进入具体 process 的运行位置；下一轮动画开始前应回到这个准备状态，让读者重新获得代码和图形的起点。
 - cursor 表示 process 停留的位置。process 完成后，completed state 承接完成表达。
-- 带箭头的顺序实线表示 coroutine 块之间的推进方向。一个 process 发起 spawn、all 或 race 分支时，这条线从发起块指向新创建或被组织的运行块。
-- 虚线表示 routine 块之间正在发生的等待关系。等待期间，虚线从被等待的一侧指向被阻塞的一侧。
+- 带箭头的顺序实线表示 process 块之间的推进方向。一个 process 发起 spawn、all 或 race 管理的工作时，这条线从发起块指向新创建或被组织的运行块。
+- 虚线表示 process 块之间正在发生的等待关系。等待期间，虚线从被等待的一侧指向被阻塞的一侧。
 - 等待完成后留下的浅色实线属于等待轨迹。它表示这段等待关系已经被结算，和带箭头的顺序实线不是同一种关系。
 - 数据流动线表示值从生产者进入通信对象、或从通信对象交付给消费者。它应与等待线使用不同视觉语义，方向跟随值的移动方向，而不是跟随谁正在等待。
 - 正向启动线和反向等待线不应在同一个事件上同时点亮。`launch-*` 或 `spawn-*` 事件只表达创建方向；等待关系应使用独立的 `wait-*`、`scope-wait-*` 或同类事件。
 - 如果等待关系没有对应的代码行，可以使用只服务 flow 的内部事件。内部事件可以出现在 cursor 的事件集合里，用来点亮等待线，但不需要伪造一行代码。
-- Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 routine 间的等待关系。
-- 当一个组合 primitive 产生代表整体关系的 future 或竞争结果时，图中应给这个整体关系稳定的汇合位置。分支发起线从汇合位置展开，分支结果或竞争结果回到汇合位置，发起者再等待 future 或接收竞争结果。
+- Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 process 间的等待关系。
+- 当一个组合 primitive 产生代表整体关系的 future 或竞争结果时，图中应给这个整体关系稳定的汇合位置。工作发起线从汇合位置展开，工作结果或竞争结果回到汇合位置，发起者再等待 future 或接收竞争结果。
 - Future Settlement 等待的是 `smsCode` 这个独立 future。future 本体应像 channel 一样以通用对象名 `future` 承担对象类型和状态表达；示例变量名可以留在代码和旁白里，但关系线不再用可见 label 标记变量。
 - Scope-Owned Work 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `branch` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
 - Scope box 表示 scope 的运行所有权边界。box 可以容纳该 scope 内的 process 块、future、channel 和其他 scope-owned objects；它不应被用作普通布局容器，也不应把外层流程或只持有 handle 的流程包入 owner scope。
 - Scope-Managed Objects 应使用 scope box 展示对象本体和 handle 的分离。future 和 channel 的对象本体留在创建它们的 child scope box 内；返回给外层流程的 handle 可以用细线、端点或标签表示，但不能让对象本体随 handle 移出 box。
 - Scope box 的 lifecycle 状态应驱动内部对象状态。child scope 进入 closing 或 closed 时，box 触发未完成 future 的 canceled 状态和仍打开 channel 的 revoked 状态；这些状态变化不应从外层 handle 发出。
 - Scope-Managed Objects 展示的是 scope 退出时自动收束它创建的 future 和 channel，而不是外层流程如何使用资源。child scope 创建 future 和 channel 后返回观察或通信 handle；child scope 收束事件应触发 future cancellation 和 channel revocation。外层流程之后用 `wait`、`send`、`receive`、`trySend` 或 `tryReceive` 触碰这些 handle，并通过异常处理路径观察运行对象已经关闭。取消和撤销结果应从 child scope 的收束事件发出，不应表现成外层流程主动关闭资源。
-- 当一个 primitive 创建或进入新的运行边界时，父 routine 的等待状态应由父 routine 的边界事件表达，child routine 的运行状态应由 child routine 自己的起始事件表达。不要让 child routine 深处的事件负责修改父 routine 的光标位置；跨 routine 的等待线可以使用内部等待事件，但 cursor 归属仍应跟随实际停留的 process。
-- Channel 应作为独立通信对象出现，不应伪装成 routine 块或执行顺序线的一段。channel 的形状、容量状态和两侧数据动线共同表达通信关系；routine 之间的执行顺序仍由 routine 块自己的线承担。
+- 当一个 primitive 创建或进入新的运行边界时，发起 process 的等待状态应由发起 process 的边界事件表达，被创建 process 的运行状态应由它自己的起始事件表达。不要让被创建 process 深处的事件负责修改发起 process 的光标位置；跨 process 的等待线可以使用内部等待事件，但 cursor 归属仍应跟随实际停留的 process。
+- Channel 应作为独立通信对象出现，不应伪装成 process 块或执行顺序线的一段。channel 的形状、容量状态和两侧数据动线共同表达通信关系；process 之间的执行顺序仍由 process 块自己的线承担。
 - Channel 示例可以包含不发生等待的普通 send 或 receive，作为发送等待和接收等待的对照。这个对照应来自真实代码节奏，例如没有 `sleep` 或缓冲中已有值，并帮助读者辨认等待究竟发生在哪里。
 - Channel 示例应同时让发送等待和接收等待拥有可辨识的演出位置。发送等待来自缓冲满或无接收者，接收等待来自没有可取值；二者可以共享同一个 channel 图形，但不应共享同一种等待痕迹。
 
@@ -120,8 +122,8 @@ Explorer runtime 是可执行的示例代码，不是动画脚本的自由容器
 - 当动画需要在 `return` 发生后标记完成时，可以使用 `try` / `finally` 让完成事件绑定到返回点。此时 `finally` 表达的是返回语义的收尾，而不是单纯的动画延迟。
 - 代码示例中的控制流应优先服务读者理解。当一个操作同时承担等待和返回两个叙事动作时，可以拆成中间变量和显式返回，让两个阶段在代码回放里都清楚可见；但不能为了制造动画帧而引入没有领域语义的中间步骤。
 - 代码行 id、flow event 和 node lifecycle 应共同表达同一个概念。事件命名应服务动画语义，不应为了复用某个代码行 id 而模糊启动、等待或完成关系。
-- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：为 `race` 分支补充取消演出时，helper 作用于分支 routine；为 `branch` 边界补充等待演出时，helper 作用于传给 `branch` 的 routine，并在边界调用点记录父 routine 的等待状态。helper 可以封装重复 replay 细节，但不应把父 routine 的 cursor 归属转移给 child routine，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
-- 渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。组件可以负责把 node、link、scope box、future 和 channel 渲染成统一图形语言；但“哪个 routine 正在运行或等待”“哪个事件使对象进入终止状态”应由 runtime 与 examples-kit 明确给出。
+- 当多个示例共享同一种边界演出时，应把可复用的作者工具放在 examples-kit 层，让 runtime 仍像真实业务代码一样组织 host coroutine。共享 helper 应保持调用形状贴近它服务的 primitive：为 `race` 管理的工作补充取消演出时，helper 作用于对应 work program；为 `branch` 边界补充等待演出时，helper 作用于传给 `branch` 的函数，并在边界调用点记录发起 process 的等待状态。helper 可以封装重复 replay 细节，但不应把发起 process 的 cursor 归属转移给被创建 process，也不应把 primitive 边界拆散成一组看不出运行关系的零散动作。
+- 渲染层应消费清晰的 replay 事件，而不是推断某个 API 的特殊演出语义。组件可以负责把 node、link、scope box、future 和 channel 渲染成统一图形语言；但“哪个 process 正在运行或等待”“哪个事件使对象进入终止状态”应由 runtime 与 examples-kit 明确给出。
 
 ## Inclusion Criteria
 

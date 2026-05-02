@@ -2,7 +2,7 @@ import type { NonEmptyTuple, TaggedUnion } from "type-fest";
 import type { RiteCoroutine } from "@shajara/host";
 
 export type ExplorerEventId = string;
-export type ExplorerRoutineId = string;
+export type ExplorerCursorTargetId = string;
 export type ExplorerTranslationKey = string;
 export type ExplorerReplayCursorMode = "blocked" | "running";
 
@@ -100,12 +100,12 @@ export type ExplorerWaitInterruption<TEvent extends ExplorerEventId> = TaggedUni
 export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",
   {
-    branch: {
+    caller: {
       readonly activeEvents: readonly TEvent[];
       readonly completedEvents: readonly TEvent[];
       readonly id: string;
       readonly label: string;
-      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+      readonly statusTargetIds: readonly ExplorerCursorTargetId[];
     };
     channel: {
       readonly activeEvents: readonly TEvent[];
@@ -114,28 +114,28 @@ export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
       readonly direction: ExplorerChannelDirection;
       readonly id: string;
       readonly label: string;
-      readonly statusRoutineIds: readonly [];
+      readonly statusTargetIds: readonly [];
+    };
+    coordinator: {
+      readonly activeEvents: readonly TEvent[];
+      readonly completedEvents: readonly TEvent[];
+      readonly id: string;
+      readonly label: string;
+      readonly statusTargetIds: readonly ExplorerCursorTargetId[];
     };
     future: {
       readonly activeEvents: readonly TEvent[];
       readonly completedEvents: readonly TEvent[];
       readonly id: string;
       readonly label: string;
-      readonly statusRoutineIds: readonly [];
+      readonly statusTargetIds: readonly [];
     };
-    join: {
+    worker: {
       readonly activeEvents: readonly TEvent[];
       readonly completedEvents: readonly TEvent[];
       readonly id: string;
       readonly label: string;
-      readonly statusRoutineIds: readonly ExplorerRoutineId[];
-    };
-    parent: {
-      readonly activeEvents: readonly TEvent[];
-      readonly completedEvents: readonly TEvent[];
-      readonly id: string;
-      readonly label: string;
-      readonly statusRoutineIds: readonly ExplorerRoutineId[];
+      readonly statusTargetIds: readonly ExplorerCursorTargetId[];
     };
     scope: {
       readonly activeEvents: readonly TEvent[];
@@ -144,7 +144,7 @@ export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
       readonly id: string;
       readonly label: string;
       readonly ownedNodeIds: readonly string[];
-      readonly statusRoutineIds: readonly [];
+      readonly statusTargetIds: readonly [];
     };
   }
 >;
@@ -186,7 +186,7 @@ export interface ExplorerReplayFrame<TEvent extends ExplorerEventId> {
 export interface ExplorerReplayCursor<TEvent extends ExplorerEventId> {
   events: readonly TEvent[];
   mode: ExplorerReplayCursorMode;
-  routineId: ExplorerRoutineId;
+  targetId: ExplorerCursorTargetId;
 }
 
 export interface ExplorerReplayTrace<TEvent extends ExplorerEventId> {
@@ -196,7 +196,7 @@ export interface ExplorerReplayTrace<TEvent extends ExplorerEventId> {
 export type ExplorerReplayAction<TEvent extends ExplorerEventId> = TaggedUnion<
   "kind",
   {
-    "clear-cursors": { readonly routineIds: readonly ExplorerRoutineId[] };
+    "clear-cursors": { readonly targetIds: readonly ExplorerCursorTargetId[] };
     "complete-events": { readonly events: readonly TEvent[] };
     "set-cursors": { readonly cursors: readonly ExplorerReplayCursor<TEvent>[] };
   }
@@ -206,12 +206,12 @@ export type ExplorerReplayEmit<TEvent extends ExplorerEventId> = (
   trace: ExplorerReplayTrace<TEvent>,
 ) => void;
 
-export type ExplorerReplayRoutine<TEvent extends ExplorerEventId, TResult> = (
+export type ExplorerReplayProgram<TEvent extends ExplorerEventId, TResult> = (
   emit: ExplorerReplayEmit<TEvent>,
 ) => RiteCoroutine<TResult>;
 
 export interface ExplorerReplayRuntime<TEvent extends ExplorerEventId, TResult> {
-  createRoutine: () => ExplorerReplayRoutine<TEvent, TResult>;
+  createProgram: () => ExplorerReplayProgram<TEvent, TResult>;
 }
 
 export interface ExplorerReplayState<TEvent extends ExplorerEventId> {

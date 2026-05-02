@@ -16,7 +16,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createSingleSpawnDemoCode() {
   return [
-    codeLine("routine", "function* submitOrder() {", ["done"]),
+    codeLine("function-open", "function* submitOrder() {", ["done"]),
     codeLine("spawn-receipt", "  yield* spawn(function* sendReceiptEmail() {", ["done"]),
     codeLine("receipt-sleep", `    yield* sleep(${receiptDelayMs});`, ["receipt-return"]),
     codeLine("receipt-return", '    return "receipt sent";', ["receipt-return"]),

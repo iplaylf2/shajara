@@ -16,7 +16,7 @@ import { sleep } from "@shajara/host";
 // oxlint-disable-next-line explicit-module-boundary-types
 export function createLoadPageDemoCode() {
   return [
-    codeLine("routine", "function* loadPage() {", ["done"]),
+    codeLine("function-open", "function* loadPage() {", ["done"]),
     codeLine("spawn-header", "  const header = yield* spawn(function* loadHeader() {", [
       "header-return",
     ]),
