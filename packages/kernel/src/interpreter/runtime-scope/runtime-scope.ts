@@ -444,22 +444,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   *#cancelManaged(): ScopeSync<void> {
-    const processes = [...this.#structuralProcesses, ...this.#detachedProcesses];
     const children = [...this.#children];
+    const structuralProcesses = [...this.#structuralProcesses];
+    const detachedProcesses = [...this.#detachedProcesses];
 
     this.#structuralProcesses.clear();
     this.#detachedProcesses.clear();
 
-    for (const process of processes) {
-      const closure = process.cancel();
-
-      yield this.#defer(closure.settlement);
-      yield* this.#triggerCleanup(closure.cleanups);
-      yield this.#trackProcess(process);
-    }
-
     for (const child of children) {
       yield this.#signal(child, () => child.cancel());
+    }
+
+    for (const process of structuralProcesses) {
+      yield* this.#cancelProcess(process);
+    }
+
+    for (const process of detachedProcesses) {
+      yield* this.#cancelProcess(process);
     }
   }
 
@@ -468,11 +469,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#detachedProcesses.clear();
 
     for (const process of processes) {
-      const closure = process.cancel();
-
-      yield this.#defer(closure.settlement);
-      yield* this.#triggerCleanup(closure.cleanups);
-      yield this.#trackProcess(process);
+      yield* this.#cancelProcess(process);
     }
   }
 
@@ -495,6 +492,14 @@ export class RuntimeScope implements ScopeRef<unknown> {
     const settlement = this.#exitFuture.settle(result);
 
     yield this.#defer(settlement);
+  }
+
+  *#cancelProcess(process: RuntimeProcessKeeper): ScopeSync<void> {
+    const closure = process.cancel();
+
+    yield this.#defer(closure.settlement);
+    yield* this.#triggerCleanup(closure.cleanups);
+    yield this.#trackProcess(process);
   }
 
   *#triggerCleanup(cleanups: readonly CleanupTask[]): ScopeSync<void> {

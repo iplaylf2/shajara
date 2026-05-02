@@ -220,26 +220,23 @@ The externally observable lifecycle states of a scope are:
 The lifecycle state is separate from the result carried by `exitFuture`. Internally,
 `closing` covers normal completion, cancellation, and failure convergence.
 
-### Normal Completion
+### Convergence Paths
 
-A scope can begin normal closing when all structural processes and all child scopes have
-closed. During normal closing, detached processes are canceled. Once the scope is idle, it
-settles `exitFuture` with the entry process result.
+A scope settles `exitFuture` only after it becomes idle: no child scopes, structural
+processes, or detached processes remain open. A scope reaches that point through one of
+three local paths:
 
-### Cancellation
+- Normal completion: child scopes and structural processes have closed. The scope cancels
+  remaining detached processes, then settles with the entry process result.
+- Cancellation: `cancel()` enters the cancellation path. The scope cancels owned work,
+  then settles with `canceled`.
+- Failure: after a process failure, channel owner failure, or runtime control action, the
+  scope enters the failure path. It cancels owned work, then settles with a
+  `ScopeFailure`.
 
-`cancel()` enters the current scope's cancellation path. Cancellation cancels structural
-processes, detached processes, and child scopes owned by that scope. When the scope is
-idle, it settles `exitFuture` with `canceled`.
-
-Cancellation is scoped to owned work and cascades through child scopes.
-
-### Failure
-
-A scope enters its failure path after a process failure, a channel owner failure, or a
-runtime control action. Failure cancels structural processes, detached processes, and
-child scopes owned by that scope. When the scope is idle, it settles `exitFuture` with a
-`ScopeFailure`.
+Cancellation and failure use the same ownership order for canceling owned work: child
+scopes, structural processes, then detached processes. Cancellation is scoped to owned
+work and cascades through child scopes.
 
 A child-scope failure converges that child scope as a failure and settles the child's
 `exitFuture`. The parent waits for that child scope to reach `closed` as part of
