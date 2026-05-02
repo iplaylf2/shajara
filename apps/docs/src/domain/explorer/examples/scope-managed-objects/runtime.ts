@@ -26,19 +26,19 @@ export function createScopeManagedObjectsDemoCode() {
     codeLine("future-open", "    const [ticket] = yield* future<string>();", ["future-open"]),
     codeLine(
       "channel-open",
-      `    const [updates] = yield* channel<string, never>(${channelCapacity});`,
+      `    const [updates] = yield* channel<string, never>(${CHANNEL_CAPACITY});`,
       ["channel-open"],
     ),
-    codeLine("session-sleep", `    yield* sleep(${sessionDelayMs});`, ["session-sleep"]),
+    codeLine("session-sleep", `    yield* sleep(${SESSION_DELAY_MS});`, ["session-sleep"]),
     codeLine("return-objects", "    return [ticket, updates];", ["return-objects"]),
     codeLine("branch-close", "  });", ["objects-returned", "scope-closed"]),
-    codeLine("after-branch-sleep", `  yield* sleep(${afterBranchDelayMs});`, [
+    codeLine("after-branch-sleep", `  yield* sleep(${AFTER_BRANCH_DELAY_MS});`, [
       "after-branch-sleep",
     ]),
     codeSpacer(),
     codeLine("wait-ticket", "  try { yield* wait(ticket); }", ["ticket-caught"]),
     codeLine("ticket-caught", "  catch (error) { observeCanceled(error); }", ["ticket-caught"]),
-    codeLine("object-sleep", `  yield* sleep(${objectDelayMs});`, ["object-sleep"]),
+    codeLine("object-sleep", `  yield* sleep(${OBJECT_DELAY_MS});`, ["object-sleep"]),
     codeLine("receive-updates", "  try { yield* tryReceive(updates); }", ["updates-caught"]),
     codeLine("updates-caught", "  catch (error) { observeRevoked(error); }", ["updates-caught"]),
     codeSpacer(),
@@ -69,14 +69,14 @@ export function* scopeManagedObjectsDemo(
               setCursor(cursorAt("child", "channel-open", "running")),
             ],
           });
-          const [createdUpdates] = yield* channel<string, never>(channelCapacity);
+          const [createdUpdates] = yield* channel<string, never>(CHANNEL_CAPACITY);
           emit({
             actions: [
               completeEvents("channel-open"),
               setCursor(cursorAt("child", "session-sleep", "running")),
             ],
           });
-          yield* sleep(sessionDelayMs);
+          yield* sleep(SESSION_DELAY_MS);
           emit({
             actions: [
               completeEvents("session-sleep"),
@@ -107,7 +107,7 @@ export function* scopeManagedObjectsDemo(
       ],
     });
 
-    yield* sleep(afterBranchDelayMs);
+    yield* sleep(AFTER_BRANCH_DELAY_MS);
     emit({
       actions: [
         completeEvents("after-branch-sleep"),
@@ -130,7 +130,7 @@ export function* scopeManagedObjectsDemo(
       });
     }
 
-    yield* sleep(objectDelayMs);
+    yield* sleep(OBJECT_DELAY_MS);
     emit({
       actions: [
         completeEvents("object-sleep"),
@@ -173,12 +173,12 @@ export type ScopeManagedObjectsDemoEvent = ExplorerAuthoredEvent<
   | "updates-revoked"
 >;
 
-type ManagedReceiver = Parameters<typeof tryReceive<string, never>>[typeof firstParameterIndex];
+type ManagedReceiver = Parameters<typeof tryReceive<string, never>>[typeof FIRST_PARAMETER_INDEX];
 
 type SessionObjects = readonly [RiteFuture<string>, ManagedReceiver];
 
-const channelCapacity = 0;
-const afterBranchDelayMs = 1000;
-const firstParameterIndex = 0;
-const objectDelayMs = 1000;
-const sessionDelayMs = 1000;
+const CHANNEL_CAPACITY = 0;
+const AFTER_BRANCH_DELAY_MS = 1000;
+const FIRST_PARAMETER_INDEX = 0;
+const OBJECT_DELAY_MS = 1000;
+const SESSION_DELAY_MS = 1000;

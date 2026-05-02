@@ -57,11 +57,11 @@ function isReplayPreparing(
   cursors: readonly ExplorerReplayCursor<ExplorerExampleEvent>[],
   completed: readonly ExplorerExampleEvent[],
 ): boolean {
-  return cursors.length === emptyLength && completed.length === emptyLength;
+  return cursors.length === EMPTY_LENGTH && completed.length === EMPTY_LENGTH;
 }
 
 function readCodeContainer(codeView: ReplayCodeView): HTMLElement {
-  const firstLine = codeView.lines.at(firstIndex);
+  const firstLine = codeView.lines.at(FIRST_INDEX);
   const container = firstLine?.closest<HTMLElement>("[data-explorer-code]");
 
   if (!container) {
@@ -153,7 +153,7 @@ function readLineEvents(
   const events: ExplorerExampleEvent[] = [];
 
   for (const entry of value.split(" ")) {
-    if (entry.length === emptyLength) {
+    if (entry.length === EMPTY_LENGTH) {
       continue;
     }
     if (!isExplorerEventId(entry, eventIds)) {
@@ -173,5 +173,5 @@ function isExplorerEventId(
   return typeof value === "string" && eventIds.some((eventId) => eventId === value);
 }
 
-const emptyLength = 0;
-const firstIndex = 0;
+const EMPTY_LENGTH = 0;
+const FIRST_INDEX = 0;

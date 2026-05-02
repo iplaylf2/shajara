@@ -15,16 +15,16 @@ function createScopeGroup<TEvent extends ExplorerEventId>(
   nodePositions: ReadonlyMap<string, FlowNode<TEvent>>,
 ): FlowScene<TEvent>["groups"][number] {
   const ownedNodes = node.ownedNodeIds.map((nodeId) => readNode(nodePositions, nodeId));
-  const left = Math.min(...ownedNodes.map((ownedNode) => ownedNode.left)) - scopePaddingX;
-  const top = Math.min(...ownedNodes.map((ownedNode) => ownedNode.top)) - scopePaddingY;
+  const left = Math.min(...ownedNodes.map((ownedNode) => ownedNode.left)) - SCOPE_PADDING_X;
+  const top = Math.min(...ownedNodes.map((ownedNode) => ownedNode.top)) - SCOPE_PADDING_Y;
   const right =
-    Math.max(...ownedNodes.map((ownedNode) => ownedNode.left + ownedNode.width)) + scopePaddingX;
+    Math.max(...ownedNodes.map((ownedNode) => ownedNode.left + ownedNode.width)) + SCOPE_PADDING_X;
   const bottom =
-    Math.max(...ownedNodes.map((ownedNode) => ownedNode.top + ownedNode.height)) + scopePaddingY;
+    Math.max(...ownedNodes.map((ownedNode) => ownedNode.top + ownedNode.height)) + SCOPE_PADDING_Y;
 
   return {
     activeEvents: node.activeEvents,
-    centerY: top + (bottom - top) / halfDivisor,
+    centerY: top + (bottom - top) / HALF_DIVISOR,
     closedEvents: node.closedEvents,
     completedEvents: node.completedEvents,
     height: bottom - top,
@@ -52,6 +52,6 @@ function readNode<TEvent extends ExplorerEventId>(
   return node;
 }
 
-const halfDivisor = 2;
-const scopePaddingX = 28;
-const scopePaddingY = 34;
+const HALF_DIVISOR = 2;
+const SCOPE_PADDING_X = 28;
+const SCOPE_PADDING_Y = 34;

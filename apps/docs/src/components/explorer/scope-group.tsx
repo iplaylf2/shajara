@@ -43,15 +43,15 @@ function ScopeGroup<TEvent extends string>(props: {
         />
         <text
           class={styles["flowScopeLabel"]}
-          x={String(props.group.left + scopeLabelOffsetX)}
-          y={String(props.group.top + scopeLabelOffsetY)}
+          x={String(props.group.left + SCOPE_LABEL_OFFSET_X)}
+          y={String(props.group.top + SCOPE_LABEL_OFFSET_Y)}
         >
           {props.group.label}
         </text>
         <text
           class={styles["flowScopeStatus"]}
-          x={String(props.group.left + props.group.width - scopeStatusOffsetX)}
-          y={String(props.group.top + scopeLabelOffsetY)}
+          x={String(props.group.left + props.group.width - SCOPE_STATUS_OFFSET_X)}
+          y={String(props.group.top + SCOPE_LABEL_OFFSET_Y)}
         >
           {status()}
         </text>
@@ -60,6 +60,6 @@ function ScopeGroup<TEvent extends string>(props: {
   );
 }
 
-const scopeLabelOffsetX = 12;
-const scopeLabelOffsetY = 15;
-const scopeStatusOffsetX = 12;
+const SCOPE_LABEL_OFFSET_X = 12;
+const SCOPE_LABEL_OFFSET_Y = 15;
+const SCOPE_STATUS_OFFSET_X = 12;

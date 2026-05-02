@@ -20,7 +20,7 @@ export function createFutureSettlementDemoCode() {
     codeLine("future", "  const [smsCode, provideSmsCode] = yield* future<string>();", ["future"]),
     codeSpacer(),
     codeLine("spawn-resolver", "  yield* spawn(function* receiveSmsCode() {", ["settle-code"]),
-    codeLine("resolver-sleep", `    yield* sleep(${resolverDelayMs});`, ["settle-code"]),
+    codeLine("resolver-sleep", `    yield* sleep(${RESOLVER_DELAY_MS});`, ["settle-code"]),
     codeLine("settle-code", '    yield* settle(provideSmsCode, "4921");', ["settle-code"]),
     codeLine("resolver-close", "  });", ["settle-code"]),
     codeSpacer(),
@@ -42,7 +42,7 @@ export function* futureSettlementDemo(
       emit({
         actions: [setCursor(cursorAt("resolver", "resolver-sleep", "running"))],
       });
-      yield* sleep(resolverDelayMs);
+      yield* sleep(RESOLVER_DELAY_MS);
       emit({
         actions: [setCursor(cursorAt("resolver", ["settle-code", "resolver-close"], "running"))],
       });
@@ -70,4 +70,4 @@ export type FutureSettlementDemoEvent = ExplorerAuthoredEvent<
   ReturnType<typeof createFutureSettlementDemoCode>
 >;
 
-const resolverDelayMs = 1000;
+const RESOLVER_DELAY_MS = 1000;

@@ -22,7 +22,7 @@ export function createScopeOwnedWorkDemoCode() {
       "branch-close",
     ]),
     codeLine("spawn-index", "    yield* spawn(function* updateSearchIndex() {", ["index-close"]),
-    codeLine("index-sleep", `      yield* sleep(${indexDelayMs});`, ["index-close"]),
+    codeLine("index-sleep", `      yield* sleep(${INDEX_DELAY_MS});`, ["index-close"]),
     codeLine("index-close", "    });", ["index-close"]),
     codeSpacer(),
     codeLine("inner-return", '    return "published";', ["inner-return"]),
@@ -50,7 +50,7 @@ export function* scopeOwnedWorkDemo(
           });
           yield* spawn(function* updateSearchIndex(): RiteCoroutine<void> {
             emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
-            yield* sleep(indexDelayMs);
+            yield* sleep(INDEX_DELAY_MS);
             emit({
               actions: [clearCursor("index"), completeEvents(["index-close", "scope-wait-index"])],
             });
@@ -91,4 +91,4 @@ export type ScopeOwnedWorkDemoEvent = ExplorerAuthoredEvent<
   "launch-scope" | "launch-index" | "scope-wait-index" | "scope-wait-root"
 >;
 
-const indexDelayMs = 1000;
+const INDEX_DELAY_MS = 1000;

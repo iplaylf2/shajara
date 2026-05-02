@@ -20,14 +20,14 @@ export function createLoadPageDemoCode() {
     codeLine("spawn-header", "  const header = yield* spawn(function* loadHeader() {", [
       "header-return",
     ]),
-    codeLine("header-sleep", `    yield* sleep(${headerDelayMs});`, ["header-return"]),
+    codeLine("header-sleep", `    yield* sleep(${HEADER_DELAY_MS});`, ["header-return"]),
     codeLine("header-return", '    return "header";', ["header-return"]),
     codeLine("header-close", "  });", ["header-return"]),
     codeSpacer(),
     codeLine("spawn-sidebar", "  const sidebar = yield* spawn(function* loadSidebar() {", [
       "sidebar-return",
     ]),
-    codeLine("sidebar-sleep", `    yield* sleep(${sidebarDelayMs});`, ["sidebar-return"]),
+    codeLine("sidebar-sleep", `    yield* sleep(${SIDEBAR_DELAY_MS});`, ["sidebar-return"]),
     codeLine("sidebar-return", '    return "sidebar";', ["sidebar-return"]),
     codeLine("sidebar-close", "  });", ["sidebar-return"]),
     codeSpacer(),
@@ -46,7 +46,7 @@ export function* loadPageDemo(
     emit({ actions: [setCursor(cursorAt("root", "spawn-header", "running"))] });
     const header = yield* spawn(function* loadHeader(): RiteCoroutine<string> {
       emit({ actions: [setCursor(cursorAt("header", "header-sleep", "running"))] });
-      yield* sleep(headerDelayMs);
+      yield* sleep(HEADER_DELAY_MS);
       emit({
         actions: [setCursor(cursorAt("header", ["header-return", "header-close"], "running"))],
       });
@@ -61,7 +61,7 @@ export function* loadPageDemo(
     emit({ actions: [setCursor(cursorAt("root", "spawn-sidebar", "running"))] });
     const sidebar = yield* spawn(function* loadSidebar(): RiteCoroutine<string> {
       emit({ actions: [setCursor(cursorAt("sidebar", "sidebar-sleep", "running"))] });
-      yield* sleep(sidebarDelayMs);
+      yield* sleep(SIDEBAR_DELAY_MS);
       emit({
         actions: [setCursor(cursorAt("sidebar", ["sidebar-return", "sidebar-close"], "running"))],
       });
@@ -103,5 +103,5 @@ export interface LoadPageDemoResult {
 
 export type LoadPageDemoEvent = ExplorerAuthoredEvent<ReturnType<typeof createLoadPageDemoCode>>;
 
-const headerDelayMs = 1000;
-const sidebarDelayMs = 2000;
+const HEADER_DELAY_MS = 1000;
+const SIDEBAR_DELAY_MS = 2000;

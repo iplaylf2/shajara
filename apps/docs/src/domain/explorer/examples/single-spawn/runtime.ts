@@ -18,7 +18,7 @@ export function createSingleSpawnDemoCode() {
   return [
     codeLine("function-open", "function* submitOrder() {", ["done"]),
     codeLine("spawn-receipt", "  yield* spawn(function* sendReceiptEmail() {", ["done"]),
-    codeLine("receipt-sleep", `    yield* sleep(${receiptDelayMs});`, ["receipt-return"]),
+    codeLine("receipt-sleep", `    yield* sleep(${RECEIPT_DELAY_MS});`, ["receipt-return"]),
     codeLine("receipt-return", '    return "receipt sent";', ["receipt-return"]),
     codeLine("receipt-close", "  });", ["receipt-return"]),
     codeSpacer(),
@@ -34,7 +34,7 @@ export function* singleSpawnDemo(
     emit({ actions: [setCursor(cursorAt("root", "spawn-receipt", "running"))] });
     yield* spawn(function* sendReceiptEmail(): RiteCoroutine<string> {
       emit({ actions: [setCursor(cursorAt("receipt", "receipt-sleep", "running"))] });
-      yield* sleep(receiptDelayMs);
+      yield* sleep(RECEIPT_DELAY_MS);
       emit({
         actions: [setCursor(cursorAt("receipt", ["receipt-return", "receipt-close"], "running"))],
       });
@@ -65,4 +65,4 @@ export type SingleSpawnDemoEvent = ExplorerAuthoredEvent<
   "wait-receipt"
 >;
 
-const receiptDelayMs = 1000;
+const RECEIPT_DELAY_MS = 1000;

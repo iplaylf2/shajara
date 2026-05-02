@@ -171,7 +171,7 @@ class ExplorerReplaySession {
           isOpen: () => this.#isMounted,
           write: this.#updateState,
         },
-        minRenderGapMs,
+        MIN_RENDER_GAP_MS,
       ),
     );
 
@@ -206,8 +206,8 @@ function createStateUpdater(
 function queueUnexpectedFailure(error: unknown): void {
   globalThis.setTimeout(() => {
     throw error;
-  }, emptyLength);
+  }, EMPTY_LENGTH);
 }
 
-const emptyLength = 0;
-const minRenderGapMs = 34;
+const EMPTY_LENGTH = 0;
+const MIN_RENDER_GAP_MS = 34;

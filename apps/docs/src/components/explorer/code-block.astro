@@ -9,10 +9,10 @@ import styles from "./styles.module.css";
 
 const { code, id } = Astro.props;
 const source = code.map((line) => line.text).join("\n");
-const firstLine = 1;
+const FIRST_LINE = 1;
 const lineTransformer = {
   line(node: CodeLineNode, lineNumber: number) {
-    const line = code.at(lineNumber - firstLine);
+    const line = code.at(lineNumber - FIRST_LINE);
 
     if (!line) {
       return;
