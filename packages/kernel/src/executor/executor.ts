@@ -2,7 +2,6 @@ import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index"
 import type { Disposer, Option } from "#/utils/index";
 import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
-import { canceledFailure, interruptedFailure } from "#/failures";
 import { either, option } from "fp-ts";
 import { halt, park } from "#/primitives/index";
 import { DomainInterpreter } from "./domain-interpreter";
@@ -12,6 +11,7 @@ import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import { RoundLimitReaper } from "./round-limit-reaper";
 import { RuntimeLaunchHandle } from "./launch-handle";
+import { canceledFailure } from "#/failures";
 import { noop } from "#/utils/index";
 import { withRecoveryAnchor } from "#/primitives-kit";
 
@@ -61,9 +61,9 @@ class RuntimeExecutor implements Executor {
 
     using fault = new FaultSink("Out-of-band failures occurred while branching a launched scope");
     const launched = this.#interpreter.branch(scope, ritual, {}, fault);
-    const cause = fault.drain();
-    if (option.isSome(cause)) {
-      this.#interruptScope(scope, cause.value);
+    const branchFault = fault.drain();
+    if (option.isSome(branchFault)) {
+      this.#interpreter.cancel(scope, fault);
 
       return option.none;
     }
@@ -145,11 +145,6 @@ class RuntimeExecutor implements Executor {
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {
     return this.#isRegisteredScope(scope) && this.#interpreter.scopeState(scope).status === "open";
-  }
-
-  #interruptScope(scope: ExecutionScopeRef<unknown>, cause: unknown): void {
-    using faultSink = new FaultSink("Out-of-band failures occurred while force failing a scope");
-    this.#interpreter.forceFailed(scope, interruptedFailure(cause), faultSink);
   }
 
   #onSettled<Result>(

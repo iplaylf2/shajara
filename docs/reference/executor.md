@@ -176,10 +176,10 @@ interface Scheduler {
 }
 ```
 
-When a process in an autonomous scope becomes runnable, the executor calls
-`scheduler.assign(process)` and routes it to a `Processor`.
-
-Here, `ProcessRef` is the scheduling target.
+The scheduler owns runnable-process placement for the autonomous scope. When a process
+becomes runnable, the executor passes its `ProcessRef` to `scheduler.assign(process)` and
+routes the process to the returned `Processor`. If `assign` throws, the executor requests
+cancellation for that process's owning scope.
 
 ### `reaper`
 

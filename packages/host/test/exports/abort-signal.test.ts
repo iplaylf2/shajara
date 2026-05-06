@@ -46,8 +46,9 @@ describe("/ operations: abortSignal", () => {
       const signal = await capturedSignal.promise;
       expect(signal.aborted).toBe(outcome.beforeCancel);
 
+      const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
       await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
-      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+      await settledCancellation;
       expect(signal.aborted).toBe(outcome.afterCancel);
     } finally {
       if (scope.status !== "closed") {

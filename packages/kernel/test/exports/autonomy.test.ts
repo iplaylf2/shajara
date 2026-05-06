@@ -15,6 +15,7 @@ import {
   autonomy,
   branch,
   cancel,
+  canceledFailure,
   cede,
   defer,
   externalFailure,
@@ -205,14 +206,13 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("scheduler assignment failed"), "scheduler-entry"] as const,
       outcome: {
-        causeMessage: "scheduler assignment failed",
         resultKind: "left",
         settledKind: "success",
         settledStatus: "closed",
       },
     },
   ])(
-    "interrupts the autonomous scope when scheduler assignment throws out-of-band",
+    "cancels the autonomous scope when scheduler assignment throws out-of-band",
     async ({ given: [cause, entryResult], outcome }) => {
       const scheduler: Scheduler = {
         assign: () => {
@@ -246,18 +246,10 @@ describe("/ primitives: autonomy", () => {
         settledStatus: outcome.settledStatus,
       });
       if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
-        throw new Error("Expected autonomous scope failure to be contained");
+        throw new Error("Expected autonomous scope cancellation to be contained");
       }
 
-      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
-        expect.objectContaining(
-          interruptedFailure(
-            expect.objectContaining({
-              message: outcome.causeMessage,
-            }),
-          ),
-        ),
-      );
+      expect(actual.settled.result.left).toBe(canceledFailure);
     },
   );
 
@@ -265,16 +257,23 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("scheduler assignment failed"), "cleanup"] as const,
       outcome: {
-        assignedCount: 3,
-        causeMessage: "scheduler assignment failed",
+        assignedCount: 4,
         cleanupEvents: ["cleanup"] as const,
         resultKind: "left",
+        scopeFailureCause: {
+          kind: "external",
+          message: "Scope did not finish closing within the executor reaper round limit",
+          raw: {
+            round: 2,
+            roundLimit: 2,
+          },
+        },
         settledKind: "success",
         settledStatus: "closed",
       },
     },
   ])(
-    "force-fails the autonomous scope to closure after deferred cleanup suspends",
+    "lets the reaper govern a canceled autonomous scope after deferred cleanup suspends",
     async ({ given: [cause, cleanup], outcome }) => {
       const events: string[] = [];
       const processor = createInlineProcessor();
@@ -336,17 +335,14 @@ describe("/ primitives: autonomy", () => {
         settledStatus: outcome.settledStatus,
       });
       if (actual.settled.kind !== "success" || either.isRight(actual.settled.result)) {
-        throw new Error("Expected autonomous scope failure to be contained");
+        throw new Error("Expected autonomous scope cancellation outcome to be contained");
       }
 
-      expect(findFailureByKind(actual.settled.result.left, "interrupted")).toEqual(
-        expect.objectContaining(
-          interruptedFailure(
-            expect.objectContaining({
-              message: outcome.causeMessage,
-            }),
-          ),
-        ),
+      expect(actual.settled.result.left).toEqual(
+        expect.objectContaining({
+          cause: outcome.scopeFailureCause,
+          kind: "scope",
+        }),
       );
     },
   );

@@ -214,19 +214,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield* this.#resumeChannelWaiters(waiters, { kind: "closed", outcome });
   }
 
-  public *forceFailed(failure: Failure): ScopeSync<void> {
-    const pendingFailure = new PendingScopeFailure(failure);
-    if (this.#state.status === "failing") {
-      pendingFailure.suppress(this.#state.failure.build());
-    }
-
-    yield* this.#enterFailing(pendingFailure, noopSync);
-
-    while (this.#state.status === "failing") {
-      yield* this.#enterFailing(this.#state.failure, noopSync);
-    }
-  }
-
   public createFuture<Result>(): RuntimeFuture<Result> {
     const future = new RuntimeFuture<Result>();
 

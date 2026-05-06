@@ -225,10 +225,6 @@ export class Interpreter {
     this.#reconcile(channelScope, close(channelScope, channelHandle, outcome), suppressor);
   }
 
-  public forceFailed(scope: ScopeRef<unknown>, failure: Failure, suppressor: Suppressor): void {
-    this.#reconcile(scope, this.#resolve(scope).forceFailed(failure), suppressor);
-  }
-
   public scopeState(scope: ScopeRef<unknown>): ScopeState {
     const runtimeScope = this.#resolve(scope);
     switch (runtimeScope.status) {

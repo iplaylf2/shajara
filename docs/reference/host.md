@@ -208,9 +208,12 @@ lifecycle patterns into future, channel, or process convergence visible to the e
 
 ## Host Form of Autonomy
 
-The host form of `autonomy(entry, options)` reuses kernel `autonomy`, but adapts the
-`reaper` from the host side:
+The host form of `autonomy(entry, options)` reuses kernel `autonomy`. Scheduler options
+use the executor behavior described in `executor.md`, including cancellation when
+scheduler assignment throws.
 
-- the host `reaper` shape is `(scope) => RiteCoroutine<void>`
+The `reaper` option is adapted into a host coroutine shape:
+
+- `(scope) => RiteCoroutine<void>` is the host reaper shape
 - returning normally means "keep waiting"
 - throwing means "submit a failure adjudication rooted in that exception"

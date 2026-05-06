@@ -77,8 +77,9 @@ describe("/ entries: createScope", () => {
     async ({ outcome }) => {
       const scope = createScope();
 
+      const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
       await expect(scope[Symbol.asyncDispose]()).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await closedCancellation;
       expect(scope.status).toBe(outcome);
     },
   );
@@ -137,9 +138,11 @@ describe("/ entries: createScope", () => {
           }
         });
 
+        const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
+        const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
         await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
-        await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-        await expect(settled).rejects.toBeInstanceOf(CanceledError);
+        await closedCancellation;
+        await settledCancellation;
         expect(events).toEqual(outcome);
       } finally {
         if (scope.status !== "closed") {
@@ -172,9 +175,11 @@ describe("/ entries: createScope", () => {
         });
 
         await started.promise;
+        const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
+        const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
         await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
-        await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-        await expect(settled).rejects.toBeInstanceOf(CanceledError);
+        await closedCancellation;
+        await settledCancellation;
         expect(events).toEqual(outcome);
       } finally {
         if (scope.status !== "closed") {
@@ -212,10 +217,11 @@ describe("/ entries: createScope", () => {
       const settledError = settled.catch((error: unknown) => error);
 
       await started.promise;
+      const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
       const cancelation = scope.cancel();
 
       await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await closedCancellation;
       await expect(settledError).resolves.toBeInstanceOf(ScopeError);
       await expect(settledError).resolves.toMatchObject({
         ...outcome,
