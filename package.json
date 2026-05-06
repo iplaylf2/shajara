@@ -24,14 +24,14 @@
     "version-packages": "changeset version"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "@shajara/forge": "workspace:^",
     "@shajara/presets": "workspace:^",
     "@types/node": "catalog:",
     "cspell-cli": "^10.0.0",
-    "knip": "^6.10.0",
-    "oxfmt": "^0.47.0",
+    "knip": "^6.11.0",
+    "oxfmt": "^0.48.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },

@@ -209,14 +209,15 @@ describe("/ entries: createScope", () => {
           throw cause;
         }
       });
+      const settledError = settled.catch((error: unknown) => error);
 
       await started.promise;
       const cancelation = scope.cancel();
 
       await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
       await expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-      await expect(settled).rejects.toBeInstanceOf(ScopeError);
-      await expect(settled).rejects.toMatchObject({
+      await expect(settledError).resolves.toBeInstanceOf(ScopeError);
+      await expect(settledError).resolves.toMatchObject({
         ...outcome,
         cause: {
           ...outcome.cause,
