@@ -204,6 +204,10 @@ export class RuntimeScope implements ScopeRef<unknown> {
     outcome: Outcome,
   ): ScopeSync<void> {
     const channel = this.#resolve(channelHandle);
+    if (channel.isSealed) {
+      return;
+    }
+
     const waiters = channel.close(outcome);
     this.#channels.delete(channel);
 
