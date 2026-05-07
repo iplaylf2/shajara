@@ -1,6 +1,7 @@
 import type { BindTurn, Executor } from "#/index";
+import { canceledFailure, createExecutor } from "#/index";
 import { NextTurnPacer } from "./next-turn-pacer";
-import { createExecutor } from "#/index";
+import { either } from "fp-ts";
 import { waitForSettled } from "./settlement";
 
 export function createManagedExecutor(): ManagedExecutorHandle {
@@ -44,8 +45,8 @@ class ManagedExecutor implements ManagedExecutorHandle {
 
   async #dispose(): Promise<void> {
     this.#executor.cancel(this.#executor.scope);
-    const settled = await waitForSettled(this.#executor);
-    if (settled.kind !== "canceled") {
+    const settled = await waitForSettled(this.#executor, this.#executor);
+    if (!either.isLeft(settled) || settled.left !== canceledFailure) {
       throw new Error("Expected executor shutdown to settle as canceled", {
         cause: settled,
       });

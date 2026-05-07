@@ -1,12 +1,13 @@
-import type { LaunchResult } from "#/index";
+import type { Executor, FutureKey, FutureResult, ScopeRef } from "#/index";
 
 export async function waitForSettled<Result>(
-  handle: SettlementSource<Result>,
+  executor: Executor,
+  source: FutureKey<Result> | SettlementSource<Result>,
   options?: WaitOptions,
-): Promise<LaunchResult<Result>> {
+): Promise<FutureResult<Result>> {
   const maxTurns = options?.maxTurns ?? DEFAULT_MAX_TURNS;
-  const settled = Promise.withResolvers<LaunchResult<Result>>();
-  const unsubscribe = handle.onSettled((result) => {
+  const settled = Promise.withResolvers<FutureResult<Result>>();
+  const unsubscribe = executor.onSettled(settlementFuture(source), (result) => {
     settled.resolve(result);
   });
 
@@ -29,8 +30,14 @@ async function waitForTimeout(turn: number, maxTurns: number): Promise<never> {
   return waitForTimeout(turn + 1, maxTurns);
 }
 
+function settlementFuture<Result>(
+  source: FutureKey<Result> | SettlementSource<Result>,
+): FutureKey<Result> {
+  return "scope" in source ? source.scope.exitFuture : source;
+}
+
 interface SettlementSource<Result> {
-  onSettled(listener: (result: LaunchResult<Result>) => void): () => void;
+  readonly scope: ScopeRef<Result>;
 }
 
 interface WaitOptions {

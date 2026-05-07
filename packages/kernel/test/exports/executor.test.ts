@@ -2,12 +2,14 @@ import type {
   ChannelSender,
   ExecutionScopeRef,
   Executor,
+  FutureResult,
   FutureSettleKey,
   LaunchHandle,
   ReceiveResult,
 } from "#/index";
 import {
   cancel,
+  canceledFailure,
   channel,
   defer,
   externalFailure,
@@ -21,7 +23,8 @@ import {
 } from "#/index";
 import { createManagedExecutor, unwrapSome, waitForSettled } from "#test/harness";
 import { describe, expect, test } from "vitest";
-import { iife, isSome, left, right, some } from "#/utils";
+import { isSome, left, right, some } from "#/utils";
+import { either } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -50,30 +53,34 @@ describe("/ helpers: createExecutor", () => {
     {
       given: [] as const,
       outcome: {
-        callbackSettled: {
-          kind: "canceled",
-        },
-        settled: {
-          kind: "canceled",
-        },
+        futureSettled: left(canceledFailure),
+        futureSettledAfterClose: left(canceledFailure),
+        settled: left(canceledFailure),
         statusAfterSettle: "closed",
       },
     },
-  ])("exposes root settlement through the executor handle itself", async ({ outcome }) => {
+  ])("exposes root settlement through executor settlement observation", async ({ outcome }) => {
     await using managed = createManagedExecutor();
     const { executor } = managed;
 
-    const settledPromise = waitForSettled(executor);
+    const futureSettled = Promise.withResolvers<unknown>();
+    executor.onSettled(executor.scope.exitFuture, (result) => {
+      futureSettled.resolve(result);
+    });
+    const settledPromise = waitForSettled(executor, executor);
     executor.cancel(executor.scope);
-    const settled = await settledPromise;
-
-    let callbackSettled = null;
-    executor.onSettled((result) => {
-      callbackSettled = result;
+    const [futureSettledResult, settled] = await Promise.all([
+      futureSettled.promise,
+      settledPromise,
+    ]);
+    let futureSettledAfterClose = null;
+    executor.onSettled(executor.scope.exitFuture, (result) => {
+      futureSettledAfterClose = result;
     });
 
     const actual = {
-      callbackSettled,
+      futureSettled: futureSettledResult,
+      futureSettledAfterClose,
       settled,
       statusAfterSettle: executor.status,
     };
@@ -87,10 +94,7 @@ describe("/ helpers: createExecutor", () => {
       outcome: {
         initialStatus: "open",
         launchedUnderRoot: true,
-        settled: {
-          kind: "success",
-          result: "entry-done",
-        },
+        settled: right("entry-done"),
         settledStatus: "closed",
       },
     },
@@ -104,7 +108,7 @@ describe("/ helpers: createExecutor", () => {
       const actual = {
         initialStatus: handle.status,
         launchedUnderRoot: handle.scope !== executor.scope,
-        settled: await waitForSettled(handle),
+        settled: await waitForSettled(executor, handle),
         settledStatus: handle.status,
       };
 
@@ -114,15 +118,13 @@ describe("/ helpers: createExecutor", () => {
 });
 
 describe("/ interfaces: Executor", () => {
-  describe("launch-handle: scope, status, onSettled", () => {
+  describe("launch-handle: scope, status", () => {
     test.for([
       {
         given: ["entry-done"] as const,
         outcome: {
-          callbackSettled: {
-            kind: "success",
-            result: "entry-done",
-          },
+          futureSettled: right("entry-done"),
+          launchSettled: right("entry-done"),
           scopeCreated: true,
           statusAfterSettle: "closed",
         },
@@ -134,15 +136,15 @@ describe("/ interfaces: Executor", () => {
         const { executor } = managed;
 
         const handle = unwrapSome(executor.launch(executor.scope, () => wisp.of(entryResult)));
-        await waitForSettled(handle);
-
-        let callbackSettled = null;
-        handle.onSettled((result) => {
-          callbackSettled = result;
+        const launchSettled = await waitForSettled(executor, handle);
+        let futureSettled = null;
+        executor.onSettled(handle.scope.exitFuture, (result) => {
+          futureSettled = result;
         });
 
         const actual = {
-          callbackSettled,
+          futureSettled,
+          launchSettled,
           scopeCreated: handle.scope !== executor.scope,
           statusAfterSettle: handle.status,
         };
@@ -154,135 +156,20 @@ describe("/ interfaces: Executor", () => {
     test.for([
       {
         given: [externalFailure("halted", "launch-failed")] as const,
-        outcome: {
-          failure: expect.objectContaining({
+        outcome: left(
+          expect.objectContaining({
             cause: externalFailure("halted", "launch-failed"),
           }),
-          kind: "failure",
-        },
+        ),
       },
     ])(
-      "reports entry failures through the handle settlement channel",
+      "reports entry failures through the launched scope exit future",
       async ({ given: [failure], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
 
         const handle = unwrapSome(executor.launch(executor.scope, () => halt(failure)));
-        const actual = await waitForSettled(handle);
-
-        expect(actual).toEqual({
-          ...outcome,
-          failure: expect.objectContaining({
-            cause: failure,
-          }),
-        });
-      },
-    );
-
-    test.for([
-      {
-        given: ["listener-threw", "throws", "records"] as const,
-        outcome: {
-          cancelError: expect.objectContaining({ message: "listener-threw" }),
-          listenerCalls: ["throws", "records"],
-          settled: {
-            kind: "canceled",
-          },
-          settledStatus: "closed",
-          turnFaults: [],
-        },
-      },
-    ])(
-      "surfaces onSettled listener exceptions through the synchronous cancel call",
-      async ({ given: [causeMessage, throwingEntry, recordingEntry], outcome }) => {
-        const listenerCalls: string[] = [];
-        const actual = await iife(async () => {
-          await using managed = createManagedExecutor();
-          const { executor } = managed;
-
-          const handle = unwrapSome(executor.launch(executor.scope, () => park()));
-          handle.onSettled(() => {
-            listenerCalls.push(throwingEntry);
-            throw new Error(causeMessage);
-          });
-          handle.onSettled(() => {
-            listenerCalls.push(recordingEntry);
-          });
-
-          let cancelError: unknown = null;
-          try {
-            executor.cancel(handle.scope);
-          } catch (error) {
-            cancelError = error;
-          }
-
-          return {
-            cancelError,
-            listenerCalls,
-            settled: await waitForSettled(handle),
-            settledStatus: handle.status,
-            turnFaults: managed.turnFaults,
-          };
-        });
-
-        expect(actual).toEqual(outcome);
-      },
-    );
-
-    test.for([
-      {
-        given: ["first-listener-threw", "second-listener-threw"] as const,
-        outcome: {
-          cancelErrorCount: 2,
-          cancelErrorKind: "AggregateError",
-          cancelErrorMessage: "Out-of-band failures occurred while canceling a scope",
-          cancelErrorMessages: ["first-listener-threw", "second-listener-threw"],
-          settled: {
-            kind: "canceled",
-          },
-          settledStatus: "closed",
-          turnFaults: [],
-        },
-      },
-    ])(
-      "aggregates multiple onSettled listener exceptions raised by synchronous cancel",
-      async ({ given: [firstCauseMessage, secondCauseMessage], outcome }) => {
-        const actual = await iife(async () => {
-          await using managed = createManagedExecutor();
-          const { executor } = managed;
-
-          const handle = unwrapSome(executor.launch(executor.scope, () => park()));
-          handle.onSettled(() => {
-            throw new Error(firstCauseMessage);
-          });
-          handle.onSettled(() => {
-            throw new Error(secondCauseMessage);
-          });
-
-          let cancelError: unknown = null;
-          try {
-            executor.cancel(handle.scope);
-          } catch (error) {
-            cancelError = error;
-          }
-          const settled = await waitForSettled(handle);
-
-          return {
-            cancelErrorCount: cancelError instanceof AggregateError ? cancelError.errors.length : 0,
-            cancelErrorKind: cancelError?.constructor?.name,
-            cancelErrorMessage:
-              cancelError instanceof Error ? cancelError.message : String(cancelError),
-            cancelErrorMessages:
-              cancelError instanceof AggregateError
-                ? cancelError.errors.map((error) =>
-                    error instanceof Error ? error.message : String(error),
-                  )
-                : [],
-            settled,
-            settledStatus: handle.status,
-            turnFaults: managed.turnFaults,
-          };
-        });
+        const actual = await waitForSettled(executor, handle);
 
         expect(actual).toEqual(outcome);
       },
@@ -292,37 +179,112 @@ describe("/ interfaces: Executor", () => {
       {
         given: [] as const,
         outcome: {
-          listenerCalls: 1,
-          settled: {
-            kind: "canceled",
-          },
+          firstSettled: left(canceledFailure),
+          secondSettled: left(canceledFailure),
+          settledStatus: "closed",
+          turnFaults: [],
         },
       },
     ])(
-      "treats repeated registrations of the same onSettled function as distinct subscriptions",
+      "resolves multiple settlement listeners when a launched scope settles",
       async ({ outcome }) => {
-        const actual = await iife(async () => {
-          await using managed = createManagedExecutor();
-          const { executor } = managed;
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
 
-          const handle = unwrapSome(executor.launch(executor.scope, () => park()));
-          let listenerCalls = 0;
-          function listener() {
-            listenerCalls += 1;
-          }
+        const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+        const first = waitForSettled(executor, handle);
+        const second = waitForSettled(executor, handle);
+        executor.cancel(handle.scope);
+        const [firstSettled, secondSettled] = await Promise.all([first, second]);
 
-          const unsubscribeFirst = handle.onSettled(listener);
-          handle.onSettled(listener);
-          unsubscribeFirst();
+        const actual = {
+          firstSettled,
+          secondSettled,
+          settledStatus: handle.status,
+          turnFaults: managed.turnFaults,
+        };
 
-          executor.cancel(handle.scope);
-          const settled = await waitForSettled(handle);
+        expect(actual).toEqual(outcome);
+      },
+    );
 
-          return {
-            listenerCalls,
-            settled,
-          };
+    test.for([
+      {
+        given: ["listener-threw", "throws", "records"] as const,
+        outcome: {
+          cancelError: expect.objectContaining({ message: "listener-threw" }),
+          listenerCalls: ["throws", "records"],
+          settled: left(canceledFailure),
+          settledStatus: "closed",
+          turnFaults: [],
+        },
+      },
+    ])(
+      "surfaces settlement listener exceptions through the synchronous cancel call",
+      async ({ given: [causeMessage, throwingEntry, recordingEntry], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+
+        const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+        const listenerCalls: string[] = [];
+        executor.onSettled(handle.scope.exitFuture, () => {
+          listenerCalls.push(throwingEntry);
+          throw new Error(causeMessage);
         });
+        executor.onSettled(handle.scope.exitFuture, () => {
+          listenerCalls.push(recordingEntry);
+        });
+
+        let cancelError: unknown = null;
+        try {
+          executor.cancel(handle.scope);
+        } catch (error) {
+          cancelError = error;
+        }
+
+        const actual = {
+          cancelError,
+          listenerCalls,
+          settled: await waitForSettled(executor, handle),
+          settledStatus: handle.status,
+          turnFaults: managed.turnFaults,
+        };
+
+        expect(actual).toEqual(outcome);
+      },
+    );
+
+    test.for([
+      {
+        given: ["disposed", "active"] as const,
+        outcome: {
+          listenerCalls: ["active"],
+          settled: left(canceledFailure),
+        },
+      },
+    ])(
+      "disposes a settlement listener before the launched scope settles",
+      async ({ given: [disposed, active], outcome }) => {
+        await using managed = createManagedExecutor();
+        const { executor } = managed;
+
+        const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+        const listenerCalls: string[] = [];
+        const unsubscribe = executor.onSettled(handle.scope.exitFuture, () => {
+          listenerCalls.push(disposed);
+        });
+        executor.onSettled(handle.scope.exitFuture, () => {
+          listenerCalls.push(active);
+        });
+        unsubscribe();
+
+        executor.cancel(handle.scope);
+        const settled = await waitForSettled(executor, handle);
+
+        const actual = {
+          listenerCalls,
+          settled,
+        };
 
         expect(actual).toEqual(outcome);
       },
@@ -335,9 +297,7 @@ describe("/ interfaces: Executor", () => {
         given: ["should-not-launch"] as const,
         outcome: {
           launchAfterClose: false,
-          settled: {
-            kind: "canceled",
-          },
+          settled: left(canceledFailure),
         },
       },
     ])(
@@ -350,7 +310,7 @@ describe("/ interfaces: Executor", () => {
         executor.cancel(handle.scope);
         const actual = {
           launchAfterClose: isSome(executor.launch(handle.scope, () => wisp.of(entryResult))),
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
         };
 
         expect(actual).toEqual(outcome);
@@ -363,10 +323,7 @@ describe("/ interfaces: Executor", () => {
         outcome: {
           firstSettle: true,
           secondSettle: false,
-          settled: {
-            kind: "success",
-            result: right("future-ready"),
-          },
+          settled: launchedResult(right("future-ready")),
           settledStatus: "closed",
         },
       },
@@ -397,7 +354,7 @@ describe("/ interfaces: Executor", () => {
         const actual = {
           firstSettle: executor.settle(settleKey, right(value)),
           secondSettle: executor.settle(settleKey, right(value)),
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
           settledStatus: handle.status,
         };
 
@@ -410,10 +367,7 @@ describe("/ interfaces: Executor", () => {
         given: ["external-value"] as const,
         outcome: {
           sendResult: some({ kind: "sent" }),
-          settled: {
-            kind: "success",
-            result: { kind: "value", value: "external-value" },
-          },
+          settled: right({ kind: "value", value: "external-value" }),
           settledStatus: "closed",
         },
       },
@@ -426,7 +380,7 @@ describe("/ interfaces: Executor", () => {
 
         const actual = {
           sendResult: executor.trySend(sender, value),
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
           settledStatus: handle.status,
         };
 
@@ -439,10 +393,7 @@ describe("/ interfaces: Executor", () => {
         given: ["closed-outcome", "late-value"] as const,
         outcome: {
           lateSendResult: some({ kind: "closed", outcome: "closed-outcome" }),
-          settled: {
-            kind: "success",
-            result: { kind: "closed", outcome: "closed-outcome" },
-          },
+          settled: right({ kind: "closed", outcome: "closed-outcome" }),
           settledStatus: "closed",
         },
       },
@@ -456,7 +407,7 @@ describe("/ interfaces: Executor", () => {
         executor.close(sender, closeOutcome);
         const actual = {
           lateSendResult: executor.trySend(sender, lateValue),
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
           settledStatus: handle.status,
         };
 
@@ -469,10 +420,6 @@ describe("/ interfaces: Executor", () => {
         given: [externalFailure("halted", "future-failed")] as const,
         outcome: {
           injected: true,
-          settled: {
-            kind: "success",
-            result: null,
-          },
           settledStatus: "closed",
         },
       },
@@ -502,16 +449,13 @@ describe("/ interfaces: Executor", () => {
 
         const actual = {
           injected: executor.settle(settleKey, left(failure)),
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
           settledStatus: handle.status,
         };
 
         expect(actual).toEqual({
           ...outcome,
-          settled: {
-            ...outcome.settled,
-            result: left(failure),
-          },
+          settled: launchedResult(left(failure)),
         });
       },
     );
@@ -521,10 +465,7 @@ describe("/ interfaces: Executor", () => {
         given: ["future-ready", "too-late"] as const,
         outcome: {
           lateSettleAccepted: false,
-          settled: {
-            kind: "success",
-            result: right("future-ready"),
-          },
+          settled: launchedResult(right("future-ready")),
           settledStatus: "closed",
         },
       },
@@ -551,7 +492,7 @@ describe("/ interfaces: Executor", () => {
           ),
         );
         const settleKey = await futureSettle.promise;
-        const settled = await waitForSettled(handle);
+        const settled = await waitForSettled(executor, handle);
 
         const actual = {
           lateSettleAccepted: executor.settle(settleKey, right(lateValue)),
@@ -567,9 +508,7 @@ describe("/ interfaces: Executor", () => {
       {
         given: [] as const,
         outcome: {
-          settled: {
-            kind: "canceled",
-          },
+          settled: left(canceledFailure),
           settledStatus: "closed",
         },
       },
@@ -583,7 +522,7 @@ describe("/ interfaces: Executor", () => {
         executor.cancel(handle.scope);
         executor.cancel(handle.scope);
         const actual = {
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
           settledStatus: handle.status,
         };
 
@@ -620,9 +559,7 @@ describe("/ interfaces: Executor", () => {
         given: ["late-launch"] as const,
         outcome: {
           launchAfterClose: false,
-          settled: {
-            kind: "canceled",
-          },
+          settled: left(canceledFailure),
           settledStatus: "closed",
         },
       },
@@ -639,7 +576,7 @@ describe("/ interfaces: Executor", () => {
 
         const actual = {
           launchAfterClose,
-          settled: await waitForSettled(executor),
+          settled: await waitForSettled(executor, executor),
           settledStatus: executor.status,
         };
 
@@ -682,7 +619,7 @@ describe("/ interfaces: Executor", () => {
         );
 
         const actual = {
-          settled: await waitForSettled(handle),
+          settled: await waitForSettled(executor, handle),
           settledStatus: handle.status,
           turnFaults: managed.turnFaults,
         };
@@ -691,12 +628,8 @@ describe("/ interfaces: Executor", () => {
           settledStatus: actual.settledStatus,
           turnFaults: actual.turnFaults,
         }).toEqual(outcome);
-        expect(actual.settled.kind).toBe("failure");
-        expect(
-          actual.settled.kind === "failure"
-            ? (actual.settled.failure as { cause?: unknown }).cause
-            : null,
-        ).toEqual(
+        expect(either.isLeft(actual.settled)).toBe(true);
+        expect(failureCause(actual.settled)).toEqual(
           expect.objectContaining({
             kind: "external",
             message: "Scope did not finish closing within the executor reaper round limit",
@@ -750,9 +683,9 @@ describe("/ interfaces: Executor", () => {
         );
 
         const actual = {
-          firstSettled: await waitForSettled(first),
+          firstSettled: await waitForSettled(executor, first),
           firstSettledStatus: first.status,
-          secondSettled: await waitForSettled(second),
+          secondSettled: await waitForSettled(executor, second),
           secondSettledStatus: second.status,
         };
 
@@ -760,12 +693,8 @@ describe("/ interfaces: Executor", () => {
           firstSettledStatus: actual.firstSettledStatus,
           secondSettledStatus: actual.secondSettledStatus,
         }).toEqual(outcome);
-        expect(actual.firstSettled.kind).toBe("failure");
-        expect(
-          actual.firstSettled.kind === "failure"
-            ? (actual.firstSettled.failure as { cause?: unknown }).cause
-            : null,
-        ).toEqual(
+        expect(either.isLeft(actual.firstSettled)).toBe(true);
+        expect(failureCause(actual.firstSettled)).toEqual(
           expect.objectContaining({
             kind: "external",
             message: "Scope did not finish closing within the executor reaper round limit",
@@ -775,12 +704,8 @@ describe("/ interfaces: Executor", () => {
             },
           }),
         );
-        expect(actual.secondSettled.kind).toBe("failure");
-        expect(
-          actual.secondSettled.kind === "failure"
-            ? (actual.secondSettled.failure as { cause?: unknown }).cause
-            : null,
-        ).toEqual(
+        expect(either.isLeft(actual.secondSettled)).toBe(true);
+        expect(failureCause(actual.secondSettled)).toEqual(
           expect.objectContaining({
             kind: "external",
             message: "Scope did not finish closing within the executor reaper round limit",
@@ -820,4 +745,12 @@ async function launchReceiver(executor: Executor): Promise<LaunchedReceiver<stri
 interface LaunchedReceiver<Value, Outcome> {
   readonly handle: LaunchHandle<ReceiveResult<Value, Outcome>>;
   readonly sender: ChannelSender<Value, Outcome>;
+}
+
+function failureCause(result: FutureResult<unknown>): unknown {
+  return either.isLeft(result) ? (result.left as { cause?: unknown }).cause : null;
+}
+
+function launchedResult<Result>(result: Result): FutureResult<Result> {
+  return right(result);
 }

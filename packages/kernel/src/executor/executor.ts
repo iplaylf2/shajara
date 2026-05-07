@@ -1,7 +1,7 @@
 import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
 import type { Disposer, Option } from "#/utils/index";
-import type { FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
-import type { LaunchHandle, LaunchResult, LaunchStatus } from "./launch-handle";
+import type { FutureKey, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
+import type { LaunchHandle, LaunchStatus } from "./launch-handle";
 import { either, option } from "fp-ts";
 import { halt, park } from "#/primitives/index";
 import { DomainInterpreter } from "./domain-interpreter";
@@ -10,8 +10,6 @@ import { ExecutorDriver } from "./executor-driver";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import { RoundLimitReaper } from "./round-limit-reaper";
-import { RuntimeLaunchHandle } from "./launch-handle";
-import { canceledFailure } from "#/failures";
 import { noop } from "#/utils/index";
 import { withRecoveryAnchor } from "#/primitives-kit";
 
@@ -26,6 +24,10 @@ export interface Executor extends LaunchHandle<never> {
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
   ): Option<LaunchHandle<Result>>;
+  onSettled<Result>(
+    future: FutureKey<Result>,
+    listener: (result: FutureResult<Result>) => void,
+  ): Disposer;
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
   trySend<Value, Outcome>(
     sender: ChannelSender<Value, Outcome>,
@@ -70,12 +72,27 @@ class RuntimeExecutor implements Executor {
 
     const executionScope = this.#registerScope(launched.scope);
 
-    return option.some(
-      new RuntimeLaunchHandle(executionScope, {
-        onSettled: (id, onSettled) => this.#onSettled(id, onSettled),
-        status: (id) => this.#status(id),
-      }),
-    );
+    return option.some(this.#createLaunchHandle(executionScope));
+  }
+
+  public onSettled<Result>(
+    future: FutureKey<Result>,
+    listener: (result: FutureResult<Result>) => void,
+  ): Disposer {
+    const settled = this.#interpreter.poll(future);
+    if (option.isSome(settled)) {
+      listener(settled.value);
+
+      return noop;
+    }
+
+    return this.#interpreter.onSettled(future, (result, suppressor) => {
+      try {
+        listener(result);
+      } catch (error) {
+        suppressor.capture(error);
+      }
+    });
   }
 
   public settle<Result>(
@@ -100,16 +117,12 @@ class RuntimeExecutor implements Executor {
   }
 
   public cancel(scope: ExecutionScopeRef<unknown>): void {
-    if (!this.#isOpenScope(scope)) {
+    if (!this.#isRegisteredScope(scope)) {
       return;
     }
 
     using fault = new FaultSink("Out-of-band failures occurred while canceling a scope");
     this.#interpreter.cancel(scope, fault);
-  }
-
-  public onSettled(listener: (result: LaunchResult<never>) => void): Disposer {
-    return this.#onSettled(this.#rootScope, listener);
   }
 
   public get scope(): ExecutionScopeRef<never> {
@@ -147,28 +160,19 @@ class RuntimeExecutor implements Executor {
     return this.#isRegisteredScope(scope) && this.#interpreter.scopeState(scope).status === "open";
   }
 
-  #onSettled<Result>(
-    scope: ScopeRef<Result>,
-    listener: (result: LaunchResult<Result>) => void,
-  ): Disposer {
-    const settled = this.#interpreter.poll(scope.exitFuture);
-    if (option.isSome(settled)) {
-      listener(toLaunchResult(settled.value));
-
-      return noop;
-    }
-
-    return this.#interpreter.onSettled(scope.exitFuture, (result, suppressor) => {
-      try {
-        listener(toLaunchResult(result));
-      } catch (error) {
-        suppressor.capture(error);
-      }
-    });
-  }
-
   #status(scope: ScopeRef<unknown>) {
     return this.#interpreter.scopeState(scope).status;
+  }
+
+  #createLaunchHandle<Result>(scope: ExecutionScopeRef<Result>): LaunchHandle<Result> {
+    const readStatus = () => this.#status(scope);
+
+    return {
+      scope,
+      get status(): LaunchStatus {
+        return readStatus();
+      },
+    };
   }
 
   #registerScope<Result>(scope: ScopeRef<Result>): ExecutionScopeRef<Result> {
@@ -184,17 +188,6 @@ class RuntimeExecutor implements Executor {
   readonly #interpreter: DomainInterpreter;
   readonly #rootScope: ExecutionScopeRef<never>;
   readonly #scopeRegistry = new WeakSet<ScopeRef<unknown>>();
-}
-
-function toLaunchResult<Result>(result: FutureResult<Result>): LaunchResult<Result> {
-  if (either.isLeft(result)) {
-    if (result.left === canceledFailure) {
-      return { kind: "canceled" };
-    }
-
-    return { failure: result.left, kind: "failure" };
-  }
-  return { kind: "success", result: result.right };
 }
 
 const DEFAULT_REAPER_ROUND_LIMIT = 2;

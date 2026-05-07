@@ -59,9 +59,9 @@ Names available from the root entry include:
   `FutureResult`, `ContextKey`, `contextKey`
 - failures: `Failure`, `FailureShape`, `canceledFailure`, `channelFailure`,
   `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`,
-  `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`,
-  `Reaper`, `Processor`
+- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchStatus`,
+  `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`, `Reaper`,
+  `Processor`
 - executor primitives: `autonomy`
 - primitives: `Wisp` primitives for concurrency, futures, channels, context, control,
   termination, cleanup, parking, recovery, and introspection
