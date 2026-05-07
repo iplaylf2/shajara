@@ -1,19 +1,25 @@
 export class ManagedDrain {
   public advanceTo(phase: ManagedDrainPhase): void {
-    this.#phase = phase;
+    this.#phaseRank = DRAIN_PHASE_RANK[phase];
   }
 
   public hasReached(phase: ManagedDrainPhase): boolean {
-    return DRAIN_PHASES.indexOf(this.#phase) >= DRAIN_PHASES.indexOf(phase);
+    return this.#phaseRank >= DRAIN_PHASE_RANK[phase];
   }
 
   public is(phase: ManagedDrainPhase): boolean {
-    return this.#phase === phase;
+    return this.#phaseRank === DRAIN_PHASE_RANK[phase];
   }
 
-  #phase: ManagedDrainPhase = "children";
+  #phaseRank: ManagedDrainPhaseRank = DRAIN_PHASE_RANK.children;
 }
 
-export type ManagedDrainPhase = (typeof DRAIN_PHASES)[number];
+export type ManagedDrainPhase = keyof typeof DRAIN_PHASE_RANK;
 
-const DRAIN_PHASES = ["children", "structural", "detached"] as const;
+type ManagedDrainPhaseRank = (typeof DRAIN_PHASE_RANK)[ManagedDrainPhase];
+
+const DRAIN_PHASE_RANK = {
+  children: 0,
+  detached: 2,
+  structural: 1,
+} as const;
