@@ -19,7 +19,7 @@ Names available from the root entry include:
 - host operations: `abortSignal`, `completer`, `promiser`, `feed`, `resource`,
   `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
-  `InterruptedError`, `ScopeError`
+  `InterruptedError`, `OperationContextError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
@@ -61,9 +61,9 @@ Names available from the root entry include:
   `FutureResult`, `ContextKey`, `contextKey`
 - failures: `Failure`, `FailureShape`, `canceledFailure`, `channelFailure`,
   `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchStatus`,
-  `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`, `Reaper`,
-  `Processor`
+- executor: `createExecutor`, `currentExecutorKey`, `Executor`, `BindTurn`,
+  `LaunchHandle`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`,
+  `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
 - executor primitives: `autonomy`
 - primitives: `Wisp` primitives for concurrency, futures, channels, context, control,
   termination, cleanup, parking, recovery, and introspection

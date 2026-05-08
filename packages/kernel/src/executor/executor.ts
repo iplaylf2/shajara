@@ -1,6 +1,13 @@
 import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
+import type {
+  ContextKey,
+  FutureKey,
+  FutureResult,
+  FutureSettleKey,
+  Ritual,
+  ScopeRef,
+} from "#/contracts";
 import type { Disposer, Option } from "#/utils/index";
-import type { FutureKey, FutureResult, FutureSettleKey, Ritual, ScopeRef } from "#/contracts";
 import type { LaunchHandle, LaunchStatus } from "./launch-handle";
 import { either, option } from "fp-ts";
 import { halt, park } from "#/primitives/index";
@@ -10,6 +17,7 @@ import { ExecutorDriver } from "./executor-driver";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import { RoundLimitReaper } from "./round-limit-reaper";
+import { contextKey } from "#/contracts";
 import { noop } from "#/utils/index";
 import { withRecoveryAnchor } from "#/primitives-kit";
 
@@ -37,6 +45,8 @@ export interface Executor extends LaunchHandle<never> {
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
+export const currentExecutorKey: ContextKey<Executor> = contextKey<Executor>();
+
 class RuntimeExecutor implements Executor {
   public constructor(bindTurn: BindTurn) {
     const pacer = bindTurn(() => {
@@ -48,6 +58,7 @@ class RuntimeExecutor implements Executor {
       scheduler: { assign: () => this.#driver.processor },
     });
     this.#rootScope = this.#registerScope(this.#interpreter.scopeRoot as never);
+    this.#interpreter.bind(this.#rootScope, currentExecutorKey, this);
     this.#interpreter.onSettled(this.#rootScope.exitFuture, () => {
       this.#driver.stop();
     });

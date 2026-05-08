@@ -9,6 +9,7 @@ failure semantics remain in the semantic baseline.
 `Executor` is a long-lived execution environment object. It provides:
 
 - a stable root execution entry
+- a context binding that lets launched work look up the current executor
 - the ability to launch new entry rituals under registered execution scopes
 - external observation of future settlement
 - external control for future settlement, channel operations, and entry cancellation
@@ -19,6 +20,10 @@ Creation:
 ```ts
 const executor = createExecutor(bindTurn);
 ```
+
+The binding is installed on the root scope through `currentExecutorKey`. Entries launched
+under the executor inherit it through normal context lookup unless a nearer scope shadows
+it.
 
 ## Execution Entries
 

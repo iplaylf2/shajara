@@ -11,10 +11,12 @@ import {
   cancel,
   canceledFailure,
   channel,
+  currentExecutorKey,
   defer,
   externalFailure,
   future,
   halt,
+  lookup,
   park,
   receive,
   settle,
@@ -29,6 +31,29 @@ import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
 describe("/ helpers: createExecutor", () => {
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        found: true,
+        sameExecutor: true,
+      },
+    },
+  ])("provides the current executor through root context lookup", async ({ outcome }) => {
+    await using managed = createManagedExecutor();
+    const { executor } = managed;
+
+    const handle = unwrapSome(executor.launch(executor.scope, () => lookup(currentExecutorKey)));
+    const settled = await waitForSettled(executor, handle);
+    const actual = {
+      found: either.isRight(settled) && isSome(settled.right),
+      sameExecutor:
+        either.isRight(settled) && isSome(settled.right) && settled.right.value === executor,
+    };
+
+    expect(actual).toEqual(outcome);
+  });
+
   test.for([
     {
       given: [] as const,

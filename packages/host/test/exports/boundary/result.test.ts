@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { fromFailure, toFailure, unwrapEither, unwrapOption } from "#/boundary";
 import { none, right, some } from "@shajara/kernel/utils";
+import { OperationContextError } from "#/index";
 import { externalFailure } from "@shajara/kernel";
 
 describe("/ boundary: fromFailure, toFailure, unwrapEither, unwrapOption", () => {
@@ -30,6 +31,25 @@ describe("/ boundary: fromFailure, toFailure, unwrapEither, unwrapOption", () =>
   ])("fromFailure preserves external Error instances", ({ given: [cause], outcome }) => {
     expect(fromFailure(toFailure(cause)) === cause).toBe(outcome.sameInstance);
   });
+
+  test.for([
+    {
+      given: [new OperationContextError()] as const,
+      outcome: {
+        kind: "external",
+      },
+    },
+  ])(
+    "toFailure maps operation context errors into external failures",
+    ({ given: [cause], outcome }) => {
+      const failure = toFailure(cause);
+
+      expect(failure).toMatchObject({
+        kind: outcome.kind,
+        raw: cause,
+      });
+    },
+  );
 
   test.for([
     {

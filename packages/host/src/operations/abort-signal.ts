@@ -1,9 +1,9 @@
 import type { RiteCoroutine } from "#/contracts";
-import { ensureExecutor } from "#/executor";
+import { currentExecutor } from "#/operations-kit";
 import { self } from "#/primitives/index";
 
 export function* abortSignal(): RiteCoroutine<AbortSignal> {
-  const executor = ensureExecutor();
+  const executor = yield* currentExecutor();
   const controller = new globalThis.AbortController();
   const { scope } = yield* self();
 

@@ -1,10 +1,10 @@
 import { CanceledError } from "#/errors";
 import type { RiteCoroutine } from "#/contracts";
-import { ensureExecutor } from "#/executor";
+import { currentExecutor } from "#/operations-kit";
 import { self } from "#/primitives/index";
 
 export function* promiser<Return>(): RiteCoroutine<Promiser<Return>> {
-  const executor = ensureExecutor();
+  const executor = yield* currentExecutor();
   const {
     promise,
     reject: rejectPromise,

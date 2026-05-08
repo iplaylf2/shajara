@@ -1,11 +1,11 @@
 import type { RiteCoroutine, RiteFuture } from "#/contracts";
 import { left, right } from "@shajara/kernel/utils";
-import { ensureExecutor } from "#/executor";
+import { currentExecutor } from "#/operations-kit";
 import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary/index";
 
 export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
-  const executor = ensureExecutor();
+  const executor = yield* currentExecutor();
   const [result, settleResult] = yield* future<Return>();
 
   return {
