@@ -74,13 +74,15 @@ Host APIs that expose independently observed results keep future handles:
 
 ## Error Mapping
 
-The host layer maps kernel failures into JavaScript error objects.
+The host layer maps JavaScript errors into kernel failures at the ritual boundary and
+maps kernel failures back into JavaScript errors at host-facing observation points.
 
 ### Writing into Kernel
 
 The following paths write host-side failures into the kernel:
 
-- throwing from a host ritual, recovery handler, or host integration callback
+- throwing from a host ritual, recovery handler, host operation, or host integration
+  callback
 - `settleError(futureSettle, error)`
 - `completer.reject(error)`
 - a promise rejection observed by `until(thunk)`
@@ -156,6 +158,11 @@ Convergence semantics:
 
 ## Host Operations
 
+Host operations are coroutine helpers. They run inside host routines and translate
+browser or JavaScript host effects into future, channel, or process convergence visible
+to the executor. Operations that need executor services read the current executor from
+scope context; if that context is missing, they throw `OperationContextError`.
+
 ### `abortSignal`
 
 `abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
@@ -206,9 +213,6 @@ body runs on the same scope lifecycle.
 
 `until(thunk)` writes the result of a promise back into a future through fulfilled and
 rejected callbacks.
-
-Together, these operations translate browser or JavaScript host effects and host-owned
-lifecycle patterns into future, channel, or process convergence visible to the executor.
 
 ## Host Form of Autonomy
 
