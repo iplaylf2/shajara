@@ -19,7 +19,7 @@ It packages host entries, host operations, concurrency primitives, and boundary 
 ## What this package provides
 
 - host entries: `run`, `createScope`
-- host operations: `abortSignal`, `completer`, `promiser`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`, `sleep`, `until`
 - concurrency, communication, and control primitives: `@shajara/host/primitives`
 - host/kernel adapters: `@shajara/host/boundary`
 

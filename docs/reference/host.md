@@ -8,7 +8,7 @@ JavaScript APIs.
 The host layer has four responsibilities:
 
 - application-facing entries: `run`, `createScope`
-- host operations: `abortSignal`, `completer`, `promiser`, `feed`, `resource`,
+- host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
 - mapping between kernel in-band values and JavaScript values or errors
@@ -172,17 +172,6 @@ It does not provide a way to cancel the scope from host code.
 
 If still pending, the future is canceled when the current scope converges.
 
-### `promiser`
-
-`promiser()` exposes a JavaScript promise with completion callbacks:
-
-- `promise`
-- `resolve(value)`
-- `reject(reason)`
-
-If still pending, the promise rejects with `CanceledError` when the current scope
-converges.
-
 ### `feed`
 
 `feed(capacity, overloadRewrite?)` exposes channel input capabilities to host code:
@@ -193,6 +182,11 @@ converges.
 
 The returned receiver stays inside coroutine code, while the callbacks send or close the
 channel from host code.
+
+### `promisify`
+
+`promisify(future)` exposes a host future as a JavaScript promise. The promise resolves
+with the future's value and rejects when the future fails or is canceled.
 
 ### `resource`
 

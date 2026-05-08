@@ -16,7 +16,7 @@ The root entry is intended for application code. It re-exports:
 Names available from the root entry include:
 
 - host entries: `run`, `createScope`
-- host operations: `abortSignal`, `completer`, `promiser`, `feed`, `resource`,
+- host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
   `InterruptedError`, `OperationContextError`, `ScopeError`
@@ -24,9 +24,8 @@ Names available from the root entry include:
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
   `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Completer`, `Promiser`, `Feed`, `ResourceBody`,
-  `ResourceProvide`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`,
-  `PromiseThunk`, `Disposer`
+- other root-level types: `Completer`, `Feed`, `ResourceBody`, `ResourceProvide`,
+  `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
@@ -150,21 +149,6 @@ Returns:
 
 If still pending, the future is canceled when the current scope converges.
 
-### `promiser`
-
-```ts
-yield * promiser<Return>();
-```
-
-Returns:
-
-- `promise`
-- `resolve(value)`
-- `reject(reason)`
-
-If still pending, the promise rejects with `CanceledError` when the current scope
-converges.
-
 ### `feed`
 
 ```ts
@@ -180,6 +164,15 @@ Returns:
 
 The receiver is consumed by coroutine channel primitives; the callbacks send or close the
 channel from host code.
+
+### `promisify`
+
+```ts
+yield * promisify(future);
+```
+
+Returns a `Promise<Return>` that observes a `RiteFuture<Return>`. The promise resolves
+with the future's value and rejects when the future fails or is canceled.
 
 ### `resource`
 
@@ -209,8 +202,8 @@ yield * until(thunk);
 | ------------- | ---------------------- |
 | `abortSignal` | `AbortSignal`          |
 | `completer`   | `Completer<Return>`    |
-| `promiser`    | `Promiser<Return>`     |
 | `feed`        | `Feed<Value, Outcome>` |
+| `promisify`   | `Promise<Return>`      |
 | `resource`    | `RiteFuture<Value>`    |
 | `sleep`       | `void`                 |
 | `until`       | `Return`               |
