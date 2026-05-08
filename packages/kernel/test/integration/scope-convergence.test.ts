@@ -9,21 +9,33 @@ describe("/ integration: scope convergence", () => {
   test.for([
     {
       given: {
-        childCleanup: "child cleanup",
+        childCleanupEnd: "child cleanup:end",
+        childCleanupStart: "child cleanup:start",
         detachedCleanup: "detached cleanup",
-        parentCleanup: "parent cleanup",
+        parentCleanupEnd: "parent cleanup:end",
+        parentCleanupStart: "parent cleanup:start",
       },
-      outcome: ["child cleanup", "parent cleanup", "detached cleanup"] as const,
+      outcome: [
+        "child cleanup:start",
+        "child cleanup:end",
+        "parent cleanup:start",
+        "parent cleanup:end",
+        "detached cleanup",
+      ] as const,
     },
   ])(
-    "cancels child scopes before structural and detached processes",
+    "drains child scopes before structural and detached processes during cancellation",
     async ({ given, outcome }) => {
       const events: string[] = [];
 
       await using ritual = interpretRitual(() =>
         pipe(
-          defer(traceCleanup(events, given.parentCleanup)),
-          wisp.chain(() => branch(parkedWithCleanup(events, given.childCleanup))),
+          defer(delayedTraceCleanup(events, given.parentCleanupStart, given.parentCleanupEnd)),
+          wisp.chain(() =>
+            branch(
+              parkedWithDelayedCleanup(events, given.childCleanupStart, given.childCleanupEnd),
+            ),
+          ),
           wisp.chain(() => spawn(parkedWithCleanup(events, given.detachedCleanup), DETACHED)),
           wisp.chain(() => cede()),
           wisp.chain(cancel),
@@ -38,36 +50,51 @@ describe("/ integration: scope convergence", () => {
   test.for([
     {
       given: {
-        childCleanup: "child cleanup",
+        childCleanupEnd: "child cleanup:end",
+        childCleanupStart: "child cleanup:start",
         detachedCleanup: "detached cleanup",
-        parentCleanup: "parent cleanup",
+        parentCleanupEnd: "parent cleanup:end",
+        parentCleanupStart: "parent cleanup:start",
       },
-      outcome: ["child cleanup", "parent cleanup", "detached cleanup"] as const,
+      outcome: [
+        "child cleanup:start",
+        "child cleanup:end",
+        "parent cleanup:start",
+        "parent cleanup:end",
+        "detached cleanup",
+      ] as const,
     },
-  ])("fails child scopes before structural and detached processes", async ({ given, outcome }) => {
-    const events: string[] = [];
-    const failure = externalFailure("failed", "scope failed");
+  ])(
+    "drains child scopes before structural and detached processes during failure",
+    async ({ given, outcome }) => {
+      const events: string[] = [];
+      const failure = externalFailure("failed", "scope failed");
 
-    await using ritual = interpretRitual(() =>
-      pipe(
-        defer(traceCleanup(events, given.parentCleanup)),
-        wisp.chain(() => branch(parkedWithCleanup(events, given.childCleanup))),
-        wisp.chain(() => spawn(parkedWithCleanup(events, given.detachedCleanup), DETACHED)),
-        wisp.chain(() =>
-          spawn(() =>
-            pipe(
-              cede(),
-              wisp.chain(() => halt(failure)),
+      await using ritual = interpretRitual(() =>
+        pipe(
+          defer(delayedTraceCleanup(events, given.parentCleanupStart, given.parentCleanupEnd)),
+          wisp.chain(() =>
+            branch(
+              parkedWithDelayedCleanup(events, given.childCleanupStart, given.childCleanupEnd),
             ),
           ),
+          wisp.chain(() => spawn(parkedWithCleanup(events, given.detachedCleanup), DETACHED)),
+          wisp.chain(() =>
+            spawn(() =>
+              pipe(
+                cede(),
+                wisp.chain(() => halt(failure)),
+              ),
+            ),
+          ),
+          wisp.chain(() => park()),
         ),
-        wisp.chain(() => park()),
-      ),
-    );
-    await ritual.waitForClosed();
+      );
+      await ritual.waitForClosed();
 
-    expect(events).toEqual(outcome);
-  });
+      expect(events).toEqual(outcome);
+    },
+  );
 });
 
 function parkedWithCleanup(events: string[], label: string) {
@@ -75,6 +102,24 @@ function parkedWithCleanup(events: string[], label: string) {
     pipe(
       defer(traceCleanup(events, label)),
       wisp.chain(() => park()),
+    );
+}
+
+function parkedWithDelayedCleanup(events: string[], start: string, end: string) {
+  return () =>
+    pipe(
+      defer(delayedTraceCleanup(events, start, end)),
+      wisp.chain(() => park()),
+    );
+}
+
+function delayedTraceCleanup(events: string[], start: string, end: string) {
+  return () =>
+    pipe(
+      recordTrace(events, start),
+      wisp.chain(() => cede()),
+      wisp.chain(() => recordTrace(events, end)),
+      wisp.map(noop),
     );
 }
 

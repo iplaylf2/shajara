@@ -20,6 +20,6 @@ export const collections: Record<ContentCollectionName, ContentCollection> = {
 };
 
 function generateDocsId({ entry }: { entry: string }): string {
-  const withoutExtension = entry.replace(/\.[^.]+$/, "");
-  return withoutExtension.replace(/\/index$/, "") || "index";
+  const withoutExtension = entry.replace(/\.[^.]+$/u, "");
+  return withoutExtension.replace(/\/index$/u, "") || "index";
 }

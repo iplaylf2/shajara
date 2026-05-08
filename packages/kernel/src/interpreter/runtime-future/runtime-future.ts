@@ -7,7 +7,6 @@ import type {
   Suppressor,
 } from "#/contracts";
 import type { Disposer } from "#/utils/index";
-import { unreachable } from "#/utils/index";
 
 export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): FutureResult<Result> | null {
@@ -19,10 +18,6 @@ export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey
   }
 
   public wait(onSettled: FutureSettler<Result>): Disposer {
-    if (this.#result) {
-      return unreachable();
-    }
-
     const waiter = [onSettled] as const;
     this.#waiters.add(waiter);
 

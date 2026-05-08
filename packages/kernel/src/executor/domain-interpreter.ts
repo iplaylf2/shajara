@@ -8,7 +8,6 @@ import { Interpreter } from "#/interpreter/index";
 import type { ProcessorTaskStatus } from "./processor";
 import type { ScopeZone } from "#/interpreter/index";
 import { autonomyOf } from "./autonomy";
-import { interruptedFailure } from "#/failures";
 
 export class DomainInterpreter extends Interpreter {
   public static createByAutonomy(
@@ -40,9 +39,9 @@ export class DomainInterpreter extends Interpreter {
           { completionMode: "detached" },
           faultSink,
         );
-        const cause = faultSink.drain();
-        if (option.isSome(cause)) {
-          this.forceFailed(scope, interruptedFailure(cause.value), suppressor);
+        const spawnFault = faultSink.drain();
+        if (option.isSome(spawnFault)) {
+          this.cancel(scope, suppressor);
 
           continue;
         }
@@ -178,8 +177,8 @@ export class DomainInterpreter extends Interpreter {
         ? (process: ProcessRef<unknown>, suppressor: Suppressor) => {
             try {
               schedulerDomain.admitProcess(process, this.processState(process));
-            } catch (error) {
-              this.forceFailed(this.scope(process), interruptedFailure(error), suppressor);
+            } catch {
+              this.cancel(this.scope(process), suppressor);
             }
           }
         : domainZone.trackProcess;

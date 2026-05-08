@@ -16,15 +16,16 @@ The root entry is intended for application code. It re-exports:
 Names available from the root entry include:
 
 - host entries: `run`, `createScope`
-- host operations: `abortSignal`, `action`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
+  `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
-  `InterruptedError`, `ScopeError`
+  `InterruptedError`, `OperationContextError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
   `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Action`, `Feed`, `ResourceBody`, `ResourceProvide`, `Scope`,
-  `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
+- other root-level types: `Completer`, `Feed`, `ResourceBody`, `ResourceProvide`,
+  `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
@@ -59,9 +60,9 @@ Names available from the root entry include:
   `FutureResult`, `ContextKey`, `contextKey`
 - failures: `Failure`, `FailureShape`, `canceledFailure`, `channelFailure`,
   `externalFailure`, `interruptedFailure`, `scopeFailure`
-- executor: `createExecutor`, `Executor`, `BindTurn`, `LaunchHandle`, `LaunchResult`,
-  `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`, `AutonomyOptions`, `Scheduler`,
-  `Reaper`, `Processor`
+- executor: `createExecutor`, `currentExecutorKey`, `Executor`, `BindTurn`,
+  `LaunchHandle`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`,
+  `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
 - executor primitives: `autonomy`
 - primitives: `Wisp` primitives for concurrency, futures, channels, context, control,
   termination, cleanup, parking, recovery, and introspection
@@ -134,10 +135,10 @@ yield * abortSignal();
 Returns an `AbortSignal` tied to the current scope. The signal aborts during that
 scope's convergence.
 
-### `action`
+### `completer`
 
 ```ts
-yield * action<Return>();
+yield * completer<Return>();
 ```
 
 Returns:
@@ -145,6 +146,8 @@ Returns:
 - `future`
 - `resolve(value)`
 - `reject(error)`
+
+If still pending, the future is canceled when the current scope converges.
 
 ### `feed`
 
@@ -161,6 +164,15 @@ Returns:
 
 The receiver is consumed by coroutine channel primitives; the callbacks send or close the
 channel from host code.
+
+### `promisify`
+
+```ts
+yield * promisify(future);
+```
+
+Returns a `Promise<Return>` that observes a `RiteFuture<Return>`. The promise resolves
+with the future's value and rejects when the future fails or is canceled.
 
 ### `resource`
 
@@ -189,8 +201,9 @@ yield * until(thunk);
 | Operation     | Return value           |
 | ------------- | ---------------------- |
 | `abortSignal` | `AbortSignal`          |
-| `action`      | `Action<Return>`       |
+| `completer`   | `Completer<Return>`    |
 | `feed`        | `Feed<Value, Outcome>` |
+| `promisify`   | `Promise<Return>`      |
 | `resource`    | `RiteFuture<Value>`    |
 | `sleep`       | `void`                 |
 | `until`       | `Return`               |
@@ -245,13 +258,13 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `self`    | `SelfHandle`  |
 | `cede`    | `void`        |
 
-Host rituals use JavaScript exceptions for current-process termination: throw a
+Host rituals use JavaScript throw semantics for current-process termination: throw a
 `CanceledError` to cancel, or throw any other value to fail.
 
 ## Kernel Primitive Return Values
 
 Kernel APIs preserve runtime state in returned values. Direct kernel callers handle
-these values in band; host callers receive JavaScript values, exceptions, or
+these values in band; host callers receive JavaScript values, thrown errors, or
 `Presence<T>` tuples.
 
 ### Concurrency, Scope, and Recovery
@@ -285,4 +298,5 @@ The common kernel result forms are:
 - `void` for operations that mutate runtime state without producing an observation value
 - `never` for termination or indefinite parking paths such as cancellation, halt, and park
 
-Host-facing APIs adapt these forms into JavaScript values, `Presence<T>`, and exceptions.
+Host-facing APIs adapt these forms into JavaScript values, `Presence<T>`, and thrown
+errors.

@@ -1,16 +1,18 @@
 # Execution Environment
 
 The execution environment drives the semantic model from a long-lived root scope. This
-document covers execution ownership and external control; scope and failure semantics
-remain in the semantic baseline.
+document covers execution ownership, future observation, and external control; scope and
+failure semantics remain in the semantic baseline.
 
 ## Executor
 
 `Executor` is a long-lived execution environment object. It provides:
 
 - a stable root execution entry
+- a context binding that lets launched work look up the current executor
 - the ability to launch new entry rituals under registered execution scopes
-- external control over future settlement, channel operations, and entry cancellation
+- external observation of future settlement
+- external control for future settlement, channel operations, and entry cancellation
 - scheduler and reaper governance through autonomy
 
 Creation:
@@ -18,6 +20,10 @@ Creation:
 ```ts
 const executor = createExecutor(bindTurn);
 ```
+
+The binding is installed on the root scope through `currentExecutorKey`. Entries launched
+under the executor inherit it through normal context lookup unless a nearer scope shadows
+it.
 
 ## Execution Entries
 
@@ -39,6 +45,11 @@ interface Executor extends LaunchHandle<never> {
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
   ): Option<LaunchHandle<Result>>;
+
+  onSettled<Result>(
+    future: FutureKey<Result>,
+    listener: (result: FutureResult<Result>) => void,
+  ): Disposer;
 
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
 
@@ -69,7 +80,6 @@ launched child scope.
 interface LaunchHandle<Result> {
   readonly scope: ExecutionScopeRef<Result>;
   readonly status: "open" | "closing" | "closed";
-  onSettled(listener: (result: LaunchResult<Result>) => void): Disposer;
 }
 ```
 
@@ -77,27 +87,27 @@ It identifies:
 
 - the `ExecutionScopeRef` created for the launch
 - the current lifecycle state of the entry
-- the entry's final convergence result
 
-`LaunchResult<Result>` has three result kinds:
+The executor itself is also the `LaunchHandle` view of the root scope, so it exposes the
+same entry identity and lifecycle state.
 
-- `success`
-- `failure`
-- `canceled`
+## Future Observation
 
-The executor itself is also the `LaunchHandle` view of the root scope, so it exposes
-`status` and `onSettled(...)` as well.
+`onSettled(future, listener)` subscribes external code to a future's settlement:
 
-## Result Mapping
+- if the future is already settled, the listener is called synchronously and the returned
+  disposer is a no-op
+- if the future is pending, the listener is called once when the future settles
+- disposing the returned subscription before settlement removes that listener
 
-The executor maps the launched scope's `exitFuture` into `LaunchResult`:
+The listener receives the future's native `FutureResult<Result>`:
 
-- `right(value)` becomes `{ kind: "success", result: value }`
-- `left(canceledFailure)` becomes `{ kind: "canceled" }`
-- any other `left(failure)` becomes `{ kind: "failure", failure }`
+- `right(value)` for success
+- `left(failure)` for failure or cancellation
 
-A launched child scope owns its convergence result. Parent code observes that result by
-waiting for or receiving the child's `exitFuture`.
+A launched child scope owns its convergence result through its `exitFuture`. External
+code observes that result by passing the launched scope's `exitFuture` to
+`onSettled(...)`.
 
 ## External Control
 
@@ -176,10 +186,10 @@ interface Scheduler {
 }
 ```
 
-When a process in an autonomous scope becomes runnable, the executor calls
-`scheduler.assign(process)` and routes it to a `Processor`.
-
-Here, `ProcessRef` is the scheduling target.
+The scheduler owns runnable-process placement for the autonomous scope. When a process
+becomes runnable, the executor passes its `ProcessRef` to `scheduler.assign(process)` and
+routes the process to the returned `Processor`. If `assign` throws, the executor requests
+cancellation for that process's owning scope.
 
 ### `reaper`
 

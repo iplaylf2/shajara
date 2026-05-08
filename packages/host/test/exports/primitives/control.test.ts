@@ -40,8 +40,9 @@ describe("/ primitives: cede", () => {
         yield* wait(pending);
       });
 
+      const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
       await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
-      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+      await settledCancellation;
       expect(scope.status).toBe(outcome.status);
     } finally {
       if (scope.status !== outcome.status) {

@@ -143,10 +143,9 @@ describe("/ primitives: guard, resumable", () => {
   test.for([
     {
       given: [externalFailure("halted", "halted under executor root")] as const,
-      outcome: {
-        kind: "success",
-        result: right(scopeFailureOf(externalFailure("halted", "halted under executor root"))),
-      },
+      outcome: right(
+        right(scopeFailureOf(externalFailure("halted", "halted under executor root"))),
+      ),
     },
   ])(
     "executor recovery anchor wraps unguarded resumable failures as successful values",
@@ -161,7 +160,7 @@ describe("/ primitives: guard, resumable", () => {
           ),
         ),
       );
-      const actual = await waitForSettled(handle);
+      const actual = await waitForSettled(executor, handle);
 
       expect(actual).toEqual(outcome);
     },

@@ -21,7 +21,7 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
     private readonly overloadRewrite: OverloadRewrite<Value>,
     public readonly scope: ScopeRef<unknown>,
   ) {
-    this.#kind = channelKindOf(capacity);
+    this.#capacityMode = channelCapacityModeOf(capacity);
   }
 
   public handle(): ChannelHandle<Value, Outcome> {
@@ -29,7 +29,7 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
   }
 
   public close(outcome: Outcome): RuntimeChannelWaiters<Waiter> {
-    return this.#dispose({ kind: "closed", outcome });
+    return this.#dispose({ outcome, status: "closed" });
   }
 
   public tryTake(): RuntimeChannelTake<Waiter, Value, Outcome> | null {
@@ -48,13 +48,13 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
       };
     }
 
-    switch (this.#state.kind) {
+    switch (this.#state.status) {
       case "open": {
         return null;
       }
       case "closed":
       case "revoked": {
-        return { result: this.#state, sender: null };
+        return { result: channelTerminalResultOf(this.#state), sender: null };
       }
     }
   }
@@ -68,10 +68,10 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
   }
 
   public tryPut(value: Value): RuntimeChannelPut<Waiter, Outcome> | null {
-    switch (this.#state.kind) {
+    switch (this.#state.status) {
       case "closed":
       case "revoked": {
-        return { receiver: null, result: this.#state };
+        return { receiver: null, result: channelTerminalResultOf(this.#state) };
       }
       case "open": {
         break;
@@ -117,7 +117,7 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
   }
 
   public tryFill(): Waiter | null {
-    if (this.#kind !== "bounded" || this.capacity === this.#buffer.length) {
+    if (this.#capacityMode !== "bounded" || this.capacity === this.#buffer.length) {
       return null;
     }
 
@@ -132,20 +132,18 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
   }
 
   public revoke(): RuntimeChannelWaiters<Waiter> {
-    return this.#dispose({ kind: "revoked" });
+    return this.#dispose({ status: "revoked" });
+  }
+
+  public get isSealed(): boolean {
+    return this.#state.status !== "open";
   }
 
   // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: ChannelReceiver<Value, Outcome>[typeof KEY_TOKEN] &
     ChannelSender<Value, Outcome>[typeof KEY_TOKEN];
 
-  #dispose(
-    state: Exclude<ChannelState<Outcome>, { readonly kind: "open" }>,
-  ): RuntimeChannelWaiters<Waiter> {
-    if (this.#state.kind !== "open") {
-      return { receivers: [], senders: [] };
-    }
-
+  #dispose(state: ChannelTerminalState<Outcome>): RuntimeChannelWaiters<Waiter> {
     this.#state = state;
     this.#buffer = [];
 
@@ -157,15 +155,15 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
     return { receivers, senders };
   }
 
-  readonly #kind: ChannelKind;
-  #state: ChannelState<Outcome> = { kind: "open" };
+  readonly #capacityMode: ChannelCapacityMode;
+  #state: ChannelState<Outcome> = { status: "open" };
   #buffer: Value[] = [];
   // ECMAScript Set/Map preserve insertion order; waiter collections are FIFO queues.
   readonly #receivers = new Set<Waiter>();
   readonly #senders = new Map<unknown, RuntimeChannelSender<Waiter, Value>>();
 }
 
-function channelKindOf(capacity: number): ChannelKind {
+function channelCapacityModeOf(capacity: number): ChannelCapacityMode {
   switch (capacity) {
     case RENDEZVOUS_CAPACITY: {
       return "rendezvous";
@@ -206,6 +204,19 @@ function takeFirstSender<Waiter, Value>(
   return value;
 }
 
+function channelTerminalResultOf<Outcome>(
+  state: ChannelTerminalState<Outcome>,
+): ChannelTerminalResult<Outcome> {
+  switch (state.status) {
+    case "closed": {
+      return { kind: "closed", outcome: state.outcome };
+    }
+    case "revoked": {
+      return { kind: "revoked" };
+    }
+  }
+}
+
 const RENDEZVOUS_CAPACITY = 0;
 const EMPTY_SIZE = 0;
 
@@ -229,9 +240,15 @@ interface RuntimeChannelWaiters<Waiter> {
   readonly senders: readonly Waiter[];
 }
 
-type ChannelKind = "bounded" | "rendezvous" | "unbounded";
+type ChannelCapacityMode = "bounded" | "rendezvous" | "unbounded";
 
-type ChannelState<Outcome> =
-  | { readonly kind: "open" }
+type ChannelTerminalResult<Outcome> =
   | { readonly kind: "closed"; readonly outcome: Outcome }
   | { readonly kind: "revoked" };
+
+type ChannelState<Outcome> =
+  | { readonly status: "open" }
+  | { readonly outcome: Outcome; readonly status: "closed" }
+  | { readonly status: "revoked" };
+
+type ChannelTerminalState<Outcome> = Exclude<ChannelState<Outcome>, { readonly status: "open" }>;

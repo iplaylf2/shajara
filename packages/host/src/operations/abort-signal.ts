@@ -1,17 +1,15 @@
 import type { RiteCoroutine } from "#/contracts";
-import { resource } from "./resource";
-import { wait } from "#/primitives/index";
+import { currentExecutor } from "#/operations-kit";
+import { self } from "#/primitives/index";
 
 export function* abortSignal(): RiteCoroutine<AbortSignal> {
-  const signal = yield* resource<AbortSignal>(function* provideAbortSignal(provide) {
-    const controller = new globalThis.AbortController();
+  const executor = yield* currentExecutor();
+  const controller = new globalThis.AbortController();
+  const { scope } = yield* self();
 
-    try {
-      yield* provide(controller.signal);
-    } finally {
-      controller.abort();
-    }
+  executor.onSettled(scope.exitFuture, () => {
+    controller.abort();
   });
 
-  return yield* wait(signal);
+  return controller.signal;
 }

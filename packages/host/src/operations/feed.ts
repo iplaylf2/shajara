@@ -2,14 +2,14 @@ import type { ChannelReceiver, OverloadRewrite } from "#/primitives/index";
 import type { RiteCoroutine } from "#/contracts";
 import { channel } from "#/primitives/index";
 import { channelErrorOf } from "#/primitives-kit";
-import { ensureExecutor } from "#/executor";
+import { currentExecutor } from "#/operations-kit";
 import { isNone } from "@shajara/kernel/utils";
 
 export function* feed<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,
 ): RiteCoroutine<Feed<Value, Outcome>> {
-  const executor = ensureExecutor();
+  const executor = yield* currentExecutor();
   const [receiver, sender] = yield* channel<Value, Outcome>(capacity, overloadRewrite);
 
   return {

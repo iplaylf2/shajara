@@ -147,7 +147,12 @@ export class Interpreter {
   }
 
   public cancel(scope: ScopeRef<unknown>, suppressor: Suppressor): void {
-    this.#reconcile(scope, cancel(this.#resolve(scope)), suppressor);
+    const runtimeScope = this.#resolve(scope);
+    if (runtimeScope.isClosed) {
+      return;
+    }
+
+    this.#reconcile(scope, cancel(runtimeScope), suppressor);
   }
 
   public bind<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>, value: Value): void {
@@ -218,10 +223,6 @@ export class Interpreter {
     const channelHandle = this.#resolve(endpoint);
     const channelScope = this.#resolve(channelHandle.scope);
     this.#reconcile(channelScope, close(channelScope, channelHandle, outcome), suppressor);
-  }
-
-  public forceFailed(scope: ScopeRef<unknown>, failure: Failure, suppressor: Suppressor): void {
-    this.#reconcile(scope, this.#resolve(scope).forceFailed(failure), suppressor);
   }
 
   public scopeState(scope: ScopeRef<unknown>): ScopeState {

@@ -70,16 +70,13 @@ describe("/ primitives: autonomy", () => {
     {
       given: [new Error("scheduler assignment failed"), "never-settled"] as const,
       outcome: {
-        interrupted: {
-          kind: "interrupted",
-        },
-        kind: "scope",
+        kind: "canceled",
       } as const,
     },
   ])(
-    "rejects with a scope failure that records scheduler assignment interruption",
+    "rejects with cancellation when scheduler assignment throws",
     async ({ given: [cause, value], outcome }) => {
-      const settled = run(function* awaitInterruptedAutonomy() {
+      const settled = run(function* awaitCanceledAutonomy() {
         return yield* autonomy(
           function* runAutonomousEntry() {
             return value;
@@ -96,12 +93,8 @@ describe("/ primitives: autonomy", () => {
 
       const actual = await settled.catch((error: unknown) => error);
 
-      expect(actual).toBeInstanceOf(ScopeError);
+      expect(actual).toBeInstanceOf(CanceledError);
       expect(actual).toMatchObject({ kind: outcome.kind });
-      expect(findFailureByKind(actual, outcome.interrupted.kind)).toMatchObject({
-        ...outcome.interrupted,
-        cause,
-      });
     },
   );
 
@@ -118,7 +111,7 @@ describe("/ primitives: autonomy", () => {
   ])(
     "rejects with a scope failure that preserves the reaper exception as an external cause",
     async ({ given: [cause], outcome }) => {
-      const settled = run(function* awaitInterruptedAutonomy() {
+      const settled = run(function* awaitFailedAutonomy() {
         return yield* autonomy(
           function* runAutonomousEntry() {
             try {

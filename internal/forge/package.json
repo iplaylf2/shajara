@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "dependency-cruiser": "^17.3.10"
+    "dependency-cruiser": "^17.4.0"
   },
   "devDependencies": {
     "@shajara/presets": "workspace:^",

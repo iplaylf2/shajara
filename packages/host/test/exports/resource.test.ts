@@ -83,8 +83,9 @@ describe("/ operations: resource", () => {
         });
 
         await expect(captured.promise).resolves.toBe(outcome.value);
+        const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
         await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
-        await expect(settled).rejects.toBeInstanceOf(CanceledError);
+        await settledCancellation;
         expect(events).toEqual(outcome.events);
       } finally {
         if (scope.status !== "closed") {

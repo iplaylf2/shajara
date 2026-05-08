@@ -13,7 +13,7 @@ export function ensureExecutor(): Executor {
     pacer = new ShajaraPacer(flushTurn);
     return pacer;
   });
-  executor.onSettled(() => {
+  executor.onSettled(executor.scope.exitFuture, () => {
     pacer[Symbol.dispose]();
   });
   executorSingleton = executor;

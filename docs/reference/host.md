@@ -1,16 +1,17 @@
 # Host Adaptation
 
-`@shajara/host` adapts the kernel executor and semantic model into generator-style
-JavaScript APIs.
+`@shajara/host` adapts the kernel executor and semantic model into generator-based
+JavaScript APIs for application code.
 
 ## Host Responsibilities
 
 The host layer has four responsibilities:
 
 - application-facing entries: `run`, `createScope`
-- host operations: `abortSignal`, `action`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
+  `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
-- mapping between kernel in-band values and JavaScript values or errors
+- mapping between kernel in-band values and host-facing JavaScript values or thrown errors
 
 ## Ritual Adaptation
 
@@ -34,8 +35,8 @@ model for provider work that remains attached to its owning scope until release.
 
 ## Result Model
 
-The kernel keeps failure and absence in band. The host layer adapts those values into
-application-facing values, `Presence<T>`, and JavaScript errors.
+The kernel keeps failure and absence in band. The host layer presents those outcomes as
+JavaScript values, `Presence<T>`, and thrown errors.
 
 Host optional results use `Presence<T>`:
 
@@ -68,19 +69,23 @@ Scoped host primitives adapt kernel handles into host-facing values:
 Host APIs that expose independently observed results keep future handles:
 
 - host primitives `all(entries)` and `spawn(entry)` return host futures
+- host operation `completer()` returns a host future with completion callbacks
 - host operation `resource(body)` returns a host future for the provided value
 
 ## Error Mapping
 
-The host layer maps kernel failures into JavaScript error objects.
+The host layer maps errors thrown by host code into kernel failures at the ritual
+boundary and maps kernel failures back into thrown errors at host-facing observation
+points.
 
 ### Writing into Kernel
 
 The following paths write host-side failures into the kernel:
 
-- throwing from a host ritual, recovery handler, or host integration callback
+- throwing from a host ritual, recovery handler, host operation, or host integration
+  callback
 - `settleError(futureSettle, error)`
-- `action.reject(error)`
+- `completer.reject(error)`
 - a promise rejection observed by `until(thunk)`
 
 At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive. Other
@@ -95,11 +100,6 @@ The host layer uses `fromFailure(...)` for unified mapping:
 - `interrupted` -> `InterruptedError`
 - `scope` -> `ScopeError`
 - `external` -> the original `Error` or `ExternalError`
-
-Separately, host channel primitives throw `ChannelError` when a kernel channel operation
-returns a closed or revoked terminal state. In that case, `ChannelError.detail` is
-`{ kind: "condition", condition }` and `cause` is `null`. Kernel channel failures use
-`{ kind: "cause", cause }`.
 
 `ScopeError` means the caller observes that a scope converged as a failure. The primary
 cause is available through `ScopeError.cause`.
@@ -159,19 +159,27 @@ Convergence semantics:
 
 ## Host Operations
 
+Host operations are coroutine helpers. They run inside host routines and translate
+browser APIs, promises, callbacks, and other application effects into future, channel, or
+process convergence visible to the executor. Operations that need executor services read
+the current executor from scope context; if that context is missing, they throw
+`OperationContextError`.
+
 ### `abortSignal`
 
 `abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
 aborted while the scope is open; it aborts during that scope's convergence.
 It does not provide a way to cancel the scope from host code.
 
-### `action`
+### `completer`
 
-`action()` exposes a set of `future` convergence capabilities to host code:
+`completer()` exposes a host future with completion callbacks:
 
 - `future`
 - `resolve(value)`
 - `reject(error)`
+
+If still pending, the future is canceled when the current scope converges.
 
 ### `feed`
 
@@ -183,6 +191,11 @@ It does not provide a way to cancel the scope from host code.
 
 The returned receiver stays inside coroutine code, while the callbacks send or close the
 channel from host code.
+
+### `promisify`
+
+`promisify(future)` exposes a host future as a `Promise`. The promise resolves with the
+future's value and rejects when the future fails or is canceled.
 
 ### `resource`
 
@@ -203,14 +216,14 @@ body runs on the same scope lifecycle.
 `until(thunk)` writes the result of a promise back into a future through fulfilled and
 rejected callbacks.
 
-Together, these operations translate browser or JavaScript host effects and host-owned
-lifecycle patterns into future, channel, or process convergence visible to the executor.
-
 ## Host Form of Autonomy
 
-The host form of `autonomy(entry, options)` reuses kernel `autonomy`, but adapts the
-`reaper` from the host side:
+The host form of `autonomy(entry, options)` reuses kernel `autonomy`. Scheduler options
+use the executor behavior described in `executor.md`, including cancellation when
+scheduler assignment throws.
 
-- the host `reaper` shape is `(scope) => RiteCoroutine<void>`
+The `reaper` option is adapted into a host coroutine shape:
+
+- `(scope) => RiteCoroutine<void>` is the host reaper shape
 - returning normally means "keep waiting"
 - throwing means "submit a failure adjudication rooted in that exception"

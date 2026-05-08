@@ -1,69 +1,54 @@
-import type {
-  ExecutionScopeRef,
-  LaunchHandle,
-  LaunchResult,
-  LaunchStatus,
-  Ritual,
-} from "@shajara/kernel";
+import type { ExecutionScopeRef, Executor, LaunchHandle, LaunchStatus } from "@shajara/kernel";
 import { decodeRitual, fromFailure } from "#/boundary/index";
-import { CanceledError } from "#/errors";
+import { isLeft, isNone } from "@shajara/kernel/utils";
 import type { Option } from "@shajara/kernel/utils";
 import type { RiteRoutine } from "#/contracts";
-import { isNone } from "@shajara/kernel/utils";
 
-export class EntryLaunch<Result> {
-  public static create<Result>(
-    scope: ExecutionScopeRef<unknown>,
-    ritual: RiteRoutine<Result>,
-    services: EntryLaunchServices,
-    options?: RunOptions,
-  ): EntryLaunch<Result> {
-    const signal = options?.signal;
+export function launchEntry<Result>(
+  executor: Executor,
+  scope: ExecutionScopeRef<unknown>,
+  ritual: RiteRoutine<Result>,
+  options?: RunOptions,
+): LaunchedEntry<Result> {
+  const signal = options?.signal;
 
-    const execution = unwrap(
-      services.launchInScope(
-        scope,
-        decodeRitual(function* guardedRitual(): ReturnType<RiteRoutine<Result>> {
-          if (!signal) {
-            return yield* ritual();
+  const handle = requireLaunch(
+    executor.launch(
+      scope,
+      decodeRitual(function* guardedRitual(): ReturnType<RiteRoutine<Result>> {
+        if (!signal) {
+          return yield* ritual();
+        }
+
+        function onAbort(): void {
+          if (handle.status === "open") {
+            executor.cancel(handle.scope);
           }
+        }
 
-          function onAbort(): void {
-            if (execution.status === "open") {
-              services.cancelScope(execution.scope);
-            }
-          }
+        if (signal.aborted) {
+          onAbort();
+        }
 
-          if (signal.aborted) {
-            onAbort();
-          }
+        signal.addEventListener("abort", onAbort, { once: true });
+        try {
+          return yield* ritual();
+        } finally {
+          signal.removeEventListener("abort", onAbort);
+        }
+      }),
+    ),
+  );
 
-          signal.addEventListener("abort", onAbort, { once: true });
-          try {
-            return yield* ritual();
-          } finally {
-            signal.removeEventListener("abort", onAbort);
-          }
-        }),
-      ),
-    );
+  return {
+    scope: handle.scope,
+    settled: createStatefulPromise(handle, executor),
+  };
+}
 
-    return new EntryLaunch(execution);
-  }
-
-  public get settled(): StatefulPromise<Result> {
-    return this.#settled;
-  }
-
-  public get scope(): ExecutionScopeRef<Result> {
-    return this.execution.scope;
-  }
-
-  private constructor(private readonly execution: LaunchHandle<Result>) {
-    this.#settled = createSettledPromise(execution);
-  }
-
-  readonly #settled: StatefulPromise<Result>;
+export interface LaunchedEntry<Result> {
+  readonly scope: ExecutionScopeRef<Result>;
+  readonly settled: StatefulPromise<Result>;
 }
 
 export interface RunOptions {
@@ -74,39 +59,26 @@ export interface StatefulPromise<Return> extends Promise<Return> {
   readonly status: LaunchStatus;
 }
 
-export interface EntryLaunchServices {
-  cancelScope(scope: ExecutionScopeRef<unknown>): void;
-  launchInScope<Result>(
-    scope: ExecutionScopeRef<unknown>,
-    ritual: Ritual<Result>,
-  ): Option<LaunchHandle<Result>>;
-}
-
-function unwrap<Return>(execution: Option<LaunchHandle<Return>>): LaunchHandle<Return> {
-  if (isNone(execution)) {
+function requireLaunch<Return>(handle: Option<LaunchHandle<Return>>): LaunchHandle<Return> {
+  if (isNone(handle)) {
     throw new Error("Cannot launch ritual with an illegal scope.");
   }
 
-  return execution.value;
+  return handle.value;
 }
 
-function createSettledPromise<Return>(execution: LaunchHandle<Return>): StatefulPromise<Return> {
+function createStatefulPromise<Return>(
+  handle: LaunchHandle<Return>,
+  executor: Executor,
+): StatefulPromise<Return> {
   const settled = new Promise<Return>((resolve, reject) => {
-    execution.onSettled((result: LaunchResult<Return>) => {
-      switch (result.kind) {
-        case "success": {
-          resolve(result.result);
-          break;
-        }
-        case "failure": {
-          reject(fromFailure(result.failure));
-          break;
-        }
-        case "canceled": {
-          reject(new CanceledError());
-          break;
-        }
+    executor.onSettled(handle.scope.exitFuture, (result) => {
+      if (isLeft(result)) {
+        reject(fromFailure(result.left));
+        return;
       }
+
+      resolve(result.right);
     });
   });
 
@@ -114,7 +86,7 @@ function createSettledPromise<Return>(execution: LaunchHandle<Return>): Stateful
     configurable: true,
     enumerable: true,
     get(): LaunchStatus {
-      return execution.status;
+      return handle.status;
     },
   }) as StatefulPromise<Return>;
 }

@@ -230,9 +230,8 @@ three local paths:
   remaining detached processes, then settles with the entry process result.
 - Cancellation: `cancel()` enters the cancellation path. The scope cancels owned work,
   then settles with `canceled`.
-- Failure: after a process failure, channel owner failure, or runtime control action, the
-  scope enters the failure path. It cancels owned work, then settles with a
-  `ScopeFailure`.
+- Failure: after a process failure or channel owner failure, the scope enters the failure
+  path. It cancels owned work, then settles with a `ScopeFailure`.
 
 Cancellation and failure use the same ownership order for canceling owned work: child
 scopes, structural processes, then detached processes. Cancellation is scoped to owned
