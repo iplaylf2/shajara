@@ -30,7 +30,7 @@
     "@shajara/presets": "workspace:^",
     "@types/node": "catalog:",
     "cspell-cli": "^10.0.0",
-    "knip": "^6.11.0",
+    "knip": "^6.12.1",
     "oxfmt": "^0.48.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"

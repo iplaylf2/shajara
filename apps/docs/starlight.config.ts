@@ -8,7 +8,7 @@ export const docsConfig = {
   locales: starlightLocales,
   sidebar: [
     {
-      autogenerate: { directory: "guides" },
+      items: [{ autogenerate: { directory: "guides" } }],
       label: "Guides",
     },
   ],
