@@ -8,7 +8,8 @@ JavaScript APIs.
 The host layer has four responsibilities:
 
 - application-facing entries: `run`, `createScope`
-- host operations: `abortSignal`, `completer`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `promiser`, `feed`, `resource`,
+  `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
 - mapping between kernel in-band values and JavaScript values or errors
 
@@ -68,6 +69,7 @@ Scoped host primitives adapt kernel handles into host-facing values:
 Host APIs that expose independently observed results keep future handles:
 
 - host primitives `all(entries)` and `spawn(entry)` return host futures
+- host operation `completer()` returns a host future with completion callbacks
 - host operation `resource(body)` returns a host future for the provided value
 
 ## Error Mapping
@@ -167,11 +169,24 @@ It does not provide a way to cancel the scope from host code.
 
 ### `completer`
 
-`completer()` exposes a set of `future` convergence capabilities to host code:
+`completer()` exposes a host future with completion callbacks:
 
 - `future`
 - `resolve(value)`
 - `reject(error)`
+
+If still pending, the future is canceled when the current scope converges.
+
+### `promiser`
+
+`promiser()` exposes a JavaScript promise with completion callbacks:
+
+- `promise`
+- `resolve(value)`
+- `reject(reason)`
+
+If still pending, the promise rejects with `CanceledError` when the current scope
+converges.
 
 ### `feed`
 

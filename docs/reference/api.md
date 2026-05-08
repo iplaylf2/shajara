@@ -16,15 +16,17 @@ The root entry is intended for application code. It re-exports:
 Names available from the root entry include:
 
 - host entries: `run`, `createScope`
-- host operations: `abortSignal`, `completer`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `promiser`, `feed`, `resource`,
+  `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
   `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
   `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Completer`, `Feed`, `ResourceBody`, `ResourceProvide`, `Scope`,
-  `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
+- other root-level types: `Completer`, `Promiser`, `Feed`, `ResourceBody`,
+  `ResourceProvide`, `Scope`, `ScopeStatus`, `RunOptions`, `StatefulPromise`,
+  `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
 
@@ -146,6 +148,23 @@ Returns:
 - `resolve(value)`
 - `reject(error)`
 
+If still pending, the future is canceled when the current scope converges.
+
+### `promiser`
+
+```ts
+yield * promiser<Return>();
+```
+
+Returns:
+
+- `promise`
+- `resolve(value)`
+- `reject(reason)`
+
+If still pending, the promise rejects with `CanceledError` when the current scope
+converges.
+
 ### `feed`
 
 ```ts
@@ -190,6 +209,7 @@ yield * until(thunk);
 | ------------- | ---------------------- |
 | `abortSignal` | `AbortSignal`          |
 | `completer`   | `Completer<Return>`    |
+| `promiser`    | `Promiser<Return>`     |
 | `feed`        | `Feed<Value, Outcome>` |
 | `resource`    | `RiteFuture<Value>`    |
 | `sleep`       | `void`                 |
