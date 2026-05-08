@@ -258,13 +258,13 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `self`    | `SelfHandle`  |
 | `cede`    | `void`        |
 
-Host rituals use JavaScript exceptions for current-process termination: throw a
+Host rituals use JavaScript throw semantics for current-process termination: throw a
 `CanceledError` to cancel, or throw any other value to fail.
 
 ## Kernel Primitive Return Values
 
 Kernel APIs preserve runtime state in returned values. Direct kernel callers handle
-these values in band; host callers receive JavaScript values, exceptions, or
+these values in band; host callers receive JavaScript values, thrown errors, or
 `Presence<T>` tuples.
 
 ### Concurrency, Scope, and Recovery
@@ -298,4 +298,5 @@ The common kernel result forms are:
 - `void` for operations that mutate runtime state without producing an observation value
 - `never` for termination or indefinite parking paths such as cancellation, halt, and park
 
-Host-facing APIs adapt these forms into JavaScript values, `Presence<T>`, and exceptions.
+Host-facing APIs adapt these forms into JavaScript values, `Presence<T>`, and thrown
+errors.

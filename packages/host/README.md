@@ -2,7 +2,7 @@
 
 `@shajara/host` is the application-facing package in shajara and the default entry point.
 
-In shajara, structured concurrency is not a set of scattered async helpers. It is a way of organizing concurrent tasks into the same running tree. `@shajara/host` turns that orchestration model into interfaces that can be written directly into JavaScript application code.
+In shajara, structured concurrency is not a set of scattered async helpers. It is a way of organizing concurrent tasks into the same running tree. `@shajara/host` turns that orchestration model into interfaces that fit directly into JavaScript application code.
 
 ## Installation
 
@@ -12,7 +12,7 @@ npm install @shajara/host
 
 ## Role in shajara
 
-This package turns structured concurrency orchestration into a generator-style JavaScript API.
+This package exposes structured concurrency orchestration as a generator-based JavaScript API.
 
 It packages host entries, host operations, concurrency primitives, and boundary adapters into interfaces that application code and extension libraries can use directly.
 
@@ -51,7 +51,7 @@ console.log(result);
 // { header: "header", sidebar: "sidebar" }
 ```
 
-The point of this code is not just that two async steps run concurrently. The concurrency relationship itself is written into the flow: where branches start and where results join both live in the same piece of code as the main routine.
+The important part is not simply that two steps run concurrently. Branches start and results join in the same routine that owns the page load.
 
 ## When to use this package
 

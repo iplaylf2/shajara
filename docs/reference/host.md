@@ -1,7 +1,7 @@
 # Host Adaptation
 
-`@shajara/host` adapts the kernel executor and semantic model into generator-style
-JavaScript APIs.
+`@shajara/host` adapts the kernel executor and semantic model into generator-based
+JavaScript APIs for application code.
 
 ## Host Responsibilities
 
@@ -11,7 +11,7 @@ The host layer has four responsibilities:
 - host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
-- mapping between kernel in-band values and JavaScript values or errors
+- mapping between kernel in-band values and host-facing JavaScript values or thrown errors
 
 ## Ritual Adaptation
 
@@ -35,8 +35,8 @@ model for provider work that remains attached to its owning scope until release.
 
 ## Result Model
 
-The kernel keeps failure and absence in band. The host layer adapts those values into
-application-facing values, `Presence<T>`, and JavaScript errors.
+The kernel keeps failure and absence in band. The host layer presents those outcomes as
+JavaScript values, `Presence<T>`, and thrown errors.
 
 Host optional results use `Presence<T>`:
 
@@ -74,8 +74,9 @@ Host APIs that expose independently observed results keep future handles:
 
 ## Error Mapping
 
-The host layer maps JavaScript errors into kernel failures at the ritual boundary and
-maps kernel failures back into JavaScript errors at host-facing observation points.
+The host layer maps errors thrown by host code into kernel failures at the ritual
+boundary and maps kernel failures back into thrown errors at host-facing observation
+points.
 
 ### Writing into Kernel
 
@@ -159,9 +160,10 @@ Convergence semantics:
 ## Host Operations
 
 Host operations are coroutine helpers. They run inside host routines and translate
-browser or JavaScript host effects into future, channel, or process convergence visible
-to the executor. Operations that need executor services read the current executor from
-scope context; if that context is missing, they throw `OperationContextError`.
+browser APIs, promises, callbacks, and other application effects into future, channel, or
+process convergence visible to the executor. Operations that need executor services read
+the current executor from scope context; if that context is missing, they throw
+`OperationContextError`.
 
 ### `abortSignal`
 
@@ -192,8 +194,8 @@ channel from host code.
 
 ### `promisify`
 
-`promisify(future)` exposes a host future as a JavaScript promise. The promise resolves
-with the future's value and rejects when the future fails or is canceled.
+`promisify(future)` exposes a host future as a `Promise`. The promise resolves with the
+future's value and rejects when the future fails or is canceled.
 
 ### `resource`
 
