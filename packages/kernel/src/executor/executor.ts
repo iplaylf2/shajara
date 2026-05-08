@@ -6,6 +6,7 @@ import type {
   FutureSettleKey,
   Ritual,
   ScopeRef,
+  Suppressor,
 } from "#/contracts";
 import type { Disposer, Option } from "#/utils/index";
 import type { LaunchHandle, LaunchStatus } from "./launch-handle";
@@ -90,20 +91,21 @@ class RuntimeExecutor implements Executor {
     future: FutureKey<Result>,
     listener: (result: FutureResult<Result>) => void,
   ): Disposer {
-    const settled = this.#interpreter.poll(future);
-    if (option.isSome(settled)) {
-      listener(settled.value);
-
-      return noop;
-    }
-
-    return this.#interpreter.onSettled(future, (result, suppressor) => {
-      try {
-        listener(result);
-      } catch (error) {
-        suppressor.capture(error);
-      }
-    });
+    return this.#observeSettled(
+      future,
+      (result, suppressor) => {
+        try {
+          listener(result);
+        } catch (error) {
+          suppressor.capture(error);
+        }
+      },
+      {
+        capture: (error) => {
+          throw error;
+        },
+      },
+    );
   }
 
   public settle<Result>(
@@ -147,24 +149,43 @@ class RuntimeExecutor implements Executor {
   #startReaperRound(): void {
     using faultSink = new FaultSink("Out-of-band failures occurred while starting a reaper round");
     for (const [scope, process] of this.#interpreter.startReaperTasks(faultSink)) {
-      this.#interpreter.onSettled(process.exitFuture, (result, suppressor) => {
-        if (this.#interpreter.scopeState(scope).status === "closed") {
-          return;
-        }
+      this.#observeSettled(
+        process.exitFuture,
+        (result, suppressor) => {
+          if (this.#interpreter.scopeState(scope).status === "closed") {
+            return;
+          }
 
-        const failure = either.isLeft(result) ? option.some(result.left) : result.right;
-        if (option.isNone(failure)) {
-          return;
-        }
+          const failure = either.isLeft(result) ? option.some(result.left) : result.right;
+          if (option.isNone(failure)) {
+            return;
+          }
 
-        this.#interpreter.spawn(
-          scope,
-          () => halt(failure.value),
-          { completionMode: "structural" },
-          suppressor,
-        );
-      });
+          this.#interpreter.spawn(
+            scope,
+            () => halt(failure.value),
+            { completionMode: "structural" },
+            suppressor,
+          );
+        },
+        faultSink,
+      );
     }
+  }
+
+  #observeSettled<Result>(
+    future: FutureKey<Result>,
+    listener: (result: FutureResult<Result>, suppressor: Suppressor) => void,
+    suppressor: Suppressor,
+  ): Disposer {
+    const settled = this.#interpreter.poll(future);
+    if (option.isSome(settled)) {
+      listener(settled.value, suppressor);
+
+      return noop;
+    }
+
+    return this.#interpreter.onSettled(future, listener);
   }
 
   #isOpenScope(scope: ExecutionScopeRef<unknown>): boolean {

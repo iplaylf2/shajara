@@ -657,6 +657,63 @@ describe("/ primitives: autonomy", () => {
 
   test.for([
     {
+      given: [externalFailure("inline-reaper", "reaped inline autonomy scope")] as const,
+      outcome: {
+        adjudicationCount: 1,
+        settled: containedAutonomyFailure(
+          expect.objectContaining({
+            cause: {
+              kind: "external",
+              message: "reaped inline autonomy scope",
+              raw: "inline-reaper",
+            },
+            kind: "scope",
+          }),
+        ),
+        settledStatus: "closed",
+      },
+    },
+  ])(
+    "applies reaper results settled through an inline autonomous scheduler",
+    async ({ given: [failure], outcome }) => {
+      const scheduler = trackAssignments([], createInlineProcessor());
+      let adjudicationCount = 0;
+      const reaper: Reaper = {
+        adjudicate: () => {
+          adjudicationCount += 1;
+          return wisp.of(some(failure));
+        },
+      };
+
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+      const handle = unwrapSome(
+        executor.launch(executor.scope, () =>
+          awaitAutonomy(
+            () =>
+              pipe(
+                defer(() => park()),
+                wisp.chain(() => spawn(cancel)),
+                wisp.chain(() => park()),
+              ),
+            { reaper, scheduler },
+          ),
+        ),
+      );
+      const settled = await waitForSettled(executor, handle);
+
+      const actual = {
+        adjudicationCount,
+        settled,
+        settledStatus: handle.status,
+      };
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
       given: [new Error("reaper adjudication failed")] as const,
       outcome: {
         causeMessage: "reaper adjudication failed",
