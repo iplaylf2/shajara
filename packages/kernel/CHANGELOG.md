@@ -1,5 +1,21 @@
 # @shajara/kernel
 
+## 0.6.0
+
+### Minor Changes
+
+- [#29](https://github.com/iplaylf2/shajara/pull/29) [`b8f17b2`](https://github.com/iplaylf2/shajara/commit/b8f17b2e7a78c86d492a879ebaeb3b555aff3601) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Move executor settlement observation to futures.
+
+  `LaunchHandle` no longer owns settlement listeners. Direct executor users should observe
+  a launched entry by passing `handle.scope.exitFuture` to `executor.onSettled(...)`,
+  which reports the future's native `FutureResult`. The `LaunchResult` wrapper has been
+  removed.
+
+  The executor also exposes `currentExecutorKey` for integrations that need to look up the
+  active executor from scope context. Scope cancellation and failure now drain owned work in
+  scope order: child scopes first, structural processes next, and detached processes last.
+  Custom scheduler assignment failures cancel the owning scope.
+
 ## 0.5.0
 
 ### Minor Changes

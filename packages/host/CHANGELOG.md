@@ -1,5 +1,28 @@
 # @shajara/host
 
+## 0.6.0
+
+### Minor Changes
+
+- [#29](https://github.com/iplaylf2/shajara/pull/29) [`b8f17b2`](https://github.com/iplaylf2/shajara/commit/b8f17b2e7a78c86d492a879ebaeb3b555aff3601) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Rename `action` to `completer` and add `promisify`.
+
+  `action()` is now `completer()`. Code that imports `action` or yields `action()` should
+  update those references; the operation still models host-owned completion of a
+  scope-bound future.
+
+  The host package also exposes `promisify(future)` for observing a `RiteFuture<T>` as a
+  native `Promise<T>`. The promise resolves with the future's value and rejects when the
+  future fails or is canceled.
+
+  Host operations that need executor services now use the current scope's executor
+  context. Running those operations outside a launched host routine throws
+  `OperationContextError`.
+
+### Patch Changes
+
+- Updated dependencies [[`b8f17b2`](https://github.com/iplaylf2/shajara/commit/b8f17b2e7a78c86d492a879ebaeb3b555aff3601)]:
+  - @shajara/kernel@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes

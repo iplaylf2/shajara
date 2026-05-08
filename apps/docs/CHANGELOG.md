@@ -1,5 +1,12 @@
 # @shajara/docs
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`b8f17b2`](https://github.com/iplaylf2/shajara/commit/b8f17b2e7a78c86d492a879ebaeb3b555aff3601)]:
+  - @shajara/host@0.6.0
+
 ## 0.1.4
 
 ### Patch Changes
