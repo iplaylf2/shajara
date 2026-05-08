@@ -6,7 +6,7 @@ Explorer 示例集合是一组渐进式视觉课程，用动画和代码片段�
 
 Explorer 的示例专注于 shajara 边界内的并发编排关系。它关注多个 process、future、scope、channel、failure 和 cancellation 如何在同一个运行世界中互相影响；API 名称作为读者进入这些关系的入口。
 
-宿主边界或适配 API 适合承担示例入口和触发条件，也可以参与生命周期关系的表达。`run`、`createScope`、`action`、`feed`、`resource`、`sleep`、`until` 可以出现在示例外壳或代码片段里；示例主题由 shajara 边界内的 future、scope、channel、process、failure 和 cancellation 关系承载。
+宿主边界或适配 API 适合承担示例入口和触发条件，也可以参与生命周期关系的表达。`run`、`createScope`、`completer`、`feed`、`resource`、`sleep`、`until` 可以出现在示例外壳或代码片段里；示例主题由 shajara 边界内的 future、scope、channel、process、failure 和 cancellation 关系承载。
 
 Explorer 选择静态文档难以说明的时间关系、所有权关系和收束关系。Single Spawn、Future Settlement 和 Scope-Owned Work 建立基础运行语言，后续示例在这个基础上展开组合、通信、收束和治理关系。
 

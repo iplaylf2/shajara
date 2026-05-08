@@ -8,7 +8,7 @@ JavaScript APIs.
 The host layer has four responsibilities:
 
 - application-facing entries: `run`, `createScope`
-- host operations: `abortSignal`, `action`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `feed`, `resource`, `sleep`, `until`
 - generator-style primitives from `@shajara/host/primitives`
 - mapping between kernel in-band values and JavaScript values or errors
 
@@ -80,7 +80,7 @@ The following paths write host-side failures into the kernel:
 
 - throwing from a host ritual, recovery handler, or host integration callback
 - `settleError(futureSettle, error)`
-- `action.reject(error)`
+- `completer.reject(error)`
 - a promise rejection observed by `until(thunk)`
 
 At the ritual boundary, `CanceledError` becomes the kernel `cancel` primitive. Other
@@ -165,9 +165,9 @@ Convergence semantics:
 aborted while the scope is open; it aborts during that scope's convergence.
 It does not provide a way to cancel the scope from host code.
 
-### `action`
+### `completer`
 
-`action()` exposes a set of `future` convergence capabilities to host code:
+`completer()` exposes a set of `future` convergence capabilities to host code:
 
 - `future`
 - `resolve(value)`

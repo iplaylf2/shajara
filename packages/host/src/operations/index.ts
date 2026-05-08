@@ -1,5 +1,5 @@
 export * from "./abort-signal";
-export * from "./action";
+export * from "./completer";
 export * from "./feed";
 export * from "./resource";
 export * from "./sleep";

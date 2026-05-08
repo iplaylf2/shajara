@@ -1,8 +1,8 @@
-import { ScopeError, action, run } from "#/index";
+import { ScopeError, completer, run } from "#/index";
 import { describe, expect, test } from "vitest";
 import { wait } from "#/primitives";
 
-describe("/ operations: action", () => {
+describe("/ operations: completer", () => {
   test.for([
     {
       given: ["settled"] as const,
@@ -12,13 +12,13 @@ describe("/ operations: action", () => {
     "returns a future whose resolution settles from host callbacks",
     async ({ given: [value], outcome }) => {
       const settled = run(function* settled() {
-        const { future: actionResult, resolve } = yield* action<string>();
+        const { future: completedResult, resolve } = yield* completer<string>();
 
         globalThis.queueMicrotask(() => {
           resolve(value);
         });
 
-        return yield* wait(actionResult);
+        return yield* wait(completedResult);
       });
 
       await expect(settled).resolves.toBe(outcome);
@@ -27,7 +27,7 @@ describe("/ operations: action", () => {
 
   test.for([
     {
-      given: [new Error("action-failed")] as const,
+      given: [new Error("completer-failed")] as const,
       outcome: {
         cause: {
           kind: "external",
@@ -36,16 +36,16 @@ describe("/ operations: action", () => {
       } as const,
     },
   ])(
-    "propagates the original error instance when the host rejects the action",
+    "propagates the original error instance when the host rejects the completer",
     async ({ given: [cause], outcome }) => {
       const settled = run(function* settled() {
-        const { future: rejectedAction, reject } = yield* action<never>();
+        const { future: rejectedResult, reject } = yield* completer<never>();
 
         globalThis.queueMicrotask(() => {
           reject(cause);
         });
 
-        return yield* wait(rejectedAction);
+        return yield* wait(rejectedResult);
       });
 
       await expect(settled).rejects.toBeInstanceOf(ScopeError);

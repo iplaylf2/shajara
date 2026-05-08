@@ -16,14 +16,14 @@ The root entry is intended for application code. It re-exports:
 Names available from the root entry include:
 
 - host entries: `run`, `createScope`
-- host operations: `abortSignal`, `action`, `feed`, `resource`, `sleep`, `until`
+- host operations: `abortSignal`, `completer`, `feed`, `resource`, `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
   `InterruptedError`, `ScopeError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
   `LaunchStatus`, `ScopeRef`, `SelfHandle`, `contextKey`
-- other root-level types: `Action`, `Feed`, `ResourceBody`, `ResourceProvide`, `Scope`,
+- other root-level types: `Completer`, `Feed`, `ResourceBody`, `ResourceProvide`, `Scope`,
   `ScopeStatus`, `RunOptions`, `StatefulPromise`, `PromiseThunk`, `Disposer`
 
 The subpath `@shajara/host/primitives` exposes:
@@ -134,10 +134,10 @@ yield * abortSignal();
 Returns an `AbortSignal` tied to the current scope. The signal aborts during that
 scope's convergence.
 
-### `action`
+### `completer`
 
 ```ts
-yield * action<Return>();
+yield * completer<Return>();
 ```
 
 Returns:
@@ -189,7 +189,7 @@ yield * until(thunk);
 | Operation     | Return value           |
 | ------------- | ---------------------- |
 | `abortSignal` | `AbortSignal`          |
-| `action`      | `Action<Return>`       |
+| `completer`   | `Completer<Return>`    |
 | `feed`        | `Feed<Value, Outcome>` |
 | `resource`    | `RiteFuture<Value>`    |
 | `sleep`       | `void`                 |

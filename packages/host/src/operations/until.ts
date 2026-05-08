@@ -1,10 +1,10 @@
 import { fromFailure, toFailureUnknown } from "#/boundary/index";
 import type { RiteCoroutine } from "#/contracts";
-import { action } from "./action";
+import { completer } from "./completer";
 import { wait } from "#/primitives/index";
 
 export function* until<Return>(thunk: PromiseThunk<Return>): RiteCoroutine<Return> {
-  const { future, reject, resolve } = yield* action<Return>();
+  const { future, reject, resolve } = yield* completer<Return>();
 
   thunk().then(resolve, (error: unknown) => {
     reject(fromFailure(toFailureUnknown(error)));

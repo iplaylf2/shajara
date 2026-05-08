@@ -4,22 +4,22 @@ import { ensureExecutor } from "#/executor";
 import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary/index";
 
-export function* action<Return>(): RiteCoroutine<Action<Return>> {
+export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   const executor = ensureExecutor();
-  const [actionResult, actionSettle] = yield* future<Return>();
+  const [result, settleResult] = yield* future<Return>();
 
   return {
-    future: actionResult,
+    future: result,
     reject(reason) {
-      executor.settle(actionSettle, left(toFailure(reason)));
+      executor.settle(settleResult, left(toFailure(reason)));
     },
     resolve(value) {
-      executor.settle(actionSettle, right(value));
+      executor.settle(settleResult, right(value));
     },
   };
 }
 
-export interface Action<Return> {
+export interface Completer<Return> {
   readonly future: RiteFuture<Return>;
   resolve(value: Return): void;
   reject(reason: Error): void;
