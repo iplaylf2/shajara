@@ -102,9 +102,11 @@ function createSessionScopeNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["n
       "channel-open",
       "session-sleep",
       "return-objects",
+      "scope-closing",
       "scope-wait-root",
     ],
     closedEvents: ["scope-closed"],
+    closingEvents: ["scope-closing"],
     completedEvents: ["scope-closed"],
   });
 }
@@ -117,9 +119,8 @@ function createChildNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"][
       "channel-open",
       "session-sleep",
       "return-objects",
-      "scope-wait-root",
     ],
-    completedEvents: ["scope-closed"],
+    completedEvents: ["return-objects"],
   });
 }
 

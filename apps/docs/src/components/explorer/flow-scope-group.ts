@@ -26,6 +26,7 @@ function createScopeGroup<TEvent extends ExplorerEventId>(
     activeEvents: node.activeEvents,
     centerY: top + (bottom - top) / HALF_DIVISOR,
     closedEvents: node.closedEvents,
+    closingEvents: node.closingEvents,
     completedEvents: node.completedEvents,
     height: bottom - top,
     id: node.id,

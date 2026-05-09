@@ -1,7 +1,7 @@
 // oxlint-disable max-lines-per-function
 import { branch, spawn } from "@shajara/host/primitives";
 import {
-  clearCursors,
+  clearCursor,
   codeLine,
   codeSpacer,
   completeEvents,
@@ -42,10 +42,7 @@ export function* singleSpawnDemo(
         return "receipt sent";
       } finally {
         emit({
-          actions: [
-            clearCursors(["receipt", "root"]),
-            completeEvents(["receipt-return", "wait-receipt", "done"]),
-          ],
+          actions: [clearCursor("receipt"), completeEvents("receipt-return")],
         });
       }
     });
@@ -55,14 +52,13 @@ export function* singleSpawnDemo(
     try {
       return "order accepted";
     } finally {
-      emit({ actions: [setCursor(cursorAt("root", "wait-receipt", "blocked"))] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }
 
 export type SingleSpawnDemoEvent = ExplorerAuthoredEvent<
-  ReturnType<typeof createSingleSpawnDemoCode>,
-  "wait-receipt"
+  ReturnType<typeof createSingleSpawnDemoCode>
 >;
 
 const RECEIPT_DELAY_MS = 1000;

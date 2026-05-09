@@ -140,6 +140,7 @@ export type ExplorerFlowNode<TEvent extends ExplorerEventId> = TaggedUnion<
     scope: {
       readonly activeEvents: readonly TEvent[];
       readonly closedEvents: readonly TEvent[];
+      readonly closingEvents: readonly TEvent[];
       readonly completedEvents: readonly TEvent[];
       readonly id: string;
       readonly label: string;

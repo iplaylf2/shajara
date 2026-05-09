@@ -2,6 +2,7 @@ import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
 import {
   callerNode,
   coordinatorNode,
+  scopeNode,
   spawnLink,
   waitLink,
   workerNode,
@@ -69,24 +70,29 @@ function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>[
       ],
       completedEvents: ["done"],
     }),
+    scopeNode("commit-scope", "commitArticle scope", ["commit", "index"], {
+      activeEvents: [
+        "launch-scope",
+        "launch-index",
+        "spawn-index",
+        "inner-return",
+        "scope-wait-index",
+        "scope-wait-root",
+      ],
+      closedEvents: ["branch-close"],
+      completedEvents: ["branch-close"],
+    }),
     coordinatorNode(
       "commit",
       "commitArticle",
       {
-        activeEvents: [
-          "launch-scope",
-          "launch-index",
-          "spawn-index",
-          "inner-return",
-          "scope-wait-index",
-          "branch-close",
-        ],
-        completedEvents: ["branch-close"],
+        activeEvents: ["launch-scope", "launch-index", "spawn-index", "inner-return"],
+        completedEvents: ["inner-return"],
       },
-      ["commit", "root"],
+      ["commit"],
     ),
     workerNode("index", "updateSearchIndex", {
-      activeEvents: ["spawn-index", "index-sleep", "scope-wait-index", "index-close"],
+      activeEvents: ["spawn-index", "index-sleep", "index-close"],
       completedEvents: ["index-close"],
     }),
   ];

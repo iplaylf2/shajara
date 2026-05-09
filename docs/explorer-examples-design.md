@@ -6,7 +6,7 @@ Explorer 示例集合是一组渐进式视觉课程，用动画和代码片段�
 
 Explorer 的示例专注于 shajara 边界内的并发编排关系。它关注多个 process、future、scope、channel、failure 和 cancellation 如何在同一个运行世界中互相影响；API 名称作为读者进入这些关系的入口。
 
-宿主边界或适配 API 适合承担示例入口和触发条件，也可以参与生命周期关系的表达。`run`、`createScope`、`completer`、`feed`、`promisify`、`resource`、`sleep`、`until` 可以出现在示例外壳或代码片段里；示例主题由 shajara 边界内的 future、scope、channel、process、failure 和 cancellation 关系承载。
+宿主边界或适配 API 适合承担示例入口和触发条件，也可以参与生命周期关系的表达。示例代码片段默认呈现运行期间即将被触发的 host routine；动画从 routine 被触发后的 coroutine 展开，并把它作为图中的 process 呈现。`run`、`createScope`、`completer`、`feed`、`promisify`、`resource`、`sleep`、`until` 可以出现在示例外壳或代码片段里；示例主题由 shajara 边界内的 future、scope、channel、process、failure 和 cancellation 关系承载。
 
 Explorer 选择静态文档难以说明的时间关系、所有权关系和收束关系。Single Spawn、Future Settlement 和 Scope-Owned Work 建立基础运行语言，后续示例在这个基础上展开组合、通信、收束和治理关系。
 
@@ -92,7 +92,7 @@ Guide copy 面向示例语境。它可以使用示例里的业务名和必要的
 Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等待的运行对象”“正在流动的值”和“已经完成的结果”。下面的图形语言适用于所有示例：
 
 - 初始帧属于 pending 状态。正式动画开始后，cursor 才进入具体 process 的运行位置；下一轮动画开始前应回到这个准备状态，让读者重新获得代码和图形的起点。
-- cursor 表示 process 停留的位置。process 完成后，completed state 承接完成表达。
+- cursor 表示 process 停留的位置。process 节点表示被触发后的 coroutine，而不是包住它的 owning scope；coroutine 到达 `return` 后进入 completed state。owning scope 的后续等待或收束由 scope box、等待轨迹或运行对象状态表达。
 - 带箭头的顺序实线表示 process 块之间的推进方向。一个 process 发起 spawn、all 或 race 管理的工作时，这条线从发起块指向新创建或被组织的运行块。
 - 虚线表示 process 块之间正在发生的等待关系。等待期间，虚线从被等待的一侧指向被阻塞的一侧。
 - 等待完成后留下的浅色实线属于等待轨迹。它表示这段等待关系已经被结算，并与带箭头的顺序实线形成清晰区分。
@@ -102,7 +102,7 @@ Explorer 的演出逻辑帮助读者区分“正在执行的 process”“被等
 - Fork Join 等待的是 spawned process 本身的 future，spawned process 节点已经表达等待对象，虚线只承载 process 间的等待关系。
 - 当一个组合 primitive 产生代表整体关系的 future 或竞争结果时，图中应给这个整体关系稳定的汇合位置。工作发起线从汇合位置展开，工作结果或竞争结果回到汇合位置，发起者再等待 future 或接收竞争结果。
 - Future、channel 等运行对象的可见 label 可以来自具体示例的场景，用来表达对象身份。对象类型和场景名共同服务读者理解。
-- Scope-Owned Work 等待的是 child scope 拥有的 spawned process。外层 cursor 可以停在 `branch` 行，反向等待线使用内部等待事件表达边界仍在等待 owned work。
+- Scope-Owned Work 等待的是 child scope 拥有的 spawned process。owned process 仍在运行时，scope box 保持 open；外层 cursor 可以停在 `branch` 行，反向等待线表达边界正在等待 owned work，owned work 完成后 scope box 进入 closed。
 - Scope box 表示 scope 的运行所有权边界。box 容纳该 scope 内的 process 块、future、channel 和其他 scope-owned objects；外层流程和只持有 handle 的流程留在 owner scope 之外。
 - Scope-Managed Objects 使用 scope box 展示对象本体和 handle 的分离。future 和 channel 的对象本体留在创建它们的 child scope box 内；返回给外层流程的 handle 可以用细线、端点或标签表示。
 - Scope box 的 lifecycle 状态驱动内部对象状态。child scope 进入 closing 或 closed 时，box 触发 pending future 的 canceled 状态和仍打开 channel 的 revoked 状态。

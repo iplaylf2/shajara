@@ -129,6 +129,7 @@ export function scopeNode<TEvent extends string>(
   return {
     activeEvents: lifecycle.activeEvents,
     closedEvents: lifecycle.closedEvents,
+    closingEvents: lifecycle.closingEvents ?? [],
     completedEvents: lifecycle.completedEvents,
     id,
     kind: "scope",
@@ -171,4 +172,5 @@ interface ChannelNodeLifecycle<TEvent extends string> extends FlowNodeLifecycle<
 
 interface ScopeNodeLifecycle<TEvent extends string> extends FlowNodeLifecycle<TEvent> {
   closedEvents: readonly TEvent[];
+  closingEvents?: readonly TEvent[];
 }

@@ -9,7 +9,7 @@ export type FlowNodeStatusValue = ExplorerReplayCursorMode | "done" | null;
 export type ChannelNodeStatusValue = "done" | "open" | "overload" | "pending";
 export type FutureNodePresenceValue = "hidden" | "visible";
 export type FutureNodeStatusValue = "pending" | "settled";
-export type ScopeGroupStatusValue = "closed" | "running" | null;
+export type ScopeGroupStatusValue = "closed" | "closing" | "open" | null;
 
 export function isInterruptedWaitLink<TEvent extends ExplorerEventId>(
   link: FlowScene<TEvent>["links"][number],
@@ -136,10 +136,17 @@ export function readScopeGroupStatus<TEvent extends ExplorerEventId>(
   }
 
   if (
+    includesAny(state.active, group.closingEvents) ||
+    includesAny(state.completed, group.closingEvents)
+  ) {
+    return "closing";
+  }
+
+  if (
     includesAny(state.active, group.activeEvents) ||
     includesAny(state.completed, group.activeEvents)
   ) {
-    return "running";
+    return "open";
   }
 
   return null;

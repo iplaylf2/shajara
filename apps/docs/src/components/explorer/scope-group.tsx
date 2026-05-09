@@ -30,7 +30,8 @@ function ScopeGroup<TEvent extends string>(props: {
         classList={{
           [styles["flowScopeGroup"]!]: true,
           [styles["flowScopeGroupClosed"]!]: status() === "closed",
-          [styles["flowScopeGroupRunning"]!]: status() === "running",
+          [styles["flowScopeGroupClosing"]!]: status() === "closing",
+          [styles["flowScopeGroupOpen"]!]: status() === "open",
         }}
       >
         <rect

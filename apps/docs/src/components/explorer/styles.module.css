@@ -417,11 +417,6 @@
   transition: opacity 180ms ease;
 }
 
-.flowScopeGroupRunning .flowScopeBox {
-  fill: rgb(237 246 255 / 0.42);
-  stroke: #6f96bd;
-}
-
 .flowScopeBox {
   fill: rgb(237 246 255 / 0.36);
   stroke: #8ea8c6;
@@ -433,10 +428,25 @@
     stroke-dasharray 180ms ease;
 }
 
+.flowScopeGroupOpen .flowScopeBox {
+  fill: rgb(225 243 255 / 0.58);
+  stroke: #4f8eb8;
+  stroke-dasharray: 8 7;
+}
+
+.flowScopeGroupClosing .flowScopeBox {
+  fill: rgb(255 248 235 / 0.68);
+  stroke: #b9854c;
+  stroke-dasharray: 5 5;
+  stroke-width: 1.75;
+  animation: flowScopeMarch 1100ms linear infinite;
+}
+
 .flowScopeGroupClosed .flowScopeBox {
-  fill: rgb(241 245 249 / 0.58);
-  stroke: #9fb1c4;
+  fill: rgb(238 243 248 / 0.82);
+  stroke: #72869d;
   stroke-dasharray: none;
+  stroke-width: 1.65;
 }
 
 .flowScopeLabel,
@@ -461,6 +471,20 @@
   letter-spacing: 0.04em;
   text-anchor: end;
   text-transform: uppercase;
+}
+
+.flowScopeGroupOpen .flowScopeStatus {
+  fill: #2d7194;
+}
+
+.flowScopeGroupClosing .flowScopeLabel,
+.flowScopeGroupClosing .flowScopeStatus {
+  fill: #8b5d2f;
+}
+
+.flowScopeGroupClosed .flowScopeLabel,
+.flowScopeGroupClosed .flowScopeStatus {
+  fill: #46586b;
 }
 
 .flowNodeActive .flowNode {
@@ -823,6 +847,16 @@
 @keyframes flowNodeMarch {
   from {
     stroke-dashoffset: 16;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowScopeMarch {
+  from {
+    stroke-dashoffset: 10;
   }
 
   to {
