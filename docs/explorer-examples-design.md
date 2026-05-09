@@ -1,6 +1,6 @@
 # Explorer Example Design
 
-Explorer 示例集合是一组渐进式视觉课程，用动画和代码片段展示 shajara 边界内的并发编排。示例从最小的 spawn、future、wait、scope 关系开始，逐步展开组合、通信、收束和治理关系。
+Explorer 示例集合是一组渐进式视觉课程，用动画和代码片段展示 shajara 边界内的并发编排。示例从最小的 spawn、future、wait、scope 关系开始，逐步展开组合、通信和收束关系。
 
 ## Design Goal
 
@@ -8,7 +8,7 @@ Explorer 的示例专注于 shajara 边界内的并发编排关系。它关注�
 
 宿主边界或适配 API 适合承担示例入口和触发条件，也可以参与生命周期关系的表达。示例代码片段默认呈现运行期间即将被触发的 host routine；动画从 routine 被触发后的 coroutine 展开，并把它作为图中的 process 呈现。`run`、`createScope`、`completer`、`feed`、`promisify`、`resource`、`sleep`、`until` 可以出现在示例外壳或代码片段里；示例主题由 shajara 边界内的 future、scope、channel、process、failure 和 cancellation 关系承载。
 
-Explorer 选择静态文档难以说明的时间关系、所有权关系和收束关系。Single Spawn、Future Settlement 和 Scope-Owned Work 建立基础运行语言，后续示例在这个基础上展开组合、通信、收束和治理关系。
+Explorer 选择静态文档难以说明的时间关系、所有权关系和收束关系。Single Spawn、Future Settlement 和 Scope-Owned Work 建立基础运行语言，后续示例在这个基础上展开组合、通信和生命周期关系。
 
 ## Ordering Logic
 
@@ -17,7 +17,7 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 1. **基本编排关系**：先解释 spawned process、future、wait、scope 如何形成可观察的运行关系。
 2. **结构化并发关系**：随后展示 fork join、all、race 如何把多份工作组织成有明确汇合或竞争意图的运行树。
 3. **显式通信关系**：再进入 channel，展示值传递和节奏控制。
-4. **收束与治理关系**：最后展示 scope-managed objects、cancellation、recovery、`resource` 生命周期、autonomy 如何决定系统的结束、恢复和治理方式。
+4. **生命周期关系**：最后展示 scope-managed objects、cancellation、recovery 和 `resource` 生命周期如何决定系统的收束、恢复和清理方式。
 
 ## Example Sequence
 
@@ -36,8 +36,6 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 | 9     | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收束为 canceled。                                   | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消沿 scope 结构传播并最终收束。                                                                              |
 | 10    | Guarded Recovery      | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。                                     | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界。                                                                                     |
 | 11    | Scoped Resource       | `resource` 启动 provider；provider 暴露 ready value 后保持挂起，直到 owning scope 收束时完成清理。                   | 它展示 future settlement、detached process 和 scope-owned cleanup 如何组合出“可用值”和“生命周期所有权”分离的关系。                                                      |
-| 12    | Autonomous Scheduling | autonomous scope 把可运行 process 交给 scheduler 分配。                                                              | scheduler 是从常规边界内编排走向高级执行治理的第一步。这个示例展示“谁来推进 process”可以在保持 scope 核心语义的前提下被治理。                                           |
-| 13    | Reaper Adjudication   | 一个 closing scope 持续停留在 closing 状态时，reaper 决定继续等待或提交失败裁决。                                    | reaper 是 explorer 的最高阶示例。它解释 autonomy 在 closing 状态下的治理关系。                                                                                          |
 
 ## Narrative Groups
 
@@ -55,17 +53,13 @@ Example 7 专门讲 channel。channel 表达流程之间的值传递和节奏控
 
 ### Lifecycle
 
-Examples 8-11 讲系统如何收束：scope-managed objects、cancellation、recovery、`resource` 生命周期。它们共同回答成功返回之外的运行树如何保持可解释。Scope-Managed Objects 先展示 scope 收束时如何处理它创建的 future 和 channel：pending future 被取消，仍打开的 channel 被撤销。返回到外层流程的 handle 是观察入口；外层流程后续触碰这些 handle 并捕获异常时，看到的是 owner scope 已经完成运行对象收束后的结果。后续示例把收束过程展示为结构化关系，让异常、取消和清理都回到 scope 结构中。
+Examples 8-11 是最后一组示例，讲系统如何在成功返回之外保持可解释：scope-managed objects 展示 owner scope 如何处理仍由它拥有的 future 和 channel，cancellation 展示取消如何沿 scope 结构传播，recovery 展示失败如何被结构化地转交给恢复边界，`resource` 展示可用值和 cleanup 生命周期如何分离。它们共同把异常、取消、恢复和清理放回 scope 结构中，让非成功路径仍然保持清晰的所有权边界。
 
-### Scope Boundary Objects
+## Scope Boundary Objects
 
 Example 8 引入 scope box 作为独立叙事单元。scope box 表示真实的运行所有权边界：box 内可以包含读者已经熟悉的 process 块，也可以包含该 scope 创建并拥有的运行对象，例如 future 和 channel。handle 可以从 box 内返回到外层流程，future 和 channel 的对象本体仍停留在 owner scope box 内。
 
 Scope-Managed Objects 的演出让读者先看到对象归属，再看到 handle 可达性。child scope 创建 future 和 channel 后，box 内出现对应对象；外层流程拿到 handle 时，得到指向这些对象的观察或通信入口。child scope 收束时，box 的 closing 或 closed 状态触发内部对象自动处理：future 结算为 canceled，channel 变为 revoked。外层流程随后触碰 handle 时，画面表达它正在观察 owner scope 已经完成的收束结果。
-
-### Governance
-
-Examples 12-13 放在最后。scheduler 和 reaper 需要读者已经理解 process runnable、scope closing 和 recovery routes。它们是 explorer 的高级章节，关注谁有权推进或裁决运行树，并在已有基础并发关系上展开治理主题。
 
 ## Naming And Copy
 
@@ -131,4 +125,4 @@ Explorer 的代码片段是读者理解动画的叙事材料。动画时刻贴�
 - 它展示了边界内语义中难以靠静态代码解释清楚的编排关系。
 - 它能为后续示例提供一个必要的概念台阶。
 
-Explorer 示例聚焦时间关系、所有权关系、收束关系和结构化治理。返回值形状、类型签名、普通同步控制流和宿主边界适配便利性属于 reference 或 guide 文档的解释范围。
+Explorer 示例聚焦时间关系、所有权关系、显式通信关系和结构化收束。返回值形状、类型签名、普通同步控制流和宿主边界适配便利性属于 reference 或 guide 文档的解释范围。
