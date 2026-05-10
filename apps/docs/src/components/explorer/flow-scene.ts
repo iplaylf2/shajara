@@ -60,6 +60,8 @@ const FUTURE_NODE_WIDTH = 84;
 const TALL_NODE_HEIGHT = 154;
 const CALLER_NODE_WIDTH = 214;
 const COORDINATOR_NODE_WIDTH = 154;
+const NODE_LABEL_HORIZONTAL_PADDING = 42;
+const NODE_LABEL_AVERAGE_GLYPH_WIDTH = 11.5;
 const HALF_DIVISOR = 2;
 const FIRST_WORKER_INDEX = 0;
 const NO_FUTURE_NODE_COUNT = 0;
@@ -172,7 +174,11 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
   top: number,
   options: FlowNodeLayoutOptions = {},
 ): FlowNode<TEvent> {
-  const size = options.size ?? nodeSize[node.kind];
+  const minimumSize = options.size ?? nodeSize[node.kind];
+  const labelWidth = Math.ceil(
+    node.label.length * NODE_LABEL_AVERAGE_GLYPH_WIDTH + NODE_LABEL_HORIZONTAL_PADDING,
+  );
+  const size = { height: minimumSize.height, width: Math.max(minimumSize.width, labelWidth) };
   const centerY = top + size.height / HALF_DIVISOR;
 
   const positionedNode = {

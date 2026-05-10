@@ -23,19 +23,19 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 
 示例序列承担如下概念职责。标题确定演出主题，说明确定叙事边界，具体业务故事由示例场景承载。
 
-| Order | Example               | What It Shows                                                                                                        | Why It Exists                                                                                                                                                           |
-| ----- | --------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Single Spawn          | 一个 process 发起独立工作，随后返回自己的结果；spawned process 继续运行并结算自己的 future。                         | 这是最小的边界内并发关系。它把 spawn 发起关系、future 结算和结果独立性串起来，让发起者结果和 spawned process future 各自保持独立。                                      |
-| 2     | Future Settlement     | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。                                    | future 是 `spawn`、`all`、`race`、host operation 和外部输入共同使用的结果结算对象。单独展示它可以把 future 结算作为独立主题呈现。                                       |
-| 3     | Scope-Owned Work      | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。                                   | scope 是 shajara 的结构化并发边界。这个示例说明 scope-owned work 对完成和收束的影响。                                                                                   |
-| 4     | Fork Join             | 一个 process 启动多个并发 process，并在汇合点等待所有需要的结果。                                                    | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                    |
-| 5     | All Results           | `all` 同时发起多份并发工作，并把全部结果聚合到一个组合 future。                                                      | 它把一组并发工作表达为一个整体等待点。示例重点是全部结果如何共同结算。                                                                                                  |
-| 6     | First Result          | `race` 同时发起多份并发工作，并让首个完成结果成为竞争结果。                                                          | 它与 All Results 构成对照：首个结果足够推动流程继续。示例重点是竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
-| 7     | Bounded Channel       | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。                                 | channel 是流程之间传递值的显式通信对象。容量决定发送和接收如何互相调节推进节奏。                                                                                        |
-| 8     | Scope-Managed Objects | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 收束时处理这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理；外层流程后续使用这些 handle 时，观察的是 child scope 已经完成的 future cancellation 和 channel revocation。 |
-| 9     | Cancellation Cascade  | scope 内的取消使等待中的流程、future 和并发 process 沿 scope 结构收束为 canceled。                                   | cancellation 是结构化并发最需要动画解释的部分之一。它展示取消沿 scope 结构传播并最终收束。                                                                              |
-| 10    | Guarded Recovery      | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。                                     | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界。                                                                                     |
-| 11    | Scoped Resource       | `resource` 启动 provider；provider 暴露 ready value 后保持挂起，直到 owning scope 收束时完成清理。                   | 它展示 future settlement、detached process 和 scope-owned cleanup 如何组合出“可用值”和“生命周期所有权”分离的关系。                                                      |
+| Order | Example                     | What It Shows                                                                                                        | Why It Exists                                                                                                                                                           |
+| ----- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Single Spawn                | 一个 process 发起独立工作，随后返回自己的结果；spawned process 继续运行并结算自己的 future。                         | 这是最小的边界内并发关系。它把 spawn 发起关系、future 结算和结果独立性串起来，让发起者结果和 spawned process future 各自保持独立。                                      |
+| 2     | Future Settlement           | 一个 process 创建并等待 future，另一个 process 稍后结算它，等待者读取结果并继续。                                    | future 是 `spawn`、`all`、`race`、host operation 和外部输入共同使用的结果结算对象。单独展示它可以把 future 结算作为独立主题呈现。                                       |
+| 3     | Scope-Owned Work            | 外层流程进入一个 child scope；child scope 产生结果后仍会等待边界内拥有的工作完成。                                   | scope 是 shajara 的结构化并发边界。这个示例说明 scope-owned work 对完成和收束的影响。                                                                                   |
+| 4     | Fork Join                   | 一个 process 启动多个并发 process，并在汇合点等待所有需要的结果。                                                    | 这是最经典的结构化并发图形：多个并发 process 展开，结果在明确位置汇合。它为 `all` 与 `race` 提供组合并发的对照基线。                                                    |
+| 5     | All Results                 | `all` 同时发起多份并发工作，并把全部结果聚合到一个组合 future。                                                      | 它把一组并发工作表达为一个整体等待点。示例重点是全部结果如何共同结算。                                                                                                  |
+| 6     | First Result                | `race` 同时发起多份并发工作，并让首个完成结果成为竞争结果。                                                          | 它与 All Results 构成对照：首个结果足够推动流程继续。示例重点是竞争关系，以及剩余工作如何随结构化边界收束。                                                             |
+| 7     | Bounded Channel             | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。                                 | channel 是流程之间传递值的显式通信对象。容量决定发送和接收如何互相调节推进节奏。                                                                                        |
+| 8     | Scope-Managed Objects       | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 收束时处理这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理；外层流程后续使用这些 handle 时，观察的是 child scope 已经完成的 future cancellation 和 channel revocation。 |
+| 9     | Failure-Driven Cancellation | 一个 child process 失败后，owning scope 取消仍未完成的 sibling work 与 scope entry process，并以 failure 收束。      | 它说明 cancellation 在失败路径中的结构化含义：取消沿 scope 所有权边界发生，最终形成可被外层流程观察到的 scope failure。                                                 |
+| 10    | Guarded Recovery            | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。                                     | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界。                                                                                     |
+| 11    | Scoped Resource             | `resource` 启动 provider；provider 暴露 ready value 后保持挂起，直到 owning scope 收束时完成清理。                   | 它展示 future settlement、detached process 和 scope-owned cleanup 如何组合出“可用值”和“生命周期所有权”分离的关系。                                                      |
 
 ## Narrative Groups
 
@@ -53,7 +53,7 @@ Example 7 专门讲 channel。channel 表达流程之间的值传递和节奏控
 
 ### Lifecycle
 
-Examples 8-11 是最后一组示例，讲系统如何在成功返回之外保持可解释：scope-managed objects 展示 owner scope 如何处理仍由它拥有的 future 和 channel，cancellation 展示取消如何沿 scope 结构传播，recovery 展示失败如何被结构化地转交给恢复边界，`resource` 展示可用值和 cleanup 生命周期如何分离。它们共同把异常、取消、恢复和清理放回 scope 结构中，让非成功路径仍然保持清晰的所有权边界。
+Examples 8-11 是最后一组示例，讲系统如何在成功返回之外保持可解释：scope-managed objects 展示 owner scope 如何处理仍由它拥有的 future 和 channel，failure-driven cancellation 展示失败如何沿 scope 结构触发取消，recovery 展示失败如何被结构化地转交给恢复边界，`resource` 展示可用值和 cleanup 生命周期如何分离。它们共同把异常、取消、恢复和清理放回 scope 结构中，让非成功路径仍然保持清晰的所有权边界。
 
 ## Scope Boundary Objects
 
