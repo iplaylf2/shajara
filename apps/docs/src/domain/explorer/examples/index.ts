@@ -5,6 +5,7 @@ import { failureDrivenCancellationExample } from "./failure-driven-cancellation"
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
+import { recoveryBoundaryExample } from "./recovery-boundary";
 import { scopeManagedObjectsExample } from "./scope-managed-objects";
 import { scopeOwnedWorkExample } from "./scope-owned-work";
 import { singleSpawnExample } from "./single-spawn";
@@ -27,6 +28,7 @@ export const explorerExamples = [
   boundedChannelExample,
   scopeManagedObjectsExample,
   failureDrivenCancellationExample,
+  recoveryBoundaryExample,
 ] as const;
 
 const [defaultExplorerExample] = explorerExamples;

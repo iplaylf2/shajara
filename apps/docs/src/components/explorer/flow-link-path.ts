@@ -55,20 +55,39 @@ function readBottomEntryLink<TEvent extends ExplorerEventId>(
   link: ExplorerFlowLink<TEvent>,
   points: FlowLinkPathPoints<TEvent>,
 ): FlowLinkAnchor | null {
-  if (
-    link.kind !== "data" ||
-    points.from.variant !== "channel" ||
-    points.to.variant === "channel"
-  ) {
+  if (!usesBottomEntry(link, points)) {
     return null;
   }
 
   return {
     anchorX: readBottomEntryX(points),
     anchorY: points.to.top + points.to.height,
-    fromX: points.fromX + BOTTOM_LINK_EXIT_OFFSET_X,
+    fromX: readBottomEntryFromX(points),
     fromY: points.fromY,
   };
+}
+
+function usesBottomEntry<TEvent extends ExplorerEventId>(
+  link: ExplorerFlowLink<TEvent>,
+  points: FlowLinkPathPoints<TEvent>,
+): boolean {
+  if (points.to.variant === "channel") {
+    return false;
+  }
+
+  if (link.kind === "data" && points.from.variant === "channel") {
+    return true;
+  }
+
+  return link.kind === "wait" && points.direction > NO_DIRECTION && points.from.top > points.to.top;
+}
+
+function readBottomEntryFromX<TEvent extends ExplorerEventId>(
+  points: FlowLinkPathPoints<TEvent>,
+): number {
+  return points.from.variant === "channel"
+    ? points.fromX + BOTTOM_LINK_EXIT_OFFSET_X
+    : points.fromX;
 }
 
 function readBottomEntryX<TEvent extends ExplorerEventId>(
@@ -127,3 +146,4 @@ const HALF_DIVISOR = 2;
 const LINK_CONTROL_FROM_OFFSET_X = 76;
 const LINK_CONTROL_TO_OFFSET_X = 84;
 const MIN_SIDE_ENTRY_CONTROL_OFFSET_X = 18;
+const NO_DIRECTION = 0;

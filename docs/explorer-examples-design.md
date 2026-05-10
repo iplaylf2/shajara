@@ -34,7 +34,7 @@ Explorer 选择静态文档难以说明的时间关系、所有权关系和收�
 | 7     | Bounded Channel             | 两个 process 通过有界 channel 传递值；缓冲被填满时发送者等待，缓冲为空时接收者等待。                                 | channel 是流程之间传递值的显式通信对象。容量决定发送和接收如何互相调节推进节奏。                                                                                        |
 | 8     | Scope-Managed Objects       | child scope 创建 future 和 channel，并把相应 handle 返回给外层流程；child scope 收束时处理这些仍由它拥有的运行对象。 | 它展示 future 和 channel 的生命周期由创建它们的 scope 管理；外层流程后续使用这些 handle 时，观察的是 child scope 已经完成的 future cancellation 和 channel revocation。 |
 | 9     | Failure-Driven Cancellation | 一个 child process 失败后，owning scope 取消仍未完成的 sibling work 与 scope entry process，并以 failure 收束。      | 它说明 cancellation 在失败路径中的结构化含义：取消沿 scope 所有权边界发生，最终形成可被外层流程观察到的 scope failure。                                                 |
-| 10    | Guarded Recovery            | 一个 resumable process 失败后，把恢复请求交给 guard 边界，恢复值使等待流程继续。                                     | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地转交给恢复边界。                                                                                     |
+| 10    | Recovery Boundary           | 一个 resumable process 失败后，guard 边界里的 recovery handler 把恢复值交回等待点，让流程继续。                      | recovery 是 shajara 区别于普通 try/catch 的高级能力：失败被结构化地交给同一边界内的恢复处理，恢复值再回到 resumable 的等待点。                                          |
 | 11    | Scoped Resource             | `resource` 启动 provider；provider 暴露 ready value 后保持挂起，直到 owning scope 收束时完成清理。                   | 它展示 future settlement、detached process 和 scope-owned cleanup 如何组合出“可用值”和“生命周期所有权”分离的关系。                                                      |
 
 ## Narrative Groups

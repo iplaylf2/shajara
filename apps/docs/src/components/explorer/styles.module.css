@@ -633,6 +633,13 @@
   animation: flowLinkDraw 520ms ease-out both;
 }
 
+.flowLinkGroupWait.flowLinkGroupRunning .flowLink {
+  stroke-dasharray: 10 8;
+  opacity: 1;
+  transition: none;
+  animation: flowLinkMarch 900ms linear infinite;
+}
+
 .flowLinkGroupData.flowLinkGroupRunning .flowLink {
   stroke: #2f9b60;
   stroke-dasharray: 3 8;
