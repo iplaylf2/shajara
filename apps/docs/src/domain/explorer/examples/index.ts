@@ -28,7 +28,10 @@ export const explorerExamples = [
   scopeManagedObjectsExample,
   failureDrivenCancellationExample,
 ] as const;
-export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
+
+const [defaultExplorerExample] = explorerExamples;
+
+export const DEFAULT_EXPLORER_EXAMPLE_ID = defaultExplorerExample.id;
 
 export type ExplorerExampleDefinition = ArrayValues<typeof explorerExamples>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
@@ -50,19 +53,13 @@ interface ExampleWithEvent<Event extends string> {
   };
 }
 
-const explorerExampleDefinitions: {
+type ExplorerExampleDefinitions = {
   readonly [ExampleId in ExplorerExampleId]: Extract<
     ExplorerExampleDefinition,
     { readonly id: ExampleId }
   >;
-} = {
-  [allResultsExample.id]: allResultsExample,
-  [boundedChannelExample.id]: boundedChannelExample,
-  [failureDrivenCancellationExample.id]: failureDrivenCancellationExample,
-  [futureSettlementExample.id]: futureSettlementExample,
-  [forkJoinExample.id]: forkJoinExample,
-  [firstResultExample.id]: firstResultExample,
-  [scopeManagedObjectsExample.id]: scopeManagedObjectsExample,
-  [scopeOwnedWorkExample.id]: scopeOwnedWorkExample,
-  [singleSpawnExample.id]: singleSpawnExample,
 };
+
+const explorerExampleDefinitions = Object.fromEntries(
+  explorerExamples.map((exampleDefinition) => [exampleDefinition.id, exampleDefinition]),
+) as ExplorerExampleDefinitions;
