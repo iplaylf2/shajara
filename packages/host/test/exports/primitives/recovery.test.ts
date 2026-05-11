@@ -38,11 +38,7 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [
-        new Error("failed for recovery"),
-        failByThrowing,
-        "recovered:failed",
-      ] as const,
+      given: [new Error("failed for recovery"), failByThrowing, "recovered:failed"] as const,
       outcome: {
         error: {
           cause: {
@@ -67,36 +63,36 @@ describe("/ primitives: guard, resumable", () => {
         },
       } as const,
     },
-  ])("guard receives scope exit errors as recovery causes", async ({
-    given: [cause, failRecoverable, value],
-    outcome,
-  }) => {
-    const seenError = Promise.withResolvers<ScopeExitError>();
-    const settled = run(function* awaitRecoveredGuard() {
-      return yield* guard(
-        function* runGuardedEntry() {
-          return yield* resumable(() => failRecoverable(cause));
-        },
-        function* recoverResumable(error) {
-          seenError.resolve(error);
-          return handled(value);
-        },
-      );
-    });
+  ])(
+    "guard receives scope exit errors as recovery causes",
+    async ({ given: [cause, failRecoverable, value], outcome }) => {
+      const seenError = Promise.withResolvers<ScopeExitError>();
+      const settled = run(function* awaitRecoveredGuard() {
+        return yield* guard(
+          function* runGuardedEntry() {
+            return yield* resumable(() => failRecoverable(cause));
+          },
+          function* recoverResumable(error) {
+            seenError.resolve(error);
+            return handled(value);
+          },
+        );
+      });
 
-    await expect(settled).resolves.toBe(value);
-    const actualError = await seenError.promise;
+      await expect(settled).resolves.toBe(value);
+      const actualError = await seenError.promise;
 
-    expect(actualError).toBeInstanceOf(ScopeError);
-    expect(actualError).not.toBe(cause);
-    expect(actualError).toMatchObject({
-      ...outcome.error,
-      cause: {
-        ...outcome.error.cause,
-        raw: cause,
-      },
-    });
-  });
+      expect(actualError).toBeInstanceOf(ScopeError);
+      expect(actualError).not.toBe(cause);
+      expect(actualError).toMatchObject({
+        ...outcome.error,
+        cause: {
+          ...outcome.error.cause,
+          raw: cause,
+        },
+      });
+    },
+  );
 
   test.for([
     {
