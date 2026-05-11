@@ -1,0 +1,45 @@
+name: Publish docs
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js and Yarn
+        id: setup-yarn
+        uses: ./.github/actions/setup-yarn
+
+      - name: Build and upload
+        uses: withastro/action@v6
+        with:
+          node-version: ${{ steps.setup-yarn.outputs.node-version }}
+          build-cmd: yarn workspace @shajara/docs build
+          cache-dir: apps/docs/node_modules/.astro
+          out-dir: apps/docs/dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

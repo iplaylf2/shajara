@@ -1,6 +1,11 @@
 name: Setup Node and Yarn
 description: Set up Node.js, activate the Yarn version declared in package.json via Corepack, and restore Yarn caches.
 
+outputs:
+  node-version:
+    description: The Node.js version resolved from package.json.
+    value: ${{ steps.setup-node.outputs.node-version }}
+
 runs:
   using: composite
   steps:

@@ -15,4 +15,5 @@ segoe
 topbar
 vite
 vitest
+withastro
 yarnrc
