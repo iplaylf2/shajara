@@ -31,7 +31,7 @@ boundary. Concepts from documents to its right stay outside its scope.
 | `Wisp`, `Ritual`, `Sigil`, echo/resonance                       | `semantics.md` |
 | scope tree, process ownership, descriptors                      | `semantics.md` |
 | future, context, channel semantics                              | `semantics.md` |
-| failure values, scope failure, cancellation                     | `semantics.md` |
+| failure values, scope exit failures, cancellation               | `semantics.md` |
 | branch result ownership and recovery routes                     | `semantics.md` |
 | execution entries and launch handles                            | `executor.md`  |
 | future settlement observation                                   | `executor.md`  |
@@ -52,9 +52,10 @@ boundary. Concepts from documents to its right stay outside its scope.
 - **Convergence** means a process, future, or scope reaching its final result.
 - **Lifecycle state** means an observable progress state, such as `open`, `closing`, or
   `closed`.
-- **Convergence result** means the final result exposed through `exitFuture`, such as a
-  success value, failure, or cancellation.
+- **Convergence result** means the final result exposed through `exitFuture`.
 - **Failure** means an in-band kernel failure value.
+- **Scope exit failure** means the failure side of a scope convergence result: either
+  cancellation or scope failure.
 - **Scope failure** means a scope converged through its local failure path and reported a
   `ScopeFailure` through `exitFuture`.
 - **Cancellation** means convergence along the `canceled` path.
