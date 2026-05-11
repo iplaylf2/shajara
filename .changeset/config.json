@@ -12,5 +12,8 @@
   "fixed": [["@shajara/kernel", "@shajara/host"]],
   "ignore": [],
   "linked": [],
+  "privatePackages": {
+    "tag": true
+  },
   "updateInternalDependencies": "patch"
 }

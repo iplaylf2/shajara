@@ -18,6 +18,9 @@ jobs:
   release:
     name: Version or Publish
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      published-packages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,3 +44,13 @@ jobs:
           publish: yarn release
           commit: "chore: version packages"
           title: "chore: version packages"
+
+  publish-docs:
+    name: Publish docs
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.published-packages, '"@shajara/docs"')
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/publish-docs.yaml

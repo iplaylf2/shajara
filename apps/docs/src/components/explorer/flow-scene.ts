@@ -60,6 +60,8 @@ const FUTURE_NODE_WIDTH = 84;
 const TALL_NODE_HEIGHT = 154;
 const CALLER_NODE_WIDTH = 214;
 const COORDINATOR_NODE_WIDTH = 154;
+const NODE_LABEL_HORIZONTAL_PADDING = 42;
+const NODE_LABEL_AVERAGE_GLYPH_WIDTH = 11.5;
 const HALF_DIVISOR = 2;
 const FIRST_WORKER_INDEX = 0;
 const NO_FUTURE_NODE_COUNT = 0;
@@ -95,7 +97,8 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
   const futureNodes = graphNodes.filter((node) => node.kind === "future");
   const scopeNodes = graphNodes.filter((node) => node.kind === "scope");
   const workerNodes = graphNodes.filter((node) => node.kind === "worker");
-  const resolvedCenterLane = readCenterLane(workerNodes.length);
+  const processLaneCount = Math.max(coordinatorNodes.length, workerNodes.length);
+  const resolvedCenterLane = readCenterLane(processLaneCount);
   const hasFutureNode = futureNodes.length > NO_FUTURE_NODE_COUNT;
   const hasCoordinatorNode = coordinatorNodes.length > NO_COORDINATOR_NODE_COUNT;
   const hasScopeNode = scopeNodes.length > NO_SCOPE_NODE_COUNT;
@@ -105,20 +108,24 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
     ...channelNodes.map((node) => createAuxiliaryChannelNode(node, { hasScopeNode })),
     ...futureNodes.map((node) => createAuxiliaryFutureNode(node, { hasScopeNode })),
     ...workerNodes.map((node, index) =>
-      createWorkerFlowNode(
+      createFlowNode(
         node,
-        readWorkerLane(index, workerNodes.length),
+        readWorkerLane(index, processLaneCount),
         readWorkerColumn({ hasCoordinatorNode, hasFutureNode, hasScopeNode }),
-        { hasCoordinatorNode, hasFutureNode, hasScopeNode },
+        { size: readWorkerNodeSize({ hasCoordinatorNode, hasFutureNode, hasScopeNode }) },
       ),
     ),
-    ...coordinatorNodes.map((node) => createFlowNode(node, resolvedCenterLane, COORDINATOR_COLUMN)),
+    ...coordinatorNodes.map((node, index) =>
+      createFlowNode(node, readWorkerLane(index, processLaneCount), COORDINATOR_COLUMN, {
+        size: readCoordinatorNodeSize(coordinatorNodes.length),
+      }),
+    ),
   ];
 }
 
 function createAuxiliaryChannelNode<TEvent extends ExplorerEventId>(
   node: FlowNodeSpec<TEvent>,
-  options: AuxiliaryChannelOptions,
+  options: { readonly hasScopeNode: boolean },
 ): FlowNode<TEvent> {
   if (options.hasScopeNode) {
     return createPositionedFlowNode(node, SCOPED_CHANNEL_X, SCOPED_CHANNEL_LANE_Y, {
@@ -131,7 +138,7 @@ function createAuxiliaryChannelNode<TEvent extends ExplorerEventId>(
 
 function createAuxiliaryFutureNode<TEvent extends ExplorerEventId>(
   node: FlowNodeSpec<TEvent>,
-  options: AuxiliaryFutureOptions,
+  options: { readonly hasScopeNode: boolean },
 ): FlowNode<TEvent> {
   if (options.hasScopeNode) {
     return createPositionedFlowNode(node, SCOPED_FUTURE_X, SCOPED_FUTURE_LANE_Y, {
@@ -146,24 +153,12 @@ function createFlowNode<TEvent extends ExplorerEventId>(
   node: FlowNodeSpec<TEvent>,
   lane: number,
   column: number,
+  options?: FlowNodeLayoutOptions,
 ): FlowNode<TEvent> {
   const left = defaultLayout.columns[column]!;
   const top = defaultLayout.lanes[lane]!;
 
-  return createPositionedFlowNode(node, left, top);
-}
-
-function createWorkerFlowNode<TEvent extends ExplorerEventId>(
-  node: FlowNodeSpec<TEvent>,
-  lane: number,
-  column: number,
-  options: WorkerColumnOptions,
-): FlowNode<TEvent> {
-  const left = defaultLayout.columns[column]!;
-  const top = defaultLayout.lanes[lane]!;
-  const size = readWorkerNodeSize(options);
-
-  return createPositionedFlowNode(node, left, top, { size });
+  return createPositionedFlowNode(node, left, top, options);
 }
 
 function createPositionedFlowNode<TEvent extends ExplorerEventId>(
@@ -172,7 +167,11 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
   top: number,
   options: FlowNodeLayoutOptions = {},
 ): FlowNode<TEvent> {
-  const size = options.size ?? nodeSize[node.kind];
+  const minimumSize = options.size ?? nodeSize[node.kind];
+  const labelWidth = Math.ceil(
+    node.label.length * NODE_LABEL_AVERAGE_GLYPH_WIDTH + NODE_LABEL_HORIZONTAL_PADDING,
+  );
+  const size = { height: minimumSize.height, width: Math.max(minimumSize.width, labelWidth) };
   const centerY = top + size.height / HALF_DIVISOR;
 
   const positionedNode = {
@@ -268,17 +267,15 @@ function readWorkerNodeSize(options: WorkerColumnOptions): FlowNodeSize {
   return nodeSize.worker;
 }
 
+function readCoordinatorNodeSize(coordinatorCount: number): FlowNodeSize {
+  return coordinatorCount > SINGLE_WORKER_COUNT
+    ? { height: WORKER_NODE_HEIGHT, width: COORDINATOR_NODE_WIDTH }
+    : nodeSize.coordinator;
+}
+
 interface WorkerColumnOptions {
   readonly hasCoordinatorNode: boolean;
   readonly hasFutureNode: boolean;
-  readonly hasScopeNode: boolean;
-}
-
-interface AuxiliaryChannelOptions {
-  readonly hasScopeNode: boolean;
-}
-
-interface AuxiliaryFutureOptions {
   readonly hasScopeNode: boolean;
 }
 

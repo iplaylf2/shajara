@@ -52,7 +52,11 @@ export function* scopeOwnedWorkDemo(
             emit({ actions: [setCursor(cursorAt("index", "index-sleep", "running"))] });
             yield* sleep(INDEX_DELAY_MS);
             emit({
-              actions: [clearCursor("index"), completeEvents(["index-close", "scope-wait-index"])],
+              actions: [
+                clearCursor("index"),
+                clearCursor("commit-scope"),
+                completeEvents(["index-close", "scope-wait-index"]),
+              ],
             });
           });
 
@@ -62,8 +66,9 @@ export function* scopeOwnedWorkDemo(
           } finally {
             emit({
               actions: [
+                clearCursor("commit"),
                 completeEvents("inner-return"),
-                setCursor(cursorAt("commit", "scope-wait-index", "blocked")),
+                setCursor(cursorAt("commit-scope", "scope-wait-index", "blocked")),
               ],
             });
           }
@@ -73,7 +78,6 @@ export function* scopeOwnedWorkDemo(
 
     emit({
       actions: [
-        clearCursor("commit"),
         completeEvents(["branch-close", "scope-wait-root"]),
         setCursor(cursorAt("root", "return-result", "running")),
       ],

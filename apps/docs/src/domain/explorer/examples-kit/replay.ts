@@ -21,13 +21,7 @@ export function cursorAt<TEvent extends string>(
 }
 
 export function clearCursor(targetId: ExplorerCursorTargetId): ExplorerReplayAction<never> {
-  return clearCursors([targetId]);
-}
-
-export function clearCursors(
-  targetIds: readonly ExplorerCursorTargetId[],
-): ExplorerReplayAction<never> {
-  return { kind: "clear-cursors", targetIds };
+  return { kind: "clear-cursors", targetIds: [targetId] };
 }
 
 export function completeEvents<TEvent extends ExplorerEventId>(

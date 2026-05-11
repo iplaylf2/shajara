@@ -5,7 +5,6 @@ import { branch, channel, future, tryReceive, wait } from "@shajara/host/primiti
 import {
   branchWait,
   clearCursor,
-  clearCursors,
   codeLine,
   codeSpacer,
   completeEvents,
@@ -87,7 +86,13 @@ export function* scopeManagedObjectsDemo(
           try {
             return [createdTicket, createdUpdates] as const;
           } finally {
-            emit({ actions: [completeEvents("return-objects")] });
+            emit({
+              actions: [
+                clearCursor("child"),
+                completeEvents("return-objects"),
+                setCursor(cursorAt("session-scope", "scope-closing", "blocked")),
+              ],
+            });
           }
         },
       ),
@@ -95,7 +100,7 @@ export function* scopeManagedObjectsDemo(
 
     emit({
       actions: [
-        clearCursor("child"),
+        clearCursor("session-scope"),
         completeEvents([
           "objects-returned",
           "scope-wait-root",
@@ -156,7 +161,7 @@ export function* scopeManagedObjectsDemo(
     try {
       return "owned objects closed";
     } finally {
-      emit({ actions: [clearCursors(["root", "child"]), completeEvents("done")] });
+      emit({ actions: [clearCursor("root"), completeEvents("done")] });
     }
   });
 }
@@ -167,6 +172,7 @@ export type ScopeManagedObjectsDemoEvent = ExplorerAuthoredEvent<
   | "object-sleep"
   | "after-branch-sleep"
   | "launch-scope"
+  | "scope-closing"
   | "scope-closed"
   | "scope-wait-root"
   | "ticket-canceled"

@@ -1,11 +1,14 @@
+import type { RiteCoroutine } from "@shajara/host";
+import { createFrameScheduler } from "#/browser";
+
 export interface CodeScroller {
   scrollToTop: (container: HTMLElement) => void;
   scrollToLine: (line: HTMLElement) => void;
 }
 
-export function createCodeScroller(isEnabled: () => boolean): CodeScroller {
+export function* createCodeScroller(isEnabled: () => boolean): RiteCoroutine<CodeScroller> {
+  const frames = yield* createFrameScheduler();
   let lastLine: HTMLElement | null = null;
-  let scrollFrame = EMPTY_LENGTH;
 
   return {
     scrollToLine(line) {
@@ -19,7 +22,7 @@ export function createCodeScroller(isEnabled: () => boolean): CodeScroller {
       }
 
       lastLine = line;
-      scheduleScroll(() => scrollCodeLineIntoView(line));
+      frames.schedule(() => scrollCodeLineIntoView(line));
     },
     scrollToTop(container) {
       if (!isEnabled()) {
@@ -28,25 +31,16 @@ export function createCodeScroller(isEnabled: () => boolean): CodeScroller {
       }
 
       lastLine = null;
-      scheduleScroll(() => {
-        container.scrollTo({
-          behavior: prefersReducedMotion() ? "auto" : "smooth",
-          top: EMPTY_LENGTH,
-        });
-      });
+      frames.schedule(() => scrollToTop(container));
     },
   };
+}
 
-  function scheduleScroll(scroll: () => void): void {
-    if (scrollFrame !== EMPTY_LENGTH) {
-      globalThis.cancelAnimationFrame(scrollFrame);
-    }
-
-    scrollFrame = globalThis.requestAnimationFrame(() => {
-      scrollFrame = EMPTY_LENGTH;
-      scroll();
-    });
-  }
+function scrollToTop(container: HTMLElement): void {
+  container.scrollTo({
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+    top: EMPTY_LENGTH,
+  });
 }
 
 function scrollCodeLineIntoView(line: HTMLElement): void {

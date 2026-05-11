@@ -43,6 +43,7 @@ export interface ProcessFlowNode<TEvent extends ExplorerEventId> extends FlowNod
 
 export interface ScopeFlowGroup<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
   closedEvents: readonly TEvent[];
+  closingEvents: readonly TEvent[];
   ownedNodeIds: readonly string[];
   statusTargetIds: readonly [];
   variant: "scope";

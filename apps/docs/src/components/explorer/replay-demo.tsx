@@ -1,3 +1,4 @@
+import { CanceledError, createScope, sleep } from "@shajara/host";
 import type {
   ExplorerExampleEvent,
   ExplorerExampleId,
@@ -6,7 +7,6 @@ import type {
 import type { ExplorerReplayFrame, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
 import { createReplayFrameStream, playbackReplayFrames } from "./replay-stream";
-import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { readCodeLines, syncCodeLines } from "./replay-code-view";
 import { spawn, wait } from "@shajara/host/primitives";
@@ -27,16 +27,13 @@ export function ExplorerReplayDemo(props: Props): JSX.Element {
 
   onMount(function mountExplorerReplayDemo() {
     onCleanup(
-      startReplay(
-        props.stage,
-        {
-          eventIds: props.stage.eventIds,
-          lines: readCodeLines(props.codeBlockId),
-          scroller: createCodeScroller(isCodeAutoScrollEnabled),
-        },
-        readExplorerReplayRuntime(props.exampleId),
+      startReplay({
+        autoScroll: isCodeAutoScrollEnabled,
+        lines: readCodeLines(props.codeBlockId),
+        runtime: readExplorerReplayRuntime(props.exampleId),
         setState,
-      ),
+        stage: props.stage,
+      }),
     );
   });
 
@@ -81,35 +78,33 @@ interface ExplorerReplayStage {
   scene: FlowScene<ExplorerExampleEvent>;
 }
 
-function startReplay(
-  stage: ExplorerReplayStage,
-  codeView: ReplayCodeView,
-  replayRuntime: ExplorerReplayRuntime,
-  setState: Setter<ExplorerReplayState<ExplorerExampleEvent>>,
-): () => void {
-  return new ExplorerReplaySession(stage, codeView, replayRuntime, setState).start();
+function startReplay(options: ReplaySessionOptions): () => void {
+  return new ExplorerReplaySession(options).start();
+}
+
+interface ReplaySessionOptions {
+  autoScroll: () => boolean;
+  lines: readonly HTMLElement[];
+  runtime: ExplorerReplayRuntime;
+  setState: Setter<ExplorerReplayState<ExplorerExampleEvent>>;
+  stage: ExplorerReplayStage;
 }
 
 class ExplorerReplaySession {
-  readonly #codeView: ReplayCodeView;
-  readonly #replayRuntime: ExplorerReplayRuntime;
+  readonly #autoScroll: () => boolean;
+  readonly #lines: readonly HTMLElement[];
   readonly #replayScope = createScope();
+  readonly #runtime: ExplorerReplayRuntime;
   readonly #setState: Setter<ExplorerReplayState<ExplorerExampleEvent>>;
   readonly #stage: ExplorerReplayStage;
-  readonly #updateState: (frame: ExplorerReplayFrame<ExplorerExampleEvent>) => void;
   #isMounted = true;
 
-  public constructor(
-    stage: ExplorerReplayStage,
-    codeView: ReplayCodeView,
-    replayRuntime: ExplorerReplayRuntime,
-    setState: Setter<ExplorerReplayState<ExplorerExampleEvent>>,
-  ) {
-    this.#codeView = codeView;
-    this.#replayRuntime = replayRuntime;
-    this.#setState = setState;
-    this.#stage = stage;
-    this.#updateState = createStateUpdater(codeView, setState, () => this.#isMounted);
+  public constructor(options: ReplaySessionOptions) {
+    this.#autoScroll = options.autoScroll;
+    this.#lines = options.lines;
+    this.#runtime = options.runtime;
+    this.#setState = options.setState;
+    this.#stage = options.stage;
   }
 
   public start(): () => void {
@@ -122,7 +117,7 @@ class ExplorerReplaySession {
     return () => {
       this.#isMounted = false;
       this.#replayScope.cancel().catch((error) => {
-        queueUnexpectedFailure(error);
+        reportUnexpectedCancelFailure(error);
       });
     };
   }
@@ -136,12 +131,19 @@ class ExplorerReplaySession {
   }
 
   *#runReplayLoop(): RiteCoroutine<void> {
+    const codeView: ReplayCodeView = {
+      eventIds: this.#stage.eventIds,
+      lines: this.#lines,
+      scroller: yield* createCodeScroller(this.#autoScroll),
+    };
+    const updateState = createStateUpdater(codeView, this.#setState, () => this.#isMounted);
+
     for (;;) {
       if (!this.#isMounted) {
         return;
       }
 
-      yield* this.#runReplayCycle();
+      yield* this.#runReplayCycle(codeView, updateState);
 
       if (this.#isMounted) {
         yield* sleep(this.#stage.replay.replayDelayMs);
@@ -149,27 +151,31 @@ class ExplorerReplaySession {
     }
   }
 
-  *#runReplayCycle(): RiteCoroutine<void> {
+  *#runReplayCycle(
+    codeView: ReplayCodeView,
+    updateState: (frame: ExplorerReplayFrame<ExplorerExampleEvent>) => void,
+  ): RiteCoroutine<void> {
     const pendingState = createPendingExplorerReplayState<ExplorerExampleEvent>();
     this.#setState(pendingState);
-    syncCodeLines(this.#codeView, pendingState.cursors, pendingState.completed);
+    syncCodeLines(codeView, pendingState.cursors, pendingState.completed);
 
     yield* sleep(this.#stage.replay.replayDelayMs);
-    yield* this.#playReplayProgram(pendingState);
+    yield* this.#playReplayProgram(pendingState, updateState);
   }
 
   *#playReplayProgram(
     pendingState: ExplorerReplayState<ExplorerExampleEvent>,
+    updateState: (frame: ExplorerReplayFrame<ExplorerExampleEvent>) => void,
   ): RiteCoroutine<void> {
     const frameStream = yield* createReplayFrameStream<ExplorerExampleEvent>(pendingState);
-    const replayProgram = this.#replayRuntime.createProgram();
+    const replayProgram = this.#runtime.createProgram();
     const playback = yield* spawn(() =>
       playbackReplayFrames(
         frameStream,
         pendingState,
         {
           isOpen: () => this.#isMounted,
-          write: this.#updateState,
+          write: updateState,
         },
         MIN_RENDER_GAP_MS,
       ),
@@ -203,11 +209,12 @@ function createStateUpdater(
   };
 }
 
-function queueUnexpectedFailure(error: unknown): void {
-  globalThis.setTimeout(() => {
-    throw error;
-  }, EMPTY_LENGTH);
+function reportUnexpectedCancelFailure(error: unknown): void {
+  if (error instanceof CanceledError) {
+    return;
+  }
+
+  throw error;
 }
 
-const EMPTY_LENGTH = 0;
 const MIN_RENDER_GAP_MS = 34;

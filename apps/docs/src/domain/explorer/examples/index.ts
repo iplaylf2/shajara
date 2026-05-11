@@ -1,9 +1,11 @@
 import type { ArrayValues } from "type-fest";
 import { allResultsExample } from "./all-results";
 import { boundedChannelExample } from "./bounded-channel";
+import { failureDrivenCancellationExample } from "./failure-driven-cancellation";
 import { firstResultExample } from "./first-result";
 import { forkJoinExample } from "./fork-join";
 import { futureSettlementExample } from "./future-settlement";
+import { recoveryBoundaryExample } from "./recovery-boundary";
 import { scopeManagedObjectsExample } from "./scope-managed-objects";
 import { scopeOwnedWorkExample } from "./scope-owned-work";
 import { singleSpawnExample } from "./single-spawn";
@@ -25,8 +27,13 @@ export const explorerExamples = [
   firstResultExample,
   boundedChannelExample,
   scopeManagedObjectsExample,
+  failureDrivenCancellationExample,
+  recoveryBoundaryExample,
 ] as const;
-export const DEFAULT_EXPLORER_EXAMPLE_ID = singleSpawnExample.id;
+
+const [defaultExplorerExample] = explorerExamples;
+
+export const DEFAULT_EXPLORER_EXAMPLE_ID = defaultExplorerExample.id;
 
 export type ExplorerExampleDefinition = ArrayValues<typeof explorerExamples>;
 export type ExplorerExampleId = ExplorerExampleDefinition["id"];
@@ -48,18 +55,13 @@ interface ExampleWithEvent<Event extends string> {
   };
 }
 
-const explorerExampleDefinitions: {
+type ExplorerExampleDefinitions = {
   readonly [ExampleId in ExplorerExampleId]: Extract<
     ExplorerExampleDefinition,
     { readonly id: ExampleId }
   >;
-} = {
-  [allResultsExample.id]: allResultsExample,
-  [boundedChannelExample.id]: boundedChannelExample,
-  [futureSettlementExample.id]: futureSettlementExample,
-  [forkJoinExample.id]: forkJoinExample,
-  [firstResultExample.id]: firstResultExample,
-  [scopeManagedObjectsExample.id]: scopeManagedObjectsExample,
-  [scopeOwnedWorkExample.id]: scopeOwnedWorkExample,
-  [singleSpawnExample.id]: singleSpawnExample,
 };
+
+const explorerExampleDefinitions = Object.fromEntries(
+  explorerExamples.map((exampleDefinition) => [exampleDefinition.id, exampleDefinition]),
+) as ExplorerExampleDefinitions;

@@ -1,5 +1,5 @@
 import type { ExplorerExample, ExplorerFlow } from "#/domain/explorer/contract";
-import { callerNode, spawnLink, waitLink, workerNode } from "#/domain/explorer/examples-kit";
+import { callerNode, spawnLink, workerNode } from "#/domain/explorer/examples-kit";
 import { createSingleSpawnDemoCode, singleSpawnDemo } from "./runtime";
 import type { SingleSpawnDemoEvent } from "./runtime";
 
@@ -31,20 +31,13 @@ function createSingleSpawnFlow(): ExplorerFlow<SingleSpawnDemoEvent> {
 }
 
 function createSingleSpawnFlowLinks(): ExplorerFlow<SingleSpawnDemoEvent>["links"] {
-  return [
-    spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"]),
-    waitLink("receipt", "root", "scope waits for sendReceiptEmail", {
-      activeEvents: ["wait-receipt"],
-      displayLabel: { kind: "hidden" },
-      interruption: { kind: "none" },
-    }),
-  ];
+  return [spawnLink("root", "receipt", "spawn(sendReceiptEmail)", ["spawn-receipt"])];
 }
 
 function createSingleSpawnFlowNodes(): ExplorerFlow<SingleSpawnDemoEvent>["nodes"] {
   return [
     callerNode("root", "submitOrder", {
-      activeEvents: ["function-open", "spawn-receipt", "return-accepted", "wait-receipt", "done"],
+      activeEvents: ["function-open", "spawn-receipt", "return-accepted", "done"],
       completedEvents: ["done"],
     }),
     workerNode("receipt", "sendReceiptEmail", {
