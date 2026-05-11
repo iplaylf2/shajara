@@ -1,7 +1,9 @@
 name: Publish docs
 
 on:
-  workflow_call:
+  push:
+    tags:
+      - "@shajara/docs@*"
 
 permissions:
   contents: read
