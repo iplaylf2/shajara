@@ -1,5 +1,12 @@
 # @shajara/docs
 
+## 0.2.0
+
+### Minor Changes
+
+- [#31](https://github.com/iplaylf2/shajara/pull/31) [`d06a128`](https://github.com/iplaylf2/shajara/commit/d06a1283df224e71beb30e8b7d7deef483e1f819) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Publish the initial docs site release and set up automatic deployment for future
+  docs releases.
+
 ## 0.1.5
 
 ### Patch Changes
