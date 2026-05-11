@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "@shajara/docs@*"
-      - "test/@shajara/docs@*"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -39,7 +37,6 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    if: startsWith(github.ref_name, '@shajara/docs@')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
