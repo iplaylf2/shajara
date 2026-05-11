@@ -48,7 +48,7 @@
   "explorer.examples.recovery-boundary.description": "guard 边界内的 resumable 恢复",
   "explorer.examples.recovery-boundary.guide.boundary": "publishListing 进入 guard 运行 reviewListing。",
   "explorer.examples.recovery-boundary.guide.failure": "reviewListing 通过 resumable 启动 scanPhotos，并等待 resumable 返回值。",
-  "explorer.examples.recovery-boundary.guide.recovery": "scanPhotos 在 child scope 内失败后，guard 把 scope failure 转交给同一边界内的 approveManually。",
+  "explorer.examples.recovery-boundary.guide.recovery": "scanPhotos 在 child scope 内失败后，guard 在同一边界内把这次失败交给 approveManually 处理。",
   "explorer.examples.recovery-boundary.guide.resume": "approveManually 返回 approval，resumable 把这个值交回 reviewListing 的等待点。",
   "explorer.examples.recovery-boundary.title": "恢复边界",
   "explorer.examples.scope-managed-objects.description": "scope 管理 future 与 channel 生命周期",

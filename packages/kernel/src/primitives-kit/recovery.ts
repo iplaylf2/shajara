@@ -1,5 +1,5 @@
 import type { ChannelReceiver, ChannelSender, ReceiveResult } from "#/sigils/index";
-import type { Failure, ScopeFailure } from "#/failures";
+import type { Failure, ScopeExitFailure } from "#/failures";
 import type { FutureResult, FutureSettleKey, Ritual, Wisp } from "#/contracts";
 import {
   bind,
@@ -78,7 +78,7 @@ export function withRecoveryPoint<Relic>(
     );
 }
 
-export function requestRecovery<Relic>(failure: ScopeFailure): Wisp<FutureResult<Relic>> {
+export function requestRecovery<Relic>(failure: ScopeExitFailure): Wisp<FutureResult<Relic>> {
   return pipe(
     wisp.Do,
     wisp.bind("route", () =>
@@ -101,7 +101,7 @@ export function requestRecovery<Relic>(failure: ScopeFailure): Wisp<FutureResult
 }
 
 export type RecoveryHandler = (
-  failure: ScopeFailure,
+  failure: ScopeExitFailure,
 ) => Wisp<Option<either.Either<Failure, unknown>>>;
 
 function serveRecovery(
@@ -130,7 +130,7 @@ function missingRecoveryAnchor(site: MissingRecoveryAnchorSite): Failure {
 const recoveryRouteKey = contextKey<ChannelSender<RecoveryRequest, unknown>>();
 
 interface RecoveryRequest {
-  readonly failure: ScopeFailure;
+  readonly failure: ScopeExitFailure;
   readonly replyTo: FutureSettleKey<unknown>;
 }
 
