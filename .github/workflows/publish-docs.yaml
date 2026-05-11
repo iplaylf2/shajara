@@ -1,7 +1,9 @@
 name: Publish docs
 
 on:
-  workflow_call:
+  push:
+    tags:
+      - "@shajara/docs@*"
 
 permissions:
   contents: read
@@ -28,7 +30,7 @@ jobs:
         uses: withastro/action@v6
         with:
           node-version: ${{ steps.setup-yarn.outputs.node-version }}
-          build-cmd: yarn workspace @shajara/docs build
+          build-cmd: yarn workspaces foreach -Rt --from @shajara/docs run build
           cache-dir: apps/docs/node_modules/.astro
           out-dir: apps/docs/dist
 
