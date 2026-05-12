@@ -433,14 +433,17 @@ export class RuntimeScope implements ScopeRef<unknown> {
         break;
       }
       case "canceled": {
+        yield this.#converge();
         yield* this.#settleClosed(either.left(canceledFailure));
         break;
       }
       case "completed": {
+        yield this.#converge();
         yield* this.#settleClosed(either.right(state.result));
         break;
       }
       case "failed": {
+        yield this.#converge();
         yield* this.#settleClosed(either.left(state.failure));
         break;
       }
@@ -598,6 +601,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return {
       kind: "defer",
       task,
+    };
+  }
+
+  // oxlint-disable-next-line class-methods-use-this
+  #converge(): ScopeSyncEffect {
+    return {
+      kind: "converge",
     };
   }
 

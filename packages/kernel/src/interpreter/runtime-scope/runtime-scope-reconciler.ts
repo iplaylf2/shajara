@@ -39,6 +39,10 @@ export class RuntimeScopeReconciler {
 
   #applyStep(call: ScopeSyncCall, step: ScopeSyncEffect): void {
     switch (step.kind) {
+      case "converge": {
+        this.#convergeScope(call.scope, call);
+        break;
+      }
       case "defer": {
         call.deferredTasks.push(step.task);
         break;
@@ -116,6 +120,16 @@ export class RuntimeScopeReconciler {
     this.#flushDeferredTasks(call);
   }
 
+  #convergeScope(scope: ScopeRef<unknown>, continuingCall: ScopeSyncCall): void {
+    const continuingIndex = this.#queuedCalls.indexOf(continuingCall);
+    for (let index = this.#queuedCalls.length - 1; index > continuingIndex; index -= 1) {
+      const call = this.#queuedCalls[index]!;
+      if (call.scope === scope) {
+        this.#queuedCalls.splice(index, 1);
+      }
+    }
+  }
+
   #nextQueuedCall(): ScopeSyncCall {
     return this.#queuedCalls.find((call) => call !== this.#activeCall)!;
   }
@@ -151,6 +165,7 @@ export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
 export type ScopeSyncEffect = TaggedUnion<
   "kind",
   {
+    converge: {};
     defer: {
       readonly task: ScopeReleaseTask;
     };
