@@ -2,8 +2,13 @@
 "@shajara/kernel": minor
 ---
 
-Expose scope exit failures in recovery contracts.
+Clarify scope exit recovery semantics.
 
 The kernel now exports `ScopeExitFailure` for the failure side of scope
-`exitFuture` results. Recovery routes use the same contract, so `guard` recovery
-can handle child-scope cancellation as well as child-scope failure.
+`exitFuture` results and uses the same contract for recovery requests.
+`resumable(...)` recovery now covers child-scope cancellation through the same
+route as child-scope failure.
+
+Terminal scope convergence also closes the reconciliation boundary for that
+scope. Later queued synchronization for the closed scope is discarded instead of
+advancing it again.
