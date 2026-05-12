@@ -1,6 +1,6 @@
 // oxlint-disable no-magic-numbers
 import type { ScopeRef, Suppressor } from "#/contracts";
-import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-scope";
+import type { TaggedUnion } from "type-fest";
 
 export class RuntimeScopeReconciler {
   public reconcile<Result>(
@@ -145,6 +145,26 @@ export class RuntimeScopeReconciler {
   readonly #acquiredScopes = new Set<ScopeRef<unknown>>();
   #activeCall: ScopeSyncCall | null = null;
 }
+
+export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
+
+export type ScopeSyncEffect = TaggedUnion<
+  "kind",
+  {
+    defer: {
+      readonly task: ScopeReleaseTask;
+    };
+    handoff: {
+      readonly task: ScopeReleaseTask;
+    };
+    signal: {
+      readonly run: () => ScopeSync<void>;
+      readonly scope: ScopeRef<unknown>;
+    };
+  }
+>;
+
+export type ScopeReleaseTask = (suppressor: Suppressor) => void;
 
 function createScopeSyncCall<Result>(
   scope: ScopeRef<unknown>,

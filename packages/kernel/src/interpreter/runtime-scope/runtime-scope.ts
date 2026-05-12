@@ -16,10 +16,10 @@ import type {
   Suppressor,
 } from "#/contracts";
 import type { OverloadRewrite, ReceiveResult, SendResult } from "#/sigils/index";
+import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-scope-reconciler";
 import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
-import type { FutureSettlement } from "#/interpreter/runtime-future";
 import { ManagedDrain } from "./managed-drain";
 import type { ManagedDrainPhase } from "./managed-drain";
 import { PendingScopeFailure } from "./pending-scope-failure";
@@ -676,28 +676,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   readonly #bindings = new Map<ContextKey<unknown>, unknown>();
 }
 
-export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
-
-export type ScopeReleaseTask = FutureSettlement;
-export type ScopeHandoffTask = (suppressor: Suppressor) => void;
-
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
-
-export type ScopeSyncEffect = TaggedUnion<
-  "kind",
-  {
-    defer: {
-      readonly task: ScopeReleaseTask;
-    };
-    handoff: {
-      readonly task: ScopeHandoffTask;
-    };
-    signal: {
-      readonly run: () => ScopeSync<void>;
-      readonly scope: ScopeRef<unknown>;
-    };
-  }
->;
 
 function* noopSync(): ScopeSync<void> {
   // Noop
