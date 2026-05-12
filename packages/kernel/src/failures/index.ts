@@ -10,6 +10,7 @@ export * from "./external";
 export * from "./interrupted";
 export * from "./scope";
 
+/** All failure variants that can appear in kernel future results. */
 export type Failure =
   | CanceledFailure
   | ChannelFailure

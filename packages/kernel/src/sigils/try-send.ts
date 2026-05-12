@@ -3,6 +3,13 @@ import type { ChannelSender } from "./channel";
 import type { Option } from "#/utils/index";
 import type { SendResult } from "./send";
 
+/**
+ * Models non-blocking channel send.
+ *
+ * @param sender - Channel sender endpoint.
+ * @param value - Payload.
+ * @returns Try-send instruction.
+ */
 export function trySend<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,
   value: Value,
@@ -14,6 +21,7 @@ export function trySend<Value, Outcome>(
   };
 }
 
+/** Sigil shape for non-blocking channel send. */
 export interface TrySendSigil<Value, Outcome> extends SigilShape {
   readonly kind: "trySend";
   readonly sender: ChannelSender<Value, Outcome>;

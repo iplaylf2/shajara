@@ -62,8 +62,9 @@ Names available from the root entry include:
   `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
 - executor: `createExecutor`, `currentExecutorKey`, `Executor`, `BindTurn`,
   `LaunchHandle`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`,
-  `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
-- executor primitives: `autonomy`
+  `Processor`
+- executor primitives: `autonomy`, `AutonomyOptions`, `AutonomyScopeDescriptor`,
+  `SchedulerOption`, `ReaperOption`, `Scheduler`, `Reaper`
 - primitives: `Wisp` primitives for concurrency, futures, channels, context, control,
   termination, cleanup, parking, recovery, and introspection
 

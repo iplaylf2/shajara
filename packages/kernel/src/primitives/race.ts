@@ -12,6 +12,12 @@ import { spawn } from "./spawn";
 import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Runs entries until the first success.
+ *
+ * @param entries - Competing entries.
+ * @returns Race scope and winner future.
+ */
 export function race<EntryReturns extends NonEmptyTuple<unknown>>(
   entries: RaceEntries<EntryReturns>,
 ): Wisp<ScopedOutcome<ArrayValues<EntryReturns>>> {

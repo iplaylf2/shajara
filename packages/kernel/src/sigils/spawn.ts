@@ -7,6 +7,13 @@ import type {
   SigilShape,
 } from "#/contracts";
 
+/**
+ * Models process creation.
+ *
+ * @param entry - Process entry.
+ * @param descriptor - Process metadata.
+ * @returns Spawn instruction.
+ */
 export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescriptor>(
   entry: Ritual<Relic>,
   descriptor: Descriptor = DEFAULT_PROCESS_DESCRIPTOR as Descriptor,
@@ -18,6 +25,7 @@ export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescr
   };
 }
 
+/** Sigil shape for process creation. */
 export interface SpawnSigil<
   Relic,
   Descriptor extends ProcessDescriptor = ProcessDescriptor,

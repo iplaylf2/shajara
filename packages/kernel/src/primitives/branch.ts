@@ -3,6 +3,13 @@ import type { BranchHandle } from "#/sigils/index";
 import { branch as branchSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Opens a child scope and entry process.
+ *
+ * @param entry - Child entry.
+ * @param descriptor - Scope metadata.
+ * @returns Child scope and process references.
+ */
 export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
   entry: Ritual<Relic>,
   descriptor?: Descriptor,
@@ -10,6 +17,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   return wisp.liftF(branchSigil(entry, descriptor));
 }
 
+/** Scope reference paired with a separate outcome future. */
 export type ScopedOutcome<Result> = readonly [scope: ScopeRef<unknown>, outcome: FutureKey<Result>];
 
 export type { BranchHandle } from "#/sigils/index";

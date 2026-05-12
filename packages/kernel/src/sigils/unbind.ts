@@ -1,5 +1,11 @@
 import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 
+/**
+ * Models context unbinding.
+ *
+ * @param key - Binding identity.
+ * @returns Unbind instruction.
+ */
 export function unbind(key: ContextKey<unknown>): UnbindSigil {
   return {
     key,
@@ -7,6 +13,7 @@ export function unbind(key: ContextKey<unknown>): UnbindSigil {
   };
 }
 
+/** Sigil shape for context unbinding. */
 export interface UnbindSigil extends SigilShape {
   readonly kind: "unbind";
   readonly key: ContextKey<unknown>;

@@ -5,6 +5,11 @@ import { pipe } from "fp-ts/lib/function";
 import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Parks the current process.
+ *
+ * @returns No relic.
+ */
 export function park(): Wisp<never> {
   return pipe(
     future(),

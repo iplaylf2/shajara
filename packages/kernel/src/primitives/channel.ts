@@ -5,6 +5,13 @@ import { channel as channelSigil } from "#/sigils/index";
 import { halt } from "./halt";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Opens a current-scope channel.
+ *
+ * @param capacity - Buffer capacity.
+ * @param overloadRewrite - Overload policy for finite buffers.
+ * @returns Receiver and sender endpoints.
+ */
 export function channel<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,

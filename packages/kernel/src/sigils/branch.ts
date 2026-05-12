@@ -7,6 +7,13 @@ import type {
   SigilShape,
 } from "#/contracts";
 
+/**
+ * Models child-scope creation.
+ *
+ * @param entry - Child scope entry.
+ * @param descriptor - Scope metadata.
+ * @returns Branch instruction.
+ */
 export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
   entry: Ritual<Relic>,
   descriptor: Descriptor = DEFAULT_SCOPE_DESCRIPTOR as Descriptor,
@@ -18,6 +25,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   };
 }
 
+/** Child-scope creation sigil shape. */
 export interface BranchSigil<
   Relic,
   Descriptor extends ScopeDescriptor = ScopeDescriptor,
@@ -28,6 +36,7 @@ export interface BranchSigil<
   readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic, Descriptor>];
 }
 
+/** Branch result references. */
 export interface BranchHandle<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor> {
   readonly scope: ScopeRef<Relic, Descriptor>;
   readonly process: ProcessRef<Relic>;

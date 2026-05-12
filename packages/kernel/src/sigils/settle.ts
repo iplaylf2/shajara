@@ -1,5 +1,12 @@
 import type { ECHO_TOKEN, FutureResult, FutureSettleKey, SigilShape } from "#/contracts";
 
+/**
+ * Models future settlement.
+ *
+ * @param futureSettle - Settlement authority.
+ * @param result - In-band settlement.
+ * @returns Settle instruction.
+ */
 export function settle<Result>(
   futureSettle: FutureSettleKey<Result>,
   result: FutureResult<Result>,
@@ -11,6 +18,7 @@ export function settle<Result>(
   };
 }
 
+/** Sigil shape for future settlement. */
 export interface SettleSigil<Result> extends SigilShape {
   readonly kind: "settle";
   readonly futureSettle: FutureSettleKey<Result>;

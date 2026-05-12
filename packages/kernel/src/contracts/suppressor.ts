@@ -1,3 +1,10 @@
+/** Receives faults outside normal convergence. */
 export interface Suppressor {
-  capture(error: unknown): void;
+  /**
+   * Captures one fault.
+   *
+   * @param fault - Captured value.
+   * @returns No value.
+   */
+  capture(fault: unknown): void;
 }

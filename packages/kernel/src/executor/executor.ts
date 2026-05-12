@@ -22,30 +22,90 @@ import { contextKey } from "#/contracts";
 import { noop } from "#/utils/index";
 import { withRecoveryAnchor } from "#/primitives-kit";
 
+/**
+ * Adapts executor turn scheduling.
+ *
+ * @param flushTurn - Executor turn callback.
+ * @returns Pacing hooks.
+ */
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
+/**
+ * Initializes an executor root.
+ *
+ * @param bindTurn - Turn scheduler.
+ * @returns Executor root handle.
+ */
 export function createExecutor(bindTurn: BindTurn): Executor {
   return new RuntimeExecutor(bindTurn);
 }
 
+/** External control surface for launching and observing kernel work. */
 export interface Executor extends LaunchHandle<never> {
+  /**
+   * Starts a child entry.
+   *
+   * @param scope - Registered execution scope.
+   * @param ritual - Entry computation.
+   * @returns Launch handle, or none when unavailable.
+   */
   launch<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
   ): Option<LaunchHandle<Result>>;
+
+  /**
+   * Observes one future settlement.
+   *
+   * @param future - Observed future.
+   * @param listener - Settlement listener.
+   * @returns Disposer for the subscription.
+   */
   onSettled<Result>(
     future: FutureKey<Result>,
     listener: (result: FutureResult<Result>) => void,
   ): Disposer;
+
+  /**
+   * Writes a settlement from outside ritual execution.
+   *
+   * @param futureSettle - Settlement authority.
+   * @param result - In-band settlement.
+   * @returns True when settlement was accepted.
+   */
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
+
+  /**
+   * Performs one external non-blocking send.
+   *
+   * @param sender - Send endpoint.
+   * @param value - Sent value.
+   * @returns Immediate send result, or none when the send would block.
+   */
   trySend<Value, Outcome>(
     sender: ChannelSender<Value, Outcome>,
     value: Value,
   ): Option<SendResult<Outcome>>;
+
+  /**
+   * Closes a channel externally.
+   *
+   * @param endpoint - Target endpoint.
+   * @param outcome - Explicit close outcome.
+   * @returns No value.
+   */
   close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
+
+  /**
+   * Requests external cancellation.
+   *
+   * @param scope - Target execution scope.
+   * @returns No value.
+   */
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
+/** Context key that exposes the current executor to launched work. */
 export const currentExecutorKey: ContextKey<Executor> = contextKey<Executor>();
 
 class RuntimeExecutor implements Executor {
