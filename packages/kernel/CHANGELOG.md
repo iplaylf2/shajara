@@ -1,5 +1,22 @@
 # @shajara/kernel
 
+## 0.7.0
+
+### Minor Changes
+
+- [#34](https://github.com/iplaylf2/shajara/pull/34) [`0aed734`](https://github.com/iplaylf2/shajara/commit/0aed7346c02fe4632678c4c7fefccdfe05fe05da) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Clarify scope exit recovery semantics.
+
+  The kernel now exports `ScopeExitFailure` for the failure side of scope
+  `exitFuture` results and uses the same contract for recovery requests.
+  `resumable(...)` recovery now covers child-scope cancellation through the same
+  route as child-scope failure.
+
+  Scope exit convergence also leaves the final result stable. Later scope
+  activity can no longer advance a scope after it has closed.
+
+  The `canceledFailure` export now constructs cancellation failures, aligning it
+  with the other failure helpers instead of exposing a shared value.
+
 ## 0.6.0
 
 ### Minor Changes

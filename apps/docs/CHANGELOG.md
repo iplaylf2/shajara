@@ -1,5 +1,14 @@
 # @shajara/docs
 
+## 0.2.1
+
+### Patch Changes
+
+- [#34](https://github.com/iplaylf2/shajara/pull/34) [`0aed734`](https://github.com/iplaylf2/shajara/commit/0aed7346c02fe4632678c4c7fefccdfe05fe05da) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Clarify the recovery boundary example wording so it describes guard recovery
+  without implying that only scope failures can reach the handler.
+- Updated dependencies [[`0aed734`](https://github.com/iplaylf2/shajara/commit/0aed7346c02fe4632678c4c7fefccdfe05fe05da)]:
+  - @shajara/host@0.7.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,20 @@
 # @shajara/host
 
+## 0.7.0
+
+### Minor Changes
+
+- [#34](https://github.com/iplaylf2/shajara/pull/34) [`0aed734`](https://github.com/iplaylf2/shajara/commit/0aed7346c02fe4632678c4c7fefccdfe05fe05da) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Expose scope exit errors to host recovery handlers.
+
+  `guard(...)` recovery handlers now receive `ScopeExitError`, covering both
+  `ScopeError` and `CanceledError`. This lets `resumable(...)` child cancellation
+  recover through the same guard route as child-scope failure.
+
+### Patch Changes
+
+- Updated dependencies [[`0aed734`](https://github.com/iplaylf2/shajara/commit/0aed7346c02fe4632678c4c7fefccdfe05fe05da)]:
+  - @shajara/kernel@0.7.0
+
 ## 0.6.0
 
 ### Minor Changes
