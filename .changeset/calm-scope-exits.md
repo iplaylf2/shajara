@@ -9,6 +9,6 @@ The kernel now exports `ScopeExitFailure` for the failure side of scope
 `resumable(...)` recovery now covers child-scope cancellation through the same
 route as child-scope failure.
 
-Terminal scope convergence also closes the reconciliation boundary for that
-scope. Later queued synchronization for the closed scope is discarded instead of
-advancing it again.
+Scope exit convergence also leaves the final result stable. Once a scope
+completes, cancels, or fails, later scope activity cannot advance that closed
+scope again.

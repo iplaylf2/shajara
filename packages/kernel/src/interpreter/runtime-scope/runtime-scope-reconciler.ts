@@ -3,28 +3,25 @@ import type { ScopeRef, Suppressor } from "#/contracts";
 import type { TaggedUnion } from "type-fest";
 
 export class RuntimeScopeReconciler {
-  public reconcile<Result>(
+  public reconcile(scope: ScopeRef<unknown>): void {
+    while (this.#hasPendingCallFor(scope)) {
+      this.#run(this.#nextPendingCall());
+    }
+  }
+
+  public sync<Result>(
     scope: ScopeRef<unknown>,
     sync: ScopeSync<Result>,
     suppressor: Suppressor,
   ): Result {
-    const call = createScopeSyncCall(scope, sync, suppressor);
-
-    this.#queuedCalls.push(call);
-    this.#takeOverUntil(call);
+    const call = this.#enqueue(createScopeSyncCall(scope, sync, suppressor));
+    this.#run(call);
 
     return call.result! as Result;
   }
 
-  #takeOverUntil(target: ScopeSyncCall): void {
-    while (this.#isQueued(target)) {
-      this.#drive(this.#nextQueuedCall());
-    }
-  }
-
-  #drive(call: ScopeSyncCall): void {
-    this.#acquire(call);
-    this.#activeCall = call;
+  #run(call: ScopeSyncCall): void {
+    this.#activateCall(call);
 
     while (this.#activeCall === call) {
       const next = call.next();
@@ -39,10 +36,6 @@ export class RuntimeScopeReconciler {
 
   #applyStep(call: ScopeSyncCall, step: ScopeSyncEffect): void {
     switch (step.kind) {
-      case "converge": {
-        this.#convergeScope(call.scope, call);
-        break;
-      }
       case "defer": {
         call.deferredTasks.push(step.task);
         break;
@@ -63,85 +56,83 @@ export class RuntimeScopeReconciler {
   #finish(call: ScopeSyncCall, result: unknown): void {
     call.result = result;
     this.#activeCall = null;
-    this.#release(call);
     this.#dequeue(call);
+    this.#releaseCall(call);
   }
 
   #handoff(call: ScopeSyncCall, effect: () => void): void {
     this.#activeCall = null;
-    this.#release(call);
+    this.#releaseCall(call);
     effect();
 
-    if (!this.#isQueued(call)) {
+    if (!this.#isPending(call)) {
       return;
     }
 
-    this.#acquire(call);
-    this.#activeCall = call;
+    this.#activateCall(call);
   }
 
   #signalScope(parent: ScopeSyncCall, signal: ScopeSignalRequest): void {
-    if (this.#acquiredScopes.has(signal.scope)) {
+    if (this.#heldScopes.has(signal.scope)) {
       return;
     }
 
-    this.#takeover(parent, () => this.#inlineScopeSignal(parent, signal.scope, signal.run));
+    this.#suspendCall(parent, () => this.#runSignal(parent, signal));
   }
 
-  #takeover(call: ScopeSyncCall, effect: () => void): void {
+  #suspendCall(call: ScopeSyncCall, effect: () => void): void {
     this.#activeCall = null;
     effect();
 
-    if (!this.#isQueued(call)) {
+    if (!this.#isPending(call)) {
       return;
     }
 
     this.#activeCall = call;
   }
 
-  #inlineScopeSignal(
-    parent: ScopeSyncCall,
-    scope: ScopeRef<unknown>,
-    run: () => ScopeSync<void>,
-  ): void {
-    const call = createScopeSyncCall(scope, run(), parent.suppressor);
-    const parentIndex = this.#queuedCalls.indexOf(parent);
-
-    this.#queuedCalls.splice(parentIndex, 0, call);
-    this.#takeOverUntil(call);
+  #runSignal(parent: ScopeSyncCall, signal: ScopeSignalRequest): void {
+    const call = createScopeSyncCall(signal.scope, signal.run(), parent.suppressor);
+    this.#insertBefore(parent, call);
+    this.#run(call);
   }
 
-  #acquire(call: ScopeSyncCall): void {
-    this.#acquiredScopes.add(call.scope);
+  #enqueue(call: ScopeSyncCall): ScopeSyncCall {
+    this.#pendingCalls.push(call);
+    return call;
   }
 
-  #release(call: ScopeSyncCall): void {
-    this.#acquiredScopes.delete(call.scope);
+  #insertBefore(target: ScopeSyncCall, call: ScopeSyncCall): void {
+    const targetIndex = this.#pendingCalls.indexOf(target);
+    this.#pendingCalls.splice(targetIndex, 0, call);
+  }
+
+  #activateCall(call: ScopeSyncCall): void {
+    this.#heldScopes.add(call.scope);
+    this.#activeCall = call;
+  }
+
+  #releaseCall(call: ScopeSyncCall): void {
+    this.#heldScopes.delete(call.scope);
     this.#flushDeferredTasks(call);
   }
 
-  #convergeScope(scope: ScopeRef<unknown>, continuingCall: ScopeSyncCall): void {
-    const continuingIndex = this.#queuedCalls.indexOf(continuingCall);
-    for (let index = this.#queuedCalls.length - 1; index > continuingIndex; index -= 1) {
-      const call = this.#queuedCalls[index]!;
-      if (call.scope === scope) {
-        this.#queuedCalls.splice(index, 1);
-      }
-    }
+  #nextPendingCall(): ScopeSyncCall {
+    return this.#pendingCalls.find((call) => call !== this.#activeCall)!;
   }
 
-  #nextQueuedCall(): ScopeSyncCall {
-    return this.#queuedCalls.find((call) => call !== this.#activeCall)!;
+  #hasPendingCallFor(scope: ScopeRef<unknown>): boolean {
+    return this.#pendingCalls.some((call) => call.scope === scope);
   }
 
-  #isQueued(target: ScopeSyncCall): boolean {
-    return this.#queuedCalls.includes(target);
+  #isPending(target: ScopeSyncCall): boolean {
+    return this.#pendingCalls.includes(target);
   }
 
   #dequeue(target: ScopeSyncCall): void {
-    const index = this.#queuedCalls.indexOf(target);
+    const index = this.#pendingCalls.indexOf(target);
     if (index !== -1) {
-      this.#queuedCalls.splice(index, 1);
+      this.#pendingCalls.splice(index, 1);
     }
   }
 
@@ -155,8 +146,8 @@ export class RuntimeScopeReconciler {
     }
   }
 
-  readonly #queuedCalls: ScopeSyncCall[] = [];
-  readonly #acquiredScopes = new Set<ScopeRef<unknown>>();
+  readonly #pendingCalls: ScopeSyncCall[] = [];
+  readonly #heldScopes = new Set<ScopeRef<unknown>>();
   #activeCall: ScopeSyncCall | null = null;
 }
 
@@ -165,7 +156,6 @@ export type ScopeSync<Result> = Generator<ScopeSyncEffect, Result, void>;
 export type ScopeSyncEffect = TaggedUnion<
   "kind",
   {
-    converge: {};
     defer: {
       readonly task: ScopeReleaseTask;
     };
