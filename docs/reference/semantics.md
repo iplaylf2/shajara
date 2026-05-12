@@ -241,13 +241,19 @@ A child-scope failure converges that child scope as a failure and settles the ch
 `exitFuture`. The parent waits for that child scope to reach `closed` as part of
 structured concurrency, then continues according to its own processes and wait operations.
 
+Accordingly, the failure side of a scope `exitFuture` is only `canceled` or `scope`.
+Other failure kinds can drive the failure path and can appear in `ScopeFailure.cause` or
+`ScopeFailure.suppressed`, but the scope exit result itself remains a cancellation or a
+`ScopeFailure`.
+
 ### Recovery Routes
 
 Recovery uses routes stored in scope context.
 
 - `resumable(entry)` runs `entry` in a child scope and returns a `ScopedOutcome<T>`.
 - If that child scope succeeds, the outcome future succeeds with the child result.
-- If that child scope fails, the failure is sent to the current recovery route.
+- If that child scope exits with a scope exit failure, that failure is sent to the current
+  recovery route.
 - `guard(entry, handler)` installs a recovery route for work inside its child scope.
 - A recovery handler can return a handled result, return `none` to delegate to an
   ancestor route, or return a failure result.

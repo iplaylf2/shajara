@@ -102,7 +102,8 @@ The host layer uses `fromFailure(...)` for unified mapping:
 - `external` -> the original `Error` or `ExternalError`
 
 `ScopeError` means the caller observes that a scope converged as a failure. The primary
-cause is available through `ScopeError.cause`.
+cause is available through `ScopeError.cause`. `CanceledError` and `ScopeError` together
+form `ScopeExitError`, the host error surface for scope exit failures.
 
 If that cause comes from an `external` failure, the original external value is in
 `ScopeError.cause.raw`.
@@ -115,10 +116,11 @@ Host recovery is built on the kernel `guard` and `resumable` primitives.
 `guard(entry, recover)` installs a recovery point for resumable work inside the guarded
 entry.
 
-The host recovery handler shape is:
+Host recovery receives a child scope exit failure after host error mapping, so the
+recovery handler shape is:
 
 ```ts
-type RecoveryHandler = (error: ScopeError) => RiteCoroutine<Presence<unknown>>;
+type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<Presence<unknown>>;
 ```
 
 - return `[true, value]` to handle the recovery request with `value`

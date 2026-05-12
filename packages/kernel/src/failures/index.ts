@@ -16,3 +16,6 @@ export type Failure =
   | ExternalFailure
   | InterruptedFailure
   | ScopeFailure;
+
+/** Failures that a scope exit future may expose. */
+export type ScopeExitFailure = CanceledFailure | ScopeFailure;

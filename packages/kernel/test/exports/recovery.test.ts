@@ -1,8 +1,18 @@
-import type { ScopeFailure, ScopeRef, ScopedOutcome } from "#/index";
-import { cede, externalFailure, guard, halt, resumable, self, wait } from "#/index";
+import type { ScopeExitFailure, ScopeFailure, ScopeRef, ScopedOutcome } from "#/index";
+import {
+  cancel,
+  canceledFailure,
+  cede,
+  defer,
+  externalFailure,
+  guard,
+  halt,
+  resumable,
+  self,
+  wait,
+} from "#/index";
 import {
   createManagedExecutor,
-  interpretRitual,
   interpretWithRecovery,
   unwrapExitedSucceeded,
   unwrapSome,
@@ -168,37 +178,6 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [
-        "unreachable guarded result",
-        left(externalFailure("halted", "unreachable recovery result")),
-      ] as const,
-      outcome: {
-        processExit: left(missingAnchor("recovery-point")),
-        scopeExit: left(scopeFailureOf(missingAnchor("recovery-point"))),
-      },
-    },
-  ])(
-    "guard branches fail when they run outside an executor recovery anchor",
-    async ({ given: [entryResult, recoveryResult], outcome }) => {
-      await using ritual = interpretRitual(() =>
-        guard(
-          () => wisp.of(entryResult),
-          () => wisp.of(some(recoveryResult)),
-        ),
-      );
-      const step = ritual.driveSync();
-      const handle = unwrapExitedSucceeded(step);
-      const actual = {
-        processExit: await ritual.waitForFuture(handle.process.exitFuture),
-        scopeExit: await ritual.waitForFuture(handle.scope.exitFuture),
-      };
-
-      expect(actual).toEqual(outcome);
-    },
-  );
-
-  test.for([
-    {
       given: ["ready", "unexpected-recovery"] as const,
       outcome: {
         guardExit: right(undefined),
@@ -241,6 +220,46 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
+      given: [externalFailure("delayed", "delayed resumable failure"), "recovered"] as const,
+      outcome: right("recovered"),
+    },
+  ])(
+    "keeps a guard recovery point available for delayed resumable child failures",
+    async ({ given: [failure, recovered], outcome }) => {
+      const captured = {
+        handle: null as ScopedOutcome<string> | null,
+      };
+
+      await using ritual = interpretWithRecovery(() =>
+        guard(
+          () =>
+            pipe(
+              resumable<string>(() =>
+                pipe(
+                  cede(),
+                  wisp.chain(() => halt(failure)),
+                ),
+              ),
+              wisp.chain((handle) =>
+                wisp.fromIO(() => {
+                  captured.handle = handle;
+                }),
+              ),
+            ),
+          () => wisp.of(some(right(recovered))),
+        ),
+      );
+
+      ritual.driveSync();
+      assertCaptured(captured.handle);
+      const [, outcomeFuture] = captured.handle;
+
+      expect(await ritual.waitForFuture(outcomeFuture)).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
       given: [externalFailure("halted", "halted for test"), right("recovered:halted")] as const,
       outcome: {
         guardExit: right(undefined),
@@ -261,7 +280,7 @@ describe("/ primitives: guard, resumable", () => {
     "guard receives resumable failures as scope failures and applies the recovery result",
     async ({ given: [entryFailure, recoveryResult], outcome }) => {
       const captured = {
-        failure: null as ScopeFailure | null,
+        failure: null as ScopeExitFailure | null,
         handle: null as ScopedOutcome<string> | null,
       };
 
@@ -311,6 +330,96 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
+      given: [
+        externalFailure("cleanup", "cleanup resumable failure"),
+        "cleanup:recovered",
+      ] as const,
+      outcome: [right("cleanup:recovered")] as const,
+    },
+  ])(
+    "keeps recovery guarded when cancellation cleanup starts a resumable child",
+    async ({ given: [failure, recovered], outcome }) => {
+      const recoveries: unknown[] = [];
+
+      await using ritual = interpretWithRecovery(() =>
+        pipe(
+          defer(() =>
+            pipe(
+              guard(
+                () =>
+                  pipe(
+                    resumable<string>(() => halt(failure)),
+                    wisp.chain(([, outcomeFuture]) => wait(outcomeFuture)),
+                    wisp.chainIOK((result) => () => {
+                      recoveries.push(result);
+                    }),
+                  ),
+                () => wisp.of(some(right(recovered))),
+              ),
+              wisp.chain(({ scope }) => wait(scope.exitFuture)),
+              wisp.map(noop),
+            ),
+          ),
+          wisp.chain(cancel),
+        ),
+      );
+
+      await ritual.waitForClosed();
+
+      expect(recoveries).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: ["recovered:canceled"] as const,
+      outcome: {
+        recoveryRequests: [canceledFailure()],
+        resumableResult: right("recovered:canceled"),
+      },
+    },
+  ])(
+    "guard receives child cancellation failures and applies the recovery result",
+    async ({ given: [recovered], outcome }) => {
+      const captured = {
+        handle: null as ScopedOutcome<string> | null,
+      };
+      const recoveryRequests: ScopeExitFailure[] = [];
+
+      await using ritual = interpretWithRecovery(() =>
+        guard(
+          () =>
+            pipe(
+              resumable<string>(cancel),
+              wisp.chain((handle) =>
+                wisp.fromIO(() => {
+                  captured.handle = handle;
+                }),
+              ),
+            ),
+          (failure) =>
+            pipe(
+              wisp.fromIO(() => {
+                recoveryRequests.push(failure);
+              }),
+              wisp.map(() => some(right(recovered))),
+            ),
+        ),
+      );
+
+      ritual.driveSync();
+      assertCaptured(captured.handle);
+      const [, outcomeFuture] = captured.handle;
+
+      expect({
+        recoveryRequests,
+        resumableResult: await ritual.waitForFuture(outcomeFuture),
+      }).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
       given: [externalFailure("halted", "delegated recovery"), right("outer recovered")] as const,
       outcome: {
         innerRecovery: none,
@@ -323,8 +432,8 @@ describe("/ primitives: guard, resumable", () => {
     async ({ given: [entryFailure, outerRecovery], outcome }) => {
       const captured = {
         handle: null as ScopedOutcome<string> | null,
-        inner: null as ScopeFailure | null,
-        outer: null as ScopeFailure | null,
+        inner: null as ScopeExitFailure | null,
+        outer: null as ScopeExitFailure | null,
       };
 
       await using ritual = interpretWithRecovery(() =>
@@ -377,16 +486,6 @@ function scopeFailureOf(failure: unknown): ScopeFailure {
     cause: failure,
     kind: "scope",
   }) as ScopeFailure;
-}
-
-function missingAnchor(site: "recovery-point" | "recovery-request") {
-  return expect.objectContaining({
-    cause: expect.objectContaining({
-      reason: "missing-recovery-anchor",
-      site,
-    }),
-    kind: "interrupted",
-  });
 }
 
 function assertCaptured<Captured>(value: Captured | null): asserts value is NonNullable<Captured> {

@@ -1,5 +1,5 @@
 import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts";
-import type { ScopeFailure } from "#/failures";
+import type { ScopeExitFailure } from "#/failures";
 import type { ScopedOutcome } from "./branch";
 import { branch } from "./branch";
 import { either } from "fp-ts";
@@ -39,7 +39,7 @@ function resumableOutcome<Relic>(
         either.match(
           (failure) =>
             pipe(
-              requestRecovery<Relic>(failure as ScopeFailure),
+              requestRecovery<Relic>(failure as ScopeExitFailure),
               wisp.chain((recovery) => settle(outcomeSettle, recovery)),
             ),
           (value) => settle(outcomeSettle, either.right(value)),

@@ -1,9 +1,9 @@
 import type { Either, Option } from "@shajara/kernel/utils";
 import type { Failure, Presence, RiteCoroutine, RiteRoutine } from "#/contracts";
-import type { RecoveryHandler as KernelRecoveryHandler, ScopeFailure } from "@shajara/kernel";
-import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index";
+import { decodeRitual, encodeRitual, fromFailure, toFailureUnknown } from "#/boundary/index";
 import { left, none, right, some } from "@shajara/kernel/utils";
-import { ScopeError } from "#/errors";
+import type { RecoveryHandler as KernelRecoveryHandler } from "@shajara/kernel";
+import type { ScopeExitError } from "#/errors";
 import { guard as kernelGuard } from "@shajara/kernel";
 import { waitChild } from "#/primitives-kit";
 
@@ -18,19 +18,18 @@ export function* guard<Return>(
 }
 
 export type RecoveryDecision = Presence<unknown>;
-export type RecoveryHandler = (error: ScopeError) => RiteCoroutine<RecoveryDecision>;
+export type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<RecoveryDecision>;
 
 function toKernelRecoveryHandler(recover: RecoveryHandler): KernelRecoveryHandler {
-  return (failure: ScopeFailure) =>
-    decodeRitual(() => runRecoveryHandler(recover, new ScopeError(failure)))();
+  return (failure) => decodeRitual(() => runRecoveryHandler(recover, fromFailure(failure)))();
 }
 
 function* runRecoveryHandler(
   recover: RecoveryHandler,
-  scopeError: ScopeError,
+  recoveryCause: ScopeExitError,
 ): RiteCoroutine<Option<Either<Failure, unknown>>> {
   try {
-    const [handled, value] = yield* recover(scopeError);
+    const [handled, value] = yield* recover(recoveryCause);
     if (!handled) {
       return none;
     }

@@ -1,9 +1,11 @@
 import type { FailureShape } from "#/contracts";
 
-export const canceledFailure: CanceledFailure = {
-  kind: "canceled",
-  message: "Canceled before completion",
-};
+export function canceledFailure(): CanceledFailure {
+  return {
+    kind: "canceled",
+    message: "Canceled before completion",
+  };
+}
 
 export interface CanceledFailure extends FailureShape {
   readonly kind: "canceled";

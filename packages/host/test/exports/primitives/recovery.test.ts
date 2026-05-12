@@ -1,8 +1,8 @@
-import type { RiteCoroutine, ScopeError } from "#/index";
+import { CanceledError, ScopeError, run, until } from "#/index";
+import type { RiteCoroutine, ScopeExitError } from "#/index";
 import { describe, expect, test } from "vitest";
 import { guard, resumable } from "#/primitives";
 import { findFailureByKind } from "#test/harness";
-import { run } from "#/index";
 
 describe("/ primitives: guard, resumable", () => {
   test.for([
@@ -38,7 +38,7 @@ describe("/ primitives: guard, resumable", () => {
 
   test.for([
     {
-      given: [new Error("failed for recovery"), "recovered:failed"] as const,
+      given: [new Error("failed for recovery"), failByThrowing, "recovered:failed"] as const,
       outcome: {
         error: {
           cause: {
@@ -46,19 +46,31 @@ describe("/ primitives: guard, resumable", () => {
           },
           kind: "scope",
         },
-        value: "recovered:failed",
+      } as const,
+    },
+    {
+      given: [
+        new Error("rejected for recovery"),
+        failByRejectedPromise,
+        "recovered:rejected",
+      ] as const,
+      outcome: {
+        error: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
       } as const,
     },
   ])(
-    "guard receives resumable failures as scope errors and applies recovery inside the guarded entry scope",
-    async ({ given: [cause, value], outcome }) => {
-      const seenError = Promise.withResolvers<ScopeError>();
+    "guard receives scope exit errors as recovery causes",
+    async ({ given: [cause, failRecoverable, value], outcome }) => {
+      const seenError = Promise.withResolvers<ScopeExitError>();
       const settled = run(function* awaitRecoveredGuard() {
         return yield* guard(
           function* runGuardedEntry() {
-            return yield* resumable(function* failRecoverableScope() {
-              throw cause;
-            });
+            return yield* resumable(() => failRecoverable(cause));
           },
           function* recoverResumable(error) {
             seenError.resolve(error);
@@ -67,14 +79,52 @@ describe("/ primitives: guard, resumable", () => {
         );
       });
 
-      await expect(settled).resolves.toBe(outcome.value);
-      await expect(seenError.promise).resolves.toMatchObject({
+      await expect(settled).resolves.toBe(value);
+      const actualError = await seenError.promise;
+
+      expect(actualError).toBeInstanceOf(ScopeError);
+      expect(actualError).not.toBe(cause);
+      expect(actualError).toMatchObject({
         ...outcome.error,
         cause: {
           ...outcome.error.cause,
           raw: cause,
         },
       });
+    },
+  );
+
+  test.for([
+    {
+      given: ["recovered:canceled"] as const,
+      outcome: {
+        error: {
+          kind: "canceled",
+        },
+        value: "recovered:canceled",
+      } as const,
+    },
+  ])(
+    "guard receives child cancellation errors and applies recovery",
+    async ({ given: [value], outcome }) => {
+      const seenError = Promise.withResolvers<ScopeExitError>();
+      const settled = run(function* awaitRecoveredCancellation() {
+        return yield* guard(
+          function* runGuardedEntry() {
+            return yield* resumable(function* cancelRecoverableScope(): RiteCoroutine<string> {
+              throw new CanceledError();
+            });
+          },
+          function* recoverCancellation(error) {
+            seenError.resolve(error);
+            return handled(value);
+          },
+        );
+      });
+
+      await expect(settled).resolves.toBe(outcome.value);
+      await expect(seenError.promise).resolves.toBeInstanceOf(CanceledError);
+      await expect(seenError.promise).resolves.toMatchObject(outcome.error);
     },
   );
 
@@ -156,8 +206,8 @@ describe("/ primitives: guard, resumable", () => {
   ])(
     "delegates recovery to an ancestor guard when the handler declines recovery",
     async ({ given: [cause, value], outcome }) => {
-      const innerError = Promise.withResolvers<ScopeError>();
-      const outerError = Promise.withResolvers<ScopeError>();
+      const innerError = Promise.withResolvers<ScopeExitError>();
+      const outerError = Promise.withResolvers<ScopeExitError>();
       const settled = run(function* recoverFromOuterGuard() {
         return yield* guard(
           function* runOuterEntry() {
@@ -193,4 +243,12 @@ function handled<Value>(value: Value): readonly [true, Value] {
 
 function delegate(): readonly [false] {
   return [false];
+}
+
+function* failByThrowing(cause: Error): RiteCoroutine<string> {
+  throw cause;
+}
+
+function* failByRejectedPromise(cause: Error): RiteCoroutine<string> {
+  return yield* until(() => Promise.reject(cause));
 }

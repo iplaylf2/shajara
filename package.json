@@ -17,7 +17,7 @@
     "format": "oxfmt --write .",
     "lint": "yarn workspaces foreach -Ap exec -- oxlint --config oxlint.config.ts",
     "pack:license": "shajara-forge pack:license",
-    "release": "yarn workspaces foreach -At --no-private npm publish --access public --provenance --tolerate-republish && changeset tag",
+    "release": "yarn workspaces foreach -At --no-private npm publish --access public --provenance --tolerate-republish",
     "spellcheck": "cspell-cli .",
     "test": "yarn workspaces foreach -Ap run test",
     "typecheck": "yarn workspaces foreach -Ap run typecheck",

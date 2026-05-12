@@ -19,7 +19,7 @@ Names available from the root entry include:
 - host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
-  `InterruptedError`, `OperationContextError`, `ScopeError`
+  `InterruptedError`, `OperationContextError`, `ScopeError`, `ScopeExitError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
@@ -58,8 +58,8 @@ Names available from the root entry include:
 - contracts: `Wisp`, `Ritual`, `ScopeRef`, `ProcessRef`, `ScopeDescriptor`,
   `ProcessDescriptor`, `CompletionMode`, `FutureKey`, `FutureSettleKey`, `FutureHandle`,
   `FutureResult`, `ContextKey`, `contextKey`
-- failures: `Failure`, `FailureShape`, `canceledFailure`, `channelFailure`,
-  `externalFailure`, `interruptedFailure`, `scopeFailure`
+- failures: `Failure`, `FailureShape`, `ScopeExitFailure`, `canceledFailure`,
+  `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
 - executor: `createExecutor`, `currentExecutorKey`, `Executor`, `BindTurn`,
   `LaunchHandle`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`,
   `AutonomyOptions`, `Scheduler`, `Reaper`, `Processor`
@@ -289,6 +289,7 @@ The common kernel result forms are:
   separate observation and settlement authority
 - `Either<Failure, T>` for waits or outcome boundaries where success and failure are
   both part of the result domain
+- `ScopeExitFailure` for the failure side of scope exit futures and recovery requests
 - `Option<T>` for non-blocking or optional observations, including context lookup and polling
 - channel result unions for send and receive outcomes; closed and revoked channel states
   remain in band
