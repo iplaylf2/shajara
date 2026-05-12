@@ -366,7 +366,7 @@ export class Interpreter {
         }
 
         this.#sync(scope, cancel(scope), suppressor);
-        return processExitedStep(either.left(canceledFailure));
+        return processExitedStep(either.left(canceledFailure()));
       }
       case "cede": {
         accept(VOID);
@@ -636,9 +636,7 @@ export interface ScopeInfo extends Record<string, unknown> {
   readonly zone: ScopeZone;
 }
 
-function processStepOf<Relic>(
-  runner: RuntimeProcessRunner<Relic>,
-): ProcessStep<Relic> | null {
+function processStepOf<Relic>(runner: RuntimeProcessRunner<Relic>): ProcessStep<Relic> | null {
   switch (runner.status) {
     case "running": {
       return null;
@@ -650,7 +648,7 @@ function processStepOf<Relic>(
       return processExitedStep(either.right(runner.stateAs("completed").result));
     }
     case "canceled": {
-      return processExitedStep(either.left(canceledFailure));
+      return processExitedStep(either.left(canceledFailure()));
     }
     case "failed": {
       return processExitedStep(either.left(runner.stateAs("failed").failure));

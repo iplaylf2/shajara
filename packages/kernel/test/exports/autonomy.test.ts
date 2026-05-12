@@ -224,7 +224,7 @@ describe("/ primitives: autonomy", () => {
       };
 
       expect(actual.settledStatus).toBe(outcome.settledStatus);
-      expect(unwrapContainedAutonomyFailure(actual.settled)).toBe(canceledFailure);
+      expect(unwrapContainedAutonomyFailure(actual.settled)).toEqual(canceledFailure());
     },
   );
 

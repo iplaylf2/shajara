@@ -433,7 +433,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
         break;
       }
       case "canceled": {
-        yield* this.#settleClosed(either.left(canceledFailure));
+        yield* this.#settleClosed(either.left(canceledFailure()));
         break;
       }
       case "completed": {
@@ -505,7 +505,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
       yield* this.#revoke(channel);
     }
 
-    const canceled = either.left(canceledFailure);
+    const canceled = either.left(canceledFailure());
     for (const future of this.#derivedFutures) {
       const settlement = future.settle(canceled);
 

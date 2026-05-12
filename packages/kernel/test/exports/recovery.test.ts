@@ -374,7 +374,7 @@ describe("/ primitives: guard, resumable", () => {
     {
       given: ["recovered:canceled"] as const,
       outcome: {
-        recoveryRequests: [canceledFailure],
+        recoveryRequests: [canceledFailure()],
         resumableResult: right("recovered:canceled"),
       },
     },

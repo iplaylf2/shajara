@@ -78,9 +78,9 @@ describe("/ helpers: createExecutor", () => {
     {
       given: [] as const,
       outcome: {
-        futureSettled: left(canceledFailure),
-        futureSettledAfterClose: left(canceledFailure),
-        settled: left(canceledFailure),
+        futureSettled: left(canceledFailure()),
+        futureSettledAfterClose: left(canceledFailure()),
+        settled: left(canceledFailure()),
         statusAfterSettle: "closed",
       },
     },
@@ -204,8 +204,8 @@ describe("/ interfaces: Executor", () => {
       {
         given: [] as const,
         outcome: {
-          firstSettled: left(canceledFailure),
-          secondSettled: left(canceledFailure),
+          firstSettled: left(canceledFailure()),
+          secondSettled: left(canceledFailure()),
           settledStatus: "closed",
           turnFaults: [],
         },
@@ -239,7 +239,7 @@ describe("/ interfaces: Executor", () => {
         outcome: {
           cancelError: expect.objectContaining({ message: "listener-threw" }),
           listenerCalls: ["throws", "records"],
-          settled: left(canceledFailure),
+          settled: left(canceledFailure()),
           settledStatus: "closed",
           turnFaults: [],
         },
@@ -284,7 +284,7 @@ describe("/ interfaces: Executor", () => {
         given: ["disposed", "active"] as const,
         outcome: {
           listenerCalls: ["active"],
-          settled: left(canceledFailure),
+          settled: left(canceledFailure()),
         },
       },
     ])(
@@ -322,7 +322,7 @@ describe("/ interfaces: Executor", () => {
         given: ["should-not-launch"] as const,
         outcome: {
           launchAfterClose: false,
-          settled: left(canceledFailure),
+          settled: left(canceledFailure()),
         },
       },
     ])(
@@ -533,7 +533,7 @@ describe("/ interfaces: Executor", () => {
       {
         given: [] as const,
         outcome: {
-          settled: left(canceledFailure),
+          settled: left(canceledFailure()),
           settledStatus: "closed",
         },
       },
@@ -584,7 +584,7 @@ describe("/ interfaces: Executor", () => {
         given: ["late-launch"] as const,
         outcome: {
           launchAfterClose: false,
-          settled: left(canceledFailure),
+          settled: left(canceledFailure()),
           settledStatus: "closed",
         },
       },

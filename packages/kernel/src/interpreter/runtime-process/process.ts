@@ -96,7 +96,7 @@ export class RuntimeProcess<Relic>
       status: "canceled",
     };
 
-    return this.#settleClosed(either.left(canceledFailure));
+    return this.#settleClosed(either.left(canceledFailure()));
   }
 
   public defer(cleanup: CleanupTask): void {

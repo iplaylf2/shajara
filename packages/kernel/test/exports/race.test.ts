@@ -20,7 +20,7 @@ describe("/ primitives: race", () => {
     {
       given: ["fast", "slow"] as const,
       outcome: {
-        scopeExit: left(canceledFailure),
+        scopeExit: left(canceledFailure()),
         winner: "fast",
       },
     },
@@ -66,7 +66,7 @@ describe("/ primitives: race", () => {
       ] as const,
       outcome: {
         cleanups: ["branch cleanup", "spawn cleanup"] as const,
-        scopeExit: left(canceledFailure),
+        scopeExit: left(canceledFailure()),
         winner: "fast",
       },
     },
