@@ -3,6 +3,13 @@ import { encodeRitual, unwrapEither, unwrapOption } from "#/boundary/index";
 import type { Either } from "@shajara/kernel/utils";
 import { poll as kernelPoll } from "@shajara/kernel";
 
+/**
+ * Observes a future without blocking the current coroutine.
+ *
+ * @param future - Future to inspect.
+ * @returns `[true, value]` when settled with a value, or `[false]` while pending.
+ * @throws The error represented by the future's failure.
+ */
 export function* poll<Result>(future: RiteFuture<Result>): RiteCoroutine<Presence<Result>> {
   const outcome = yield* encodeRitual(() => kernelPoll(future))();
   const result = unwrapOption(outcome);

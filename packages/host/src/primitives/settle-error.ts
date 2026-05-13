@@ -3,6 +3,13 @@ import { encodeRitual, toFailure } from "#/boundary/index";
 import { settle as kernelSettle } from "@shajara/kernel";
 import { left } from "@shajara/kernel/utils";
 
+/**
+ * Settles a future with a failure represented by a JavaScript error.
+ *
+ * @param futureSettle - Settlement authority.
+ * @param error - Error to store as the failure.
+ * @returns Completion after settlement is requested.
+ */
 export function settleError<Return>(
   futureSettle: RiteFutureSettle<Return>,
   error: Error,

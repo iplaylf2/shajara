@@ -3,6 +3,13 @@ import { encodeRitual } from "#/boundary/index";
 import { settle as kernelSettle } from "@shajara/kernel";
 import { right } from "@shajara/kernel/utils";
 
+/**
+ * Settles a future with a value.
+ *
+ * @param futureSettle - Settlement authority.
+ * @param value - Value to publish.
+ * @returns Completion after settlement is requested.
+ */
 export function settle<Result>(
   futureSettle: RiteFutureSettle<Result>,
   value: Result,

@@ -3,6 +3,12 @@ import { currentExecutor } from "#/operations-kit";
 import { fromFailure } from "#/boundary/index";
 import { isLeft } from "@shajara/kernel/utils";
 
+/**
+ * Observes a shajara future as a JavaScript `Promise`.
+ *
+ * @param future - Future to observe.
+ * @returns Promise that resolves with the future value or rejects with its error.
+ */
 export function* promisify<Return>(future: RiteFuture<Return>): RiteCoroutine<Promise<Return>> {
   const executor = yield* currentExecutor();
 

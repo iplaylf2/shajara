@@ -51,11 +51,15 @@ export interface LaunchedEntry<Result> {
   readonly settled: StatefulPromise<Result>;
 }
 
+/** Options that control a routine launch. */
 export interface RunOptions {
+  /** Abort signal that requests cancellation for the launched scope. */
   readonly signal?: AbortSignal;
 }
 
+/** Promise with live launch lifecycle state attached. */
 export interface StatefulPromise<Return> extends Promise<Return> {
+  /** Current lifecycle state for the launched entry. */
   readonly status: LaunchStatus;
 }
 

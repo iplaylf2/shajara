@@ -7,6 +7,12 @@ import type { Sigil } from "@shajara/kernel/sigils";
 import { defer } from "@shajara/kernel/sigils";
 import { toFailureUnknown } from "./failure-mapping";
 
+/**
+ * Converts a `RiteRoutine` into a kernel `Ritual`.
+ *
+ * @param routine - Routine to convert.
+ * @returns Ritual that converts thrown values into failures.
+ */
 export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> {
   function decoded(): Wisp<Relic> {
     const startedRoutine = tryCatch(routine, toFailureUnknown);

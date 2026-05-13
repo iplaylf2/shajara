@@ -5,6 +5,13 @@ import { channelErrorOf } from "#/primitives-kit";
 import { currentExecutor } from "#/operations-kit";
 import { isNone } from "@shajara/kernel/utils";
 
+/**
+ * Creates a channel receiver plus immediate producer callbacks.
+ *
+ * @param capacity - Channel buffer capacity.
+ * @param overloadRewrite - Overload policy for finite buffers.
+ * @returns Receiver and producer send or close callbacks.
+ */
 export function* feed<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,
@@ -37,8 +44,24 @@ export function* feed<Value, Outcome>(
   };
 }
 
+/** Producer controls paired with a channel receiver. */
 export interface Feed<Value, Outcome> {
+  /** Receiver consumed by channel primitives. */
   readonly receiver: ChannelReceiver<Value, Outcome>;
+
+  /**
+   * Attempts to send immediately.
+   *
+   * @param value - Value to send.
+   * @returns `true` when sent, or `false` when the send would block.
+   * @throws `ChannelError` when the channel is closed or revoked.
+   */
   trySend(value: Value): boolean;
+
+  /**
+   * Closes the channel through the producer callback.
+   *
+   * @param outcome - Close outcome observed by receivers.
+   */
   close(outcome: Outcome): void;
 }

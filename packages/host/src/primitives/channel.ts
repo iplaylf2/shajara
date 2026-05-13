@@ -4,6 +4,14 @@ import type { RiteCoroutine } from "#/contracts";
 import { encodeRitual } from "#/boundary/index";
 import { channel as kernelChannel } from "@shajara/kernel";
 
+/**
+ * Opens a channel in the current scope.
+ *
+ * @param capacity - Channel buffer capacity.
+ * @param overloadRewrite - Overload policy for finite buffers.
+ * @returns Receiver and sender endpoints.
+ * @throws `ChannelError` when `capacity` is negative or `NaN`.
+ */
 export function channel<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,

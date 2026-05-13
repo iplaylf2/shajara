@@ -9,6 +9,13 @@ import { none, some } from "@shajara/kernel/utils";
 import { autonomy as kernelAutonomy } from "@shajara/kernel";
 import { waitChild } from "#/primitives-kit";
 
+/**
+ * Runs a child routine with a scheduler or reaper policy and waits for its result.
+ *
+ * @param entry - Child routine to run.
+ * @param options - Scheduler, reaper, or both for the child scope.
+ * @returns Child routine result.
+ */
 export function* autonomy<Return>(
   entry: RiteRoutine<Return>,
   options: AutonomyOptions,
@@ -19,16 +26,22 @@ export function* autonomy<Return>(
   return yield* waitChild(child);
 }
 
+/** Scheduler, reaper, or both for an autonomous scope. */
 export type AutonomyOptions = SchedulerOption | ReaperOption | (SchedulerOption & ReaperOption);
 
+/** Routes runnable child processes through a scheduler. */
 export interface SchedulerOption {
+  /** Scheduler that assigns runnable processes in the child scope. */
   readonly scheduler: Scheduler;
 }
 
+/** Adjudicates a child scope that is closing but still waiting. */
 export interface ReaperOption {
+  /** Reaper routine that decides whether the child scope should keep waiting. */
   readonly reaper: Reaper;
 }
 
+/** Reaper routine for a closing autonomous scope. */
 export type Reaper = (scope: ScopeRef<unknown>) => RiteCoroutine<void>;
 
 function toKernelAutonomyOptions(options: AutonomyOptions): KernelAutonomyOptions {
