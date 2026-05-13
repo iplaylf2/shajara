@@ -7,6 +7,12 @@ import type {
   SigilShape,
 } from "#/contracts";
 
+/**
+ * Creates a sigil that starts a process in the current scope.
+ *
+ * @param descriptor - Metadata and completion policy carried by the process reference.
+ * @returns Spawn sigil whose echo is the created process reference.
+ */
 export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescriptor>(
   entry: Ritual<Relic>,
   descriptor: Descriptor = DEFAULT_PROCESS_DESCRIPTOR as Descriptor,
@@ -18,6 +24,7 @@ export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescr
   };
 }
 
+/** Sigil that starts a process in the current scope. */
 export interface SpawnSigil<
   Relic,
   Descriptor extends ProcessDescriptor = ProcessDescriptor,

@@ -1,4 +1,5 @@
 // oxlint-disable no-duplicate-imports
+/** Re-exports `Either` helpers used by public in-band result contracts. */
 export {
   type Either,
   type Left,

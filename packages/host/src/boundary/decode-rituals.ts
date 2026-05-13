@@ -3,6 +3,11 @@ import type { Ritual } from "@shajara/kernel";
 import type { UnknownArray } from "type-fest";
 import { decodeRitual } from "./decode-ritual";
 
+/**
+ * Converts a tuple of host routines into kernel rituals.
+ *
+ * @returns Tuple whose item return types mirror the input routines.
+ */
 export function decodeRituals<Returns extends UnknownArray>(
   routines: RiteRoutineTuple<Returns>,
 ): {
@@ -13,6 +18,7 @@ export function decodeRituals<Returns extends UnknownArray>(
   };
 }
 
+/** Tuple of routines whose return types mirror a result tuple. */
 export type RiteRoutineTuple<Returns extends UnknownArray> = {
   readonly [Index in keyof Returns]: RiteRoutine<Returns[Index]>;
 };

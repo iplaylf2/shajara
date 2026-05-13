@@ -22,30 +22,72 @@ import { contextKey } from "#/contracts";
 import { noop } from "#/utils/index";
 import { withRecoveryAnchor } from "#/primitives-kit";
 
+/**
+ * Attaches executor turn requests to the embedding environment.
+ *
+ * @param flushTurn - Callback the embedding environment must invoke to progress queued work.
+ * @returns Pacer for slice control and continuation scheduling.
+ */
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
+/**
+ * Creates a long-lived executor with a root scope.
+ *
+ * @returns Executor handle for the root scope.
+ */
 export function createExecutor(bindTurn: BindTurn): Executor {
   return new RuntimeExecutor(bindTurn);
 }
 
+/** Execution environment that launches entries and exposes external observation and control. */
 export interface Executor extends LaunchHandle<never> {
+  /**
+   * Launches an entry as a child of a registered open execution scope.
+   *
+   * @returns Launch handle for the new entry, or `none` when the target scope cannot accept it.
+   */
   launch<Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
   ): Option<LaunchHandle<Result>>;
+
+  /**
+   * Subscribes to one future settlement.
+   *
+   * @param listener - Called once with the settled in-band future result; already-settled
+   * futures notify synchronously.
+   * @returns Disposer that removes a pending listener before settlement.
+   */
   onSettled<Result>(
     future: FutureKey<Result>,
     listener: (result: FutureResult<Result>) => void,
   ): Disposer;
+
+  /**
+   * Attempts to settle a future through its settlement authority from outside the computation.
+   *
+   * @returns `true` when the settlement is accepted, or `false` after prior convergence.
+   */
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
+
+  /**
+   * Attempts one channel send through a sender endpoint without blocking the caller.
+   *
+   * @returns Immediate send result, or `none` when the send would block.
+   */
   trySend<Value, Outcome>(
     sender: ChannelSender<Value, Outcome>,
     value: Value,
   ): Option<SendResult<Outcome>>;
+
+  /** Closes a channel through either endpoint and wakes blocked channel operations. */
   close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
+
+  /** Requests cancellation for a registered execution scope; unknown scopes are ignored. */
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
+/** Context key for accessing the current executor from launched work. */
 export const currentExecutorKey: ContextKey<Executor> = contextKey<Executor>();
 
 class RuntimeExecutor implements Executor {

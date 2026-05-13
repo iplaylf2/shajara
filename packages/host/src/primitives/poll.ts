@@ -3,6 +3,12 @@ import { encodeRitual, unwrapEither, unwrapOption } from "#/boundary/index";
 import type { Either } from "@shajara/kernel/utils";
 import { poll as kernelPoll } from "@shajara/kernel";
 
+/**
+ * Observes a future's current settlement state without blocking.
+ *
+ * @returns `[true, value]` when settled with a value, or `[false]` while pending.
+ * @throws Shajara error when the future is rejected or canceled.
+ */
 export function* poll<Result>(future: RiteFuture<Result>): RiteCoroutine<Presence<Result>> {
   const outcome = yield* encodeRitual(() => kernelPoll(future))();
   const result = unwrapOption(outcome);

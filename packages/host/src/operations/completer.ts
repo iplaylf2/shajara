@@ -4,6 +4,12 @@ import { currentExecutor } from "#/operations-kit";
 import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary/index";
 
+/**
+ * Creates a future that can be settled from JavaScript callbacks.
+ * If still pending, the future is canceled when the current scope converges.
+ *
+ * @returns Future and settlement callbacks for external code.
+ */
 export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   const executor = yield* currentExecutor();
   const [result, settleResult] = yield* future<Return>();
@@ -19,8 +25,22 @@ export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   };
 }
 
+/** Completion controls for settling one future from callbacks. */
 export interface Completer<Return> {
+  /** Future carrying the completion result. */
   readonly future: RiteFuture<Return>;
+
+  /**
+   * Settles the future with a value if it is still pending.
+   *
+   * @param value - Completion value.
+   */
   resolve(value: Return): void;
+
+  /**
+   * Settles the future as rejected if it is still pending.
+   *
+   * @param reason - Error observed by callers waiting on the future.
+   */
   reject(reason: Error): void;
 }

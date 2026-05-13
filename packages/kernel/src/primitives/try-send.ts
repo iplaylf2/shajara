@@ -5,6 +5,11 @@ import type { Wisp } from "#/contracts";
 import { trySend as trySendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Attempts one channel send without blocking the current process.
+ *
+ * @returns Immediate send result, or `none` when the send would block.
+ */
 export function trySend<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,
   value: Value,

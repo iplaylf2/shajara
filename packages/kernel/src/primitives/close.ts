@@ -3,6 +3,7 @@ import type { Wisp } from "#/contracts";
 import { close as closeSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
+/** Closes a channel explicitly and resumes blocked operations with the close outcome. */
 export function close<Outcome>(
   endpoint: ChannelEndpoint<unknown, Outcome>,
   outcome: Outcome,

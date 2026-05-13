@@ -21,7 +21,7 @@ It packages host entries, host operations, concurrency primitives, and boundary 
 - host entries: `run`, `createScope`
 - host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`, `sleep`, `until`
 - concurrency, communication, and control primitives: `@shajara/host/primitives`
-- host/kernel adapters: `@shajara/host/boundary`
+- boundary adapters for extension libraries: `@shajara/host/boundary`
 
 ## Example
 

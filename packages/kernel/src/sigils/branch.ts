@@ -7,6 +7,12 @@ import type {
   SigilShape,
 } from "#/contracts";
 
+/**
+ * Creates a sigil that opens a child scope with one structural entry process.
+ *
+ * @param descriptor - Metadata carried by the child scope reference.
+ * @returns Branch sigil whose echo is the child scope and process handle.
+ */
 export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
   entry: Ritual<Relic>,
   descriptor: Descriptor = DEFAULT_SCOPE_DESCRIPTOR as Descriptor,
@@ -18,6 +24,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   };
 }
 
+/** Sigil that opens a child scope with one structural entry process. */
 export interface BranchSigil<
   Relic,
   Descriptor extends ScopeDescriptor = ScopeDescriptor,
@@ -28,6 +35,7 @@ export interface BranchSigil<
   readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic, Descriptor>];
 }
 
+/** Scope and entry-process references for a child scope. */
 export interface BranchHandle<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor> {
   readonly scope: ScopeRef<Relic, Descriptor>;
   readonly process: ProcessRef<Relic>;

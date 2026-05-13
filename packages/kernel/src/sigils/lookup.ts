@@ -1,6 +1,11 @@
 import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 import type { Option } from "#/utils/index";
 
+/**
+ * Creates a sigil that resolves the nearest visible context binding.
+ *
+ * @returns Lookup sigil whose echo is the binding value or `none`.
+ */
 export function lookup<Value>(key: ContextKey<Value>): LookupSigil<Value> {
   return {
     key,
@@ -8,6 +13,7 @@ export function lookup<Value>(key: ContextKey<Value>): LookupSigil<Value> {
   };
 }
 
+/** Sigil that resolves the nearest visible context binding. */
 export interface LookupSigil<Value> extends SigilShape {
   readonly kind: "lookup";
   readonly key: ContextKey<Value>;

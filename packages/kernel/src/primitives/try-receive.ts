@@ -5,6 +5,11 @@ import type { Wisp } from "#/contracts";
 import { tryReceive as tryReceiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Attempts one channel receive without blocking the current process.
+ *
+ * @returns Immediate receive result, or `none` when no state is ready.
+ */
 export function tryReceive<Value, Outcome>(
   receiver: ChannelReceiver<Value, Outcome>,
 ): Wisp<Option<ReceiveResult<Value, Outcome>>> {

@@ -5,6 +5,15 @@ import { channel as channelSigil } from "#/sigils/index";
 import { halt } from "./halt";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Opens a channel owned by the current scope.
+ * Negative or `NaN` capacity converges the current process with a channel failure.
+ *
+ * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
+ * buffering, and `Infinity` creates unbounded buffering.
+ * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
+ * @returns Receiver and sender endpoints.
+ */
 export function channel<Value, Outcome>(
   capacity: number,
   overloadRewrite?: OverloadRewrite<Value>,

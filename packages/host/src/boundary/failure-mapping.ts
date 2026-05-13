@@ -5,6 +5,12 @@ import type { ScopeExitError } from "#/errors";
 import { ShajaraError } from "#/contracts";
 import { externalFailure } from "@shajara/kernel";
 
+/**
+ * Converts a JavaScript `Error` into a shajara failure.
+ * Existing `ShajaraError` instances keep their failure identity.
+ *
+ * @returns Failure value suitable for settlement.
+ */
 export function toFailure(error: Error): Failure {
   if (error instanceof ShajaraError) {
     return error as Failure;
@@ -12,6 +18,7 @@ export function toFailure(error: Error): Failure {
   return externalFailure(error, `${error.name}: ${error.message}`);
 }
 
+/** Converts any caught JavaScript value into a shajara failure. */
 export function toFailureUnknown(caught: unknown): Failure {
   if (caught instanceof Error) {
     return toFailure(caught);
@@ -19,7 +26,16 @@ export function toFailureUnknown(caught: unknown): Failure {
   return externalFailure(caught, String(caught));
 }
 
+/** Converts a scope-exit failure into the error passed to recovery handlers. */
 export function fromFailure(failure: ScopeExitFailure): ScopeExitError;
+
+/**
+ * Converts a shajara failure into a JavaScript error.
+ * Existing `ShajaraError` failures are returned unchanged.
+ * External failures carrying an `Error` return the original error.
+ *
+ * @returns Error represented by the failure.
+ */
 export function fromFailure(failure: Failure): Error;
 export function fromFailure(failure: Failure): Error {
   if (failure instanceof ShajaraError) {

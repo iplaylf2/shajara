@@ -11,6 +11,11 @@ import { spawn } from "./spawn";
 import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Opens a child scope whose scope-exit failure is offered to recovery routes.
+ *
+ * @returns Child scope and recovery outcome future.
+ */
 export function resumable<Relic>(entry: Ritual<Relic>): Wisp<ScopedOutcome<Relic>> {
   return pipe(
     wisp.Do,

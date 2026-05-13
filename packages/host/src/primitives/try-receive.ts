@@ -5,6 +5,12 @@ import { encodeRitual } from "#/boundary/index";
 import { isNone } from "@shajara/kernel/utils";
 import { tryReceive as kernelTryReceive } from "@shajara/kernel";
 
+/**
+ * Attempts one receive from a channel without waiting.
+ *
+ * @returns `[true, value]` when a value is ready, or `[false]` when no value is ready.
+ * @throws `ChannelError` when the receiver is closed or revoked.
+ */
 export function* tryReceive<Value, Outcome>(
   receiver: ChannelReceiver<Value, Outcome>,
 ): RiteCoroutine<Presence<Value>> {

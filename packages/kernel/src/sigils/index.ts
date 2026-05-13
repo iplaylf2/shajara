@@ -40,6 +40,7 @@ export * from "./branch";
 export * from "./settle";
 export * from "./unbind";
 
+/** Public sigil variant union interpreted by computations. */
 export type Sigil =
   | BindSigil<unknown>
   | BranchSigil<unknown>

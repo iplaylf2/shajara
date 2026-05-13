@@ -7,6 +7,13 @@ import type { ScopedOutcome } from "@shajara/kernel";
 import { race as kernelRace } from "@shajara/kernel";
 import { wait } from "./wait";
 
+/**
+ * Runs routines in a race scope, cancels losing work after the first success, and waits for
+ * the winning value.
+ *
+ * @returns First successful routine result.
+ * @throws Shajara error when the race scope is canceled or fails.
+ */
 export function* race<Returns extends NonEmptyTuple<unknown>>(
   routines: RiteRoutineTuple<Returns>,
 ): RiteCoroutine<ArrayValues<Returns>> {

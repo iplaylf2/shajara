@@ -47,15 +47,21 @@ export function launchEntry<Result>(
 }
 
 export interface LaunchedEntry<Result> {
+  /** Scope that owns the launched routine. */
   readonly scope: ExecutionScopeRef<Result>;
+  /** Promise for observing the launched routine result. */
   readonly settled: StatefulPromise<Result>;
 }
 
+/** Options accepted by `run` and `Scope.run`. */
 export interface RunOptions {
+  /** Abort signal that requests cancellation for the launched scope. */
   readonly signal?: AbortSignal;
 }
 
+/** Promise for a launched routine with live lifecycle state. */
 export interface StatefulPromise<Return> extends Promise<Return> {
+  /** Current lifecycle state for the launched routine. */
   readonly status: LaunchStatus;
 }
 

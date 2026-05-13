@@ -1,7 +1,14 @@
 import type { ChannelFailure, ReceiveResult, SendResult } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 
+/** Error thrown for terminal channel states and channel input validation failures. */
 export class ChannelError extends ShajaraError implements ChannelFailure {
+  /**
+   * Creates a channel error from a terminal condition or validation cause.
+   *
+   * @param detail - Terminal channel condition or validation cause.
+   * @param message - Error message.
+   */
   public constructor(
     public readonly detail: ChannelErrorDetail,
     message: string,
@@ -16,6 +23,7 @@ export class ChannelError extends ShajaraError implements ChannelFailure {
   public override readonly cause: unknown;
 }
 
+/** Detail attached to `ChannelError` that preserves the channel-specific cause. */
 export type ChannelErrorDetail =
   | {
       readonly kind: "condition";
@@ -26,6 +34,7 @@ export type ChannelErrorDetail =
       readonly cause: unknown;
     };
 
+/** Terminal channel state represented by `ChannelError`. */
 export type ChannelCondition =
   | Exclude<ReceiveResult<unknown, unknown>, { kind: "value" }>
   | Exclude<SendResult<unknown>, { kind: "sent" }>;

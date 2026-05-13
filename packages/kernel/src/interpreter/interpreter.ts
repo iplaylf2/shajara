@@ -592,7 +592,7 @@ export class Interpreter {
       | RuntimeFuture<unknown>
       | RuntimeChannelHandle<unknown, unknown>,
   ): void {
-    // Do nothing
+    // Intentionally empty for lint: token construction marker.
   }
 
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;

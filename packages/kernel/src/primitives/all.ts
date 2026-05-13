@@ -7,6 +7,11 @@ import { spawn } from "./spawn";
 import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Starts entries concurrently in the current scope and returns an aggregate future.
+ *
+ * @returns Future whose successful result preserves entry order.
+ */
 export function all<EntryReturns extends readonly unknown[]>(
   entries: AllEntries<EntryReturns>,
 ): Wisp<FutureKey<EntryReturns>> {

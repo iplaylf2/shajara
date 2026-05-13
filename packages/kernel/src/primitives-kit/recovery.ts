@@ -100,6 +100,11 @@ export function requestRecovery<Relic>(failure: ScopeExitFailure): Wisp<FutureRe
   );
 }
 
+/**
+ * Recovery handler for a scope-exit failure offered by `resumable`.
+ *
+ * @returns Recovery result, or `none` to delegate to an ancestor route.
+ */
 export type RecoveryHandler = (
   failure: ScopeExitFailure,
 ) => Wisp<Option<either.Either<Failure, unknown>>>;

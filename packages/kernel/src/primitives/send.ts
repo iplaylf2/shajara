@@ -4,6 +4,11 @@ import type { Wisp } from "#/contracts";
 import { send as sendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
+/**
+ * Waits until a channel sender accepts the value or reaches a terminal state.
+ *
+ * @returns Accepted send, explicit close, or revoked terminal state.
+ */
 export function send<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,
   value: Value,

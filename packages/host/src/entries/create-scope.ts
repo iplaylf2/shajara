@@ -6,20 +6,45 @@ import { ensureExecutor } from "#/executor";
 import { launchEntry } from "#/entry-kit";
 import { park } from "@shajara/kernel";
 
+/**
+ * Creates a long-lived scope for launching related routines.
+ *
+ * @returns Scope that owns routines launched through it.
+ */
 export function createScope(): Scope {
   const executor = ensureExecutor();
 
   return new HostScope(executor, executor.scope);
 }
 
+/** Long-lived scope for launching and canceling related routines. */
 export interface Scope {
+  /**
+   * Starts a routine under this scope.
+   *
+   * @returns Stateful promise that resolves with the routine result or rejects with a
+   * shajara error.
+   */
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
+
+  /**
+   * Requests cancellation and waits for this scope to close.
+   *
+   * @returns Promise that settles after the scope closes.
+   */
   cancel(): Promise<void>;
+
+  /** Current lifecycle state for this scope. */
   readonly status: ScopeStatus;
+
+  /** Promise that settles when this scope closes. */
   readonly closed: Promise<void>;
+
+  /** Cancels the scope when used with explicit resource management. */
   [Symbol.asyncDispose](): Promise<void>;
 }
 
+/** Lifecycle state reported by a scope. */
 export type ScopeStatus = LaunchStatus;
 
 export type { RunOptions, StatefulPromise };
