@@ -631,7 +631,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #touch(_token: AnyRuntimeChannel): void {}
+  #touch(_token: AnyRuntimeChannel): void {
+    // Intentionally empty for lint: token construction marker.
+  }
 
   #resolve<Value, Outcome>(
     token: RuntimeChannelHandle<Value, Outcome>,
@@ -676,7 +678,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
 
-function* noopSync(): ScopeSync<void> {}
+function* noopSync(): ScopeSync<void> {
+  // Intentionally empty for lint: no pending scope work.
+}
 
 type RuntimeScopeState = TaggedUnion<
   "status",

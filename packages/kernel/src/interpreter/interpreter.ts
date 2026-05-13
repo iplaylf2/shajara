@@ -591,7 +591,9 @@ export class Interpreter {
       | RuntimeProcessHandle<unknown>
       | RuntimeFuture<unknown>
       | RuntimeChannelHandle<unknown, unknown>,
-  ): void {}
+  ): void {
+    // Intentionally empty for lint: token construction marker.
+  }
 
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
   #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcessHandle<Relic>;
