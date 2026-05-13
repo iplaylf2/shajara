@@ -18,12 +18,12 @@ export interface AutonomyScopeDescriptor extends ScopeDescriptor {
   readonly [autonomyKey]: AutonomyOptions;
 }
 
-/** Autonomy option for routing runnable processes to processors. */
+/** Autonomy option for routing runnable child processes to processors. */
 export interface SchedulerOption {
   readonly scheduler: Scheduler;
 }
 
-/** Autonomy option for adjudicating stalled closing scopes. */
+/** Autonomy option for adjudicating a closing scope that cannot converge naturally. */
 export interface ReaperOption {
   readonly reaper: Reaper;
 }
@@ -31,7 +31,7 @@ export interface ReaperOption {
 /** Chooses processors for runnable processes within an autonomous scope. */
 export interface Scheduler {
   /**
-   * Selects a processor for a runnable process.
+   * Selects the processor that should progress a runnable process.
    *
    * @returns Processor selected for the runnable process.
    */

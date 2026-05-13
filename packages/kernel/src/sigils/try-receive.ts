@@ -4,9 +4,9 @@ import type { Option } from "#/utils/index";
 import type { ReceiveResult } from "./receive";
 
 /**
- * Encodes non-blocking channel receive as a sigil.
+ * Creates a sigil that attempts one channel receive without blocking.
  *
- * @returns `tryReceive` sigil.
+ * @returns Try-receive sigil whose echo is an immediate result or `none`.
  */
 export function tryReceive<Value, Outcome>(
   receiver: ChannelReceiver<Value, Outcome>,
@@ -17,7 +17,7 @@ export function tryReceive<Value, Outcome>(
   };
 }
 
-/** Non-blocking channel receive sigil. */
+/** Sigil that attempts one channel receive without blocking. */
 export interface TryReceiveSigil<Value, Outcome> extends SigilShape {
   readonly kind: "tryReceive";
   readonly receiver: ChannelReceiver<Value, Outcome>;

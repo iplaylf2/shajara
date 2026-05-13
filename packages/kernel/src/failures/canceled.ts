@@ -1,7 +1,7 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Creates the failure value for cancellation convergence.
+ * Returns the in-band failure value for cancellation convergence.
  *
  * @returns Canceled failure value.
  */

@@ -1,5 +1,5 @@
 /**
- * Runs a callback in expression position.
+ * Evaluates a callback immediately in expression position.
  *
  * @returns Callback result.
  */

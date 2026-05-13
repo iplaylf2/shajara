@@ -1,16 +1,16 @@
 import type { Disposer } from "#/utils/index";
 
-/** Embedding-environment contract for executor slice control. */
+/** Embedding-environment contract for executor slice control and deferred continuation. */
 export interface Pacer {
   /**
-   * Begins the next executor slice.
+   * Begins one synchronous executor slice.
    *
    * @returns Slice controller for the current turn.
    */
   beginSlice(): Slice;
 
   /**
-   * Schedules an executor continuation after the current slice.
+   * Schedules executor work to continue after the current slice.
    *
    * @returns Disposer that cancels the scheduled continuation.
    */
@@ -20,8 +20,9 @@ export interface Pacer {
 /** Controller for the current executor slice. */
 export interface Slice {
   /**
-   * Reports whether the current slice should yield.
+   * Reports whether the current synchronous slice should yield.
    *
+   * @returns `true` when the executor should defer remaining work.
    */
   shouldYield(): boolean;
 }

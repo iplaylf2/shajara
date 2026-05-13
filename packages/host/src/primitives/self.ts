@@ -5,7 +5,7 @@ import { self as kernelSelf } from "@shajara/kernel";
 /**
  * Reads the current scope and process identity.
  *
- * @returns Current self handle.
+ * @returns Current scope and process references.
  */
 export function self(): RiteCoroutine<SelfHandle> {
   return encodeRitual(() => kernelSelf())();

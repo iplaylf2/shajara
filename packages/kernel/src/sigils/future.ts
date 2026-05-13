@@ -1,9 +1,9 @@
 import type { ECHO_TOKEN, FutureHandle, SigilShape } from "#/contracts";
 
 /**
- * Encodes future allocation as a sigil.
+ * Creates a sigil that allocates a future owned by the current scope.
  *
- * @returns `future` sigil.
+ * @returns Future sigil whose echo is the observation and settlement handle.
  */
 export function future<Result>(): FutureSigil<Result> {
   return {
@@ -11,7 +11,7 @@ export function future<Result>(): FutureSigil<Result> {
   };
 }
 
-/** Future-allocation sigil. */
+/** Sigil that allocates a future owned by the current scope. */
 export interface FutureSigil<Result> extends SigilShape {
   readonly kind: "future";
   readonly [ECHO_TOKEN]?: readonly [FutureHandle<Result>];

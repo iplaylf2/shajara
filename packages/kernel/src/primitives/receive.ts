@@ -5,7 +5,7 @@ import { receive as receiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Waits for a channel receive result.
+ * Waits until a channel receiver has a value or reaches a terminal state.
  *
  * @returns Delivered value, explicit close, or revoked terminal state.
  */

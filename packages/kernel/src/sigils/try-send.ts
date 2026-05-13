@@ -4,9 +4,9 @@ import type { Option } from "#/utils/index";
 import type { SendResult } from "./send";
 
 /**
- * Encodes non-blocking channel send as a sigil.
+ * Creates a sigil that attempts one channel send without blocking.
  *
- * @returns `trySend` sigil.
+ * @returns Try-send sigil whose echo is an immediate result or `none`.
  */
 export function trySend<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,
@@ -19,7 +19,7 @@ export function trySend<Value, Outcome>(
   };
 }
 
-/** Non-blocking channel send sigil. */
+/** Sigil that attempts one channel send without blocking. */
 export interface TrySendSigil<Value, Outcome> extends SigilShape {
   readonly kind: "trySend";
   readonly sender: ChannelSender<Value, Outcome>;

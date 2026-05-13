@@ -8,9 +8,10 @@ import type {
 } from "#/contracts";
 
 /**
- * Encodes child-scope creation as a sigil.
+ * Creates a sigil that opens a child scope with one structural entry process.
  *
- * @returns `branch` sigil.
+ * @param descriptor - Metadata carried by the child scope reference.
+ * @returns Branch sigil whose echo is the child scope and process handle.
  */
 export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
   entry: Ritual<Relic>,
@@ -23,7 +24,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   };
 }
 
-/** Child-scope sigil. */
+/** Sigil that opens a child scope with one structural entry process. */
 export interface BranchSigil<
   Relic,
   Descriptor extends ScopeDescriptor = ScopeDescriptor,

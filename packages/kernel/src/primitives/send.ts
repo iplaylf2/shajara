@@ -5,7 +5,7 @@ import { send as sendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Waits for a channel send result.
+ * Waits until a channel sender accepts the value or reaches a terminal state.
  *
  * @returns Accepted send, explicit close, or revoked terminal state.
  */

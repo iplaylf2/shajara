@@ -5,6 +5,8 @@ import { park, spawnDetached } from "#/operations-kit";
 /**
  * Starts provider work that publishes one ready value and stays owned by the current scope.
  * Provider `finally` blocks run when the owning scope releases the resource process.
+ *
+ * @returns Future settled by the provider's `provide` callback.
  */
 export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteFuture<Value>> {
   const [providedValue, providedValueSettle] = yield* future<Value>();
@@ -14,7 +16,7 @@ export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteF
   return providedValue;
 }
 
-/** Provider routine run as current-scope work for `resource`. */
+/** Provider routine started by `resource` inside the current scope. */
 export type ResourceBody<Value> = (provide: ResourceProvide<Value>) => RiteCoroutine<void>;
 
 /** Publishes the resource value, then parks the provider until scope cleanup unwinds it. */

@@ -1,6 +1,6 @@
 import type { UnknownRecord } from "type-fest";
 
-/** Whether a process keeps its enclosing scope open while it runs. */
+/** Process completion policy relative to its enclosing scope. */
 export type CompletionMode = "structural" | "detached";
 
 /** Read-only metadata carried by a scope reference. */
@@ -9,8 +9,8 @@ export type ScopeDescriptor = Readonly<UnknownRecord>;
 /** Read-only metadata carried by a process reference. */
 export interface ProcessDescriptor extends Readonly<UnknownRecord> {
   /**
-   * Structural processes keep the scope open; detached processes are canceled during
-   * scope convergence.
+   * `structural` processes keep the enclosing scope open; `detached` processes are
+   * excluded from normal completion and canceled during scope convergence.
    */
   readonly completionMode: CompletionMode;
 }

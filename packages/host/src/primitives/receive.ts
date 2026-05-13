@@ -7,6 +7,7 @@ import { receive as kernelReceive } from "@shajara/kernel";
 /**
  * Waits until a channel receiver yields its next value.
  *
+ * @returns Delivered channel value.
  * @throws `ChannelError` when the receiver is closed or revoked.
  */
 export function* receive<Value, Outcome>(

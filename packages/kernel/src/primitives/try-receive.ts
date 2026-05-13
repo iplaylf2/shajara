@@ -6,7 +6,7 @@ import { tryReceive as tryReceiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Attempts one channel receive without blocking.
+ * Attempts one channel receive without blocking the current process.
  *
  * @returns Immediate receive result, or `none` when no state is ready.
  */

@@ -1,9 +1,9 @@
 import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 
 /**
- * Encodes context binding as a sigil.
+ * Creates a sigil that adds or shadows a context binding on the current scope.
  *
- * @returns `bind` sigil.
+ * @returns Bind sigil that completes after the binding is installed.
  */
 export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Value> {
   return {
@@ -13,7 +13,7 @@ export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Val
   };
 }
 
-/** Context-binding sigil. */
+/** Sigil that adds or shadows a context binding on the current scope. */
 export interface BindSigil<Value> extends SigilShape {
   readonly kind: "bind";
   readonly key: ContextKey<Value>;

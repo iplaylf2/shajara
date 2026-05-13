@@ -4,7 +4,9 @@ import type { UnknownArray } from "type-fest";
 import { decodeRitual } from "./decode-ritual";
 
 /**
- * Converts a tuple of `RiteRoutine` entries into kernel `Ritual` entries.
+ * Converts a tuple of host routines into kernel rituals.
+ *
+ * @returns Tuple whose item return types mirror the input routines.
  */
 export function decodeRituals<Returns extends UnknownArray>(
   routines: RiteRoutineTuple<Returns>,

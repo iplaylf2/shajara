@@ -25,12 +25,13 @@ import { withRecoveryAnchor } from "#/primitives-kit";
 /**
  * Attaches executor turn requests to the embedding environment.
  *
+ * @param flushTurn - Callback the embedding environment must invoke to progress queued work.
  * @returns Pacer for slice control and continuation scheduling.
  */
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
 /**
- * Creates an executor that can launch, observe, and control kernel entries.
+ * Creates a long-lived executor with a registered root entry.
  *
  * @returns Root executor handle.
  */
@@ -38,10 +39,10 @@ export function createExecutor(bindTurn: BindTurn): Executor {
   return new RuntimeExecutor(bindTurn);
 }
 
-/** Long-lived execution environment with root entry, observation, and control methods. */
+/** Execution environment that launches entries and exposes external observation and control. */
 export interface Executor extends LaunchHandle<never> {
   /**
-   * Launches an entry under a registered open execution scope.
+   * Launches an entry as a child of a registered open execution scope.
    *
    * @returns Launch handle for the new entry, or `none` when the target scope cannot accept it.
    */
@@ -51,9 +52,11 @@ export interface Executor extends LaunchHandle<never> {
   ): Option<LaunchHandle<Result>>;
 
   /**
-   * Subscribes to one future settlement, notifying immediately if already settled.
+   * Subscribes to one future settlement.
    *
-   * @returns Disposer that removes a pending listener.
+   * @param listener - Called once with the settled in-band future result; already-settled
+   * futures notify synchronously.
+   * @returns Disposer that removes a pending listener before settlement.
    */
   onSettled<Result>(
     future: FutureKey<Result>,
@@ -61,14 +64,14 @@ export interface Executor extends LaunchHandle<never> {
   ): Disposer;
 
   /**
-   * Attempts to settle a future through its settlement authority.
+   * Attempts to settle a future through its settlement authority from outside the computation.
    *
-   * @returns `true` when settlement is accepted.
+   * @returns `true` when the settlement is accepted, or `false` after prior convergence.
    */
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
 
   /**
-   * Attempts one channel send through a sender endpoint without blocking.
+   * Attempts one channel send through a sender endpoint without blocking the caller.
    *
    * @returns Immediate send result, or `none` when the send would block.
    */
@@ -77,14 +80,14 @@ export interface Executor extends LaunchHandle<never> {
     value: Value,
   ): Option<SendResult<Outcome>>;
 
-  /** Closes a channel through either endpoint with an explicit outcome. */
+  /** Closes a channel through either endpoint and wakes blocked channel operations. */
   close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
 
   /** Requests cancellation for a registered execution scope; unknown scopes are ignored. */
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
-/** Context key bound to the executor for launched work. */
+/** Context key that exposes the current executor to launched work. */
 export const currentExecutorKey: ContextKey<Executor> = contextKey<Executor>();
 
 class RuntimeExecutor implements Executor {

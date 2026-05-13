@@ -1,14 +1,14 @@
 import type { KEY_TOKEN } from "./token";
 
-/** Value type encoded by a context key. */
+/** Extracts the value type carried by a context key. */
 // oxlint-disable-next-line id-length
 export type ContextKeyValue<K extends ContextKey<unknown>> =
   K extends ContextKey<infer Value> ? Value : never;
 
 /**
- * Allocates an opaque context identity.
+ * Allocates a fresh context key for scope-chain binding and lookup.
  *
- * @returns Fresh opaque key scoped by its value type.
+ * @returns Opaque key scoped by its value type.
  */
 export function contextKey<Value>(): ContextKey<Value> {
   return {} as ContextKey<Value>;

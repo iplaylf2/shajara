@@ -4,7 +4,7 @@ import { ShajaraError } from "#/contracts";
 /** Error thrown for terminal channel states and channel input validation failures. */
 export class ChannelError extends ShajaraError implements ChannelFailure {
   /**
-   * Creates a channel error.
+   * Creates a channel error from a terminal condition or validation cause.
    *
    * @param detail - Terminal channel condition or validation cause.
    * @param message - Error message.
@@ -23,7 +23,7 @@ export class ChannelError extends ShajaraError implements ChannelFailure {
   public override readonly cause: unknown;
 }
 
-/** Detail attached to `ChannelError`. */
+/** Detail attached to `ChannelError` that preserves the channel-specific cause. */
 export type ChannelErrorDetail =
   | {
       readonly kind: "condition";

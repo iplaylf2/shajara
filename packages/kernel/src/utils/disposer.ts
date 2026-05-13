@@ -1,2 +1,2 @@
-/** Releases a subscription or registered resource. */
+/** Callback that releases a subscription or registered resource. */
 export type Disposer = () => void;

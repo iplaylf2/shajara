@@ -12,7 +12,7 @@ import { branch } from "#/primitives/index";
 import { describeAutonomy } from "#/executor/autonomy";
 
 /**
- * Opens a child scope with scheduler or reaper autonomy.
+ * Opens a child scope whose scheduler or reaper policy is supplied by the caller.
  *
  * @returns Autonomous child scope and process references.
  */

@@ -4,7 +4,7 @@ import { poll as pollSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Observes a future's current settlement state without blocking.
+ * Observes a future's current settlement state without blocking the current process.
  *
  * @returns Settled result, or `none` while pending.
  */

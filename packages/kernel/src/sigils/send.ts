@@ -3,9 +3,9 @@ import type { ChannelSender } from "./channel";
 import type { TaggedUnion } from "type-fest";
 
 /**
- * Encodes blocking channel send as a sigil.
+ * Creates a sigil that waits for a channel sender to accept a value.
  *
- * @returns `send` sigil.
+ * @returns Send sigil whose echo is an accepted send or terminal channel state.
  */
 export function send<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,
@@ -18,7 +18,7 @@ export function send<Value, Outcome>(
   };
 }
 
-/** Blocking channel send sigil. */
+/** Sigil that waits for a channel sender to accept a value. */
 export interface SendSigil<Value, Outcome> extends SigilShape {
   readonly kind: "send";
   readonly sender: ChannelSender<Value, Outcome>;

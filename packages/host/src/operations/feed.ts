@@ -11,6 +11,8 @@ import { isNone } from "@shajara/kernel/utils";
  * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
  * buffering, and `Infinity` creates unbounded buffering.
  * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
+ * @returns Receiver for coroutine consumers and callbacks for external producers.
+ * @throws `ChannelError` when `capacity` is negative or `NaN`.
  */
 export function* feed<Value, Outcome>(
   capacity: number,
@@ -50,7 +52,7 @@ export interface Feed<Value, Outcome> {
   readonly receiver: ChannelReceiver<Value, Outcome>;
 
   /**
-   * Attempts to send immediately.
+   * Attempts to send a value immediately from outside the coroutine.
    *
    * @returns `true` when sent, or `false` when the send would block.
    * @throws `ChannelError` when the channel is closed or revoked.

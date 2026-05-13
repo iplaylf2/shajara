@@ -1,9 +1,9 @@
 import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 
 /**
- * Encodes context unbinding as a sigil.
+ * Creates a sigil that removes the current scope's binding for a context key.
  *
- * @returns `unbind` sigil.
+ * @returns Unbind sigil that completes after the local binding is removed.
  */
 export function unbind(key: ContextKey<unknown>): UnbindSigil {
   return {
@@ -12,7 +12,7 @@ export function unbind(key: ContextKey<unknown>): UnbindSigil {
   };
 }
 
-/** Context-unbinding sigil. */
+/** Sigil that removes the current scope's binding for a context key. */
 export interface UnbindSigil extends SigilShape {
   readonly kind: "unbind";
   readonly key: ContextKey<unknown>;

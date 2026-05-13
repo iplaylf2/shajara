@@ -2,9 +2,9 @@ import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contract
 import type { Option } from "#/utils/index";
 
 /**
- * Encodes non-blocking future observation as a sigil.
+ * Creates a sigil that observes a future without blocking.
  *
- * @returns `poll` sigil.
+ * @returns Poll sigil whose echo is the settled result or `none` while pending.
  */
 export function poll<Result>(future: FutureKey<Result>): PollSigil<Result> {
   return {
@@ -13,7 +13,7 @@ export function poll<Result>(future: FutureKey<Result>): PollSigil<Result> {
   };
 }
 
-/** Non-blocking future observation sigil. */
+/** Sigil that observes a future without blocking. */
 export interface PollSigil<Result> extends SigilShape {
   readonly kind: "poll";
   readonly future: FutureKey<Result>;

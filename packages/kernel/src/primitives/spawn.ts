@@ -4,8 +4,9 @@ import { spawn as spawnSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Starts a process in the current scope.
+ * Starts a process in the current scope without waiting for convergence.
  *
+ * @param descriptor - Metadata and completion policy carried by the process reference.
  * @returns Process exit future.
  */
 export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescriptor>(

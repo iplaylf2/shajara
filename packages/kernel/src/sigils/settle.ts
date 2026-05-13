@@ -1,9 +1,9 @@
 import type { ECHO_TOKEN, FutureResult, FutureSettleKey, SigilShape } from "#/contracts";
 
 /**
- * Encodes future settlement as a sigil.
+ * Creates a sigil that requests in-band future settlement.
  *
- * @returns `settle` sigil.
+ * @returns Settle sigil that completes when the settlement request has been processed.
  */
 export function settle<Result>(
   futureSettle: FutureSettleKey<Result>,
@@ -16,7 +16,7 @@ export function settle<Result>(
   };
 }
 
-/** Future-settlement sigil. */
+/** Sigil that requests in-band future settlement. */
 export interface SettleSigil<Result> extends SigilShape {
   readonly kind: "settle";
   readonly futureSettle: FutureSettleKey<Result>;

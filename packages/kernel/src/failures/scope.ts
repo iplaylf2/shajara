@@ -1,8 +1,10 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Creates the failure value for a scope's local failure convergence.
+ * Returns the failure value for a scope's local failure convergence.
  *
+ * @param cause - Primary failure that drove the scope into failure convergence.
+ * @param suppressed - Additional failures captured while the scope was already failing.
  * @returns Scope failure value.
  */
 export function scopeFailure(

@@ -1,9 +1,9 @@
 import type { IsEqual, UnknownArray } from "type-fest";
 
 /**
- * Provides a type-level narrowing helper.
+ * Provides an unchecked value cast constrained by assignability.
  *
- * @returns Narrowing function.
+ * @returns Function that narrows a value when the requested type is assignable.
  */
 // oxlint-disable-next-line explicit-module-boundary-types
 export function narrowAs<Narrow>() {
@@ -11,9 +11,9 @@ export function narrowAs<Narrow>() {
 }
 
 /**
- * Provides a tuple-aware type-level narrowing helper.
+ * Provides an unchecked tuple cast constrained by assignability.
  *
- * @returns Array narrowing function.
+ * @returns Function that narrows tuple-like arrays while rejecting unconstrained arrays.
  */
 // oxlint-disable-next-line explicit-module-boundary-types
 export function narrowArrayAs<Narrow>() {

@@ -16,6 +16,8 @@ export class ScopeError extends ShajaraError implements ScopeFailure {
 
   public override readonly name = "ScopeError";
   public readonly kind = "scope" as const;
+  /** Primary failure that drove the scope into failure convergence. */
   public override readonly cause: FailureShape;
+  /** Additional failures captured after failure convergence began. */
   public readonly suppressed: readonly FailureShape[];
 }

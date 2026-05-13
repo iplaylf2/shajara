@@ -6,7 +6,7 @@ import { isLeft } from "@shajara/kernel/utils";
 /**
  * Exposes a shajara future as a JavaScript `Promise`.
  *
- * @returns Promise that resolves with the future value or rejects with its mapped error.
+ * @returns Promise that resolves with the future value or rejects with the future's error.
  */
 export function* promisify<Return>(future: RiteFuture<Return>): RiteCoroutine<Promise<Return>> {
   const executor = yield* currentExecutor();

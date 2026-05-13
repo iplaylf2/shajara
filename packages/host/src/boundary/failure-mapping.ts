@@ -8,6 +8,8 @@ import { externalFailure } from "@shajara/kernel";
 /**
  * Converts a JavaScript `Error` into a shajara failure.
  * Existing `ShajaraError` instances keep their failure identity.
+ *
+ * @returns Failure value suitable for settlement.
  */
 export function toFailure(error: Error): Failure {
   if (error instanceof ShajaraError) {
@@ -31,6 +33,8 @@ export function fromFailure(failure: ScopeExitFailure): ScopeExitError;
  * Converts a shajara failure into the JavaScript error callers receive.
  * Existing `ShajaraError` failures are returned unchanged.
  * External failures backed by an `Error` return that original error.
+ *
+ * @returns Error callers receive for the failure.
  */
 export function fromFailure(failure: Failure): Error;
 export function fromFailure(failure: Failure): Error {

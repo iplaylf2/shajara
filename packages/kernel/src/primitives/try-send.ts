@@ -6,7 +6,7 @@ import { trySend as trySendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Attempts one channel send without blocking.
+ * Attempts one channel send without blocking the current process.
  *
  * @returns Immediate send result, or `none` when the send would block.
  */

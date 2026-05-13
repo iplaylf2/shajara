@@ -14,7 +14,7 @@ export interface FutureSettleKey<Result> {
   readonly [RESULT_TOKEN]?: readonly [FutureResult<Result>];
 }
 
-/** A future's settled value: failure or successful result. */
+/** Settled future result: in-band failure or successful value. */
 export type FutureResult<Result> = Either<Failure, Result>;
 
 /** Observation and settlement authorities for the same future. */

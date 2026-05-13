@@ -4,7 +4,7 @@ import { lookup as lookupSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Resolves context from the scope chain.
+ * Resolves the nearest visible binding for a context key.
  *
  * @returns Nearest visible binding, or `none` when absent.
  */

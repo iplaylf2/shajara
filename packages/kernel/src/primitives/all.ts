@@ -8,7 +8,7 @@ import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
 /**
- * Runs entries concurrently in the current scope.
+ * Starts entries concurrently in the current scope and returns an aggregate future.
  *
  * @returns Future whose successful result preserves entry order.
  */

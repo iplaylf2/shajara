@@ -10,7 +10,7 @@ export * from "./external";
 export * from "./interrupted";
 export * from "./scope";
 
-/** Failure variants that can appear in kernel future results. */
+/** In-band failure variants that can appear in future results. */
 export type Failure =
   | CanceledFailure
   | ChannelFailure

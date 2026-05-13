@@ -1,15 +1,15 @@
 import type { Suppressor } from "#/contracts";
 
-/** Processor selected by a scheduler to progress runnable processes. */
+/** Scheduler target that progresses runnable process tasks. */
 export interface Processor {
-  /** Accepts a runnable process task. */
+  /** Accepts a runnable process task for progression. */
   admit(task: ProcessorTask): void;
 }
 
 /** Runnable process task submitted to a processor. */
 export interface ProcessorTask {
   /**
-   * Advances this task once.
+   * Advances this task by one process step.
    *
    * @returns Task state after the step.
    */

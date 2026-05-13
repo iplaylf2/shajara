@@ -3,7 +3,7 @@ import { encodeRitual, unwrapOption } from "#/boundary/index";
 import { lookup as kernelLookup } from "@shajara/kernel";
 
 /**
- * Resolves a context binding from the current scope chain.
+ * Resolves the nearest visible binding for a context key.
  *
  * @returns `[true, value]` for the nearest visible binding, or `[false]` when absent.
  */

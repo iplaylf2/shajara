@@ -7,7 +7,9 @@ import { launchEntry } from "#/entry-kit";
 import { park } from "@shajara/kernel";
 
 /**
- * Creates a long-lived host scope for launching related routines.
+ * Creates a long-lived scope for launching related routines.
+ *
+ * @returns Managed scope backed by an executor entry.
  */
 export function createScope(): Scope {
   const executor = ensureExecutor();
@@ -15,18 +17,27 @@ export function createScope(): Scope {
   return new HostScope(executor, executor.scope);
 }
 
-/** Long-lived host scope that owns launched routines. */
+/** Long-lived scope that owns launched routines. */
 export interface Scope {
-  /** Starts a routine under this scope. */
+  /**
+   * Starts a routine under this scope.
+   *
+   * @returns Stateful promise that resolves with the routine result or rejects with a
+   * shajara error.
+   */
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
 
-  /** Requests cancellation and waits for the scope to close. */
+  /**
+   * Requests cancellation and waits for this scope's convergence result.
+   *
+   * @returns Promise that settles with the managed scope's convergence result.
+   */
   cancel(): Promise<void>;
 
   /** Current lifecycle state for the managed scope. */
   readonly status: ScopeStatus;
 
-  /** Promise that settles when the managed scope reaches `closed`. */
+  /** Promise that settles with this scope's convergence result after it reaches `closed`. */
   readonly closed: Promise<void>;
 
   /** Cancels the scope when used with explicit resource management. */

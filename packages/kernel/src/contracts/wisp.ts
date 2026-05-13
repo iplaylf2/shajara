@@ -2,9 +2,11 @@ import type { Echo, SigilShape } from "./sigil";
 import type { UnknownArray } from "type-fest";
 
 /**
- * Creates a pending computation node.
+ * Creates a computation node waiting for a sigil echo.
  *
- * @returns Stirring node that waits for a sigil echo before continuing.
+ * @param sigil - Instruction the interpreter must satisfy before the computation resumes.
+ * @param resonate - Continuation invoked with the sigil echo.
+ * @returns Stirring node bound to the supplied sigil and continuation.
  */
 export function stirringWisp<Sigil extends SigilShape, Relic>(
   sigil: Sigil,
@@ -14,7 +16,7 @@ export function stirringWisp<Sigil extends SigilShape, Relic>(
 }
 
 /**
- * Creates a completed computation node.
+ * Creates a computation node that has reached its final relic.
  *
  * @returns Resting node carrying the final relic.
  */
@@ -23,7 +25,7 @@ export function restingWisp<Relic>(relic: Relic): RestingWisp<Relic> {
 }
 
 /**
- * Lifts one sigil into computation form.
+ * Lifts one sigil into a computation that resolves to the sigil echo.
  *
  * @returns Computation resolved by the sigil echo.
  */
@@ -32,23 +34,23 @@ export function evoke<Sigil extends SigilShape>(sigil: Sigil): Wisp<Echo<Sigil>>
 }
 
 /**
- * Deferred kernel computation entry without arguments.
+ * Deferred computation entry without arguments.
  *
  * @returns Initial computation node.
  */
 export type Ritual<Relic> = Incantation<[], Relic>;
 
 /**
- * Callable kernel computation entry.
+ * Callable computation entry.
  *
  * @returns Initial computation node.
  */
 export type Incantation<Args extends UnknownArray, Relic> = (...args: Args) => Wisp<Relic>;
 
-/** Kernel computation node, either waiting on a sigil or carrying its final relic. */
+/** Computation node, either waiting on a sigil or carrying its final relic. */
 export type Wisp<Relic> = StirringWisp<SigilShape, Relic> | RestingWisp<Relic>;
 
-/** Computation state waiting for a sigil echo. */
+/** Computation state waiting for a sigil echo before it can continue. */
 export interface StirringWisp<Sigil extends SigilShape, Relic> {
   readonly bearing: "stirring";
   readonly sigil: Sigil;
@@ -62,7 +64,7 @@ export interface RestingWisp<Relic> {
 }
 
 /**
- * Continuation from a sigil echo.
+ * Continuation from a sigil echo to the next computation node.
  *
  * @returns Next computation node.
  */

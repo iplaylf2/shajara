@@ -3,7 +3,7 @@ import { wait as waitSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Waits for future settlement.
+ * Waits for a future to settle.
  *
  * @returns In-band settlement result.
  */

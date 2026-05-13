@@ -2,9 +2,12 @@ import type { ECHO_TOKEN, KEY_TOKEN, SigilShape } from "#/contracts";
 import type { ArrayValues } from "type-fest";
 
 /**
- * Encodes channel allocation as a sigil.
+ * Creates a sigil that allocates a channel in the current scope.
  *
- * @returns `channel` sigil.
+ * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
+ * buffering, and `Infinity` creates unbounded buffering.
+ * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
+ * @returns Channel-allocation sigil whose echo is the receiver and sender handle.
  */
 export function channel<Value, Outcome>(
   capacity: number,
@@ -18,7 +21,7 @@ export function channel<Value, Outcome>(
 }
 
 /**
- * Preserves normal blocking behavior on overload.
+ * Preserves normal finite-buffer blocking behavior on overload.
  *
  * @returns Existing buffer.
  */
@@ -32,14 +35,14 @@ export function defaultOverloadRewrite<Value>(
 /**
  * Rewrites a finite channel buffer before an overloaded incoming value is accepted.
  *
- * @returns Replacement buffer; the incoming value is accepted only if capacity remains.
+ * @returns Replacement buffer; the incoming value is accepted only when capacity remains.
  */
 export type OverloadRewrite<Value> = (
   buffer: readonly Value[],
   incoming: Value,
 ) => readonly Value[];
 
-/** Channel-allocation sigil. */
+/** Sigil that allocates a channel in the current scope. */
 export interface ChannelSigil<Value, Outcome> extends SigilShape {
   readonly kind: "channel";
   readonly capacity: number;
@@ -53,7 +56,7 @@ export type ChannelHandle<Value, Outcome> = readonly [
   sender: ChannelSender<Value, Outcome>,
 ];
 
-/** Either read or write endpoint of a channel. */
+/** Either read or write endpoint for one channel. */
 export type ChannelEndpoint<Value, Outcome> = ArrayValues<ChannelHandle<Value, Outcome>>;
 
 /** Read authority for channel receive operations. */

@@ -1,15 +1,15 @@
 import type { ECHO_TOKEN, Ritual, SigilShape } from "#/contracts";
 
 /**
- * Encodes process-cleanup registration as a sigil.
+ * Creates a sigil that registers cleanup for the current process exit path.
  *
- * @returns `defer` sigil.
+ * @returns Defer sigil that completes after cleanup registration.
  */
 export function defer(cleanup: Ritual<void>): DeferSigil {
   return { cleanup, kind: "defer" };
 }
 
-/** Deferred process-cleanup sigil. */
+/** Sigil that registers cleanup for the current process exit path. */
 export interface DeferSigil extends SigilShape {
   readonly cleanup: Ritual<void>;
   readonly kind: "defer";
