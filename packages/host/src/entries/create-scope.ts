@@ -41,7 +41,7 @@ export interface Scope {
   [Symbol.asyncDispose](): Promise<void>;
 }
 
-  /** Lifecycle state reported by a managed scope. */
+/** Lifecycle state reported by a managed scope. */
 export type ScopeStatus = LaunchStatus;
 
 export type { RunOptions, StatefulPromise };

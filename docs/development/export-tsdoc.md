@@ -1,71 +1,93 @@
 # Export TSDoc
 
-TSDoc on library exports provides API hints for published declarations. It should add
-contract meaning to each declaration as it appears at import sites and in generated
-`.d.ts` output.
+Export TSDoc is the published API hint layer for package declarations. It helps a
+consumer understand the declaration at the import site and in generated `.d.ts` output.
+
+Comments add stable API meaning that the declaration cannot carry clearly enough on its
+own. They describe the public contract of the declaration rather than the source path,
+helper structure, or current implementation flow behind it.
 
 ## Export Surface
 
-Comment declarations that are part of a package export surface. If a declaration should
-not be public, fix the export path instead of documenting it as public API.
+The package export surface determines where TSDoc belongs. Published declarations carry
+comments; declarations outside the published surface stay outside this layer.
 
-For re-exported concepts, put comments on the declaration that reaches the published
-`.d.ts` output. Internal helper functions do not need TSDoc just because they support an
-exported primitive.
+For re-exported concepts, place comments on the declaration that reaches the generated
+`.d.ts` output. Comments live where consumers encounter the symbol.
 
 ## Declaration Context
 
-Treat the published declaration as the first source of information. Package path,
-subpath, symbol name, containing type, signature shape, parameter names, and return type
-all contribute meaning. Comments should rely on that context instead of repeating it.
+Read the published declaration before writing its comment. Package path, subpath, symbol
+name, containing type, signature shape, parameter names, and return type all provide
+context. The comment builds on that context instead of restating it.
 
-Use TSDoc for stable contract semantics: observable behavior, value meaning, ownership,
-lifecycle, failure conditions, and constraints that affect correct use.
+Write from the consumer's point of view. A declaration comment explains what the symbol
+means and what behavior or constraints the consumer can rely on. Source organization,
+temporary relationships between helpers, and implementation mechanics belong in code or
+reference documentation.
 
-Avoid source organization, implementation mechanics, and incidental relationships between
-declarations. A declaration comment should describe what the declaration means, not where
-it is produced or which declarations currently use it.
+Implementation language fits when the implementation boundary is itself public. Executor
+and host integration declarations may discuss turns, continuations, host callbacks, or
+external control when consumers supply or observe those concepts directly. Kernel
+primitive comments use the semantic language of the kernel model.
 
 ## Callable Declarations
 
-For functions, methods, and callable type aliases, use a short summary plus signature
-tags when they add contract meaning. Tags should explain parameter, return, or failure
-semantics that are not already clear from the declaration context.
+For functions, methods, and callable type aliases, use a short summary and add signature
+tags when they make the contract easier to read.
+
+The summary states the operation's role or observable behavior. Parameter tags explain
+caller-facing rules such as ranges, ownership, default behavior, blocking behavior, or
+how an argument changes the operation. Return tags explain result forms, ownership,
+lifecycle, settlement behavior, `Option` branches, or other outcomes that are not already
+clear from the return type. `@throws` belongs to JavaScript-native failure behavior that
+consumers observe directly.
+
+Tags carry contract meaning rather than repeating names or types. `void` results are
+usually clear from the signature; `@returns` is useful when the absence of a value
+carries contract meaning.
 
 ```ts
 /**
- * Opens a channel in the current scope.
+ * Opens a channel owned by the current scope.
+ * Negative or `NaN` capacity converges the current process with a channel failure.
  *
- * @param capacity - Channel buffer capacity.
- * @param overloadRewrite - Overload policy for finite buffers.
+ * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
+ * buffering, and `Infinity` creates unbounded buffering.
+ * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
  * @returns Receiver and sender endpoints.
- * @throws `ChannelError` when `capacity` is negative or `NaN`.
  */
 ```
-
-Do not keep tags that only spell out a name or type in prose. Use the summary for
-behavior, ownership, lifecycle, or boundary meaning.
 
 ## Data Declarations
 
 For interfaces, aliases, unions, classes, and opaque keys, prefer one restrained summary
-that describes the declaration's stable role. Add property comments only when a field
-carries a caller-facing rule that is not clear from its name, type, or container.
+that describes the declaration's stable role. Property comments belong on fields whose
+caller-facing rule is not clear from the field name, type, or containing declaration.
+
+Data comments describe value meaning and contract boundaries. Construction, routing,
+caching, scheduling, and interpretation details fit here when they are part of the
+public meaning of the declaration.
 
 ## Failure Language
 
-Kernel package comments should describe in-band kernel results: failure, cancellation,
-settlement, convergence, scope, process, future, channel, and recovery.
+Kernel package comments describe in-band kernel results with kernel terms: failure,
+cancellation, settlement, convergence, scope, process, future, channel, and recovery.
 
-Avoid `throw`, `error`, rejected promise, and other JavaScript-native error handling
-language unless the declaration is an executor or host boundary where that behavior is
-part of the contract.
+JavaScript-native error language such as `throw`, `error`, and rejected promise belongs
+to executor or host boundaries where consumers observe that behavior directly. In-band
+kernel failure remains described as in-band failure.
 
 Host package comments may use JavaScript error language when package consumers observe
-that behavior directly. Name the thrown error only when it is part of the public
-contract.
+that behavior directly. Name the thrown error when the public contract depends on that
+specific error.
 
-## Scope
+## Reference Boundary
 
-Do not try to make TSDoc exhaustive. Add comments where they improve TypeScript hints for
-published exports, and leave obvious implementation details alone.
+TSDoc is a hint layer, not an exhaustive reference. It improves the local TypeScript
+reading of published declarations while leaving obvious signature information to the
+declaration itself.
+
+Design rationale, source structure, and implementation flow belong in reference
+documentation when they are useful. Export TSDoc remains concise enough to feel native
+to the declaration it annotates.
