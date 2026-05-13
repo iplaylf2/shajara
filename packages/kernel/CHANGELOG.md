@@ -1,5 +1,15 @@
 # @shajara/kernel
 
+## 0.8.0
+
+### Minor Changes
+
+- [#36](https://github.com/iplaylf2/shajara/pull/36) [`4632c43`](https://github.com/iplaylf2/shajara/commit/4632c43233e846a87f28d22276132da219da1af4) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Add TSDoc to the published API surfaces.
+
+  The host and kernel packages now include caller-facing TSDoc across their public
+  declarations. This improves generated `.d.ts` output and editor hints without
+  changing runtime behavior.
+
 ## 0.7.0
 
 ### Minor Changes
