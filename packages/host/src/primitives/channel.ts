@@ -5,11 +5,11 @@ import { encodeRitual } from "#/boundary/index";
 import { channel as kernelChannel } from "@shajara/kernel";
 
 /**
- * Opens a channel in the current scope.
+ * Opens a channel owned by the current scope.
  *
- * @param capacity - Channel buffer capacity.
- * @param overloadRewrite - Overload policy for finite buffers.
- * @returns Receiver and sender endpoints.
+ * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
+ * buffering, and `Infinity` creates unbounded buffering.
+ * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
  * @throws `ChannelError` when `capacity` is negative or `NaN`.
  */
 export function channel<Value, Outcome>(

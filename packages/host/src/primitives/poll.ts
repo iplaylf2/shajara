@@ -4,11 +4,10 @@ import type { Either } from "@shajara/kernel/utils";
 import { poll as kernelPoll } from "@shajara/kernel";
 
 /**
- * Observes a future without blocking the current coroutine.
+ * Observes a future's current settlement state without blocking.
  *
- * @param future - Future to inspect.
  * @returns `[true, value]` when settled with a value, or `[false]` while pending.
- * @throws The error represented by the future's failure.
+ * @throws When the future is settled with a failure.
  */
 export function* poll<Result>(future: RiteFuture<Result>): RiteCoroutine<Presence<Result>> {
   const outcome = yield* encodeRitual(() => kernelPoll(future))();

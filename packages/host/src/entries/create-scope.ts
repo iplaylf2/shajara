@@ -7,9 +7,7 @@ import { launchEntry } from "#/entry-kit";
 import { park } from "@shajara/kernel";
 
 /**
- * Creates a long-lived scope for launching related routines.
- *
- * @returns Scope control surface for launching and canceling child routines.
+ * Creates a long-lived host scope for launching related routines.
  */
 export function createScope(): Scope {
   const executor = ensureExecutor();
@@ -17,15 +15,9 @@ export function createScope(): Scope {
   return new HostScope(executor, executor.scope);
 }
 
-/** Long-lived scope that owns launched routines. */
+/** Long-lived host scope that owns launched routines. */
 export interface Scope {
-  /**
-   * Starts a routine under this scope.
-   *
-   * @param ritual - Routine to run.
-   * @param options - Optional launch controls.
-   * @returns Promise with a live lifecycle `status`.
-   */
+  /** Starts a routine under this scope. */
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
 
   /** Requests cancellation and waits for the scope to close. */

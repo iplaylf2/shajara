@@ -7,9 +7,7 @@ import { externalFailure } from "@shajara/kernel";
 
 /**
  * Converts a JavaScript `Error` into a shajara failure.
- *
- * @param error - Error thrown or rejected by JavaScript code.
- * @returns Shajara failure for the error.
+ * Existing `ShajaraError` instances keep their failure identity.
  */
 export function toFailure(error: Error): Failure {
   if (error instanceof ShajaraError) {
@@ -18,12 +16,7 @@ export function toFailure(error: Error): Failure {
   return externalFailure(error, `${error.name}: ${error.message}`);
 }
 
-/**
- * Converts any caught JavaScript value into a shajara failure.
- *
- * @param caught - Value thrown or rejected by JavaScript code.
- * @returns Shajara failure for the value.
- */
+/** Converts any caught JavaScript value into a shajara failure. */
 export function toFailureUnknown(caught: unknown): Failure {
   if (caught instanceof Error) {
     return toFailure(caught);
@@ -31,19 +24,13 @@ export function toFailureUnknown(caught: unknown): Failure {
   return externalFailure(caught, String(caught));
 }
 
-/**
- * Converts a scope-exit failure into the JavaScript error passed to recovery handlers.
- *
- * @param failure - Scope-exit failure to convert.
- * @returns Canceled or scope error.
- */
+/** Converts a scope-exit failure into the error passed to recovery handlers. */
 export function fromFailure(failure: ScopeExitFailure): ScopeExitError;
 
 /**
  * Converts a shajara failure into the JavaScript error callers receive.
- *
- * @param failure - Failure to convert.
- * @returns JavaScript error for the failure.
+ * Existing `ShajaraError` failures are returned unchanged.
+ * External failures backed by an `Error` return that original error.
  */
 export function fromFailure(failure: Failure): Error;
 export function fromFailure(failure: Failure): Error {

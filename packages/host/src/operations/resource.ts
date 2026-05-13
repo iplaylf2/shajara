@@ -3,10 +3,8 @@ import { future, settle } from "#/primitives/index";
 import { park, spawnDetached } from "#/operations-kit";
 
 /**
- * Starts provider work that publishes a value and stays owned by the current scope.
- *
- * @param body - Routine that receives the publish callback.
- * @returns Future that settles with the provided value.
+ * Starts provider work that publishes one ready value and stays owned by the current scope.
+ * Provider `finally` blocks run when the owning scope releases the resource process.
  */
 export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteFuture<Value>> {
   const [providedValue, providedValueSettle] = yield* future<Value>();
@@ -16,10 +14,10 @@ export function* resource<Value>(body: ResourceBody<Value>): RiteCoroutine<RiteF
   return providedValue;
 }
 
-/** Resource provider routine that receives a publish callback. */
+/** Provider routine run as current-scope work for `resource`. */
 export type ResourceBody<Value> = (provide: ResourceProvide<Value>) => RiteCoroutine<void>;
 
-/** Publishes a resource value, then parks the provider until scope cleanup unwinds it. */
+/** Publishes the resource value, then parks the provider until scope cleanup unwinds it. */
 export type ResourceProvide<Value> = (value: Value) => RiteCoroutine<never>;
 
 function toResourceProvide<Value>(

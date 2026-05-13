@@ -11,10 +11,6 @@ import { waitChild } from "#/primitives-kit";
 
 /**
  * Runs a child routine with a scheduler or reaper policy and waits for its result.
- *
- * @param entry - Child routine to run.
- * @param options - Scheduler, reaper, or both for the child scope.
- * @returns Child routine result.
  */
 export function* autonomy<Return>(
   entry: RiteRoutine<Return>,
@@ -41,7 +37,7 @@ export interface ReaperOption {
   readonly reaper: Reaper;
 }
 
-/** Reaper routine for a closing autonomous scope. */
+/** Reaper routine for a closing autonomous scope; throwing submits failure adjudication. */
 export type Reaper = (scope: ScopeRef<unknown>) => RiteCoroutine<void>;
 
 function toKernelAutonomyOptions(options: AutonomyOptions): KernelAutonomyOptions {

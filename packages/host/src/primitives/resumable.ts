@@ -4,10 +4,7 @@ import { resumable as kernelResumable } from "@shajara/kernel";
 import { wait } from "./wait";
 
 /**
- * Runs a child routine whose scope-exit failure can be recovered by an ancestor guard.
- *
- * @param ritual - Child routine to run.
- * @returns Child result or recovered value.
+ * Runs a child routine whose scope-exit failure can be recovered by an ancestor `guard`.
  */
 export function* resumable<Return>(ritual: RiteRoutine<Return>): RiteCoroutine<Return> {
   const [, future] = yield* encodeRitual(() => kernelResumable(decodeRitual(ritual)))();

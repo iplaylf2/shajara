@@ -2,12 +2,7 @@ import type { RiteCoroutine, RiteRoutine } from "#/contracts";
 import type { Ritual, Wisp } from "@shajara/kernel";
 import type { Sigil } from "@shajara/kernel/sigils";
 
-/**
- * Converts a kernel `Ritual` into a `RiteRoutine`.
- *
- * @param ritual - Ritual to convert.
- * @returns Routine that yields the ritual's instructions.
- */
+/** Converts a kernel `Ritual` into a `RiteRoutine`. */
 export function encodeRitual<Relic>(ritual: Ritual<Relic>): RiteRoutine<Relic> {
   return function* encoded(): RiteCoroutine<Relic> {
     return yield* liftStep(ritual());

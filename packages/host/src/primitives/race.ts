@@ -8,10 +8,8 @@ import { race as kernelRace } from "@shajara/kernel";
 import { wait } from "./wait";
 
 /**
- * Runs routines until one succeeds, then waits for the winning value.
- *
- * @param routines - Competing routines.
- * @returns First successful routine result.
+ * Runs routines in a race scope, cancels losing work after the first success, and waits for
+ * the winning value.
  */
 export function* race<Returns extends NonEmptyTuple<unknown>>(
   routines: RiteRoutineTuple<Returns>,

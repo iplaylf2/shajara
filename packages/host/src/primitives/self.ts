@@ -3,7 +3,7 @@ import { encodeRitual } from "#/boundary/index";
 import { self as kernelSelf } from "@shajara/kernel";
 
 /**
- * Reads the current scope and process references.
+ * Reads the current scope and process identity.
  *
  * @returns Current self handle.
  */

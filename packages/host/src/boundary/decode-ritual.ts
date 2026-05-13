@@ -9,9 +9,7 @@ import { toFailureUnknown } from "./failure-mapping";
 
 /**
  * Converts a `RiteRoutine` into a kernel `Ritual`.
- *
- * @param routine - Routine to convert.
- * @returns Ritual that converts thrown values into failures.
+ * `CanceledError` becomes kernel cancellation, and other thrown values become in-band failures.
  */
 export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> {
   function decoded(): Wisp<Relic> {

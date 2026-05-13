@@ -3,9 +3,9 @@ import { encodeRitual } from "#/boundary/index";
 import { future as kernelFuture } from "@shajara/kernel";
 
 /**
- * Allocates a future in the current scope.
+ * Allocates a future owned by the current scope.
  *
- * @returns Observation and settlement handles for the future.
+ * @returns Observation and settlement handles for the same future.
  */
 export function future<Result>(): RiteCoroutine<RiteFutureHandle<Result>> {
   return encodeRitual(() => kernelFuture<Result>())();

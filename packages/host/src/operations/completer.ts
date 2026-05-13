@@ -5,9 +5,8 @@ import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary/index";
 
 /**
- * Creates a future with JavaScript callbacks for settling it.
- *
- * @returns Future and completion callbacks.
+ * Creates a future that can be settled from JavaScript callbacks.
+ * If still pending, the future is canceled when the current scope converges.
  */
 export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   const executor = yield* currentExecutor();

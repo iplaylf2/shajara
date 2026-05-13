@@ -5,10 +5,9 @@ import type { UnknownArray } from "type-fest";
 import { all as kernelAll } from "@shajara/kernel";
 
 /**
- * Runs routines concurrently in the current scope.
+ * Starts routines concurrently in the current scope without waiting for them.
  *
- * @param routines - Child routines to start.
- * @returns Future that settles with the ordered routine results.
+ * @returns Future whose successful result preserves routine order.
  */
 export function all<Returns extends UnknownArray>(
   routines: RiteRoutineTuple<Returns>,

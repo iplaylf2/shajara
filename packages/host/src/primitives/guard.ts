@@ -7,13 +7,7 @@ import type { ScopeExitError } from "#/errors";
 import { guard as kernelGuard } from "@shajara/kernel";
 import { waitChild } from "#/primitives-kit";
 
-/**
- * Runs a child routine with a recovery boundary and waits for its result.
- *
- * @param entry - Child routine protected by the recovery handler.
- * @param recover - Handler for resumable child-scope exit failures.
- * @returns Child routine result after recovery.
- */
+/** Runs a child routine with a recovery boundary for nested `resumable` work. */
 export function* guard<Return>(
   entry: RiteRoutine<Return>,
   recover: RecoveryHandler,
@@ -24,10 +18,10 @@ export function* guard<Return>(
   return yield* waitChild(child);
 }
 
-/** Recovery handler result, where `[true, value]` handles and `[false]` delegates. */
+/** Recovery result where `[true, value]` handles the request and `[false]` delegates it. */
 export type RecoveryDecision = Presence<unknown>;
 
-/** Recovery handler for delegated child-scope failures. */
+/** Host recovery handler for a child-scope exit failure offered by `resumable`. */
 export type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<RecoveryDecision>;
 
 function toKernelRecoveryHandler(recover: RecoveryHandler): KernelRecoveryHandler {

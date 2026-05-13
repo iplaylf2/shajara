@@ -1,7 +1,7 @@
 import type { ChannelFailure, ReceiveResult, SendResult } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 
-/** Error thrown when a channel operation closes, revokes, or rejects invalid input. */
+/** Error thrown for terminal channel states and channel input validation failures. */
 export class ChannelError extends ShajaraError implements ChannelFailure {
   /**
    * Creates a channel error.

@@ -8,9 +8,9 @@ import { isNone } from "@shajara/kernel/utils";
 /**
  * Creates a channel receiver plus immediate producer callbacks.
  *
- * @param capacity - Channel buffer capacity.
- * @param overloadRewrite - Overload policy for finite buffers.
- * @returns Receiver and producer send or close callbacks.
+ * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
+ * buffering, and `Infinity` creates unbounded buffering.
+ * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
  */
 export function* feed<Value, Outcome>(
   capacity: number,
@@ -52,7 +52,6 @@ export interface Feed<Value, Outcome> {
   /**
    * Attempts to send immediately.
    *
-   * @param value - Value to send.
    * @returns `true` when sent, or `false` when the send would block.
    * @throws `ChannelError` when the channel is closed or revoked.
    */

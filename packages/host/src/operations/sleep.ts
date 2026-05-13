@@ -3,10 +3,8 @@ import { completer } from "./completer";
 import { wait } from "#/primitives/index";
 
 /**
- * Suspends the current coroutine with a JavaScript timer.
- *
- * @param milliseconds - Timer delay in milliseconds.
- * @returns Completion after the timer fires or the wait is unwound.
+ * Suspends the current coroutine until a JavaScript timer fires.
+ * The timer is cleared if the wait is unwound before it fires.
  */
 export function* sleep(milliseconds: number): RiteCoroutine<void> {
   const { future, resolve } = yield* completer<null>();

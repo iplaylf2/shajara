@@ -6,10 +6,8 @@ import { isNone } from "@shajara/kernel/utils";
 import { trySend as kernelTrySend } from "@shajara/kernel";
 
 /**
- * Attempts to send a channel value without blocking.
+ * Attempts one send through a channel without blocking.
  *
- * @param sender - Sender endpoint.
- * @param value - Value to send.
  * @returns `true` when sent, or `false` when the send would block.
  * @throws `ChannelError` when the sender is closed or revoked.
  */

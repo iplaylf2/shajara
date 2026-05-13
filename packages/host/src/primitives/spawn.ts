@@ -3,10 +3,9 @@ import { decodeRitual, encodeRitual } from "#/boundary/index";
 import { spawn as kernelSpawn } from "@shajara/kernel";
 
 /**
- * Starts a child process in the current scope.
+ * Starts a child process in the current scope without waiting for it.
  *
- * @param routine - Child routine to run.
- * @returns Future for the child process result.
+ * @returns Future for observing the child process result.
  */
 export function spawn<Return>(routine: RiteRoutine<Return>): RiteCoroutine<RiteFuture<Return>> {
   return encodeRitual(() => kernelSpawn(decodeRitual(routine)))();
