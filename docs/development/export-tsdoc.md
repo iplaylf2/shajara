@@ -15,6 +15,11 @@ comments; declarations outside the published surface stay outside this layer.
 For re-exported concepts, place comments on the declaration that reaches the generated
 `.d.ts` output. Comments live where consumers encounter the symbol.
 
+The export path also determines vocabulary. Comments use the terms published by that
+package or subpath. Explicit adapter modules can name both sides of a boundary because
+that distinction is part of their surface; other declarations stay within the vocabulary
+of their own exported abstraction.
+
 ## Declaration Context
 
 Read the published declaration before writing its comment. Package path, subpath, symbol
@@ -31,9 +36,10 @@ and field placement are part of the public contract, and they provide the attach
 sites available to this hint layer.
 
 Implementation language fits when the implementation boundary is itself public. Executor
-and host integration declarations may discuss turns, continuations, host callbacks, or
-external control when consumers supply or observe those concepts directly. Kernel
-primitive comments use the semantic language of the kernel model.
+and integration declarations may discuss turns, continuations, callbacks, or external
+control when consumers supply or observe those concepts directly. Package-relative words
+such as host and kernel mark necessary distinctions between public contexts. When no
+boundary distinction is involved, the package's own abstraction supplies the vocabulary.
 
 ## Callable Declarations
 
@@ -80,8 +86,8 @@ signature.
 
 ## Failure Language
 
-Kernel package comments describe in-band kernel results with kernel terms: failure,
-cancellation, settlement, convergence, scope, process, future, channel, and recovery.
+Kernel comments describe in-band results with model terms: failure, cancellation,
+settlement, convergence, scope, process, future, channel, and recovery.
 
 JavaScript-native error language such as `throw`, `error`, and rejected promise belongs
 to executor or host boundaries where consumers observe that behavior directly. In-band
