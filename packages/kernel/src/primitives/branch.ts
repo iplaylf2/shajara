@@ -4,10 +4,8 @@ import { branch as branchSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Opens a child scope and entry process.
+ * Opens a child scope with one structural entry process without waiting for convergence.
  *
- * @param entry - Child entry.
- * @param descriptor - Scope metadata.
  * @returns Child scope and process references.
  */
 export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
@@ -17,7 +15,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   return wisp.liftF(branchSigil(entry, descriptor));
 }
 
-/** Scope reference paired with a separate outcome future. */
+/** Scope reference paired with a composed primitive's outcome future. */
 export type ScopedOutcome<Result> = readonly [scope: ScopeRef<unknown>, outcome: FutureKey<Result>];
 
 export type { BranchHandle } from "#/sigils/index";

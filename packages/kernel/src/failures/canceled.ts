@@ -1,9 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Cancellation convergence value.
+ * Creates the failure value for cancellation convergence.
  *
- * @returns Canceled failure.
+ * @returns Canceled failure value.
  */
 export function canceledFailure(): CanceledFailure {
   return {
@@ -12,7 +12,7 @@ export function canceledFailure(): CanceledFailure {
   };
 }
 
-/** Failure emitted when work converges through cancellation. */
+/** Failure value reported when a process, scope, or future converges through cancellation. */
 export interface CanceledFailure extends FailureShape {
   readonly kind: "canceled";
 }

@@ -23,31 +23,27 @@ import { noop } from "#/utils/index";
 import { withRecoveryAnchor } from "#/primitives-kit";
 
 /**
- * Adapts executor turn scheduling.
+ * Attaches executor turn requests to the embedding environment.
  *
- * @param flushTurn - Executor turn callback.
- * @returns Pacing hooks.
+ * @returns Pacer for slice control and continuation scheduling.
  */
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
 /**
- * Initializes an executor root.
+ * Creates an executor that can launch, observe, and control kernel entries.
  *
- * @param bindTurn - Turn scheduler.
- * @returns Executor root handle.
+ * @returns Root executor handle.
  */
 export function createExecutor(bindTurn: BindTurn): Executor {
   return new RuntimeExecutor(bindTurn);
 }
 
-/** External control surface for launching and observing kernel work. */
+/** Long-lived execution environment with root entry, observation, and control methods. */
 export interface Executor extends LaunchHandle<never> {
   /**
-   * Starts a child entry.
+   * Launches an entry under a registered open execution scope.
    *
-   * @param scope - Registered execution scope.
-   * @param ritual - Entry computation.
-   * @returns Launch handle, or none when unavailable.
+   * @returns Launch handle for the new entry, or `none` when the target scope cannot accept it.
    */
   launch<Result>(
     scope: ExecutionScopeRef<unknown>,
@@ -55,11 +51,9 @@ export interface Executor extends LaunchHandle<never> {
   ): Option<LaunchHandle<Result>>;
 
   /**
-   * Observes one future settlement.
+   * Subscribes to one future settlement, notifying immediately if already settled.
    *
-   * @param future - Observed future.
-   * @param listener - Settlement listener.
-   * @returns Disposer for the subscription.
+   * @returns Disposer that removes a pending listener.
    */
   onSettled<Result>(
     future: FutureKey<Result>,
@@ -67,45 +61,30 @@ export interface Executor extends LaunchHandle<never> {
   ): Disposer;
 
   /**
-   * Writes a settlement from outside ritual execution.
+   * Attempts to settle a future through its settlement authority.
    *
-   * @param futureSettle - Settlement authority.
-   * @param result - In-band settlement.
-   * @returns True when settlement was accepted.
+   * @returns `true` when settlement is accepted.
    */
   settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
 
   /**
-   * Performs one external non-blocking send.
+   * Attempts one channel send through a sender endpoint without blocking.
    *
-   * @param sender - Send endpoint.
-   * @param value - Sent value.
-   * @returns Immediate send result, or none when the send would block.
+   * @returns Immediate send result, or `none` when the send would block.
    */
   trySend<Value, Outcome>(
     sender: ChannelSender<Value, Outcome>,
     value: Value,
   ): Option<SendResult<Outcome>>;
 
-  /**
-   * Closes a channel externally.
-   *
-   * @param endpoint - Target endpoint.
-   * @param outcome - Explicit close outcome.
-   * @returns No value.
-   */
+  /** Closes a channel through either endpoint with an explicit outcome. */
   close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
 
-  /**
-   * Requests external cancellation.
-   *
-   * @param scope - Target execution scope.
-   * @returns No value.
-   */
+  /** Requests cancellation for a registered execution scope; unknown scopes are ignored. */
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
-/** Context key that exposes the current executor to launched work. */
+/** Context key bound to the executor for launched work. */
 export const currentExecutorKey: ContextKey<Executor> = contextKey<Executor>();
 
 class RuntimeExecutor implements Executor {

@@ -10,8 +10,7 @@ import { wisp } from "#/internal/fp";
 /**
  * Runs entries concurrently in the current scope.
  *
- * @param entries - Child entries.
- * @returns Aggregate result future.
+ * @returns Future whose successful result preserves entry order.
  */
 export function all<EntryReturns extends readonly unknown[]>(
   entries: AllEntries<EntryReturns>,

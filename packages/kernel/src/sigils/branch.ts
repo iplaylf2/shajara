@@ -8,11 +8,9 @@ import type {
 } from "#/contracts";
 
 /**
- * Models child-scope creation.
+ * Encodes child-scope creation as a sigil.
  *
- * @param entry - Child scope entry.
- * @param descriptor - Scope metadata.
- * @returns Branch instruction.
+ * @returns `branch` sigil.
  */
 export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor>(
   entry: Ritual<Relic>,
@@ -25,7 +23,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   };
 }
 
-/** Child-scope creation sigil shape. */
+/** Child-scope sigil. */
 export interface BranchSigil<
   Relic,
   Descriptor extends ScopeDescriptor = ScopeDescriptor,
@@ -36,7 +34,7 @@ export interface BranchSigil<
   readonly [ECHO_TOKEN]?: readonly [BranchHandle<Relic, Descriptor>];
 }
 
-/** Branch result references. */
+/** Scope and entry-process references for a child scope. */
 export interface BranchHandle<Relic, Descriptor extends ScopeDescriptor = ScopeDescriptor> {
   readonly scope: ScopeRef<Relic, Descriptor>;
   readonly process: ProcessRef<Relic>;

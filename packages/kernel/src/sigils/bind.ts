@@ -1,11 +1,9 @@
 import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 
 /**
- * Models context binding.
+ * Encodes context binding as a sigil.
  *
- * @param key - Binding identity.
- * @param value - Bound value.
- * @returns Bind instruction.
+ * @returns `bind` sigil.
  */
 export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Value> {
   return {
@@ -15,7 +13,7 @@ export function bind<Value>(key: ContextKey<Value>, value: Value): BindSigil<Val
   };
 }
 
-/** Sigil shape for binding a context value. */
+/** Context-binding sigil. */
 export interface BindSigil<Value> extends SigilShape {
   readonly kind: "bind";
   readonly key: ContextKey<Value>;

@@ -1,9 +1,9 @@
 import type { ECHO_TOKEN, ProcessRef, ScopeRef, SigilShape } from "#/contracts";
 
 /**
- * Models current-process introspection.
+ * Encodes current scope and process lookup as a sigil.
  *
- * @returns Self instruction.
+ * @returns `self` sigil.
  */
 export function self(): SelfSigil {
   return {
@@ -11,13 +11,13 @@ export function self(): SelfSigil {
   };
 }
 
-/** Sigil shape for current process introspection. */
+/** Current-identity sigil. */
 export interface SelfSigil extends SigilShape {
   readonly kind: "self";
   readonly [ECHO_TOKEN]?: readonly [SelfHandle];
 }
 
-/** Current scope and process references. */
+/** Current process reference and its enclosing scope reference. */
 export interface SelfHandle {
   readonly scope: ScopeRef<unknown>;
   readonly process: ProcessRef<unknown>;

@@ -6,10 +6,9 @@ import { tryReceive as tryReceiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Receives without blocking.
+ * Attempts one channel receive without blocking.
  *
- * @param receiver - Channel receiver endpoint.
- * @returns Immediate receive result, or none.
+ * @returns Immediate receive result, or `none` when no state is ready.
  */
 export function tryReceive<Value, Outcome>(
   receiver: ChannelReceiver<Value, Outcome>,

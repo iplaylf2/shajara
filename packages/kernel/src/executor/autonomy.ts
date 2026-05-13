@@ -13,39 +13,37 @@ export function autonomyOf(descriptor: ScopeDescriptor): AutonomyOptions | null 
   return isAutonomyScope(descriptor) ? descriptor[autonomyKey] : null;
 }
 
-/** Scope descriptor carrying scheduler or reaper autonomy. */
+/** Scope descriptor carrying scheduler or reaper autonomy options. */
 export interface AutonomyScopeDescriptor extends ScopeDescriptor {
   readonly [autonomyKey]: AutonomyOptions;
 }
 
-/** Autonomy option that routes runnable processes through a scheduler. */
+/** Autonomy option for routing runnable processes to processors. */
 export interface SchedulerOption {
   readonly scheduler: Scheduler;
 }
 
-/** Autonomy option that adjudicates stalled closing scopes. */
+/** Autonomy option for adjudicating stalled closing scopes. */
 export interface ReaperOption {
   readonly reaper: Reaper;
 }
 
-/** Assigns runnable processes to processors. */
+/** Chooses processors for runnable processes within an autonomous scope. */
 export interface Scheduler {
   /**
-   * Selects a processing lane.
+   * Selects a processor for a runnable process.
    *
-   * @param process - Runnable process.
-   * @returns Processor for the task.
+   * @returns Processor selected for the runnable process.
    */
   assign(process: ProcessRef<unknown>): Processor;
 }
 
-/** Decides whether a closing scope should continue waiting or fail. */
+/** Decides whether a stalled closing scope should keep waiting or fail. */
 export interface Reaper {
   /**
    * Evaluates stalled convergence.
    *
-   * @param scope - Closing scope.
-   * @returns None to keep waiting, or a failure to force failure convergence.
+   * @returns `none` to keep waiting, or a failure to force failure convergence.
    */
   adjudicate(scope: ScopeRef<unknown>): Wisp<Option<Failure>>;
 }

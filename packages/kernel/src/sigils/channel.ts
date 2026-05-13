@@ -2,11 +2,9 @@ import type { ECHO_TOKEN, KEY_TOKEN, SigilShape } from "#/contracts";
 import type { ArrayValues } from "type-fest";
 
 /**
- * Models channel allocation.
+ * Encodes channel allocation as a sigil.
  *
- * @param capacity - Channel buffer capacity.
- * @param overloadRewrite - Overload policy for finite buffers.
- * @returns Channel instruction.
+ * @returns `channel` sigil.
  */
 export function channel<Value, Outcome>(
   capacity: number,
@@ -22,8 +20,6 @@ export function channel<Value, Outcome>(
 /**
  * Preserves normal blocking behavior on overload.
  *
- * @param buffer - Current buffer.
- * @param _incoming - Incoming value.
  * @returns Existing buffer.
  */
 export function defaultOverloadRewrite<Value>(
@@ -34,18 +30,16 @@ export function defaultOverloadRewrite<Value>(
 }
 
 /**
- * Policy applied before accepting an overloaded send.
+ * Rewrites a finite channel buffer before an overloaded incoming value is accepted.
  *
- * @param buffer - Current buffer.
- * @param incoming - Candidate value.
- * @returns Replacement buffer.
+ * @returns Replacement buffer; the incoming value is accepted only if capacity remains.
  */
 export type OverloadRewrite<Value> = (
   buffer: readonly Value[],
   incoming: Value,
 ) => readonly Value[];
 
-/** Channel allocation sigil shape. */
+/** Channel-allocation sigil. */
 export interface ChannelSigil<Value, Outcome> extends SigilShape {
   readonly kind: "channel";
   readonly capacity: number;
@@ -53,22 +47,22 @@ export interface ChannelSigil<Value, Outcome> extends SigilShape {
   readonly [ECHO_TOKEN]?: readonly [ChannelHandle<Value, Outcome>];
 }
 
-/** Paired receiver and sender endpoints for a channel. */
+/** Paired read and write endpoints for one channel. */
 export type ChannelHandle<Value, Outcome> = readonly [
   receiver: ChannelReceiver<Value, Outcome>,
   sender: ChannelSender<Value, Outcome>,
 ];
 
-/** Either endpoint of a channel. */
+/** Either read or write endpoint of a channel. */
 export type ChannelEndpoint<Value, Outcome> = ArrayValues<ChannelHandle<Value, Outcome>>;
 
-/** Read endpoint accepted by receive operations. */
+/** Read authority for channel receive operations. */
 export interface ChannelReceiver<Value, Outcome> {
   readonly [KEY_TOKEN]: "channel-receiver";
   readonly [TYPE_TOKEN]?: readonly [Value, Outcome];
 }
 
-/** Write endpoint accepted by send operations. */
+/** Write authority for channel send operations. */
 export interface ChannelSender<Value, Outcome> {
   readonly [KEY_TOKEN]: "channel-sender";
   readonly [TYPE_TOKEN]?: readonly [Value, Outcome];

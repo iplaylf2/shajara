@@ -1,26 +1,20 @@
 import type { Suppressor } from "#/contracts";
 
-/** Queue or runner that accepts process tasks selected by a scheduler. */
+/** Processor selected by a scheduler to progress runnable processes. */
 export interface Processor {
-  /**
-   * Enqueues interpreter work.
-   *
-   * @param task - Work item.
-   * @returns No value.
-   */
+  /** Accepts a runnable process task. */
   admit(task: ProcessorTask): void;
 }
 
-/** Runnable unit of interpreter work. */
+/** Runnable process task submitted to a processor. */
 export interface ProcessorTask {
   /**
-   * Advances interpreter work.
+   * Advances this task once.
    *
-   * @param suppressor - Fault sink.
    * @returns Task state after the step.
    */
   step(suppressor: Suppressor): ProcessorTaskStatus;
 }
 
-/** Result of advancing one processor task. */
+/** Process-task state after one step. */
 export type ProcessorTaskStatus = "cede" | "exited" | "ready" | "waiting";

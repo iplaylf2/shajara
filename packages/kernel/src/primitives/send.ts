@@ -5,11 +5,9 @@ import { send as sendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Sends a channel value or observes terminal state.
+ * Waits for a channel send result.
  *
- * @param sender - Channel sender endpoint.
- * @param value - Payload.
- * @returns Sent, closed, or revoked state.
+ * @returns Accepted send, explicit close, or revoked terminal state.
  */
 export function send<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,

@@ -12,9 +12,8 @@ import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
 /**
- * Routes child scope-exit failure through recovery.
+ * Opens a child scope and routes its eventual scope-exit failure through recovery.
  *
- * @param entry - Child entry.
  * @returns Child scope and recovery outcome future.
  */
 export function resumable<Relic>(entry: Ritual<Relic>): Wisp<ScopedOutcome<Relic>> {

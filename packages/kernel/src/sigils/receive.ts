@@ -3,10 +3,9 @@ import type { ChannelReceiver } from "./channel";
 import type { TaggedUnion } from "type-fest";
 
 /**
- * Models blocking channel receive.
+ * Encodes blocking channel receive as a sigil.
  *
- * @param receiver - Channel receiver endpoint.
- * @returns Receive instruction.
+ * @returns `receive` sigil.
  */
 export function receive<Value, Outcome>(
   receiver: ChannelReceiver<Value, Outcome>,
@@ -17,14 +16,14 @@ export function receive<Value, Outcome>(
   };
 }
 
-/** Sigil shape for blocking channel receive. */
+/** Blocking channel receive sigil. */
 export interface ReceiveSigil<Value, Outcome> extends SigilShape {
   readonly kind: "receive";
   readonly receiver: ChannelReceiver<Value, Outcome>;
   readonly [ECHO_TOKEN]?: readonly [ReceiveResult<Value, Outcome>];
 }
 
-/** Result of receiving from a channel. */
+/** Receive echo: delivered value, explicit close, or revoked terminal state. */
 export type ReceiveResult<Value, Outcome> = TaggedUnion<
   "kind",
   { value: { readonly value: Value }; closed: { readonly outcome: Outcome }; revoked: {} }

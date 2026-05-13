@@ -8,11 +8,9 @@ import type {
 } from "#/contracts";
 
 /**
- * Models process creation.
+ * Encodes process creation as a sigil.
  *
- * @param entry - Process entry.
- * @param descriptor - Process metadata.
- * @returns Spawn instruction.
+ * @returns `spawn` sigil.
  */
 export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescriptor>(
   entry: Ritual<Relic>,
@@ -25,7 +23,7 @@ export function spawn<Relic, Descriptor extends ProcessDescriptor = ProcessDescr
   };
 }
 
-/** Sigil shape for process creation. */
+/** Process-creation sigil. */
 export interface SpawnSigil<
   Relic,
   Descriptor extends ProcessDescriptor = ProcessDescriptor,

@@ -1,10 +1,5 @@
-/** Receives faults outside normal convergence. */
+/** Captures out-of-band faults without converting them into in-band failure values. */
 export interface Suppressor {
-  /**
-   * Captures one fault.
-   *
-   * @param fault - Captured value.
-   * @returns No value.
-   */
+  /** Records one captured fault. */
   capture(fault: unknown): void;
 }

@@ -3,11 +3,9 @@ import type { ChannelSender } from "./channel";
 import type { TaggedUnion } from "type-fest";
 
 /**
- * Models blocking channel send.
+ * Encodes blocking channel send as a sigil.
  *
- * @param sender - Channel sender endpoint.
- * @param value - Payload.
- * @returns Send instruction.
+ * @returns `send` sigil.
  */
 export function send<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,
@@ -20,7 +18,7 @@ export function send<Value, Outcome>(
   };
 }
 
-/** Sigil shape for blocking channel send. */
+/** Blocking channel send sigil. */
 export interface SendSigil<Value, Outcome> extends SigilShape {
   readonly kind: "send";
   readonly sender: ChannelSender<Value, Outcome>;
@@ -28,7 +26,7 @@ export interface SendSigil<Value, Outcome> extends SigilShape {
   readonly [ECHO_TOKEN]?: readonly [SendResult<Outcome>];
 }
 
-/** Result of sending to a channel. */
+/** Send echo: accepted value, explicit close, or revoked terminal state. */
 export type SendResult<Outcome> = TaggedUnion<
   "kind",
   { sent: {}; closed: { readonly outcome: Outcome }; revoked: {} }

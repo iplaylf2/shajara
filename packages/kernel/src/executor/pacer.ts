@@ -1,29 +1,27 @@
 import type { Disposer } from "#/utils/index";
 
-/** Host pacing contract for executor work. */
+/** Embedding-environment contract for executor slice control. */
 export interface Pacer {
   /**
-   * Begins a work slice.
+   * Begins the next executor slice.
    *
-   * @returns Current slice budget.
+   * @returns Slice controller for the current turn.
    */
   beginSlice(): Slice;
 
   /**
-   * Defers follow-up work.
+   * Schedules an executor continuation after the current slice.
    *
-   * @param work - Deferred callback.
-   * @returns Disposer for the scheduled work.
+   * @returns Disposer that cancels the scheduled continuation.
    */
   continueLater(work: () => void): Disposer;
 }
 
-/** Current work-slice budget. */
+/** Controller for the current executor slice. */
 export interface Slice {
   /**
-   * Checks slice exhaustion.
+   * Reports whether the current slice should yield.
    *
-   * @returns True when the executor should yield.
    */
   shouldYield(): boolean;
 }

@@ -6,8 +6,7 @@ import { wisp } from "#/internal/fp";
 /**
  * Resolves context from the scope chain.
  *
- * @param key - Lookup identity.
- * @returns Nearest value, or none.
+ * @returns Nearest visible binding, or `none` when absent.
  */
 export function lookup<Value>(key: ContextKey<Value>): Wisp<Option<Value>> {
   return wisp.liftF(lookupSigil(key));

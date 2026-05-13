@@ -5,10 +5,9 @@ import { receive as receiveSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Receives a channel value or terminal state.
+ * Waits for a channel receive result.
  *
- * @param receiver - Channel receiver endpoint.
- * @returns Value, close, or revocation state.
+ * @returns Delivered value, explicit close, or revoked terminal state.
  */
 export function receive<Value, Outcome>(
   receiver: ChannelReceiver<Value, Outcome>,

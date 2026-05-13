@@ -12,11 +12,9 @@ import { branch } from "#/primitives/index";
 import { describeAutonomy } from "#/executor/autonomy";
 
 /**
- * Applies executor governance to a child scope.
+ * Opens a child scope with scheduler or reaper autonomy.
  *
- * @param entry - Child entry.
- * @param options - Governance policy.
- * @returns Autonomous branch handle.
+ * @returns Autonomous child scope and process references.
  */
 export function autonomy<Relic>(
   entry: Ritual<Relic>,

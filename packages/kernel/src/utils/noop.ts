@@ -1,8 +1,4 @@
-/**
- * Empty callback.
- *
- * @returns No value.
- */
+/** Empty callback. */
 export function noop(): void {
   // Noop
 }

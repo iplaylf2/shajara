@@ -1,11 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Scope exit failure value.
+ * Creates the failure value for a scope's local failure convergence.
  *
- * @param cause - Primary failure.
- * @param suppressed - Additional failures.
- * @returns Scope failure.
+ * @returns Scope failure value.
  */
 export function scopeFailure(
   cause: FailureShape,
@@ -19,9 +17,11 @@ export function scopeFailure(
   };
 }
 
-/** Failure emitted when a scope converges through its local failure path. */
+/** Failure value reported when a scope converges through local failure convergence. */
 export interface ScopeFailure extends FailureShape {
+  /** Primary failure that drove the scope into failure convergence. */
   readonly cause: FailureShape;
+  /** Additional failures captured after failure convergence began. */
   readonly suppressed: readonly FailureShape[];
   readonly kind: "scope";
 }

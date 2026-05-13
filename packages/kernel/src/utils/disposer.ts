@@ -1,6 +1,2 @@
-/**
- * Releases a subscription or registered resource.
- *
- * @returns No value.
- */
+/** Releases a subscription or registered resource. */
 export type Disposer = () => void;

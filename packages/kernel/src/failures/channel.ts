@@ -1,11 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Channel failure value.
+ * Creates a failure value for invalid channel input or channel operation failure.
  *
- * @param cause - Failure cause.
- * @param message - Failure message.
- * @returns Channel failure.
+ * @returns Channel failure value.
  */
 export function channelFailure(cause: unknown, message: string): ChannelFailure {
   return {
@@ -15,8 +13,9 @@ export function channelFailure(cause: unknown, message: string): ChannelFailure 
   };
 }
 
-/** Failure emitted for invalid channel input or runtime channel operation failure. */
+/** Failure value for invalid channel input or channel operation failure. */
 export interface ChannelFailure extends FailureShape {
   readonly kind: "channel";
+  /** Channel-specific cause, such as invalid input or channel operation state. */
   readonly cause: unknown;
 }

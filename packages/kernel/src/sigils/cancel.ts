@@ -1,15 +1,15 @@
 import type { ECHO_TOKEN, SigilShape } from "#/contracts";
 
 /**
- * Models current-scope cancellation.
+ * Encodes current-scope cancellation as a sigil.
  *
- * @returns Cancel instruction.
+ * @returns `cancel` sigil.
  */
 export function cancel(): CancelSigil {
   return { kind: "cancel" };
 }
 
-/** Sigil shape for cancellation. */
+/** Current-scope cancellation sigil. */
 export interface CancelSigil extends SigilShape {
   readonly kind: "cancel";
   readonly [ECHO_TOKEN]?: readonly [never];

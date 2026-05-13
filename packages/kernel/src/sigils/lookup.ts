@@ -2,10 +2,9 @@ import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
 import type { Option } from "#/utils/index";
 
 /**
- * Models context lookup.
+ * Encodes context lookup as a sigil.
  *
- * @param key - Lookup identity.
- * @returns Lookup instruction.
+ * @returns `lookup` sigil.
  */
 export function lookup<Value>(key: ContextKey<Value>): LookupSigil<Value> {
   return {
@@ -14,7 +13,7 @@ export function lookup<Value>(key: ContextKey<Value>): LookupSigil<Value> {
   };
 }
 
-/** Sigil shape for context lookup. */
+/** Context-lookup sigil. */
 export interface LookupSigil<Value> extends SigilShape {
   readonly kind: "lookup";
   readonly key: ContextKey<Value>;

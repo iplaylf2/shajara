@@ -1,10 +1,9 @@
 import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts";
 
 /**
- * Models blocking future observation.
+ * Encodes blocking future observation as a sigil.
  *
- * @param future - Future to observe.
- * @returns Wait instruction.
+ * @returns `wait` sigil.
  */
 export function wait<Result>(future: FutureKey<Result>): WaitSigil<Result> {
   return {
@@ -13,7 +12,7 @@ export function wait<Result>(future: FutureKey<Result>): WaitSigil<Result> {
   };
 }
 
-/** Sigil shape for blocking future observation. */
+/** Blocking future observation sigil. */
 export interface WaitSigil<Result> extends SigilShape {
   readonly kind: "wait";
   readonly future: FutureKey<Result>;

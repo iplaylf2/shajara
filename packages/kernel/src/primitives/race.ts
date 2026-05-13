@@ -13,9 +13,9 @@ import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
 /**
- * Runs entries until the first success.
+ * Runs entries in a race scope and cancels losing work after the first success.
+ * If the race scope fails before a winner, the outcome future carries that failure.
  *
- * @param entries - Competing entries.
  * @returns Race scope and winner future.
  */
 export function race<EntryReturns extends NonEmptyTuple<unknown>>(

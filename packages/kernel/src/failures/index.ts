@@ -10,7 +10,7 @@ export * from "./external";
 export * from "./interrupted";
 export * from "./scope";
 
-/** All failure variants that can appear in kernel future results. */
+/** Failure variants that can appear in kernel future results. */
 export type Failure =
   | CanceledFailure
   | ChannelFailure
@@ -18,5 +18,5 @@ export type Failure =
   | InterruptedFailure
   | ScopeFailure;
 
-/** Failures that a scope exit future may expose. */
+/** Failure variants exposed on the left side of a scope exit future. */
 export type ScopeExitFailure = CanceledFailure | ScopeFailure;

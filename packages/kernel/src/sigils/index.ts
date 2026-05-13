@@ -40,7 +40,7 @@ export * from "./branch";
 export * from "./settle";
 export * from "./unbind";
 
-/** Union of public sigil shapes understood by the kernel interpreter. */
+/** Public sigil variant union for kernel computations. */
 export type Sigil =
   | BindSigil<unknown>
   | BranchSigil<unknown>

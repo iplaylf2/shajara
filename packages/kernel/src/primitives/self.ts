@@ -4,9 +4,9 @@ import { self as selfSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Reads current runtime identity.
+ * Reads the current scope and process identity.
  *
- * @returns Current self handle.
+ * @returns Current scope and process references.
  */
 export function self(): Wisp<SelfHandle> {
   return wisp.liftF(selfSigil());

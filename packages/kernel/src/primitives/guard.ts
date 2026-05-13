@@ -5,11 +5,9 @@ import { branch } from "./branch";
 import { withRecoveryPoint } from "#/primitives-kit";
 
 /**
- * Installs recovery around a child scope.
+ * Opens a child scope whose resumable failures are offered to a recovery handler.
  *
- * @param entry - Protected child entry.
- * @param handle - Recovery handler.
- * @returns Guarded branch handle.
+ * @returns Guarded child scope and process references.
  */
 export function guard<Relic>(
   entry: Ritual<Relic>,

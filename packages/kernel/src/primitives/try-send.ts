@@ -6,11 +6,9 @@ import { trySend as trySendSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Sends without blocking.
+ * Attempts one channel send without blocking.
  *
- * @param sender - Channel sender endpoint.
- * @param value - Payload.
- * @returns Immediate send result, or none.
+ * @returns Immediate send result, or `none` when the send would block.
  */
 export function trySend<Value, Outcome>(
   sender: ChannelSender<Value, Outcome>,

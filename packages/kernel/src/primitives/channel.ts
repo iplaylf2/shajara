@@ -6,10 +6,12 @@ import { halt } from "./halt";
 import { wisp } from "#/internal/fp";
 
 /**
- * Opens a current-scope channel.
+ * Opens a channel owned by the current scope.
+ * Negative or `NaN` capacity converges the current process with a channel failure.
  *
- * @param capacity - Buffer capacity.
- * @param overloadRewrite - Overload policy for finite buffers.
+ * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
+ * buffering, and `Infinity` creates unbounded buffering.
+ * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
  * @returns Receiver and sender endpoints.
  */
 export function channel<Value, Outcome>(

@@ -1,13 +1,16 @@
 import type { UnknownRecord } from "type-fest";
 
-/** Controls whether a process participates in its scope's completion condition. */
+/** Whether a process keeps its enclosing scope open while it runs. */
 export type CompletionMode = "structural" | "detached";
 
-/** Read-only metadata attached to a scope when it is created. */
+/** Read-only metadata carried by a scope reference. */
 export type ScopeDescriptor = Readonly<UnknownRecord>;
 
-/** Read-only metadata attached to a process when it is created. */
+/** Read-only metadata carried by a process reference. */
 export interface ProcessDescriptor extends Readonly<UnknownRecord> {
-  /** Completion behavior for the process within its enclosing scope. */
+  /**
+   * Structural processes keep the scope open; detached processes are canceled during
+   * scope convergence.
+   */
   readonly completionMode: CompletionMode;
 }

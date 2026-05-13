@@ -5,8 +5,7 @@ import { wisp } from "#/internal/fp";
 /**
  * Waits for future settlement.
  *
- * @param future - Future to observe.
- * @returns In-band settlement.
+ * @returns In-band settlement result.
  */
 export function wait<Result>(future: FutureKey<Result>): Wisp<FutureResult<Result>> {
   return wisp.liftF(waitSigil(future));

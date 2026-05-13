@@ -1,9 +1,9 @@
 import type { ECHO_TOKEN, SigilShape } from "#/contracts";
 
 /**
- * Models cooperative yield.
+ * Encodes cooperative yielding as a sigil.
  *
- * @returns Cede instruction.
+ * @returns `cede` sigil.
  */
 export function cede(): CedeSigil {
   return {
@@ -11,7 +11,7 @@ export function cede(): CedeSigil {
   };
 }
 
-/** Sigil shape for cooperative yielding. */
+/** Cooperative-yield sigil. */
 export interface CedeSigil extends SigilShape {
   readonly kind: "cede";
   // oxlint-disable-next-line no-invalid-void-type

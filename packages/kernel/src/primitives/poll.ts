@@ -4,10 +4,9 @@ import { poll as pollSigil } from "#/sigils/index";
 import { wisp } from "#/internal/fp";
 
 /**
- * Observes settled future state without blocking.
+ * Observes a future's current settlement state without blocking.
  *
- * @param future - Future to inspect.
- * @returns Settled result, or none.
+ * @returns Settled result, or `none` while pending.
  */
 export function poll<Result>(future: FutureKey<Result>): Wisp<Option<FutureResult<Result>>> {
   return wisp.liftF(pollSigil(future));

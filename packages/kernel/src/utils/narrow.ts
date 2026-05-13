@@ -1,7 +1,7 @@
 import type { IsEqual, UnknownArray } from "type-fest";
 
 /**
- * Type-level narrowing helper.
+ * Provides a type-level narrowing helper.
  *
  * @returns Narrowing function.
  */
@@ -11,7 +11,7 @@ export function narrowAs<Narrow>() {
 }
 
 /**
- * Tuple-aware narrowing helper.
+ * Provides a tuple-aware type-level narrowing helper.
  *
  * @returns Array narrowing function.
  */

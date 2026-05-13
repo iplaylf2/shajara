@@ -1,9 +1,9 @@
 import type { ECHO_TOKEN, FutureHandle, SigilShape } from "#/contracts";
 
 /**
- * Models future allocation.
+ * Encodes future allocation as a sigil.
  *
- * @returns Future instruction.
+ * @returns `future` sigil.
  */
 export function future<Result>(): FutureSigil<Result> {
   return {
@@ -11,7 +11,7 @@ export function future<Result>(): FutureSigil<Result> {
   };
 }
 
-/** Sigil shape for future allocation. */
+/** Future-allocation sigil. */
 export interface FutureSigil<Result> extends SigilShape {
   readonly kind: "future";
   readonly [ECHO_TOKEN]?: readonly [FutureHandle<Result>];

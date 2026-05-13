@@ -2,15 +2,15 @@ import type { ECHO_TOKEN, SigilShape } from "#/contracts";
 import type { Failure } from "#/failures";
 
 /**
- * Models in-band process failure.
+ * Encodes in-band process failure as a sigil.
  *
- * @returns Halt instruction.
+ * @returns `halt` sigil.
  */
 export function halt(failure: Failure): HaltSigil {
   return { failure, kind: "halt" };
 }
 
-/** Sigil shape for in-band process failure. */
+/** In-band process failure sigil. */
 export interface HaltSigil extends SigilShape {
   readonly failure: Failure;
   readonly kind: "halt";

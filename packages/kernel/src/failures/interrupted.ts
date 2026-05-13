@@ -1,10 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Failure value for interrupted runtime progression.
+ * Creates a failure value for interrupted kernel execution.
  *
- * @param cause - Interruption cause.
- * @returns Interrupted failure.
+ * @returns Interrupted failure value.
  */
 export function interruptedFailure(cause: unknown): InterruptedFailure {
   return {
@@ -14,8 +13,9 @@ export function interruptedFailure(cause: unknown): InterruptedFailure {
   };
 }
 
-/** Failure emitted when runtime progression is interrupted outside normal control flow. */
+/** Failure value for kernel execution interrupted outside normal control flow. */
 export interface InterruptedFailure extends FailureShape {
+  /** Out-of-band cause that interrupted kernel execution. */
   readonly cause: unknown;
   readonly kind: "interrupted";
 }

@@ -2,11 +2,9 @@ import type { ECHO_TOKEN, SigilShape } from "#/contracts";
 import type { ChannelEndpoint } from "./channel";
 
 /**
- * Models explicit channel closure.
+ * Encodes explicit channel close as a sigil.
  *
- * @param endpoint - Receiver or sender endpoint to close.
- * @param outcome - Explicit close outcome.
- * @returns Close instruction.
+ * @returns `close` sigil.
  */
 export function close<Outcome>(
   endpoint: ChannelEndpoint<unknown, Outcome>,
@@ -19,7 +17,7 @@ export function close<Outcome>(
   };
 }
 
-/** Sigil shape for closing a channel. */
+/** Channel close sigil. */
 export interface CloseSigil<Outcome> extends SigilShape {
   readonly kind: "close";
   readonly endpoint: ChannelEndpoint<unknown, Outcome>;
