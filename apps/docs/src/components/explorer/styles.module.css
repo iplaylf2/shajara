@@ -5,6 +5,8 @@
   --explorer-weight-regular: 400;
   --explorer-weight-medium: 520;
   --explorer-weight-strong: 580;
+  --explorer-panel-max-height: 44rem;
+  --explorer-panel-viewport-offset: 6.5rem;
 
   display: grid;
   gap: 1rem;
@@ -126,14 +128,25 @@
 
 .surface {
   display: grid;
+  align-content: start;
 }
 
 .contentGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 12rem;
+  grid-template-rows: minmax(0, 1fr);
   grid-template-areas: "stage rail";
   gap: 0.55rem;
-  align-items: start;
+  height: min(
+    calc(100vh - var(--explorer-panel-viewport-offset)),
+    var(--explorer-panel-max-height)
+  );
+  height: min(
+    calc(100svh - var(--explorer-panel-viewport-offset)),
+    var(--explorer-panel-max-height)
+  );
+  min-height: 0;
+  align-items: stretch;
 }
 
 .stagePanel,
@@ -146,8 +159,11 @@
 .stagePanel {
   grid-area: stage;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 0.85rem;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 0.85rem;
   border-color: #cad8e8;
   background: linear-gradient(180deg, #f3f9ff, #fcfdff 5.5rem), #fcfdff;
@@ -157,6 +173,9 @@
   grid-area: rail;
   position: sticky;
   top: 1rem;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
   padding: 0;
   border-color: #d6dfeb;
   background: #f8fbff;
@@ -925,7 +944,15 @@
 
 .guideList {
   display: grid;
+  align-content: start;
   gap: 0.85rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+  scrollbar-color: #bed1e7 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 .guideRow {
@@ -955,8 +982,17 @@
 }
 
 .tabList {
+  position: absolute;
+  inset: 0.2rem;
   display: grid;
+  align-content: start;
   gap: 0.15rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #bed1e7 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 .tabButton {
@@ -1006,22 +1042,46 @@
 @media (width <= 72rem) {
   .contentGrid {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
     grid-template-areas:
       "stage"
       "rail";
+    height: auto;
+    align-items: start;
+  }
+
+  .stagePanel {
+    grid-template-rows: none;
+    min-height: initial;
+    overflow: visible;
+  }
+
+  .guideList {
+    min-height: initial;
+    overflow: visible;
+    padding-right: 0;
+    scrollbar-gutter: auto;
   }
 
   .rail {
     position: static;
+    display: block;
+    min-height: initial;
+    overflow: visible;
     padding: 0;
     border: 0;
     background: transparent;
   }
 
   .tabList {
+    position: static;
+    inset: auto;
     display: flex;
+    align-content: normal;
     gap: 0.3rem;
     overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-gutter: auto;
   }
 
   .tabButton {
