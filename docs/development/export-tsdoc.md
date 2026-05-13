@@ -1,11 +1,11 @@
 # Export TSDoc
 
-Export TSDoc is the published API hint layer for package declarations. It helps a
-consumer understand the declaration at the import site and in generated `.d.ts` output.
+Export TSDoc is the published API hint layer for package declarations. It gives consumers
+the contract meaning they need at the import site and in generated `.d.ts` output.
 
-Comments add stable API meaning that the declaration cannot carry clearly enough on its
-own. They describe the public contract of the declaration rather than the source path,
-helper structure, or current implementation flow behind it.
+Comments describe the public contract at the declaration boundary. They add stable API
+meaning that the declaration cannot carry clearly enough on its own, while source path,
+helper structure, and implementation flow stay outside this layer.
 
 ## Export Surface
 
@@ -26,6 +26,10 @@ means and what behavior or constraints the consumer can rely on. Source organiza
 temporary relationships between helpers, and implementation mechanics belong in code or
 reference documentation.
 
+Declaration shape is governed by API design. Parameter properties, aliases, overloads,
+and field placement are part of the public contract, and they provide the attachment
+sites available to this hint layer.
+
 Implementation language fits when the implementation boundary is itself public. Executor
 and host integration declarations may discuss turns, continuations, host callbacks, or
 external control when consumers supply or observe those concepts directly. Kernel
@@ -33,8 +37,8 @@ primitive comments use the semantic language of the kernel model.
 
 ## Callable Declarations
 
-For functions, methods, and callable type aliases, use a short summary and add signature
-tags when they make the contract easier to read.
+For functions, methods, and callable type aliases, use a short summary and signature tags
+only where they make the contract easier to read.
 
 The summary states the operation's role or observable behavior. Parameter tags explain
 caller-facing rules such as ranges, ownership, default behavior, blocking behavior, or
@@ -45,7 +49,8 @@ consumers observe directly.
 
 Tags carry contract meaning rather than repeating names or types. `void` results are
 usually clear from the signature; `@returns` is useful when the absence of a value
-carries contract meaning.
+carries contract meaning. A cross-cutting rule belongs on the local declaration when it
+changes how that specific call is used.
 
 ```ts
 /**
@@ -69,6 +74,10 @@ Data comments describe value meaning and contract boundaries. Construction, rout
 caching, scheduling, and interpretation details fit here when they are part of the
 public meaning of the declaration.
 
+For constructor parameter properties and fields, comment at the closest published
+declaration that carries the public rule. Obvious construction mechanics stay in the
+signature.
+
 ## Failure Language
 
 Kernel package comments describe in-band kernel results with kernel terms: failure,
@@ -91,3 +100,7 @@ declaration itself.
 Design rationale, source structure, and implementation flow belong in reference
 documentation when they are useful. Export TSDoc remains concise enough to feel native
 to the declaration it annotates.
+
+Shared semantics such as lifecycle, recovery, scheduling, or failure mapping belong in
+reference documentation. Export comments name the local consequence a caller needs at the
+annotated symbol.
