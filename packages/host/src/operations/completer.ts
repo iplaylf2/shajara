@@ -8,7 +8,7 @@ import { toFailure } from "#/boundary/index";
  * Creates a future that can be settled from JavaScript callbacks.
  * If still pending, the future is canceled when the current scope converges.
  *
- * @returns Future and callback-style settlement functions.
+ * @returns Future and settlement callbacks for external code.
  */
 export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   const executor = yield* currentExecutor();
@@ -25,7 +25,7 @@ export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   };
 }
 
-/** Callback-style completion controls for one future. */
+/** Completion controls for settling one future from callbacks. */
 export interface Completer<Return> {
   /** Future carrying the completion result. */
   readonly future: RiteFuture<Return>;

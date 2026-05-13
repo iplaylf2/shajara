@@ -591,9 +591,7 @@ export class Interpreter {
       | RuntimeProcessHandle<unknown>
       | RuntimeFuture<unknown>
       | RuntimeChannelHandle<unknown, unknown>,
-  ): void {
-    // Do nothing
-  }
+  ): void {}
 
   #resolve<Relic>(scopeRef: ScopeRef<Relic>): RuntimeScope;
   #resolve<Relic>(processRef: ProcessRef<Relic>): RuntimeProcessHandle<Relic>;

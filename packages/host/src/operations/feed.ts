@@ -6,12 +6,12 @@ import { currentExecutor } from "#/operations-kit";
 import { isNone } from "@shajara/kernel/utils";
 
 /**
- * Creates a channel receiver plus immediate producer callbacks.
+ * Creates a channel receiver and immediate producer callbacks.
  *
  * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
  * buffering, and `Infinity` creates unbounded buffering.
  * @param overloadRewrite - Finite-buffer policy applied before an overloaded send is accepted.
- * @returns Receiver for coroutine consumers and callbacks for external producers.
+ * @returns Receiver for coroutine consumers and producer callbacks for external code.
  * @throws `ChannelError` when `capacity` is negative or `NaN`.
  */
 export function* feed<Value, Outcome>(
@@ -60,7 +60,7 @@ export interface Feed<Value, Outcome> {
   trySend(value: Value): boolean;
 
   /**
-   * Closes the channel through the producer callback.
+   * Closes the channel for receivers.
    *
    * @param outcome - Close outcome observed by receivers.
    */

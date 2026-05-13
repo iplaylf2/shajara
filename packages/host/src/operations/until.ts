@@ -5,7 +5,7 @@ import { wait } from "#/primitives/index";
 
 /**
  * Invokes `thunk` and waits for its promise-like result inside the current coroutine.
- * Rejected promise-like results are rethrown through the shajara error surface.
+ * Rejected promise-like results become errors thrown from the current coroutine.
  *
  * @returns Fulfillment value from the promise-like result.
  */

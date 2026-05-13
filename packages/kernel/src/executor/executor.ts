@@ -31,9 +31,9 @@ import { withRecoveryAnchor } from "#/primitives-kit";
 export type BindTurn = (flushTurn: () => void) => Pacer;
 
 /**
- * Creates a long-lived executor with a registered root entry.
+ * Creates a long-lived executor with a root scope.
  *
- * @returns Root executor handle.
+ * @returns Executor handle for the root scope.
  */
 export function createExecutor(bindTurn: BindTurn): Executor {
   return new RuntimeExecutor(bindTurn);
@@ -87,7 +87,7 @@ export interface Executor extends LaunchHandle<never> {
   cancel(scope: ExecutionScopeRef<unknown>): void;
 }
 
-/** Context key that exposes the current executor to launched work. */
+/** Context key for accessing the current executor from launched work. */
 export const currentExecutorKey: ContextKey<Executor> = contextKey<Executor>();
 
 class RuntimeExecutor implements Executor {

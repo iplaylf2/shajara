@@ -6,7 +6,7 @@ export class ExternalError extends ShajaraError implements ExternalFailure {
   /**
    * Creates an external error wrapper.
    *
-   * @param raw - Original external value.
+   * @param raw - External value represented by the error.
    * @param message - Error message.
    */
   public constructor(

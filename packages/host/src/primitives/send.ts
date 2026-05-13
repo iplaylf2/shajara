@@ -5,7 +5,7 @@ import { encodeRitual } from "#/boundary/index";
 import { send as kernelSend } from "@shajara/kernel";
 
 /**
- * Sends a value through a channel sender, blocking until accepted.
+ * Sends a value through a channel sender and waits until it is accepted.
  *
  * @throws `ChannelError` when the sender is closed or revoked.
  */

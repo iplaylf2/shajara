@@ -6,7 +6,7 @@ import { isNone } from "@shajara/kernel/utils";
 import { tryReceive as kernelTryReceive } from "@shajara/kernel";
 
 /**
- * Attempts one receive from a channel without blocking.
+ * Attempts one receive from a channel without waiting.
  *
  * @returns `[true, value]` when a value is ready, or `[false]` when no value is ready.
  * @throws `ChannelError` when the receiver is closed or revoked.

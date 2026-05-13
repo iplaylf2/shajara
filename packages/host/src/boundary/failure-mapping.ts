@@ -30,11 +30,11 @@ export function toFailureUnknown(caught: unknown): Failure {
 export function fromFailure(failure: ScopeExitFailure): ScopeExitError;
 
 /**
- * Converts a shajara failure into the JavaScript error callers receive.
+ * Converts a shajara failure into a JavaScript error.
  * Existing `ShajaraError` failures are returned unchanged.
- * External failures backed by an `Error` return that original error.
+ * External failures carrying an `Error` return the original error.
  *
- * @returns Error callers receive for the failure.
+ * @returns Error represented by the failure.
  */
 export function fromFailure(failure: Failure): Error;
 export function fromFailure(failure: Failure): Error {

@@ -631,9 +631,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   // oxlint-disable-next-line class-methods-use-this
-  #touch(_token: AnyRuntimeChannel): void {
-    // Do nothing
-  }
+  #touch(_token: AnyRuntimeChannel): void {}
 
   #resolve<Value, Outcome>(
     token: RuntimeChannelHandle<Value, Outcome>,
@@ -678,9 +676,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
 export type RuntimeScopeStatus = RuntimeScopeState["status"];
 
-function* noopSync(): ScopeSync<void> {
-  // Noop
-}
+function* noopSync(): ScopeSync<void> {}
 
 type RuntimeScopeState = TaggedUnion<
   "status",

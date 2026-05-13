@@ -1,9 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Returns the failure value for a scope's local failure convergence.
+ * Returns the in-band failure value for a scope that failed while closing.
  *
- * @param cause - Primary failure that drove the scope into failure convergence.
+ * @param cause - Primary failure that caused the scope to fail.
  * @param suppressed - Additional failures captured while the scope was already failing.
  * @returns Scope failure value.
  */
@@ -19,11 +19,11 @@ export function scopeFailure(
   };
 }
 
-/** Failure value reported when a scope converges through local failure convergence. */
+/** Failure value reported when a scope fails while closing. */
 export interface ScopeFailure extends FailureShape {
-  /** Primary failure that drove the scope into failure convergence. */
+  /** Primary failure that caused the scope to fail. */
   readonly cause: FailureShape;
-  /** Additional failures captured after failure convergence began. */
+  /** Additional failures captured after the scope began failing. */
   readonly suppressed: readonly FailureShape[];
   readonly kind: "scope";
 }

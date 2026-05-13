@@ -47,9 +47,9 @@ export function launchEntry<Result>(
 }
 
 export interface LaunchedEntry<Result> {
-  /** Execution scope that owns the launched entry. */
+  /** Scope that owns the launched routine. */
   readonly scope: ExecutionScopeRef<Result>;
-  /** Promise view of the launched entry's convergence result. */
+  /** Promise for observing the launched routine result. */
   readonly settled: StatefulPromise<Result>;
 }
 
@@ -59,9 +59,9 @@ export interface RunOptions {
   readonly signal?: AbortSignal;
 }
 
-/** Promise result for a launched entry with live lifecycle state attached. */
+/** Promise for a launched routine with live lifecycle state. */
 export interface StatefulPromise<Return> extends Promise<Return> {
-  /** Current lifecycle state for the launched entry. */
+  /** Current lifecycle state for the launched routine. */
   readonly status: LaunchStatus;
 }
 

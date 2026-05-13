@@ -15,9 +15,9 @@ export function externalFailure(raw: unknown, message: string): ExternalFailure 
   };
 }
 
-/** Failure value mapped from a cause that originated outside the computation. */
+/** Failure value for a cause that originated outside the computation. */
 export interface ExternalFailure extends FailureShape {
   readonly kind: "external";
-  /** Unmapped value that originated outside the computation. */
+  /** Original value that originated outside the computation. */
   readonly raw: unknown;
 }

@@ -9,7 +9,7 @@ import { park } from "@shajara/kernel";
 /**
  * Creates a long-lived scope for launching related routines.
  *
- * @returns Managed scope backed by an executor entry.
+ * @returns Scope that owns routines launched through it.
  */
 export function createScope(): Scope {
   const executor = ensureExecutor();
@@ -17,7 +17,7 @@ export function createScope(): Scope {
   return new HostScope(executor, executor.scope);
 }
 
-/** Long-lived scope that owns launched routines. */
+/** Long-lived scope for launching and canceling related routines. */
 export interface Scope {
   /**
    * Starts a routine under this scope.
@@ -28,23 +28,23 @@ export interface Scope {
   run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
 
   /**
-   * Requests cancellation and waits for this scope's convergence result.
+   * Requests cancellation and waits for this scope to close.
    *
-   * @returns Promise that settles with the managed scope's convergence result.
+   * @returns Promise that settles after the scope closes.
    */
   cancel(): Promise<void>;
 
-  /** Current lifecycle state for the managed scope. */
+  /** Current lifecycle state for this scope. */
   readonly status: ScopeStatus;
 
-  /** Promise that settles with this scope's convergence result after it reaches `closed`. */
+  /** Promise that settles when this scope closes. */
   readonly closed: Promise<void>;
 
   /** Cancels the scope when used with explicit resource management. */
   [Symbol.asyncDispose](): Promise<void>;
 }
 
-/** Lifecycle state reported by a managed scope. */
+/** Lifecycle state reported by a scope. */
 export type ScopeStatus = LaunchStatus;
 
 export type { RunOptions, StatefulPromise };

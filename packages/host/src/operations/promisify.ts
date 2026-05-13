@@ -4,7 +4,7 @@ import { fromFailure } from "#/boundary/index";
 import { isLeft } from "@shajara/kernel/utils";
 
 /**
- * Exposes a shajara future as a JavaScript `Promise`.
+ * Returns a JavaScript `Promise` for a shajara future.
  *
  * @returns Promise that resolves with the future value or rejects with the future's error.
  */
