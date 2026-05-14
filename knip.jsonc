@@ -10,6 +10,7 @@
     "oxfmt",
     "oxlint",
     "shajara-forge",
+    "typedoc",
     "tsc",
     "vite",
     "vitest",
@@ -20,6 +21,7 @@
     "@shajara/forge",
     "cspell-cli",
     "oxfmt",
+    "typedoc",
     "vite",
   ],
   "ignoreExportsUsedInFile": {
