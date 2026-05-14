@@ -14,5 +14,11 @@ export default defineConfig({
         "unicorn/prefer-module": "off",
       },
     },
+    {
+      env: {
+        node: true,
+      },
+      files: ["typedoc.config.mjs"],
+    },
   ],
 });

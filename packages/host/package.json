@@ -51,7 +51,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "generate:api-docs": "typedoc",
+    "docs:api": "typedoc",
     "postpack": "yarn run -T pack:license clean",
     "prepack": "yarn build && yarn run -T pack:license stage",
     "test": "vitest run",
@@ -67,7 +67,7 @@
     "core-js": "catalog:",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
-    "typedoc": "^0.28.19",
+    "typedoc": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",

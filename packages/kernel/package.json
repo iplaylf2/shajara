@@ -51,6 +51,7 @@
   },
   "scripts": {
     "build": "vite build",
+    "docs:api": "typedoc",
     "postpack": "yarn run -T pack:license clean",
     "prepack": "yarn build && yarn run -T pack:license stage",
     "test": "vitest run",
@@ -64,6 +65,7 @@
     "fp-ts": "^2.16.11",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
+    "typedoc": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",

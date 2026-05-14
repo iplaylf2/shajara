@@ -37,7 +37,8 @@ export function race<EntryReturns extends NonEmptyTuple<unknown>>(
   );
 }
 
-type RaceEntries<EntryReturns extends NonEmptyTuple<unknown>> = {
+/** Defines entries whose relics form the race winner type. */
+export type RaceEntries<EntryReturns extends NonEmptyTuple<unknown>> = {
   readonly [Index in keyof EntryReturns]: Ritual<EntryReturns[Index]>;
 };
 
