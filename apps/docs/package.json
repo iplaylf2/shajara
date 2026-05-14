@@ -14,9 +14,10 @@
   },
   "type": "module",
   "scripts": {
-    "build": "yarn docs:prepare && astro build",
-    "dev": "yarn docs:prepare && astro dev --host",
-    "docs:prepare": "typedoc",
+    "build": "yarn docs:api && yarn build:site",
+    "build:site": "astro build",
+    "dev": "astro dev --host",
+    "docs:api": "typedoc",
     "preview": "astro preview --host",
     "test": "node -e \"console.log('No tests for @shajara/docs')\"",
     "typecheck": "astro-check"
