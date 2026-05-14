@@ -1,2 +1,2 @@
 export * from "./i18n";
-export * from "./meta";
+export { default as site } from "./meta.json";

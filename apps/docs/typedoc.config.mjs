@@ -1,3 +1,5 @@
+import site from "./site/meta.json" with { type: "json" };
+
 const workspaceRoot = process.env["PROJECT_CWD"];
 
 const config = {
@@ -5,7 +7,10 @@ const config = {
   entryPointStrategy: "packages",
   entryPoints: [`${workspaceRoot}/packages/host`, `${workspaceRoot}/packages/kernel`],
   githubPages: false,
-  name: "shajara",
+  name: "shajara API",
+  navigationLinks: {
+    Overview: site.basePath,
+  },
   out: "public/typedoc",
   readme: "none",
 };

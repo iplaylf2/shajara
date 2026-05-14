@@ -1,5 +1,5 @@
 ---
-import { i18N, siteLocales } from "#site";
+import { i18N, site, siteLocales } from "#site";
 import SplashPage from "#/components/splash-page.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
@@ -8,7 +8,6 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.params;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/u, "");
 
 const heroActions = [
   {
@@ -31,7 +30,7 @@ const heroActions = [
   {
     attrs: { iconPlacement: "start" as const },
     icon: "document" as const,
-    link: `${basePath}/typedoc/index.html`,
+    link: `${site.basePath}/typedoc/index.html`,
     text: Astro.locals.t("docs.home.hero.typedoc"),
     variant: "secondary" as const,
   },
