@@ -50,8 +50,8 @@
     }
   },
   "scripts": {
+    "api-map": "typedoc",
     "build": "vite build",
-    "docs:api": "typedoc",
     "postpack": "yarn run -T pack:license clean",
     "prepack": "yarn build && yarn run -T pack:license stage",
     "test": "vitest run",

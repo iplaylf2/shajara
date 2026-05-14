@@ -4,6 +4,6 @@
   "entryPointStrategy": "resolve",
   "githubPages": false,
   "name": "@shajara/kernel",
-  "out": "api-docs",
+  "out": "api-map",
   "readme": "none"
 }

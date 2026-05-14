@@ -7,7 +7,7 @@
 !.yarn/releases
 !.yarn/versions
 
-**/api-docs
+**/api-map
 **/coverage
 **/dist
 **/node_modules

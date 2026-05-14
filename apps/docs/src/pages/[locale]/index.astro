@@ -9,28 +9,35 @@ export function getStaticPaths() {
 
 const { locale } = Astro.params;
 
+const explorerHref = getRelativeLocaleUrl(
+  i18N.locales[locale].lang,
+  "explorer",
+);
+const guideHref = getRelativeLocaleUrl(
+  i18N.locales[locale].lang,
+  "guides/getting-started",
+);
+const apiMapHref = `${site.basePath}/api-map/index.html`;
+
 const heroActions = [
   {
     attrs: { iconPlacement: "start" as const },
     icon: "open-book" as const,
-    link: getRelativeLocaleUrl(
-      i18N.locales[locale].lang,
-      "guides/getting-started",
-    ),
+    link: guideHref,
     text: Astro.locals.t("docs.home.hero.guides"),
     variant: "primary" as const,
   },
   {
     attrs: { iconPlacement: "start" as const },
     icon: "window" as const,
-    link: getRelativeLocaleUrl(i18N.locales[locale].lang, "explorer"),
+    link: explorerHref,
     text: Astro.locals.t("docs.home.hero.explorer"),
     variant: "secondary" as const,
   },
   {
     attrs: { iconPlacement: "start" as const },
     icon: "document" as const,
-    link: `${site.basePath}/typedoc/index.html`,
+    link: apiMapHref,
     text: Astro.locals.t("docs.home.hero.typedoc"),
     variant: "secondary" as const,
   },

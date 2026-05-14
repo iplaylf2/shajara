@@ -11,7 +11,7 @@ const config = {
   navigationLinks: {
     Overview: site.basePath,
   },
-  out: "public/typedoc",
+  out: "public/api-map",
   readme: "none",
 };
 
