@@ -14,8 +14,9 @@
   },
   "type": "module",
   "scripts": {
-    "build": "astro build",
-    "dev": "astro dev --host",
+    "build": "yarn generate:api-docs && astro build",
+    "dev": "yarn generate:api-docs && astro dev --host",
+    "generate:api-docs": "yarn workspace @shajara/host generate:api-docs --out $PROJECT_CWD/apps/docs/public/typedoc",
     "preview": "astro preview --host",
     "test": "node -e \"console.log('No tests for @shajara/docs')\"",
     "typecheck": "astro-check"

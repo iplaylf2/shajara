@@ -8,6 +8,7 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.params;
+const siteBase = import.meta.env.BASE_URL.replace(/\/$/u, "");
 
 const heroActions = [
   {
@@ -22,6 +23,11 @@ const heroActions = [
     icon: "right-arrow" as const,
     link: getRelativeLocaleUrl(i18N.locales[locale].lang, "explorer"),
     text: Astro.locals.t("docs.home.hero.explorer"),
+  },
+  {
+    icon: "right-arrow" as const,
+    link: `${siteBase}/typedoc/index.html`,
+    text: Astro.locals.t("docs.home.hero.typedoc"),
   },
 ];
 ---

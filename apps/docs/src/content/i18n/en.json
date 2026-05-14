@@ -10,6 +10,7 @@
   "docs.home.hero.explorer": "Open Explorer",
   "docs.home.hero.guides": "Documentation Preview",
   "docs.home.hero.tagline": "Documentation is being prepared and will be published here soon.",
+  "docs.home.hero.typedoc": "TypeDoc",
   "docs.home.title": "shajara",
   "explorer.areas.dependencies.description": "Show where work can proceed independently and where ordering or joins become necessary.",
   "explorer.areas.dependencies.title": "Dependencies",

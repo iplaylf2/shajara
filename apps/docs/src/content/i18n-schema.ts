@@ -14,6 +14,7 @@ const staticExplorerUiI18nKeys = [
   "docs.home.hero.explorer",
   "docs.home.hero.guides",
   "docs.home.hero.tagline",
+  "docs.home.hero.typedoc",
   "docs.home.title",
   "explorer.areas.dependencies.description",
   "explorer.areas.dependencies.title",

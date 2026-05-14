@@ -10,6 +10,7 @@
   "docs.home.hero.explorer": "打开图解页",
   "docs.home.hero.guides": "文档预览",
   "docs.home.hero.tagline": "正式文档正在整理中，后续将陆续发布于此。",
+  "docs.home.hero.typedoc": "TypeDoc",
   "docs.home.title": "shajara",
   "explorer.areas.dependencies.description": "展示哪些工作可以独立推进，以及哪些地方需要显式的顺序约束或汇合。",
   "explorer.areas.dependencies.title": "依赖关系",

@@ -13,6 +13,7 @@ pipeable
 pipefail
 segoe
 topbar
+typedoc
 vite
 vitest
 withastro
