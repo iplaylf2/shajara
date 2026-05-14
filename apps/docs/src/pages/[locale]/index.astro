@@ -8,26 +8,32 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.params;
-const siteBase = import.meta.env.BASE_URL.replace(/\/$/u, "");
+const basePath = import.meta.env.BASE_URL.replace(/\/$/u, "");
 
 const heroActions = [
   {
-    icon: "right-arrow" as const,
+    attrs: { iconPlacement: "start" as const },
+    icon: "open-book" as const,
     link: getRelativeLocaleUrl(
       i18N.locales[locale].lang,
       "guides/getting-started",
     ),
     text: Astro.locals.t("docs.home.hero.guides"),
+    variant: "primary" as const,
   },
   {
-    icon: "right-arrow" as const,
+    attrs: { iconPlacement: "start" as const },
+    icon: "window" as const,
     link: getRelativeLocaleUrl(i18N.locales[locale].lang, "explorer"),
     text: Astro.locals.t("docs.home.hero.explorer"),
+    variant: "secondary" as const,
   },
   {
-    icon: "right-arrow" as const,
-    link: `${siteBase}/typedoc/index.html`,
+    attrs: { iconPlacement: "start" as const },
+    icon: "document" as const,
+    link: `${basePath}/typedoc/index.html`,
     text: Astro.locals.t("docs.home.hero.typedoc"),
+    variant: "secondary" as const,
   },
 ];
 ---

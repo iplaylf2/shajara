@@ -16,9 +16,13 @@ interface Props {
   body: string;
   description: string;
   heroActions: {
-    icon: "right-arrow";
+    attrs?: {
+      iconPlacement?: "start" | "end";
+    };
+    icon: "document" | "open-book" | "right-arrow" | "window";
     link: string;
     text: string;
+    variant?: "primary" | "secondary" | "minimal";
   }[];
   tagline: string;
   title: string;
