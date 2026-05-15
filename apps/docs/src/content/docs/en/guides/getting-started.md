@@ -51,32 +51,25 @@ function* loadUser() {
 The promise still comes from ordinary JavaScript code; `until(...)` brings its
 fulfillment or rejection back into the routine's control flow.
 
-## Start two tasks from one routine
+## Continue With the Result
 
-When two pieces of async work should produce one result together, start them
-from the same routine and join them where the values are needed.
+After a promise result returns to the routine, use ordinary JavaScript control
+flow around it. Each outside promise boundary stays visible at an `until(...)`
+call.
 
 ```ts
 import { until } from "@shajara/host";
-import { all, wait } from "@shajara/host/primitives";
-import { loadTheme, loadUserName } from "./user-data";
+import { loadUserName, saveGreeting } from "./user-data";
 
-function* loadProfile() {
-  const loaded = yield* all([
-    function* name() {
-      return yield* until(() => loadUserName("user-1"));
-    },
-    function* theme() {
-      return yield* until(() => loadTheme("user-1"));
-    },
-  ]);
+function* greetUser() {
+  const userName = yield* until(() => loadUserName("user-1"));
+  const greeting = `Hello, ${userName}`;
 
-  const [userName, theme] = yield* wait(loaded);
+  yield* until(() => saveGreeting("user-1", greeting));
 
-  return { theme, userName };
+  return greeting;
 }
 ```
 
-This routine starts both tasks, keeps the future for their combined result, and
-waits when it needs the values. As routines grow, keep clear where work belongs,
-where the routine waits, and what it returns.
+This routine waits at each outside promise boundary, continues with the returned
+value, and makes the final result explicit.

@@ -51,31 +51,24 @@ function* loadUser() {
 Promise 仍然由普通 JavaScript 代码创建；`until(...)` 负责把它的完成或失败
 带回 routine 的控制流。
 
-## 从一个 routine 启动两段工作
+## 拿到结果后继续执行
 
-当两段异步工作需要一起产生结果时，可以从同一个 routine 启动它们，并在
-需要结果的位置汇合。
+Promise 结果回到 routine 之后，就可以继续使用普通 JavaScript 控制流。每个外部
+Promise 边界都保留在一个 `until(...)` 调用上。
 
 ```ts
 import { until } from "@shajara/host";
-import { all, wait } from "@shajara/host/primitives";
-import { loadTheme, loadUserName } from "./user-data";
+import { loadUserName, saveGreeting } from "./user-data";
 
-function* loadProfile() {
-  const loaded = yield* all([
-    function* name() {
-      return yield* until(() => loadUserName("user-1"));
-    },
-    function* theme() {
-      return yield* until(() => loadTheme("user-1"));
-    },
-  ]);
+function* greetUser() {
+  const userName = yield* until(() => loadUserName("user-1"));
+  const greeting = `Hello, ${userName}`;
 
-  const [userName, theme] = yield* wait(loaded);
+  yield* until(() => saveGreeting("user-1", greeting));
 
-  return { theme, userName };
+  return greeting;
 }
 ```
 
-这个 routine 启动两段工作，保留代表组合结果的 future，然后在需要值时等待。
-随着 routine 继续增长，关键是让工作归属、等待位置和返回结果保持清楚。
+这个 routine 在每个外部 Promise 边界等待，拿到值后继续执行，并清楚地返回最终
+结果。

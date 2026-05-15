@@ -48,7 +48,10 @@ type inference when the page is teaching orchestration:
 ```ts
 declare function loadUserName(userId: string): Promise<string>;
 
-yield* all([/* ... */] as const);
+yield *
+  all([
+    /* ... */
+  ] as const);
 ```
 
 If a clean example exposes an API typing weakness, prefer improving the API or changing the
