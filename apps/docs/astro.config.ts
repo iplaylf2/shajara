@@ -7,6 +7,6 @@ import starlight from "@astrojs/starlight";
 export default defineConfig({
   base: site.basePath,
   integrations: [solid(), starlight(docsConfig)],
-  site: "https://iplaylf2.github.io",
+  site: site.origin,
   trailingSlash: "never",
 });

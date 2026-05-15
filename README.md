@@ -1,6 +1,7 @@
 # shajara
 
 [![NPM Version](https://img.shields.io/npm/v/%40shajara%2Fhost)](https://www.npmjs.com/package/%40shajara%2Fhost)
+[![Docs](https://img.shields.io/badge/docs-shajara-blue)](https://iplaylf2.github.io/shajara)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/iplaylf2/shajara)
 
 shajara is a structured concurrency library for JavaScript applications.
