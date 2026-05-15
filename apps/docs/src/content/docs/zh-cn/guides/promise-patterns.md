@@ -1,28 +1,27 @@
 ---
 title: Promise 常见用法
-description: 在 shajara routine 里组织 Promise 组合、竞速、callback，并把 future 暴露给外部。
+description: 在 shajara routine 里组织 Promise 组合、竞速、callback、AbortSignal，以及原生 Promise 边界。
 ---
 
 当 Promise 工作已经能通过 `until(...)` 进入 routine 之后，下一步是组织它们的
-归属、汇合和生命周期。接下来的例子仍然从熟悉的 Promise 用法进入，重点放在
-shajara routine 如何承接这些工作。
+归属、汇合和生命周期。接下来的例子仍然从熟悉的 Promise 用法进入，展示 shajara
+routine 如何承接这些工作。
 
 ## 像 `Promise.all` 一样组合工作
 
 当多段 routine 应该一起启动，并按顺序产出一个组合结果时，使用 `all(...)`。
 
 ```ts
-import { until } from "@shajara/host";
 import { all, wait } from "@shajara/host/primitives";
-import { loadPermissions, loadUserName } from "./user-data";
+import { loadPermissions, loadUserName } from "./user-routines";
 
 function* loadSession() {
   const session = yield* all([
     function* name() {
-      return yield* until(() => loadUserName("user-1"));
+      return yield* loadUserName("user-1");
     },
     function* permissions() {
-      return yield* until(() => loadPermissions("user-1"));
+      return yield* loadPermissions("user-1");
     },
   ]);
 
@@ -36,24 +35,23 @@ function* loadSession() {
 可以在真正需要值的位置再等待它。
 
 和 `Promise.all(...)` 相比，关键变化是工作归属：`all(...)` 把这组 routine 登记
-在当前 scope 里，返回的 future 是之后汇合结果的句柄。
+在当前 scope 里，返回的 future 是之后汇合这些结果的句柄。
 
 ## 竞速多个候选 routine
 
 当 routine 需要从多个候选 routine 中取得第一个成功结果时，使用 `race(...)`。
 
 ```ts
-import { until } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
-import { loadFromCache, loadFromNetwork } from "./user-data";
+import { loadFromCache, loadFromNetwork } from "./user-routines";
 
 function* loadFastProfile() {
   const profile = yield* race([
     function* cache() {
-      return yield* until(() => loadFromCache("user-1"));
+      return yield* loadFromCache("user-1");
     },
     function* network() {
-      return yield* until(() => loadFromNetwork("user-1"));
+      return yield* loadFromNetwork("user-1");
     },
   ]);
 
@@ -131,14 +129,13 @@ function* loadJson(url: string) {
 使用 `promisify(...)`。
 
 ```ts
-import { promisify, until } from "@shajara/host";
+import { promisify } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
 import { reportWhenReady } from "./analytics";
+import { loadProfile } from "./profile-routines";
 
 function* loadAndReport() {
-  const loaded = yield* spawn(function* loadProfile() {
-    return yield* until(() => fetch("/api/profile").then((response) => response.json()));
-  });
+  const loaded = yield* spawn(loadProfile);
 
   reportWhenReady(yield* promisify(loaded));
 

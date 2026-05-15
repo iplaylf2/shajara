@@ -1,6 +1,6 @@
 ---
 title: 开始使用
-description: 启动 shajara routine，并把基于 Promise 的工作纳入其中。
+description: 启动 shajara routine，等待 Promise 工作，并在稍后汇合 routine 工作。
 ---
 
 `@shajara/host` 是 shajara 面向应用代码的入口。
@@ -49,24 +49,32 @@ function* loadUser() {
 Promise 仍然由普通 JavaScript 代码创建；`until(...)` 负责把它的完成或失败
 带回 routine 的控制流。
 
-## 拿到结果后继续执行
+## 启动并发工作并稍后汇合
 
-Promise 结果回到 routine 之后，就可以继续使用普通 JavaScript 控制流。每个外部
-Promise 边界都保留在一个 `until(...)` 调用上。
+当异步步骤已经封装成更小的 routine，父 routine 可以启动一段能和当前流程一起
+推进的工作，再在需要结果的位置汇合。
 
 ```ts
-import { until } from "@shajara/host";
-import { loadUserName, saveGreeting } from "./user-data";
+import { spawn, wait } from "@shajara/host/primitives";
+import { loadUserName, loadWorkspaceName, saveGreeting } from "./user-routines";
 
 function* greetUser() {
-  const userName = yield* until(() => loadUserName("user-1"));
-  const greeting = `Hello, ${userName}`;
+  const workspaceNameFuture = yield* spawn(function* loadWorkspace() {
+    return yield* loadWorkspaceName("workspace-1");
+  });
 
-  yield* until(() => saveGreeting("user-1", greeting));
+  const userName = yield* loadUserName("user-1");
+  const workspaceName = yield* wait(workspaceNameFuture);
+  const greeting = `Hello, ${userName} from ${workspaceName}`;
+
+  yield* saveGreeting("user-1", greeting);
 
   return greeting;
 }
 ```
 
-这个 routine 在每个外部 Promise 边界等待，拿到值后继续执行，并清楚地返回最终
-结果。
+`spawn(...)` 会启动 `loadWorkspace`，并把结果句柄返回为 `workspaceNameFuture`。
+`greetUser` 会继续执行 `loadUserName(...)`，再通过 `wait(...)` 取得 `workspaceName`。
+
+导入的 routine 负责各自的内部细节。父 routine 保留清楚的并发结构：启动工作，
+继续当前流程，再汇合结果。

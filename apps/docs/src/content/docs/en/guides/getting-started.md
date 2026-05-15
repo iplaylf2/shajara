@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Start a shajara routine and bring promise-based work into its control flow.
+description: Start shajara routines, wait for promise work, and join routine work later.
 ---
 
 `@shajara/host` is the application-facing entry point for shajara.
@@ -49,25 +49,35 @@ function* loadUser() {
 The promise still comes from ordinary JavaScript code; `until(...)` brings its
 fulfillment or rejection back into the routine's control flow.
 
-## Continue With the Result
+## Start concurrent work and join later
 
-After a promise result returns to the routine, use ordinary JavaScript control
-flow around it. Each outside promise boundary stays visible at an `until(...)`
-call.
+Once asynchronous steps are wrapped in smaller routines, the parent routine can
+start work that can make progress alongside the current flow, then join it where
+its result is needed.
 
 ```ts
-import { until } from "@shajara/host";
-import { loadUserName, saveGreeting } from "./user-data";
+import { spawn, wait } from "@shajara/host/primitives";
+import { loadUserName, loadWorkspaceName, saveGreeting } from "./user-routines";
 
 function* greetUser() {
-  const userName = yield* until(() => loadUserName("user-1"));
-  const greeting = `Hello, ${userName}`;
+  const workspaceNameFuture = yield* spawn(function* loadWorkspace() {
+    return yield* loadWorkspaceName("workspace-1");
+  });
 
-  yield* until(() => saveGreeting("user-1", greeting));
+  const userName = yield* loadUserName("user-1");
+  const workspaceName = yield* wait(workspaceNameFuture);
+  const greeting = `Hello, ${userName} from ${workspaceName}`;
+
+  yield* saveGreeting("user-1", greeting);
 
   return greeting;
 }
 ```
 
-This routine waits at each outside promise boundary, continues with the returned
-value, and makes the final result explicit.
+`spawn(...)` starts `loadWorkspace` and returns `workspaceNameFuture`, a handle
+for its result. `greetUser` keeps going through `loadUserName(...)`, then joins
+the workspace result with `wait(...)`.
+
+The imported routines own their internal details. The parent routine keeps the
+concurrency structure visible: start work, continue the current flow, then join
+the result.

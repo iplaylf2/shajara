@@ -5,25 +5,23 @@ description: Organize Promise grouping, racing, callbacks, abort signals, and na
 
 Once promise work is already entering a routine through `until(...)`, the next step is to
 organize its ownership, joining, and lifecycle. The examples still start from familiar
-Promise patterns, with the focus on how a shajara routine takes responsibility for that
-work.
+Promise patterns and show how a shajara routine takes responsibility for that work.
 
 ## Group Work Like `Promise.all`
 
 Use `all(...)` when several routines should start together and produce one ordered result.
 
 ```ts
-import { until } from "@shajara/host";
 import { all, wait } from "@shajara/host/primitives";
-import { loadPermissions, loadUserName } from "./user-data";
+import { loadPermissions, loadUserName } from "./user-routines";
 
 function* loadSession() {
   const session = yield* all([
     function* name() {
-      return yield* until(() => loadUserName("user-1"));
+      return yield* loadUserName("user-1");
     },
     function* permissions() {
-      return yield* until(() => loadPermissions("user-1"));
+      return yield* loadPermissions("user-1");
     },
   ]);
 
@@ -38,24 +36,23 @@ result so the caller can wait where the values are actually needed.
 
 The important shift from `Promise.all(...)` is ownership: `all(...)` registers these
 routines in the current scope, and the returned future is the handle used to join their
-result later.
+results later.
 
 ## Race Alternatives
 
 Use `race(...)` when a routine needs the first successful result from several alternatives.
 
 ```ts
-import { until } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
-import { loadFromCache, loadFromNetwork } from "./user-data";
+import { loadFromCache, loadFromNetwork } from "./user-routines";
 
 function* loadFastProfile() {
   const profile = yield* race([
     function* cache() {
-      return yield* until(() => loadFromCache("user-1"));
+      return yield* loadFromCache("user-1");
     },
     function* network() {
-      return yield* until(() => loadFromNetwork("user-1"));
+      return yield* loadFromNetwork("user-1");
     },
   ]);
 
@@ -138,14 +135,13 @@ Inside a routine, use `promisify(...)` when another API needs a native promise f
 shajara future.
 
 ```ts
-import { promisify, until } from "@shajara/host";
+import { promisify } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
 import { reportWhenReady } from "./analytics";
+import { loadProfile } from "./profile-routines";
 
 function* loadAndReport() {
-  const loaded = yield* spawn(function* loadProfile() {
-    return yield* until(() => fetch("/api/profile").then((response) => response.json()));
-  });
+  const loaded = yield* spawn(loadProfile);
 
   reportWhenReady(yield* promisify(loaded));
 
