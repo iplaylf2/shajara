@@ -4,17 +4,43 @@ Docs site pages should help readers enter shajara through the product surface th
 using. Each page has a local job, and the writing should protect that job from unrelated
 reference material, implementation detail, and premature terminology.
 
-## Reader Attention
+The documentation set can be complete without asking every page to be complete. A page
+should teach the move it owns, leave later moves to later pages, and read as a coherent
+finished page rather than as an accumulation of local corrections.
 
-Spend reader attention on the move the page is asking them to make. Do not introduce a
-topic because it exists elsewhere in the system; introduce it because the current
-explanation needs it.
+## Page Job
+
+Start from the reader's task. Introduce a topic because the current page needs it, not
+because the concept exists elsewhere in the system.
 
 Avoid preview prose that merely announces the page outline. If the next section already
 shows the next step, let the section carry that transition.
 
-Completeness belongs to the documentation set, not to every page. A page can leave a
-concept to its later owner when naming it would not clarify the current task.
+Do not duplicate the job of an earlier page. When a reader reaches a follow-up guide,
+assume the previous guide has already taught its entry pattern, and spend attention on the
+new move.
+
+Completeness belongs to the documentation set. A page can leave a concept to its later
+owner when naming it would not clarify the current task.
+
+## Reading Flow
+
+Prefer this order inside task-oriented sections:
+
+1. a short task frame
+2. the shajara-shaped example
+3. the explanation needed to read that example
+
+Readers should usually see the code shape before carrying a large explanation. Put
+supporting interpretation after the example unless the reader cannot understand the example
+without a small setup sentence.
+
+When an explanation compares examples from multiple sections, give that comparison its own
+stable home. Do not attach cross-section interpretation to one of the sections it compares.
+
+Before calling a page done, read it in order as a finished artifact. Remove traces of local
+edit history: repeated caveats, abrupt contrast sentences, orphaned terminology, and
+paragraphs that only make sense as answers to an earlier review comment.
 
 ## Product Voice
 
@@ -57,7 +83,7 @@ yield *
 If a clean example exposes an API typing weakness, prefer improving the API or changing the
 example shape over making the reader carry incidental syntax.
 
-## Concept Layers
+## Concept Disclosure
 
 Keep code concepts and runtime concepts distinct. A routine can be the main actor in a code
 example because the reader can see it as a generator function. A scope is a runtime
@@ -66,3 +92,17 @@ ownership.
 
 Use terms at the layer they belong to. When a later concept is not doing work in the
 current explanation, leave the code example in the vocabulary of the current layer.
+
+## Language Discipline
+
+Terminology should be deliberate, not mechanically avoided. If a project term has a
+specific meaning, avoid using the same word casually when it would confuse that concept.
+If a term naturally explains the current behavior, use it; do not replace it only because
+it was risky in another context.
+
+Prefer ordinary wording until a project term earns its place. Once a project term appears,
+make sure it is doing work for the reader and is attached to the right concept layer.
+
+Use contrast only when it clarifies a real distinction. Repeated "not this, but that"
+sentences can make a guide read like a patch history. When a distinction matters, express
+the positive behavior first, then add the contrast only as much as needed.
