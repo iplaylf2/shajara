@@ -1,8 +1,6 @@
 ---
 title: Getting Started
 description: Start a shajara routine and bring promise-based work into its control flow.
-sidebar:
-  order: 1
 ---
 
 `@shajara/host` is the application-facing entry point for shajara.

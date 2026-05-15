@@ -1,8 +1,6 @@
 ---
 title: Promise Patterns
 description: Organize Promise grouping, racing, callbacks, abort signals, and native Promise boundaries in shajara routines.
-sidebar:
-  order: 2
 ---
 
 Once promise work is already entering a routine through `until(...)`, the next step is to

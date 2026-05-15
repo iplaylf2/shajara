@@ -1,8 +1,6 @@
 ---
 title: 开始使用
 description: 启动 shajara routine，并把基于 Promise 的工作纳入其中。
-sidebar:
-  order: 1
 ---
 
 `@shajara/host` 是 shajara 面向应用代码的入口。

@@ -1,8 +1,6 @@
 ---
 title: Promise 常见用法
 description: 在 shajara routine 里组织 Promise 组合、竞速、callback，并把 future 暴露给外部。
-sidebar:
-  order: 2
 ---
 
 当 Promise 工作已经能通过 `until(...)` 进入 routine 之后，下一步是组织它们的
