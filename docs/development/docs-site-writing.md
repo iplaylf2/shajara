@@ -13,6 +13,11 @@ finished page rather than as an accumulation of local corrections.
 Start from the reader's task. Introduce a topic because the current page needs it, not
 because the concept exists elsewhere in the system.
 
+Keep the framing at the same level as the page job. A section that teaches orchestration
+should be led by orchestration concepts such as concurrent work, parent routines,
+ownership, and joining. Example-specific names should make the code readable without
+becoming the section's conceptual frame.
+
 Avoid preview prose that merely announces the page outline. If the next section already
 shows the next step, let the section carry that transition.
 
@@ -33,7 +38,8 @@ Prefer this order inside task-oriented sections:
 
 Readers should usually see the code shape before carrying a large explanation. Put
 supporting interpretation after the example unless the reader cannot understand the example
-without a small setup sentence.
+without a small setup sentence. Before and after the example, stay in the vocabulary of the
+current layer. Explain concrete code names only when they help the reader read the example.
 
 When an explanation compares examples from multiple sections, give that comparison its own
 stable home. Do not attach cross-section interpretation to one of the sections it compares.
@@ -52,14 +58,18 @@ The opening should establish the relevant product surface and then move into the
 task. Let motivation emerge from the example and the shape of the code instead of front
 loading abstract value claims.
 
+Describe product behavior and structure directly. Prefer saying what the routine, scope,
+or operation does over making the prose explain its own emphasis.
+
 ## Example Burden
 
 Examples should foreground the shajara structure being taught. Surrounding TypeScript,
 application code, and placeholder setup should stay quiet unless they are part of that
 structure.
 
-Use complete setup only when it teaches the current step. Once an entry pattern has been
-shown, later examples may focus on the routine or operation being explained.
+Use complete setup only when it teaches the current step. Once an entry pattern or
+lower-level move has been shown, later examples may call an imported routine that contains
+that detail so the current routine or operation can remain central.
 
 Represent outside application code in the least distracting way. An application-looking
 import is usually enough:
