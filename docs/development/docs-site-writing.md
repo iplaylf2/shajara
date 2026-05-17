@@ -6,17 +6,18 @@ reference material, implementation detail, and premature terminology.
 
 The documentation set can be complete without asking every page to be complete. A page
 should teach the move it owns, leave later moves to later pages, and read as a coherent
-finished page rather than as an accumulation of local corrections.
+finished page with one clear direction.
 
 ## Page Job
 
 Start from the reader's task. Introduce a topic because the current page needs it, not
 because the concept exists elsewhere in the system.
 
-Keep the framing at the same level as the page job. A section that teaches orchestration
-should be led by orchestration concepts such as concurrent work, parent routines,
-ownership, and joining. Example-specific names should make the code readable without
-becoming the section's conceptual frame.
+Keep the framing at the same level as the page job. A section that teaches routine
+orchestration should be led by the boundary or shape it is responsible for: routine flow, a
+process in the current scope, a child scope, a future handle, or a direct value.
+Example-specific names should make the code readable without becoming the section's
+conceptual frame.
 
 Avoid preview prose that merely announces the page outline. If the next section already
 shows the next step, let the section carry that transition.
@@ -27,6 +28,24 @@ new move.
 
 Completeness belongs to the documentation set. A page can leave a concept to its later
 owner when naming it would not clarify the current task.
+
+## Revision Coherence
+
+Treat editing as design work. A revision should settle on one organizing idea and let
+headings, examples, and explanatory prose all serve that idea.
+
+When a page's design changes, revise the page as a whole. Replace stale framing, examples,
+and transitions instead of fitting new text around the previous structure. Compatibility
+with outdated framing is not a documentation goal.
+
+Do not turn a design constraint into a warning attached to the sentence that happened to
+expose it. If the constraint belongs to the page, integrate it into the page's structure or
+general explanation. If it belongs to the documentation system, capture it in this writing
+guide rather than repeating it inside individual pages.
+
+Prefer restructuring or rewriting when local edits would break the page's flow. If a page
+has changed direction, remove obsolete transitions, defensive contrasts, and one-off
+clarifications from the previous direction.
 
 ## Reading Flow
 
@@ -59,7 +78,7 @@ task. Let motivation emerge from the example and the shape of the code instead o
 loading abstract value claims.
 
 Describe product behavior and structure directly. Prefer saying what the routine, scope,
-or operation does over making the prose explain its own emphasis.
+process, or API call does over making the prose explain its own emphasis.
 
 ## Example Focus
 
@@ -81,10 +100,10 @@ the section is responsible for teaching.
 Choose surrounding work according to the section job. When the page teaches a Promise
 boundary, use a familiar Promise-producing API such as `fetch(...)` so the boundary is
 visible. When the page teaches routine orchestration, use `sleep(...)`, literals, or small
-inline routines to simulate business work; realistic request plumbing should not compete
-with the shajara operation being taught.
+inline routines to simulate business activity; realistic request plumbing should not
+compete with the shajara boundary being taught.
 
-Use complete setup only when it teaches the current step. Do not hide the operation being
+Use complete setup only when it teaches the current step. Do not hide the boundary being
 taught behind extra application abstractions. If an abstraction would make the reader trust
 an invisible routine, callback shape, or Promise boundary, write the smallest inline shape
 instead.
@@ -109,7 +128,14 @@ example shape over making the reader carry incidental syntax.
 Keep code concepts and runtime concepts distinct. A routine can be the main actor in a code
 example because the reader can see it as a generator function. A scope is a runtime
 boundary; it should become the main actor only on a page that is explaining runtime
-ownership.
+ownership. A process is the runtime execution of a routine inside a scope. Avoid implying a
+process hierarchy; when ownership matters, say which scope the process belongs to.
+
+When a page teaches return shapes, let the reader see the concrete shape before stating the
+general style. A returned future lets the caller observe a process result in the current
+scope. A returned value from a child-scope API means the calling process has already waited
+through that scope. Explain this as a way to read the API, not as a taxonomy detached from
+the example.
 
 Use terms at the layer they belong to. When a later concept is not doing work in the
 current explanation, leave the code example in the vocabulary of the current layer.
@@ -124,6 +150,13 @@ it was risky in another context.
 Prefer ordinary wording until a project term earns its place. Once a project term appears,
 make sure it is doing work for the reader and is attached to the right concept layer.
 
+Do not turn convenient nouns into project concepts. When shajara has no named concept for
+something, describe the concrete API call, routine, scope, process, or future instead.
+
 Use contrast only when it clarifies a real distinction. Repeated "not this, but that"
-sentences can make a guide read like a patch history. When a distinction matters, express
-the positive behavior first, then add the contrast only as much as needed.
+sentences can make a guide read defensively. When a distinction matters, express the
+positive behavior first, then add the contrast only as much as needed.
+
+Natural prose matters. A guide may carry precise terminology, but the surrounding sentences
+should still read like ordinary explanation. Avoid wording that explains the text's own
+construction or the writer's private intent.
