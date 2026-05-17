@@ -12,21 +12,26 @@ routine 如何承接这些工作。
 当多段 routine 应该一起启动，并按顺序产出一个组合结果时，使用 `all(...)`。
 
 ```ts
+import { sleep } from "@shajara/host";
 import { all, wait } from "@shajara/host/primitives";
-import { loadPermissions, loadUserName } from "./user-routines";
 
 function* loadSession() {
-  const session = yield* all([
-    function* name() {
-      return yield* loadUserName("user-1");
+  const sessionFuture = yield* all([
+    function* loadUserName() {
+      yield* sleep(20);
+
+      return "Ada";
     },
-    function* permissions() {
-      return yield* loadPermissions("user-1");
+    function* loadPermissions() {
+      yield* sleep(10);
+
+      return ["read", "write"];
     },
   ]);
 
-  const [userName, permissions] = yield* wait(session);
+  const [userName, permissions] = yield* wait(sessionFuture);
 
+  // userName 是 "Ada"；permissions 是 ["read", "write"]。
   return { permissions, userName };
 }
 ```
@@ -42,19 +47,24 @@ function* loadSession() {
 当 routine 需要从多个候选 routine 中取得第一个成功结果时，使用 `race(...)`。
 
 ```ts
+import { sleep } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
-import { loadFromCache, loadFromNetwork } from "./user-routines";
 
 function* loadFastProfile() {
   const profile = yield* race([
     function* cache() {
-      return yield* loadFromCache("user-1");
+      yield* sleep(30);
+
+      return "cached profile";
     },
     function* network() {
-      return yield* loadFromNetwork("user-1");
+      yield* sleep(5);
+
+      return "network profile";
     },
   ]);
 
+  // profile 是 "network profile"。
   return profile;
 }
 ```
@@ -80,19 +90,11 @@ callback 时，在 shajara 里可以用 `completer(...)` 创建 future，并从 
 ```ts
 import { completer } from "@shajara/host";
 import { wait } from "@shajara/host/primitives";
-import { openUserPicker } from "./user-picker";
 
-function* pickUser() {
-  const { future, reject, resolve } = yield* completer<string>();
+function* locateUser() {
+  const { future, reject, resolve } = yield* completer<GeolocationPosition>();
 
-  openUserPicker({
-    onCancel() {
-      reject(new Error("No user selected."));
-    },
-    onSelect(userId) {
-      resolve(userId);
-    },
-  });
+  navigator.geolocation.getCurrentPosition(resolve, reject);
 
   return yield* wait(future);
 }
@@ -112,9 +114,9 @@ callback 一侧完成 future，routine 一侧用 `wait(...)` 等待同一个结�
 ```ts
 import { abortSignal, until } from "@shajara/host";
 
-function* loadJson(url: string) {
+function* loadProfile() {
   const signal = yield* abortSignal();
-  const response = yield* until(() => fetch(url, { signal }));
+  const response = yield* until(() => fetch("/api/profile", { signal }));
 
   return yield* until(() => response.json());
 }
@@ -122,30 +124,40 @@ function* loadJson(url: string) {
 
 `yield* abortSignal(...)` 也是一次生命周期登记。返回的 signal 会观察当前 scope；
 它本身不会取消 scope。当 scope 结束时，signal 会 abort，让 Promise API 停止外部工作。
+如果所属 scope 在 `fetch(...)` 完成前关闭，signal 会 abort 这次 request。
 
 ## 把 future 暴露成 Promise
 
-在 routine 内部，如果另一个 API 需要拿到 shajara future 对应的原生 Promise，
-使用 `promisify(...)`。
+在 routine 内部，如果原生 Promise 代码需要观察一个 shajara future，使用
+`promisify(...)`。
 
 ```ts
-import { promisify } from "@shajara/host";
-import { spawn, wait } from "@shajara/host/primitives";
-import { reportWhenReady } from "./analytics";
-import { loadProfile } from "./profile-routines";
+import { promisify, sleep, until } from "@shajara/host";
+import { spawn } from "@shajara/host/primitives";
 
 function* loadAndReport() {
-  const loaded = yield* spawn(loadProfile);
+  const profileFuture = yield* spawn(function* loadProfile() {
+    yield* sleep(10);
 
-  reportWhenReady(yield* promisify(loaded));
+    return "Ada";
+  });
 
-  return yield* wait(loaded);
+  const profilePromise = yield* promisify(profileFuture);
+
+  yield* until(() =>
+    profilePromise.then((name) =>
+      fetch("/api/profile-report", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }),
+    ),
+  );
 }
 ```
 
-future 仍然代表 shajara 管理的工作；原生 Promise 只是让外部代码观察这个结果。
-在 `yield* promisify(loaded)` 这里，routine 会读取当前执行上下文，并把这个 future
-暴露成原生 Promise。
+future 仍然代表 shajara 管理的工作。原生 Promise 在边界处暴露这个结果，让普通
+Promise 链可以继续处理它。调用 `yield* promisify(profileFuture)` 时，routine 会读取
+当前执行上下文，并把这个 future 暴露成原生 Promise。
 
 把 Promise 放在 routine 的边界使用。需要工作归属、结果汇合和生命周期收敛的部分，
 留在 shajara routine 内部。

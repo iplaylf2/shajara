@@ -12,21 +12,26 @@ Promise patterns and show how a shajara routine takes responsibility for that wo
 Use `all(...)` when several routines should start together and produce one ordered result.
 
 ```ts
+import { sleep } from "@shajara/host";
 import { all, wait } from "@shajara/host/primitives";
-import { loadPermissions, loadUserName } from "./user-routines";
 
 function* loadSession() {
-  const session = yield* all([
-    function* name() {
-      return yield* loadUserName("user-1");
+  const sessionFuture = yield* all([
+    function* loadUserName() {
+      yield* sleep(20);
+
+      return "Ada";
     },
-    function* permissions() {
-      return yield* loadPermissions("user-1");
+    function* loadPermissions() {
+      yield* sleep(10);
+
+      return ["read", "write"];
     },
   ]);
 
-  const [userName, permissions] = yield* wait(session);
+  const [userName, permissions] = yield* wait(sessionFuture);
 
+  // userName is "Ada"; permissions is ["read", "write"].
   return { permissions, userName };
 }
 ```
@@ -43,19 +48,24 @@ results later.
 Use `race(...)` when a routine needs the first successful result from several alternatives.
 
 ```ts
+import { sleep } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
-import { loadFromCache, loadFromNetwork } from "./user-routines";
 
 function* loadFastProfile() {
   const profile = yield* race([
     function* cache() {
-      return yield* loadFromCache("user-1");
+      yield* sleep(30);
+
+      return "cached profile";
     },
     function* network() {
-      return yield* loadFromNetwork("user-1");
+      yield* sleep(5);
+
+      return "network profile";
     },
   ]);
 
+  // profile is "network profile".
   return profile;
 }
 ```
@@ -84,19 +94,11 @@ from callbacks.
 ```ts
 import { completer } from "@shajara/host";
 import { wait } from "@shajara/host/primitives";
-import { openUserPicker } from "./user-picker";
 
-function* pickUser() {
-  const { future, reject, resolve } = yield* completer<string>();
+function* locateUser() {
+  const { future, reject, resolve } = yield* completer<GeolocationPosition>();
 
-  openUserPicker({
-    onCancel() {
-      reject(new Error("No user selected."));
-    },
-    onSelect(userId) {
-      resolve(userId);
-    },
-  });
+  navigator.geolocation.getCurrentPosition(resolve, reject);
 
   return yield* wait(future);
 }
@@ -117,9 +119,9 @@ tied to the current scope.
 ```ts
 import { abortSignal, until } from "@shajara/host";
 
-function* loadJson(url: string) {
+function* loadProfile() {
   const signal = yield* abortSignal();
-  const response = yield* until(() => fetch(url, { signal }));
+  const response = yield* until(() => fetch("/api/profile", { signal }));
 
   return yield* until(() => response.json());
 }
@@ -127,31 +129,42 @@ function* loadJson(url: string) {
 
 `yield* abortSignal(...)` is another lifecycle registration. The returned signal observes
 the current scope; it does not cancel the scope by itself. When the scope ends, the signal
-aborts so the promise API can stop its outside work.
+aborts so the promise API can stop its outside work. If the owning scope closes before
+`fetch(...)` finishes, the signal aborts that request.
 
 ## Expose a Future as a Promise
 
-Inside a routine, use `promisify(...)` when another API needs a native promise for a
+Inside a routine, use `promisify(...)` when native Promise code needs to observe a
 shajara future.
 
 ```ts
-import { promisify } from "@shajara/host";
-import { spawn, wait } from "@shajara/host/primitives";
-import { reportWhenReady } from "./analytics";
-import { loadProfile } from "./profile-routines";
+import { promisify, sleep, until } from "@shajara/host";
+import { spawn } from "@shajara/host/primitives";
 
 function* loadAndReport() {
-  const loaded = yield* spawn(loadProfile);
+  const profileFuture = yield* spawn(function* loadProfile() {
+    yield* sleep(10);
 
-  reportWhenReady(yield* promisify(loaded));
+    return "Ada";
+  });
 
-  return yield* wait(loaded);
+  const profilePromise = yield* promisify(profileFuture);
+
+  yield* until(() =>
+    profilePromise.then((name) =>
+      fetch("/api/profile-report", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }),
+    ),
+  );
 }
 ```
 
-The future still represents work managed by shajara; the native promise only lets outside
-code observe that result. At `yield* promisify(loaded)`, the routine reads the current
-execution context and exposes that future as a native promise.
+The future still represents work managed by shajara. The native promise exposes that
+result at the boundary so ordinary Promise chains can continue from it. Calling
+`yield* promisify(profileFuture)` reads the current execution context and exposes that
+future as a native promise.
 
 Use promises at the boundary of a routine. Keep the work that needs ownership, joining, and
 lifecycle convergence inside shajara routines.

@@ -29,20 +29,21 @@ console.log(message);
 
 `run(...)` 会启动这段 routine，并返回结果对应的 Promise。
 
-从这里开始，示例只展示 routine 本身。它可以直接传给 `run(...)`，也可以被
-其他 routine 间接启动。
+从这里开始，示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，
+也可以被另一个 routine 调用。
 
 ## 等待 Promise 工作
 
-应用代码里通常已经有返回 Promise 的函数。`until(...)` 用来在 routine
-内部等待这类工作。
+应用代码里通常已经在使用会返回 Promise 的 API。`fetch(...)` 就是其中一种。
+`until(...)` 用来在 routine 内部等待这类工作。
 
 ```ts
 import { until } from "@shajara/host";
-import { loadUserName } from "./user-data";
 
 function* loadUser() {
-  return yield* until(() => loadUserName("user-1"));
+  const response = yield* until(() => fetch("/api/users/user-1"));
+
+  return yield* until(() => response.json());
 }
 ```
 
@@ -51,30 +52,30 @@ Promise 仍然由普通 JavaScript 代码创建；`until(...)` 负责把它的�
 
 ## 启动并发工作并稍后汇合
 
-当异步步骤已经封装成更小的 routine，父 routine 可以启动一段能和当前流程一起
-推进的工作，再在需要结果的位置汇合。
+当某段异步工作可以和当前流程一起推进时，父 routine 可以先启动它，再在需要结果的
+位置汇合。
 
 ```ts
+import { sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
-import { loadUserName, loadWorkspaceName, saveGreeting } from "./user-routines";
 
 function* greetUser() {
-  const workspaceNameFuture = yield* spawn(function* loadWorkspace() {
-    return yield* loadWorkspaceName("workspace-1");
+  const workspaceNameFuture = yield* spawn(function* loadWorkspaceName() {
+    yield* sleep(10);
+
+    return "Docs";
   });
 
-  const userName = yield* loadUserName("user-1");
+  yield* sleep(20);
+
+  const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
-  const greeting = `Hello, ${userName} from ${workspaceName}`;
 
-  yield* saveGreeting("user-1", greeting);
-
-  return greeting;
+  return `Hello, ${userName} from ${workspaceName}`;
 }
 ```
 
-`spawn(...)` 会启动 `loadWorkspace`，并把结果句柄返回为 `workspaceNameFuture`。
-`greetUser` 会继续执行 `loadUserName(...)`，再通过 `wait(...)` 取得 `workspaceName`。
+`spawn(...)` 会启动 `loadWorkspaceName`，并把结果句柄返回为 `workspaceNameFuture`。
+`greetUser` 会继续执行用户相关工作，再通过 `wait(...)` 取得 `workspaceName`。
 
-导入的 routine 负责各自的内部细节。父 routine 保留清楚的并发结构：启动工作，
-继续当前流程，再汇合结果。
+父 routine 保留清楚的并发结构：启动工作，继续当前流程，再汇合结果。

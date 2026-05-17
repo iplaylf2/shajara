@@ -29,20 +29,21 @@ console.log(message);
 
 `run(...)` starts the routine and returns a promise for its result.
 
-From here on, examples show the routine itself. The routine can be passed to
-`run(...)` directly, or started indirectly by another routine.
+From here on, examples show the routine body. A routine can be passed to
+`run(...)` directly or called from another routine.
 
 ## Wait for promise work
 
-Most application code already has functions that return promises. `until(...)`
-lets a routine wait for that work.
+Most application code already uses APIs that return promises. `fetch(...)` is
+one of them. `until(...)` lets a routine wait for that work.
 
 ```ts
 import { until } from "@shajara/host";
-import { loadUserName } from "./user-data";
 
 function* loadUser() {
-  return yield* until(() => loadUserName("user-1"));
+  const response = yield* until(() => fetch("/api/users/user-1"));
+
+  return yield* until(() => response.json());
 }
 ```
 
@@ -51,33 +52,32 @@ fulfillment or rejection back into the routine's control flow.
 
 ## Start concurrent work and join later
 
-Once asynchronous steps are wrapped in smaller routines, the parent routine can
-start work that can make progress alongside the current flow, then join it where
-its result is needed.
+When one asynchronous step can run alongside the current flow, the parent
+routine can start it and join it where its result is needed.
 
 ```ts
+import { sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
-import { loadUserName, loadWorkspaceName, saveGreeting } from "./user-routines";
 
 function* greetUser() {
-  const workspaceNameFuture = yield* spawn(function* loadWorkspace() {
-    return yield* loadWorkspaceName("workspace-1");
+  const workspaceNameFuture = yield* spawn(function* loadWorkspaceName() {
+    yield* sleep(10);
+
+    return "Docs";
   });
 
-  const userName = yield* loadUserName("user-1");
+  yield* sleep(20);
+
+  const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
-  const greeting = `Hello, ${userName} from ${workspaceName}`;
 
-  yield* saveGreeting("user-1", greeting);
-
-  return greeting;
+  return `Hello, ${userName} from ${workspaceName}`;
 }
 ```
 
-`spawn(...)` starts `loadWorkspace` and returns `workspaceNameFuture`, a handle
-for its result. `greetUser` keeps going through `loadUserName(...)`, then joins
+`spawn(...)` starts `loadWorkspaceName` and returns `workspaceNameFuture`, a handle
+for its result. `greetUser` keeps going through the user work, then joins
 the workspace result with `wait(...)`.
 
-The imported routines own their internal details. The parent routine keeps the
-concurrency structure visible: start work, continue the current flow, then join
-the result.
+The parent routine keeps the concurrency structure visible: start work,
+continue the current flow, then join the result.

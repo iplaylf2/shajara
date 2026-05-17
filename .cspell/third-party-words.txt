@@ -3,6 +3,7 @@ bimap
 depcruise
 effection
 frontmatter
+geolocation
 knip
 labelledby
 mktemp
