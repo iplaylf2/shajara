@@ -41,12 +41,12 @@ supporting interpretation after the example unless the reader cannot understand 
 without a small setup sentence. Before and after the example, stay in the vocabulary of the
 current layer. Explain concrete code names only when they help the reader read the example.
 
+When a reader would otherwise have to mentally execute incidental details to understand an
+example result, show that result near the code. The comment should state the outcome, not
+carry conceptual explanation.
+
 When an explanation compares examples from multiple sections, give that comparison its own
 stable home. Do not attach cross-section interpretation to one of the sections it compares.
-
-Before calling a page done, read it in order as a finished artifact. Remove traces of local
-edit history: repeated caveats, abrupt contrast sentences, orphaned terminology, and
-paragraphs that only make sense as answers to an earlier review comment.
 
 ## Product Voice
 
@@ -61,22 +61,33 @@ loading abstract value claims.
 Describe product behavior and structure directly. Prefer saying what the routine, scope,
 or operation does over making the prose explain its own emphasis.
 
-## Example Burden
+## Example Focus
 
 Examples should foreground the shajara structure being taught. Surrounding TypeScript,
 application code, and placeholder setup should stay quiet unless they are part of that
 structure.
 
-Use complete setup only when it teaches the current step. Once an entry pattern or
-lower-level move has been shown, later examples may call an imported routine that contains
-that detail so the current routine or operation can remain central.
+Use `run(...)` when crossing from application code into a routine is the move being taught.
+Once that entry pattern has been shown, later examples can usually show the routine body
+directly, or show a routine that would be called from another routine. Repeating the entry
+boundary on every example spends space on a move the page no longer owns.
 
-Represent outside application code in the least distracting way. An application-looking
-import is usually enough:
+Do not expand an example with incidental lifecycle, cleanup, or error-handling mechanics
+unless the current section owns those mechanics. Keep the sample centered on the behavior
+the section is responsible for teaching.
 
-```ts
-import { loadUserName } from "./user-data";
-```
+## Application Surface
+
+Choose surrounding work according to the section job. When the page teaches a Promise
+boundary, use a familiar Promise-producing API such as `fetch(...)` so the boundary is
+visible. When the page teaches routine orchestration, use `sleep(...)`, literals, or small
+inline routines to simulate business work; realistic request plumbing should not compete
+with the shajara operation being taught.
+
+Use complete setup only when it teaches the current step. Do not hide the operation being
+taught behind extra application abstractions. If an abstraction would make the reader trust
+an invisible routine, callback shape, or Promise boundary, write the smallest inline shape
+instead.
 
 Avoid scaffolding that makes the reader think about TypeScript declaration mechanics or
 type inference when the page is teaching orchestration:

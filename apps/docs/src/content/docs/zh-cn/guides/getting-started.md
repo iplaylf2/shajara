@@ -22,9 +22,6 @@ import { run } from "@shajara/host";
 const message = await run(function* main() {
   return "ready";
 });
-
-console.log(message);
-// ready
 ```
 
 `run(...)` 会启动这段 routine，并返回结果对应的 Promise。
