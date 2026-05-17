@@ -8,7 +8,7 @@ The documentation set can be complete without asking every page to be complete. 
 should teach the move it owns, leave later moves to later pages, and read as a coherent
 finished page with one clear direction.
 
-## Page Job
+## Page Ownership
 
 Start from the reader's task. Introduce a topic because the current page needs it, not
 because the concept exists elsewhere in the system.
@@ -31,38 +31,44 @@ owner when naming it would not clarify the current task.
 
 ## Revision Coherence
 
-Treat editing as design work. A revision should settle on one organizing idea and let
-headings, examples, and explanatory prose all serve that idea.
+Treat editing as design work. A revision should settle on one organizing idea and make
+every part of the page serve that idea.
 
 When a page's design changes, revise the page as a whole. Replace stale framing, examples,
-and transitions instead of fitting new text around the previous structure. Compatibility
-with outdated framing is not a documentation goal.
+and supporting material instead of fitting new text around the previous structure.
+Compatibility with outdated framing is not a documentation goal.
 
-Do not turn a design constraint into a warning attached to the sentence that happened to
-expose it. If the constraint belongs to the page, integrate it into the page's structure or
-general explanation. If it belongs to the documentation system, capture it in this writing
-guide rather than repeating it inside individual pages.
+Page-level constraints should shape the page. If a constraint affects the page's
+direction, revise the page structure and surrounding explanation so the page embodies that
+constraint. Do not attach it as a local note, caveat, or warning near the sentence that
+happened to expose the issue.
+
+If the same clarification keeps appearing, promote the underlying rule to the page's
+structure or to this writing guide. The final page should read as if it was designed that
+way from the start, without discussion history or transitional language left from an
+earlier draft.
 
 Prefer restructuring or rewriting when local edits would break the page's flow. If a page
-has changed direction, remove obsolete transitions, defensive contrasts, and one-off
-clarifications from the previous direction.
+has changed direction, remove the scaffolding left by the previous direction.
 
-## Reading Flow
+Clean up stale design debt in the revision that exposes it. If previous material no
+longer fits the page's current job, replace or remove it instead of layering new
+exceptions around it.
 
-Prefer this order inside task-oriented sections:
+## Reading Shape
 
-1. a short task frame
-2. the shajara-shaped example
-3. the explanation needed to read that example
+Task-oriented sections should usually move from a short task frame to the shajara-shaped
+example, then to the explanation needed to read that example.
 
 Readers should usually see the code shape before carrying a large explanation. Put
 supporting interpretation after the example unless the reader cannot understand the example
 without a small setup sentence. Before and after the example, stay in the vocabulary of the
 current layer. Explain concrete code names only when they help the reader read the example.
 
-When a reader would otherwise have to mentally execute incidental details to understand an
-example result, show that result near the code. The comment should state the outcome, not
-carry conceptual explanation.
+When a reader would otherwise have to mentally execute incidental details, show the
+observable result near the code. Let that result carry the simple outcome; use the prose
+after the example to explain the shajara boundary that caused it, or the decision the
+reader should take from it.
 
 When an explanation compares examples from multiple sections, give that comparison its own
 stable home. Do not attach cross-section interpretation to one of the sections it compares.
@@ -80,7 +86,7 @@ loading abstract value claims.
 Describe product behavior and structure directly. Prefer saying what the routine, scope,
 process, or API call does over making the prose explain its own emphasis.
 
-## Example Focus
+## Example Design
 
 Examples should foreground the shajara structure being taught. Surrounding TypeScript,
 application code, and placeholder setup should stay quiet unless they are part of that
@@ -91,9 +97,15 @@ Once that entry pattern has been shown, later examples can usually show the rout
 directly, or show a routine that would be called from another routine. Repeating the entry
 boundary on every example spends space on a move the page no longer owns.
 
-Do not expand an example with incidental lifecycle, cleanup, or error-handling mechanics
-unless the current section owns those mechanics. Keep the sample centered on the behavior
-the section is responsible for teaching.
+Use the smallest number of routines needed to show distinct roles. Do not repeat routines
+that demonstrate the same behavior; repetition should add a new structural responsibility,
+not merely make an existing point louder.
+
+Incidental mechanics should stay out of the foreground. Lifecycle, cleanup, and
+error-handling code belong in an example only when the section owns those mechanics. When
+failure behavior is the subject, keep the shajara boundary in view: propagation, local
+handling, and recovery are different teaching responsibilities, so separate them when one
+example would make one responsibility read like a caveat on another.
 
 ## Application Surface
 
@@ -140,6 +152,10 @@ the example.
 Use terms at the layer they belong to. When a later concept is not doing work in the
 current explanation, leave the code example in the vocabulary of the current layer.
 
+Treat named details as obligations. If a page names something below its current level of
+explanation, the page should either own that detail or immediately give it a worked
+example. If the current page will not meet that obligation, leave the detail to its owner.
+
 ## Language Discipline
 
 Terminology should be deliberate, not mechanically avoided. If a project term has a
@@ -149,6 +165,10 @@ it was risky in another context.
 
 Prefer ordinary wording until a project term earns its place. Once a project term appears,
 make sure it is doing work for the reader and is attached to the right concept layer.
+
+Use enumeration only when the items are true peers under a governing idea the page has
+already named. If a list is carrying priority, causality, ownership, or a design rule,
+name that relationship and write the explanation as prose.
 
 Do not turn convenient nouns into project concepts. When shajara has no named concept for
 something, describe the concrete API call, routine, scope, process, or future instead.
