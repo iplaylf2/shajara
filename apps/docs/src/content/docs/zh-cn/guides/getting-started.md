@@ -1,9 +1,9 @@
 ---
 title: 开始使用
-description: 启动 shajara routine，等待 Promise 工作，并在稍后汇合 routine 工作。
+description: 安装 shajara，启动 routine，并在其中使用已有的 Promise 工作。
 ---
 
-`@shajara/host` 是 shajara 面向应用代码的入口。
+应用代码通过 `@shajara/host` 进入 shajara。
 
 ## 安装
 
@@ -11,10 +11,10 @@ description: 启动 shajara routine，等待 Promise 工作，并在稍后汇合
 npm install @shajara/host
 ```
 
-## 启动一个 routine
+## 运行一个 routine
 
-shajara routine 使用 generator function 编写。用 `run(...)` 启动 routine；
-在 routine 内部，shajara 操作用 `yield*` 调用。
+shajara routine 使用 generator function 编写。用 `run(...)` 启动 routine；在 routine
+内部，shajara 操作用 `yield*` 调用。
 
 ```ts
 import { run } from "@shajara/host";
@@ -47,10 +47,13 @@ function* loadUser() {
 Promise 仍然由普通 JavaScript 代码创建；`until(...)` 负责把它的完成或失败
 带回 routine 的控制流。
 
-## 启动并发工作并稍后汇合
+在这个例子里，`yield* until(...)` 是 routine 把控制交给 shajara，并拿回 Promise
+结果的位置。
 
-当某段异步工作可以和当前流程一起推进时，父 routine 可以先启动它，再在需要结果的
-位置汇合。
+## 启动并发工作并稍后取结果
+
+当某段异步工作可以和当前流程一起推进时，父 routine 可以先启动它，再在需要结果的位置
+等待它。
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -75,4 +78,4 @@ function* greetUser() {
 `spawn(...)` 会启动 `loadWorkspaceName`，并把结果句柄返回为 `workspaceNameFuture`。
 `greetUser` 会继续执行用户相关工作，再通过 `wait(...)` 取得 `workspaceName`。
 
-父 routine 保留清楚的并发结构：启动工作，继续当前流程，再汇合结果。
+父 routine 保留清楚的并发结构：启动工作，继续当前流程，再取得结果。

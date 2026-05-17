@@ -1,13 +1,12 @@
 ---
 title: Scope 的结构化收敛
-description: 说明 child scope 怎样等待所属工作收敛，并在失败时级联取消同 scope 的工作。
+description: 理解 child scope 在返回或失败之前会等待哪些工作。
 ---
 
-上一篇 guide 用 `branch(...)` 说明：返回值表示调用方已经等待过 child scope。这篇继续
-看等待 child scope 时，shajara 实际在等什么。
+从 child scope 返回，不等于从一个 function 返回。child scope 可能还拥有其他 process，
+调用方要等这些 process 结束后，才会拿到这个值。
 
-scope 的收敛不是只看传入的 entry routine 是否返回。scope 会先收拢它拥有的工作，
-再把最终结果交给等待它的 process。
+scope 收敛时，会先收拢它拥有的工作，再把最终结果交给等待它的 process。
 
 ## 等待整个 child scope
 
@@ -134,7 +133,7 @@ function* launchCampaign() {
 ```
 
 这里的 `sendEmailBatch` 没有把错误留到 process 边界之外。它自己决定失败结果，
-`emailStatusFuture` 最后汇合到的是普通值，当前 scope 里的后续流程可以继续运行。
+`emailStatusFuture` 最后等待到的是普通值，当前 scope 里的后续流程可以继续运行。
 
 如果等到外层 `wait(emailStatusFuture)` 再 `try...catch`，这个 process 的失败已经先让
 当前 scope 进入失败收敛。

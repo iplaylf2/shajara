@@ -14,7 +14,7 @@ const siteSidebar = [
       "promise-patterns",
       "scope-and-process",
       "scope-convergence",
-      "scope-owned-handles",
+      "external-handles",
       "server-scope",
     ],
   },

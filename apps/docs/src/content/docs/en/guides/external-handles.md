@@ -1,14 +1,12 @@
 ---
-title: Scope-Owned Handles
-description: Keep external async handles inside the scope that owns their work.
+title: External Handles
+description: Keep requests, callback futures, and resources tied to the scope that owns them.
 ---
 
-Routines can start outside work through browser or application APIs. The handle that
-represents that work, such as a request, callback future, or resource, should live in the
-scope that needs it. While that scope is open, the outside work can continue; when it
-closes, shajara has the structure it needs to abort, cancel, or clean up that work.
+Outside APIs often give you a handle that outlives the line of code that created it. In
+shajara, create that handle in the scope whose lifetime should bound it.
 
-## Abort Fetch Work With the Scope
+## Abort Promise Work With the Scope
 
 `abortSignal(...)` creates an `AbortSignal` tied to the current scope. Pass it to promise
 APIs such as `fetch(...)` when outside work should stop with that scope.
@@ -32,7 +30,7 @@ function* loadProfilePanel(userId: string) {
       },
     );
 
-    // The user closes the panel before this request resolves.
+    // The panel closes while this request is still pending.
     return request;
   });
 
@@ -43,17 +41,18 @@ function* loadProfilePanel(userId: string) {
 }
 ```
 
-`panelScope` owns the profile request while the panel is open. Returning from
-`panelScope` represents the panel closing while the fetch promise is still pending.
+`panelScope` creates the request and the signal that can stop it. When that scope
+converges, the signal aborts. The caller may still receive the promise, but the request's
+lifetime was decided by `panelScope`.
 
-When the child scope converges, it aborts the signal. The pending request rejects through
-the abort path, and the outer routine observes `"profile request stopped"`.
+The placement matters: `yield* abortSignal()` runs inside `panelScope`, so the signal is
+registered with the same scope that owns the request.
 
-## Cancel Futures That Outlive Their Scope
+## Cancel Callback Futures
 
-`completer(...)` creates a future that JavaScript callbacks can settle. If the scope closes
-while that future is still pending, the future is canceled before a later callback can use
-it as a live result.
+`completer(...)` creates a future that JavaScript callbacks can settle. If the current
+scope closes while that future is still pending, the future is canceled before a later
+callback can use it as a live result.
 
 ```ts
 import { CanceledError, completer } from "@shajara/host";
@@ -83,20 +82,18 @@ function* waitForFileChoice() {
 }
 ```
 
-`registerFileChoice(resolve)` stands in for a file input callback. If the user chooses a
-file, it calls `resolve(file)`. The future belongs to `fileDialogScope`.
+`registerFileChoice(resolve)` stands in for a file input callback. If the dialog closes
+before that callback fires, `fileDialogScope` converges and cancels the pending future.
+`wait(selectedFile)` then observes cancellation instead of waiting for a callback owned by
+a closed scope.
 
-If the dialog closes before that callback fires, the scope converges and cancels the
-pending future. The caller can still receive that future, but `wait(selectedFile)` observes
-that it was canceled and returns `"file dialog closed"`.
+Here, `yield* completer<File>()` creates and registers the future in `fileDialogScope`, so
+the later callback does not own a live shajara result after the dialog scope closes.
 
-## Control a Resource Lifetime
+## Release Resource Providers
 
-Some outside resources need more than a cancellation signal or a pending future. They need
-a setup step, a ready value that the routine can use, and a cleanup step when the owning
-scope closes.
-
-`resource(...)` gives that shape directly. The provider opens the resource, calls
+Some outside resources need setup, a ready value, and cleanup when the owning scope
+closes. `resource(...)` gives that shape directly: the provider opens the resource, calls
 `provide(value)` when it is ready, then stays attached to the current scope until that
 scope releases it.
 
@@ -133,13 +130,12 @@ function* watchRoomUpdates(roomId: string) {
 // closed
 ```
 
-The provider first opens the room updates socket. Calling `provide(socket)` settles
-`updatesSocket`, so `updatesScope` can send the subscription. After `provide(...)`, the
-provider stays parked under the same scope.
+Calling `provide(socket)` settles `updatesSocket`, so `updatesScope` can send the
+subscription. After `provide(...)`, the provider stays parked under the same scope.
 
-After `updatesScope` finishes, the child scope releases the provider through normal
-generator unwinding. That runs the `finally` block and closes the socket after the room
-updates view has closed, which is why `"closed"` prints last.
+When `updatesScope` finishes, the child scope releases the provider through normal
+generator unwinding. The `finally` block closes the socket after the room updates view has
+closed.
 
 ## Choose the Owning Scope
 
@@ -148,6 +144,6 @@ scope is the right place for a request tied to that panel. A dialog scope is the
 place for a callback future tied to that dialog. A view scope is the right place for a
 socket that should close with that view.
 
-The caller may still receive a promise, a future, or a ready value from that scope. That
-does not move ownership. When the creating scope converges, its signal aborts, its pending
+The caller may receive a promise, a future, or a ready value from that scope. That does
+not move ownership. When the creating scope converges, its signal aborts, its pending
 future is canceled, or its provider cleanup runs.

@@ -1,13 +1,13 @@
 ---
 title: Structured Scope Convergence
-description: Explain how child scopes wait for owned work to converge and cascade cancellation after failure.
+description: Understand what a child scope waits for before it returns or fails.
 ---
 
-The previous guide used `branch(...)` to show that a returned value means the caller has
-already waited through a child scope. This page looks at what that wait includes.
+Returning from a child scope is not the same as returning from one function. The child
+scope may still own processes that must finish before the caller receives the value.
 
-Scope convergence is more than the entry routine returning. A scope first gathers the
-work it owns, then gives its final result to the process waiting for it.
+Scope convergence is the step where a scope gathers the work it owns, then gives its final
+result to the process waiting for it.
 
 ## Wait for the Whole Child Scope
 
@@ -136,8 +136,8 @@ function* launchCampaign() {
 ```
 
 Here, `sendEmailBatch` does not leave the error to cross the process boundary. It decides
-its own failure result, `emailStatusFuture` joins as an ordinary value, and later work in
-the current scope can continue.
+its own failure result, the later `wait(emailStatusFuture)` receives an ordinary value,
+and the current scope can continue.
 
 If the `try...catch` waits until an outer `wait(emailStatusFuture)`, the process failure
 has already driven the current scope into failure convergence.

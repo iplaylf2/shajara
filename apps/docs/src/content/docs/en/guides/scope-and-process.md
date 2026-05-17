@@ -1,45 +1,20 @@
 ---
 title: Scopes and Processes
-description: Move from all and race return shapes to process work and scope boundaries.
+description: Read futures and direct values as process results and scope boundaries.
 ---
 
-The previous guide introduced `all(...)` and `race(...)` from familiar Promise patterns.
-This page starts from one difference between them: `all(...)` returns a future, while
-`race(...)` returns a value.
+After a few calls, the return shape starts to matter more than the function name. A future
+means the routine still has a result it can wait for; a direct value means the call has
+already crossed a boundary and come back.
 
-That difference is a small entry point into shajara's runtime shape. A future means the
-caller still has a handle it can wait for later. A value means the API has already waited
-through the boundary it created.
+The runtime names behind that shape are process and scope. A process is one running
+routine inside a scope. A scope is the boundary that owns processes and waits for them to
+converge.
 
-## Start From `all` and `race`
+## One Process, One Future
 
-With routine bodies omitted, the two calls have different shapes:
-
-```ts
-import { all, race, wait } from "@shajara/host/primitives";
-
-function* loadProfilePage() {
-  const pageDataFuture = yield* all([loadUserName, loadWorkspaceName]);
-
-  const fastestProfile = yield* race([readCacheProfile, readNetworkProfile]);
-
-  const pageData = yield* wait(pageDataFuture);
-
-  return { fastestProfile, pageData };
-}
-```
-
-`pageDataFuture` is still a future after `all(...)` returns. `loadProfilePage` can keep
-running and wait for it where the page data is needed.
-
-`fastestProfile` is already a value. `race(...)` has already run the alternatives through
-its race scope before `loadProfilePage` continues.
-
-## The Future Shape: Process
-
-A process is one running routine inside a scope. `spawn(...)` shows the smallest form of
-the same future-returning shape: it starts one process in the current scope and returns
-that process's exit future.
+`spawn(...)` starts one process in the current scope and returns that process's exit
+future.
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -61,16 +36,16 @@ function* loadSidebar() {
 ```
 
 `loadRecommendations` runs as a process in the same scope as `loadSidebar`.
-`recommendationsFuture` is only an observation handle; `loadSidebar` decides when to wait
-for it.
+`recommendationsFuture` is an observation handle for that process result. `loadSidebar`
+keeps running and waits for the future only where it needs the value.
 
-`all(...)` follows the same reading at a larger scale: several routines start in the
-current scope, and the caller receives one future for their ordered result.
+`all(...)` follows the same read at a larger scale: several routines start in the current
+scope, and the caller receives one future for their ordered result.
 
-## The Value Shape: Scope Boundary
+## A Child Scope Returns a Value
 
-A scope is a runtime ownership boundary. `branch(...)` opens a child scope for a routine,
-waits for that scope, and returns the scope result as a value.
+`branch(...)` opens a child scope for a routine, waits for that scope, and returns the
+scope result as a value.
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -96,17 +71,13 @@ The routine passed to `branch(...)` becomes the first process in the child scope
 start more processes in that same scope. The caller receives `"saved"` only after the child
 scope has finished the `saveProfileScope` process and the `writeAuditTrail` process.
 
-`race(...)` is the specialized scope form for alternatives: it opens a scope, waits until
-one routine succeeds, cancels the rest, and returns the winning value. `branch(...)` is the
+`race(...)` is the specialized child-scope form for alternatives: it waits until one
+routine succeeds, cancels the rest, and returns the winning value. `branch(...)` is the
 general form for running a routine inside its own scope.
 
 ## Wait in Another Process
 
-The host API keeps this distinction consistent. APIs that open a child scope wait for that
-scope in the process that called them, then return a value. APIs that start work in the
-current scope return a future for observing that work.
-
-When work needs a child scope but the current process should continue, compose the two
+When a child scope is needed but the current process should continue, compose the two
 shapes:
 
 ```ts
@@ -128,30 +99,6 @@ The current process starts `saveProcess` and receives `saveFuture`. `saveProcess
 process that waits through `saveProfileScope`; the caller can keep going until it needs the
 future's value.
 
-## Apply the Same Reading
-
-Other routine-taking APIs follow the same reading pattern. Some keep the routine in the
-current scope and return a future; others run the routine in a child scope and return a
-value.
-
-```ts
-import { resource } from "@shajara/host";
-import { autonomy, guard, resumable } from "@shajara/host/primitives";
-
-function* readOtherShapes() {
-  // Current scope: provider publishes one value, returned as a future.
-  const sessionFuture = yield* resource(openSession);
-
-  // Child scope: recoverable by this recovery boundary.
-  const guardedValue = yield* guard(saveProfile, recover);
-
-  // Child scope: failure can be recovered by an ancestor guard.
-  const recoveredValue = yield* resumable(saveProfile);
-
-  // Child scope: scheduler or reaper controls scope progress.
-  const autonomousValue = yield* autonomy(saveProfile, options);
-}
-```
-
-Use the same first read: routine argument, returned future or value, then current scope or
-child scope.
+The host API keeps this distinction consistent. APIs that start work in the current scope
+return a future for observing that work. APIs that open a child scope wait for that scope
+in the process that called them, then return a value.

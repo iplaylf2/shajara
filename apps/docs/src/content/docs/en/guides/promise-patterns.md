@@ -1,11 +1,11 @@
 ---
 title: Promise Patterns
-description: Organize Promise grouping, racing, callbacks, abort signals, and native Promise boundaries in shajara routines.
+description: Use familiar Promise patterns to organize shajara routine work and native Promise boundaries.
 ---
 
-Once promise work is already entering a routine through `until(...)`, the next step is to
-organize its ownership, joining, and lifecycle. The examples still start from familiar
-Promise patterns and show how a shajara routine takes responsibility for that work.
+Familiar Promise shapes are useful as a reading aid. In a shajara routine, the important
+question is whether a call gives the routine a value now or a handle it can wait for
+later.
 
 ## Group Work Like `Promise.all`
 
@@ -36,14 +36,13 @@ function* loadSession() {
 }
 ```
 
-`all(...)` starts these routines and returns a future. That future keeps the combined
-result so the caller can wait where the values are actually needed.
+`all(...)` starts the routines and returns one future for their ordered result. The caller
+can keep going after the group starts, then use `wait(...)` where the values are needed.
 
-The important shift from `Promise.all(...)` is ownership: `all(...)` registers these
-routines in the current scope, and the returned future is the handle used to join their
-results later.
+This is close to `Promise.all(...)` in result shape, but the wait stays explicit in the
+routine. Starting the group and waiting for the result are two separate moves.
 
-## Race Alternatives
+## Race Alternatives Like `Promise.race`
 
 Use `race(...)` when a routine needs the first successful result from several alternatives.
 
@@ -70,20 +69,21 @@ function* loadFastProfile() {
 }
 ```
 
-After one routine wins, `race(...)` cancels the remaining routines and returns the winning
-value to the caller.
+After `network` wins, `race(...)` cancels the remaining routine and returns the winning
+value to `loadFastProfile`.
 
-This is not the same as `Promise.race(...)` returning the first settled promise.
-`race(...)` returns the winning value directly because it has already canceled the
-non-winning routines inside the race scope; when the caller receives the value, those
-routines do not keep running.
+This differs from `Promise.race(...)`, which settles with the first promise result.
+`race(...)` returns the winning value only after shajara has handled the non-winning
+routine.
 
-## Read Return Shapes
+## Read the `all` and `race` Shapes
 
-The difference between the two examples is visible in the return value. `all(...)` returns
-a future, which means the work still belongs to the current scope and the caller decides
-when to join it. `race(...)` returns the result directly, which means it has already waited
-through the intermediate race scope.
+`all(...)` returns a future, so the caller still decides where to wait for the ordered
+values. `race(...)` returns a value, so the caller resumes after the alternatives have
+already converged to one result.
+
+For now, read that as an interface shape: future means wait later; value means this API
+already waited through the routines it started.
 
 ## Build a Future From Callbacks
 
@@ -104,17 +104,17 @@ function* locateUser() {
 }
 ```
 
-`yield* completer(...)` is more than call syntax. It registers the future with the current
-scope's lifecycle: if the scope ends while this future is still pending, shajara cancels it
-instead of leaving a dangling handle.
-
 Callback code settles the future; the routine waits for the same result with
 `wait(...)`.
+
+`yield* completer(...)` is not just generator call syntax. It creates the future and
+registers it with the current scope's lifecycle, so if that scope ends while the future is
+still pending, shajara cancels the future instead of leaving a dangling handle.
 
 ## Use Abort Signals at Promise Boundaries
 
 Many promise-based APIs already accept an `AbortSignal`. `abortSignal(...)` returns one
-tied to the current scope.
+registered with the current scope.
 
 ```ts
 import { abortSignal, until } from "@shajara/host";
@@ -127,15 +127,14 @@ function* loadProfile() {
 }
 ```
 
-`yield* abortSignal(...)` is another lifecycle registration. The returned signal observes
-the current scope; it does not cancel the scope by itself. When the scope ends, the signal
-aborts so the promise API can stop its outside work. If the owning scope closes before
-`fetch(...)` finishes, the signal aborts that request.
+`yield* abortSignal(...)` registers the signal with the current scope. The returned signal
+does not cancel the routine by itself; it gives the Promise API a native cancellation
+handle when the scope starts closing.
 
 ## Expose a Future as a Promise
 
-Inside a routine, use `promisify(...)` when native Promise code needs to observe a
-shajara future.
+Inside a routine, use `promisify(...)` when native Promise code needs to observe a shajara
+future.
 
 ```ts
 import { promisify, sleep, until } from "@shajara/host";
@@ -161,10 +160,5 @@ function* loadAndReport() {
 }
 ```
 
-The future still represents work managed by shajara. The native promise exposes that
-result at the boundary so ordinary Promise chains can continue from it. Calling
-`yield* promisify(profileFuture)` reads the current execution context and exposes that
-future as a native promise.
-
-Use promises at the boundary of a routine. Keep the work that needs ownership, joining, and
-lifecycle convergence inside shajara routines.
+The future still represents a shajara process result. The native Promise exposes that
+result at the boundary so ordinary Promise chains can continue from it.
