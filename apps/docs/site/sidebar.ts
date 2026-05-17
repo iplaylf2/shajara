@@ -9,7 +9,7 @@ const siteSidebar = [
       en: "Guides",
       "zh-cn": "指南",
     },
-    pages: ["getting-started", "promise-patterns"],
+    pages: ["getting-started", "promise-patterns", "scope-and-process"],
   },
 ] satisfies SiteSidebar;
 
