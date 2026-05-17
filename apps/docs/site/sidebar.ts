@@ -9,7 +9,13 @@ const siteSidebar = [
       en: "Guides",
       "zh-cn": "指南",
     },
-    pages: ["getting-started", "promise-patterns", "scope-and-process", "scope-convergence"],
+    pages: [
+      "getting-started",
+      "promise-patterns",
+      "scope-and-process",
+      "scope-convergence",
+      "scope-owned-handles",
+    ],
   },
 ] satisfies SiteSidebar;
 
