@@ -101,14 +101,16 @@ process, or API call does over making the prose explain its own emphasis.
 
 ## Example Design
 
-Examples should foreground the shajara structure being taught. Surrounding TypeScript,
-application code, and placeholder setup should stay quiet unless they are part of that
-structure.
+Examples should be designed around the shajara structure the page owns. Decide which
+boundary the reader must see, then choose just enough surrounding TypeScript and
+application code to make that boundary readable. Platform glue and placeholder setup are
+useful only while they keep the shajara move legible; they should not become a second
+walkthrough.
 
-Examples should be meaningful without becoming application walkthroughs. Use a small
-recognizable scenario when it makes the lifecycle or boundary visible, and use comments to
-name omitted UI callbacks, user actions, or view teardown instead of building full
-application plumbing.
+A concrete scenario is valuable when it reveals how work is owned, observed, canceled, or
+converged. Otherwise use lighter surfaces: inline routines, literals, and comments for
+omitted callbacks, user actions, or teardown points. The example's size should be justified
+by a shajara responsibility, not by making the surrounding application feel complete.
 
 Use `run(...)` when crossing from application code into a routine is the move being taught.
 Once that entry pattern has been shown, later examples can usually show the routine body
@@ -119,24 +121,27 @@ Use the smallest number of routines needed to show distinct roles. Do not repeat
 that demonstrate the same behavior; repetition should add a new structural responsibility,
 not merely make an existing point louder.
 
-Incidental mechanics should stay out of the foreground. Lifecycle, cleanup, and
-error-handling code belong in an example only when the section owns those mechanics. When
-failure behavior is the subject, keep the shajara boundary in view: propagation, local
-handling, and recovery are different teaching responsibilities, so separate them when one
-example would make one responsibility read like a caveat on another.
+Treat lifecycle, cleanup, and error behavior as part of the example's design when they
+change how the reader should understand the API being taught. If they are not the page's
+job, omit them rather than carry defensive completeness. Prefer language and runtime forms
+that expose ownership or release without extra scaffolding, and remove stale wrappers that
+only preserve an earlier sample shape. When failure behavior is the subject, keep
+propagation, local handling, and recovery in their responsible contexts so one
+responsibility does not read like a caveat on another.
 
 ## Application Surface
 
-Choose surrounding work according to the section job. When the page teaches a Promise
-boundary, use a familiar Promise-producing API such as `fetch(...)` so the boundary is
-visible. When the page teaches routine orchestration, use `sleep(...)`, literals, or small
-inline routines to simulate business activity; realistic request plumbing should not
-compete with the shajara boundary being taught.
+The application surface should be the reader's handle on the current section, not its
+center of gravity. Choose surrounding work according to the boundary being taught. A
+Promise boundary needs recognizable asynchronous work; routine orchestration can often be
+represented by small inline routines or deterministic values. Realistic plumbing should
+appear only where it changes the shajara behavior the reader is learning.
 
-Use complete setup only when it teaches the current step. Do not hide the boundary being
-taught behind extra application abstractions. If an abstraction would make the reader trust
-an invisible routine, callback shape, or Promise boundary, write the smallest inline shape
-instead.
+Use complete setup only when the setup is itself the integration point. Otherwise keep the
+example flat enough for the reader to see the boundary being taught. A helper is useful
+only when it names a real responsibility that would still matter outside the guide; if it
+mainly hides the boundary or makes the sample look more like an application, write the
+smallest inline shape instead.
 
 Choose domain names that do not collide with shajara concepts unless the page is teaching
 that concept. For example, do not use channel, feed, scope, process, future, or resource
@@ -162,8 +167,11 @@ example shape over making the reader carry incidental syntax.
 Keep code concepts and runtime concepts distinct. A routine can be the main actor in a code
 example because the reader can see it as a generator function. A scope is a runtime
 boundary; it should become the main actor only on a page that is explaining runtime
-ownership. A process is the runtime execution of a routine inside a scope. Avoid implying a
-process hierarchy; when ownership matters, say which scope the process belongs to.
+ownership. Placement inside application code does not create a new shajara category; when
+an API has no named category for a lifetime, describe the surrounding owner in ordinary
+application language and keep project terminology attached to the runtime object. A
+process is the runtime execution of a routine inside a scope. Avoid implying a process
+hierarchy; when ownership matters, say which scope the process belongs to.
 
 When a page teaches return shapes, let the reader see the concrete shape before stating the
 general style. A returned future lets the caller observe a process result in the current
