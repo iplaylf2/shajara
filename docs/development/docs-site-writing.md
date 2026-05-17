@@ -8,6 +8,10 @@ The documentation set can be complete without asking every page to be complete. 
 should teach the move it owns, leave later moves to later pages, and read as a coherent
 finished page with one clear direction.
 
+A guide sequence is an entry path, not a compressed reference. It should stop when the
+reader has enough structural moves to continue through reference pages and examples; it
+does not need a guide for every public API or internal concept.
+
 ## Page Ownership
 
 Start from the reader's task. Introduce a topic because the current page needs it, not
@@ -15,12 +19,16 @@ because the concept exists elsewhere in the system.
 
 Keep the framing at the same level as the page job. A section that teaches routine
 orchestration should be led by the boundary or shape it is responsible for: routine flow, a
-process in the current scope, a child scope, a future handle, or a direct value.
+process in the current scope, a child scope, a returned future, or a direct value.
 Example-specific names should make the code readable without becoming the section's
 conceptual frame.
 
 Avoid preview prose that merely announces the page outline. If the next section already
 shows the next step, let the section carry that transition.
+
+Page descriptions should name the reader-facing job, not enumerate the sections or turn
+the outline into metadata. A description that can be mechanically expanded into the page
+outline is usually too specific.
 
 Do not duplicate the job of an earlier page. When a reader reaches a follow-up guide,
 assume the previous guide has already taught its entry pattern, and spend attention on the
@@ -36,7 +44,8 @@ every part of the page serve that idea.
 
 When a page's design changes, revise the page as a whole. Replace stale framing, examples,
 and supporting material instead of fitting new text around the previous structure.
-Compatibility with outdated framing is not a documentation goal.
+Compatibility with outdated framing is not a documentation goal. The opening, examples,
+headings, and ending should all serve the same design.
 
 Page-level constraints should shape the page. If a constraint affects the page's
 direction, revise the page structure and surrounding explanation so the page embodies that
@@ -70,6 +79,10 @@ observable result near the code. Let that result carry the simple outcome; use t
 after the example to explain the shajara boundary that caused it, or the decision the
 reader should take from it.
 
+Choose the lightest surface that shows the result. A return value can carry a final value,
+a short comment can stand in for omitted application events, and `console.log(...)` is
+most useful when the order of effects is the point.
+
 When an explanation compares examples from multiple sections, give that comparison its own
 stable home. Do not attach cross-section interpretation to one of the sections it compares.
 
@@ -91,6 +104,11 @@ process, or API call does over making the prose explain its own emphasis.
 Examples should foreground the shajara structure being taught. Surrounding TypeScript,
 application code, and placeholder setup should stay quiet unless they are part of that
 structure.
+
+Examples should be meaningful without becoming application walkthroughs. Use a small
+recognizable scenario when it makes the lifecycle or boundary visible, and use comments to
+name omitted UI callbacks, user actions, or view teardown instead of building full
+application plumbing.
 
 Use `run(...)` when crossing from application code into a routine is the move being taught.
 Once that entry pattern has been shown, later examples can usually show the routine body
@@ -119,6 +137,10 @@ Use complete setup only when it teaches the current step. Do not hide the bounda
 taught behind extra application abstractions. If an abstraction would make the reader trust
 an invisible routine, callback shape, or Promise boundary, write the smallest inline shape
 instead.
+
+Choose domain names that do not collide with shajara concepts unless the page is teaching
+that concept. For example, do not use channel, feed, scope, process, future, or resource
+as casual names when they could be read as API or runtime terms.
 
 Avoid scaffolding that makes the reader think about TypeScript declaration mechanics or
 type inference when the page is teaching orchestration:
@@ -151,6 +173,10 @@ the example.
 
 Use terms at the layer they belong to. When a later concept is not doing work in the
 current explanation, leave the code example in the vocabulary of the current layer.
+
+Reference-layer labels belong in reference pages unless a guide is teaching that boundary.
+Importing from `@shajara/host` does not require a guide to make the host layer a concept;
+name the concrete API call or runtime object unless that layer itself is the subject.
 
 Treat named details as obligations. If a page names something below its current level of
 explanation, the page should either own that detail or immediately give it a worked
