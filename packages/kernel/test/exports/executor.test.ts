@@ -644,26 +644,48 @@ describe("/ interfaces: Executor", () => {
 
     test.for([
       {
-        given: ["root"] as const,
+        given: {
+          path: "root",
+          settlementMaxTurns: 64,
+        } as const,
         outcome: {
+          scopeFailureCause: {
+            kind: "external",
+            message: "Scope did not finish closing within the executor reaper round limit",
+            raw: {
+              round: 32,
+              roundLimit: 32,
+            },
+          },
           settledStatus: "closed",
           turnFaults: [],
         },
       },
       {
-        given: ["nested"] as const,
+        given: {
+          path: "nested",
+          settlementMaxTurns: 64,
+        } as const,
         outcome: {
+          scopeFailureCause: {
+            kind: "external",
+            message: "Scope did not finish closing within the executor reaper round limit",
+            raw: {
+              round: 32,
+              roundLimit: 32,
+            },
+          },
           settledStatus: "closed",
           turnFaults: [],
         },
       },
     ])(
       "applies the default round-limit reaper when a launched scope remains stuck while closing",
-      async ({ given: [path], outcome }) => {
+      async ({ given, outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
         const parentScope =
-          path === "root"
+          given.path === "root"
             ? executor.scope
             : unwrapSome(executor.launch(executor.scope, () => park())).scope;
         const handle = unwrapSome(
@@ -677,7 +699,9 @@ describe("/ interfaces: Executor", () => {
         );
 
         const actual = {
-          settled: await waitForSettled(executor, handle),
+          settled: await waitForSettled(executor, handle, {
+            maxTurns: given.settlementMaxTurns,
+          }),
           settledStatus: handle.status,
           turnFaults: managed.turnFaults,
         };
@@ -685,36 +709,44 @@ describe("/ interfaces: Executor", () => {
         expect({
           settledStatus: actual.settledStatus,
           turnFaults: actual.turnFaults,
-        }).toEqual(outcome);
+        }).toEqual({
+          settledStatus: outcome.settledStatus,
+          turnFaults: outcome.turnFaults,
+        });
         expect(either.isLeft(actual.settled)).toBe(true);
         expect(failureCause(actual.settled)).toEqual(
-          expect.objectContaining({
-            kind: "external",
-            message: "Scope did not finish closing within the executor reaper round limit",
-            raw: {
-              round: 2,
-              roundLimit: 2,
-            },
-          }),
+          expect.objectContaining(outcome.scopeFailureCause),
         );
       },
     );
 
     test.for([
       {
-        given: ["root", "root"] as const,
+        given: {
+          firstPath: "root",
+          secondPath: "root",
+          settlementMaxTurns: 64,
+        } as const,
         outcome: {
           firstSettledStatus: "closed",
+          scopeFailureCause: {
+            kind: "external",
+            message: "Scope did not finish closing within the executor reaper round limit",
+            raw: {
+              round: 32,
+              roundLimit: 32,
+            },
+          },
           secondSettledStatus: "closed",
         },
       },
     ])(
       "starts a fresh default round-limit budget for each stuck launched scope",
-      async ({ given: [firstPath, secondPath], outcome }) => {
+      async ({ given, outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
         const firstParentScope =
-          firstPath === "root"
+          given.firstPath === "root"
             ? executor.scope
             : unwrapSome(executor.launch(executor.scope, () => park())).scope;
         const first = unwrapSome(
@@ -727,7 +759,7 @@ describe("/ interfaces: Executor", () => {
           ),
         );
         const secondParentScope =
-          secondPath === "root"
+          given.secondPath === "root"
             ? executor.scope
             : unwrapSome(executor.launch(executor.scope, () => park())).scope;
         const second = unwrapSome(
@@ -741,37 +773,30 @@ describe("/ interfaces: Executor", () => {
         );
 
         const actual = {
-          firstSettled: await waitForSettled(executor, first),
+          firstSettled: await waitForSettled(executor, first, {
+            maxTurns: given.settlementMaxTurns,
+          }),
           firstSettledStatus: first.status,
-          secondSettled: await waitForSettled(executor, second),
+          secondSettled: await waitForSettled(executor, second, {
+            maxTurns: given.settlementMaxTurns,
+          }),
           secondSettledStatus: second.status,
         };
 
         expect({
           firstSettledStatus: actual.firstSettledStatus,
           secondSettledStatus: actual.secondSettledStatus,
-        }).toEqual(outcome);
+        }).toEqual({
+          firstSettledStatus: outcome.firstSettledStatus,
+          secondSettledStatus: outcome.secondSettledStatus,
+        });
         expect(either.isLeft(actual.firstSettled)).toBe(true);
         expect(failureCause(actual.firstSettled)).toEqual(
-          expect.objectContaining({
-            kind: "external",
-            message: "Scope did not finish closing within the executor reaper round limit",
-            raw: {
-              round: 2,
-              roundLimit: 2,
-            },
-          }),
+          expect.objectContaining(outcome.scopeFailureCause),
         );
         expect(either.isLeft(actual.secondSettled)).toBe(true);
         expect(failureCause(actual.secondSettled)).toEqual(
-          expect.objectContaining({
-            kind: "external",
-            message: "Scope did not finish closing within the executor reaper round limit",
-            raw: {
-              round: 2,
-              roundLimit: 2,
-            },
-          }),
+          expect.objectContaining(outcome.scopeFailureCause),
         );
       },
     );

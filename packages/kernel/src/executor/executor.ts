@@ -280,4 +280,6 @@ class RuntimeExecutor implements Executor {
   readonly #scopeRegistry = new WeakSet<ScopeRef<unknown>>();
 }
 
-const DEFAULT_REAPER_ROUND_LIMIT = 2;
+// Reaper rounds are adjudication opportunities, not clock ticks.
+// Keep the default finite, but broad enough for multi-wave cleanup convergence.
+const DEFAULT_REAPER_ROUND_LIMIT = 32;

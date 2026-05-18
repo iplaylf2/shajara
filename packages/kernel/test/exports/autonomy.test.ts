@@ -230,7 +230,11 @@ describe("/ primitives: autonomy", () => {
 
   test.for([
     {
-      given: [new Error("scheduler assignment failed"), "cleanup"] as const,
+      given: {
+        cause: new Error("scheduler assignment failed"),
+        cleanup: "cleanup",
+        settlementMaxTurns: 64,
+      } as const,
       outcome: {
         assignedCount: 4,
         cleanupEvents: ["cleanup"] as const,
@@ -238,8 +242,8 @@ describe("/ primitives: autonomy", () => {
           kind: "external",
           message: "Scope did not finish closing within the executor reaper round limit",
           raw: {
-            round: 2,
-            roundLimit: 2,
+            round: 32,
+            roundLimit: 32,
           },
         },
         settledStatus: "closed",
@@ -247,7 +251,7 @@ describe("/ primitives: autonomy", () => {
     },
   ])(
     "lets the reaper govern a canceled autonomous scope after deferred cleanup suspends",
-    async ({ given: [cause, cleanup], outcome }) => {
+    async ({ given, outcome }) => {
       const events: string[] = [];
       const processor = createInlineProcessor();
       const assigned: ProcessRef<unknown>[] = [];
@@ -255,7 +259,7 @@ describe("/ primitives: autonomy", () => {
         assign: (process) => {
           assigned.push(process);
           if (assigned.length === 2) {
-            throw cause;
+            throw given.cause;
           }
 
           return processor;
@@ -272,7 +276,7 @@ describe("/ primitives: autonomy", () => {
                 defer(() =>
                   pipe(
                     wisp.fromIO(() => {
-                      events.push(cleanup);
+                      events.push(given.cleanup);
                     }),
                     wisp.chain(park),
                   ),
@@ -283,7 +287,9 @@ describe("/ primitives: autonomy", () => {
           ),
         ),
       );
-      const settled = await waitForSettled(executor, handle);
+      const settled = await waitForSettled(executor, handle, {
+        maxTurns: given.settlementMaxTurns,
+      });
       const actual = {
         assignedCount: assigned.length,
         cleanupEvents: [...events] as readonly string[],
