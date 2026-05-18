@@ -54,11 +54,11 @@ function toKernelAutonomyOptions(options: AutonomyOptions): KernelAutonomyOption
 
 function toKernelReaper(reaper: Reaper): KernelReaper {
   return {
-    adjudicate: (scope) => decodeRitual(() => hostAdjudication(reaper, scope))(),
+    adjudicate: (scope) => decodeRitual(() => adjudicateReaper(reaper, scope))(),
   };
 }
 
-function* hostAdjudication(reaper: Reaper, scope: ScopeRef<unknown>) {
+function* adjudicateReaper(reaper: Reaper, scope: ScopeRef<unknown>) {
   try {
     yield* reaper(scope);
     return none;

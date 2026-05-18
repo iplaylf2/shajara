@@ -15,7 +15,7 @@ import { park } from "@shajara/kernel";
 export function createScope(): Scope {
   const executor = ensureExecutor();
 
-  return new HostScope(executor, executor.scope);
+  return new ManagedScope(executor, executor.scope);
 }
 
 /** Long-lived scope for launching and canceling related routines. */
@@ -51,7 +51,7 @@ export type ScopeStatus = LaunchStatus;
 
 export type { RunOptions, StatefulPromise };
 
-class HostScope implements Scope {
+class ManagedScope implements Scope {
   public constructor(
     private readonly executor: Executor,
     scope: ExecutionScopeRef<unknown>,
