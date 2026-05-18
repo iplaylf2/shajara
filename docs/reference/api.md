@@ -95,7 +95,9 @@ run<Return>(
 ```
 
 The returned value is a Promise with a read-only `status`. The status can be
-`open | closing | closed`.
+`open | closing | closed`. When `options.signal` aborts the launch, `null`,
+`CanceledError`, and `AbortError` reasons cancel the launched work; other reasons fail
+it.
 
 Result:
 
@@ -120,7 +122,8 @@ The returned scope exposes:
 
 Result forms:
 
-- `run(...)` returns a `StatefulPromise<Return>`
+- `run(...)` returns a `StatefulPromise<Return>`; a non-cancellation failure from that
+  work also settles the managed scope, while cancellation remains local
 - `cancel()` returns a `Promise<void>`; expected cancellation resolves, and
   non-cancellation close failures reject
 - `closed` is the scope convergence Promise; cancellation and failure reject

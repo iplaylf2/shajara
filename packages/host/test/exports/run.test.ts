@@ -44,6 +44,58 @@ describe("/ entries: run", () => {
 
   test.for([
     {
+      given: [new CanceledError()] as const,
+    },
+    {
+      given: [null] as const,
+    },
+  ])(
+    "cancels the launched ritual when the abort reason is cancellation-like",
+    async ({ given: [reason] }) => {
+      const controller = new globalThis.AbortController();
+      const settled = run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      controller.abort(reason);
+
+      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+    },
+  );
+
+  test.for([
+    {
+      given: [new Error("abort-failed")] as const,
+      outcome: {
+        cause: {
+          kind: "external",
+        },
+        kind: "scope",
+      } as const,
+    },
+  ])(
+    "halts the launched ritual when the abort reason is non-cancellation failure",
+    async ({ given: [cause], outcome }) => {
+      const controller = new globalThis.AbortController();
+      const settled = run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      controller.abort(cause);
+
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
+        ...outcome,
+        cause: {
+          ...outcome.cause,
+          raw: cause,
+        },
+      });
+    },
+  );
+
+  test.for([
+    {
       given: [new Error("routine-startup-failed")] as const,
       outcome: {
         cause: {
@@ -87,6 +139,39 @@ describe("/ entries: run", () => {
 
       await expect(settled).rejects.toBeInstanceOf(CanceledError);
       expect(settled.status).toBe(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: [new Error("abort-before-launch-failed")] as const,
+      outcome: {
+        cause: {
+          kind: "external",
+        },
+        kind: "scope",
+        status: "closed",
+      } as const,
+    },
+  ])(
+    "halts immediately when the abort signal already carries a non-cancellation failure",
+    async ({ given: [cause], outcome }) => {
+      const controller = new globalThis.AbortController();
+      controller.abort(cause);
+
+      const settled = run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
+        cause: {
+          ...outcome.cause,
+          raw: cause,
+        },
+        kind: outcome.kind,
+      });
+      expect(settled.status).toBe(outcome.status);
     },
   );
 });

@@ -132,10 +132,14 @@ deliberate recovery boundary for host code.
 
 ## Host Entries
 
+Host entries start work from the executor root and expose host-facing promises for
+observing launched work or managed scope convergence.
+
 ### `run`
 
 `run` connects a host ritual to the long-lived executor and exposes the resulting launch
-as a Promise with `status`.
+as a Promise with `status`. An optional abort signal converges that launched work
+according to its abort reason.
 
 Result semantics:
 
@@ -154,6 +158,11 @@ Result semantics:
 - `closed`
 
 Convergence semantics:
+
+`run(...)` starts work owned by the managed scope and returns the direct observation
+Promise for that work. The launched work follows the same result mapping as `run(...)`.
+A non-cancellation failure from that work also settles the managed scope; cancellation
+remains local unless the managed scope is canceled.
 
 Calling `cancel()` requests cancellation and waits until the scope reaches `closed`.
 Expected cancellation resolves the `cancel()` Promise; non-cancellation close failures

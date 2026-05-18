@@ -69,6 +69,209 @@ describe("/ entries: createScope", () => {
 
   test.for([
     {
+      given: [new Error("run-failed")] as const,
+      outcome: {
+        scopeCause: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
+        workCause: {
+          kind: "external",
+        },
+        workKind: "scope",
+      } as const,
+    },
+  ])("propagates routine failures to the managed scope", async ({ given: [cause], outcome }) => {
+    const scope = createScope();
+    const settled = scope.run(function* failManagedScope() {
+      throw cause;
+    });
+
+    await expect(settled).rejects.toBeInstanceOf(ScopeError);
+    await expect(settled).rejects.toMatchObject({
+      cause: {
+        ...outcome.workCause,
+        raw: cause,
+      },
+      kind: outcome.workKind,
+    });
+    await expect(scope.closed).rejects.toBeInstanceOf(ScopeError);
+    await expect(scope.closed).rejects.toMatchObject({
+      cause: {
+        ...outcome.scopeCause,
+        cause: {
+          ...outcome.scopeCause.cause,
+          raw: cause,
+        },
+      },
+      kind: outcome.workKind,
+    });
+  });
+
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        afterCancel: "closed",
+        afterRunCancellation: "open",
+      } as const,
+    },
+  ])("keeps the managed scope open after routine cancellation", async ({ outcome }) => {
+    const scope = createScope();
+
+    try {
+      const settled = scope.run(function* cancelManagedScope() {
+        throw new CanceledError();
+      });
+
+      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+      expect(scope.status).toBe(outcome.afterRunCancellation);
+
+      const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      await closedCancellation;
+      expect(scope.status).toBe(outcome.afterCancel);
+    } finally {
+      if (scope.status !== "closed") {
+        await expect(scope.cancel()).resolves.toBeUndefined();
+      }
+    }
+  });
+
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        afterCancel: "closed",
+        afterSignalAbort: "open",
+      } as const,
+    },
+  ])("keeps the managed scope open after signal cancellation", async ({ outcome }) => {
+    const controller = new globalThis.AbortController();
+    const scope = createScope();
+
+    try {
+      const settled = scope.run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      controller.abort();
+
+      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+      expect(scope.status).toBe(outcome.afterSignalAbort);
+
+      const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      await closedCancellation;
+      expect(scope.status).toBe(outcome.afterCancel);
+    } finally {
+      if (scope.status !== "closed") {
+        await expect(scope.cancel()).resolves.toBeUndefined();
+      }
+    }
+  });
+
+  test.for([
+    {
+      given: [new Error("signal-abort-failed")] as const,
+      outcome: {
+        scopeCause: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
+        workCause: {
+          kind: "external",
+        },
+        workKind: "scope",
+      } as const,
+    },
+  ])(
+    "propagates signal abort failures to the managed scope",
+    async ({ given: [cause], outcome }) => {
+      const controller = new globalThis.AbortController();
+      const scope = createScope();
+      const settled = scope.run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      controller.abort(cause);
+
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
+        cause: {
+          ...outcome.workCause,
+          raw: cause,
+        },
+        kind: outcome.workKind,
+      });
+      await expect(scope.closed).rejects.toBeInstanceOf(ScopeError);
+      await expect(scope.closed).rejects.toMatchObject({
+        cause: {
+          ...outcome.scopeCause,
+          cause: {
+            ...outcome.scopeCause.cause,
+            raw: cause,
+          },
+        },
+        kind: outcome.workKind,
+      });
+    },
+  );
+
+  test.for([
+    {
+      given: [new Error("signal-abort-before-run-failed")] as const,
+      outcome: {
+        scopeCause: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
+        workCause: {
+          kind: "external",
+        },
+        workKind: "scope",
+      } as const,
+    },
+  ])(
+    "propagates already-aborted signal failures to the managed scope",
+    async ({ given: [cause], outcome }) => {
+      const controller = new globalThis.AbortController();
+      controller.abort(cause);
+      const scope = createScope();
+      const settled = scope.run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
+        cause: {
+          ...outcome.workCause,
+          raw: cause,
+        },
+        kind: outcome.workKind,
+      });
+      await expect(scope.closed).rejects.toBeInstanceOf(ScopeError);
+      await expect(scope.closed).rejects.toMatchObject({
+        cause: {
+          ...outcome.scopeCause,
+          cause: {
+            ...outcome.scopeCause.cause,
+            raw: cause,
+          },
+        },
+        kind: outcome.workKind,
+      });
+    },
+  );
+
+  test.for([
+    {
       given: [] as const,
       outcome: "closed",
     },

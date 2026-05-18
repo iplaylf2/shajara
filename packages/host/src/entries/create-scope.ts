@@ -4,6 +4,7 @@ import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit";
 import { CanceledError } from "#/errors";
 import { encodeRitual } from "#/boundary/index";
 import { ensureExecutor } from "#/executor";
+import { isLeft } from "@shajara/kernel/utils";
 import { launchEntry } from "#/entry-kit";
 import { park } from "@shajara/kernel";
 
@@ -21,7 +22,9 @@ export function createScope(): Scope {
 /** Long-lived scope for launching and canceling related routines. */
 export interface Scope {
   /**
-   * Starts a routine under this scope.
+   * Starts a routine owned by this scope.
+   * Non-cancellation failures from the launched routine propagate to this scope.
+   * Cancellation remains local to the launched routine.
    *
    * @returns Stateful promise that resolves with the routine result or rejects with a
    * shajara error.
@@ -61,7 +64,21 @@ class ManagedScope implements Scope {
   }
 
   public run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
-    return launchEntry(this.executor, this.#entry.scope, ritual, options).settled;
+    const entry = launchEntry(this.executor, this.#entry.scope, ritual, options);
+    this.executor.onSettled(entry.scope.exitFuture, (result) => {
+      if (!isLeft(result)) {
+        return;
+      }
+
+      const failure = result.left;
+      if (failure.kind === "canceled") {
+        return;
+      }
+
+      this.executor.halt(this.#entry.scope, failure);
+    });
+
+    return entry.settled;
   }
 
   public async cancel(): Promise<void> {

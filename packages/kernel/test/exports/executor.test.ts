@@ -557,18 +557,51 @@ describe("/ interfaces: Executor", () => {
 
     test.for([
       {
+        given: [externalFailure("external", "scope-failed")] as const,
+        outcome: {
+          settledStatus: "closed",
+        },
+      },
+    ])("halt terminates an open launched scope", async ({ given: [failure], outcome }) => {
+      await using managed = createManagedExecutor();
+      const { executor } = managed;
+
+      const handle = unwrapSome(executor.launch(executor.scope, () => park()));
+      executor.halt(handle.scope, failure);
+      const actual = {
+        settled: await waitForSettled(executor, handle),
+        settledStatus: handle.status,
+      };
+
+      expect(actual).toEqual({
+        ...outcome,
+        settled: left(
+          expect.objectContaining({
+            cause: failure,
+            kind: "scope",
+          }),
+        ),
+      });
+    });
+
+    test.for([
+      {
         given: [{}, "unexpected"] as const,
         outcome: {
           launchAccepted: false,
         },
       },
     ])(
-      "rejects launch requests and ignores cancel requests for scopes outside this executor",
+      "rejects launch requests and ignores external control for scopes outside this executor",
       async ({ given: [foreignScope, entryResult], outcome }) => {
         await using managed = createManagedExecutor();
         const { executor } = managed;
 
         executor.cancel(foreignScope as ExecutionScopeRef<never>);
+        executor.halt(
+          foreignScope as ExecutionScopeRef<never>,
+          externalFailure("external", "ignored"),
+        );
         const actual = {
           launchAccepted: isSome(
             executor.launch(foreignScope as ExecutionScopeRef<never>, () => wisp.of(entryResult)),
