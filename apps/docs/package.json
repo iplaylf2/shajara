@@ -25,14 +25,14 @@
   },
   "dependencies": {
     "@shajara/host": "workspace:^",
-    "solid-js": "^1.9.12"
+    "solid-js": "^1.9.13"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/solid-js": "^6.0.1",
     "@astrojs/starlight": "^0.39.2",
     "@shajara/presets": "workspace:^",
-    "astro": "^6.3.1",
+    "astro": "^6.3.3",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
     "typedoc": "catalog:",
