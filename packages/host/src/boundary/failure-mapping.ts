@@ -1,7 +1,7 @@
 import { CanceledError, ChannelError, ExternalError, InterruptedError, ScopeError } from "#/errors";
-import type { CanceledFailure, ScopeFailure } from "@shajara/kernel";
 import type { Failure } from "#/contracts";
 import type { ScopeExitError } from "#/errors";
+import type { ScopeExitFailure } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 import { externalFailure } from "@shajara/kernel";
 
@@ -65,4 +65,4 @@ export function fromFailure(failure: Failure): Error {
   }
 }
 
-type ScopeExitFailure = CanceledFailure | ScopeFailure;
+export type { ScopeExitFailure } from "@shajara/kernel";

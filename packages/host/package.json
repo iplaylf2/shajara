@@ -10,7 +10,7 @@
     "shajara",
     "structured-concurrency"
   ],
-  "homepage": "https://github.com/iplaylf2/shajara#readme",
+  "homepage": "https://iplaylf2.github.io/shajara",
   "bugs": {
     "url": "https://github.com/iplaylf2/shajara/issues"
   },
@@ -50,6 +50,7 @@
     }
   },
   "scripts": {
+    "api-map": "typedoc",
     "build": "vite build",
     "postpack": "yarn run -T pack:license clean",
     "prepack": "yarn build && yarn run -T pack:license stage",
@@ -66,6 +67,7 @@
     "core-js": "catalog:",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
+    "typedoc": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",

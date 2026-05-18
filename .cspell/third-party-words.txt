@@ -3,6 +3,7 @@ bimap
 depcruise
 effection
 frontmatter
+geolocation
 knip
 labelledby
 mktemp
@@ -13,6 +14,7 @@ pipeable
 pipefail
 segoe
 topbar
+typedoc
 vite
 vitest
 withastro

@@ -18,7 +18,8 @@ export function all<EntryReturns extends readonly unknown[]>(
   return spawn(allAggregator(entries));
 }
 
-type AllEntries<EntryReturns extends readonly unknown[]> = {
+/** Defines entries whose relics form the aggregate result tuple. */
+export type AllEntries<EntryReturns extends readonly unknown[]> = {
   readonly [Index in keyof EntryReturns]: Ritual<EntryReturns[Index]>;
 };
 

@@ -7,7 +7,7 @@
       "#site": ["./site/index.ts"]
     }
   },
-  "exclude": ["dist"],
+  "exclude": ["dist", "public"],
   "extends": ["astro/tsconfigs/strict", "@shajara/presets/tsconfig.shared.json"],
   "include": [".astro/types.d.ts", "**/*"]
 }

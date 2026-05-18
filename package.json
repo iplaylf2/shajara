@@ -1,6 +1,7 @@
 {
   "name": "shajara",
   "private": true,
+  "homepage": "https://iplaylf2.github.io/shajara",
   "author": {
     "name": "iplaylf2",
     "url": "https://github.com/iplaylf2"
@@ -30,8 +31,8 @@
     "@shajara/presets": "workspace:^",
     "@types/node": "catalog:",
     "cspell-cli": "^10.0.0",
-    "knip": "^6.12.2",
-    "oxfmt": "^0.49.0",
+    "knip": "^6.14.1",
+    "oxfmt": "^0.50.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },
@@ -45,6 +46,9 @@
     "tinypool": {
       "unplugged": true
     }
+  },
+  "resolutions": {
+    "yaml@npm:2.7.1": "npm:2.9.0"
   },
   "engines": {
     "node": ">=26.1.0"

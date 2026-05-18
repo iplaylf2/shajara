@@ -1,0 +1,9 @@
+{
+  "alwaysCreateEntryPointModule": true,
+  "entryPoints": ["src/index.ts", "src/primitives.ts", "src/boundary.ts"],
+  "entryPointStrategy": "resolve",
+  "githubPages": false,
+  "name": "@shajara/host",
+  "out": "api-map",
+  "readme": "none"
+}

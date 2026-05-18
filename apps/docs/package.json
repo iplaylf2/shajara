@@ -3,6 +3,7 @@
   "version": "0.2.2",
   "private": true,
   "description": "Documentation and demo app for shajara.",
+  "homepage": "https://iplaylf2.github.io/shajara",
   "author": {
     "name": "iplaylf2",
     "url": "https://github.com/iplaylf2"
@@ -14,7 +15,9 @@
   },
   "type": "module",
   "scripts": {
-    "build": "astro build",
+    "api-map": "typedoc",
+    "build": "yarn api-map && yarn build:site",
+    "build:site": "astro build",
     "dev": "astro dev --host",
     "preview": "astro preview --host",
     "test": "node -e \"console.log('No tests for @shajara/docs')\"",
@@ -22,16 +25,17 @@
   },
   "dependencies": {
     "@shajara/host": "workspace:^",
-    "solid-js": "^1.9.12"
+    "solid-js": "^1.9.13"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/solid-js": "^6.0.1",
     "@astrojs/starlight": "^0.39.2",
     "@shajara/presets": "workspace:^",
-    "astro": "^6.3.1",
+    "astro": "^6.3.3",
     "oxlint": "catalog:",
     "type-fest": "catalog:",
+    "typedoc": "catalog:",
     "typescript": "catalog:"
   },
   "dependenciesMeta": {

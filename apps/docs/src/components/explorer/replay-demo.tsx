@@ -25,7 +25,7 @@ export function ExplorerReplayDemo(props: Props): JSX.Element {
   );
   const [isCodeAutoScrollEnabled, setCodeAutoScrollEnabled] = createSignal(true);
 
-  onMount(function mountExplorerReplayDemo() {
+  onMount(() => {
     onCleanup(
       startReplay({
         autoScroll: isCodeAutoScrollEnabled,

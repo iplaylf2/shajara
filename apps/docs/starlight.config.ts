@@ -1,17 +1,12 @@
-import { i18N, site, starlightLocales } from "./site";
+import { i18N, site, starlightLocales, starlightSidebar } from "./site";
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
-export const docsConfig = {
+export const docsConfig: StarlightUserConfig = {
   defaultLocale: i18N.defaultLocale,
   description: site.description,
   disable404Route: true,
   locales: starlightLocales,
-  sidebar: [
-    {
-      items: [{ autogenerate: { directory: "guides" } }],
-      label: "Guides",
-    },
-  ],
+  sidebar: starlightSidebar,
   social: [
     {
       href: site.repositoryUrl,
@@ -20,4 +15,4 @@ export const docsConfig = {
     },
   ],
   title: site.title,
-} satisfies StarlightUserConfig;
+};

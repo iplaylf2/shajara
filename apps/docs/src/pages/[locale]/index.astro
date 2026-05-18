@@ -1,5 +1,5 @@
 ---
-import { i18N, siteLocales } from "#site";
+import { i18N, site, siteLocales } from "#site";
 import SplashPage from "#/components/splash-page.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
@@ -9,19 +9,37 @@ export function getStaticPaths() {
 
 const { locale } = Astro.params;
 
+const explorerHref = getRelativeLocaleUrl(
+  i18N.locales[locale].lang,
+  "explorer",
+);
+const guideHref = getRelativeLocaleUrl(
+  i18N.locales[locale].lang,
+  "guides/getting-started",
+);
+const apiMapHref = `${site.basePath}/api-map/index.html`;
+
 const heroActions = [
   {
-    icon: "right-arrow" as const,
-    link: getRelativeLocaleUrl(
-      i18N.locales[locale].lang,
-      "guides/getting-started",
-    ),
+    attrs: { iconPlacement: "start" as const },
+    icon: "open-book" as const,
+    link: guideHref,
     text: Astro.locals.t("docs.home.hero.guides"),
+    variant: "primary" as const,
   },
   {
-    icon: "right-arrow" as const,
-    link: getRelativeLocaleUrl(i18N.locales[locale].lang, "explorer"),
+    attrs: { iconPlacement: "start" as const },
+    icon: "window" as const,
+    link: explorerHref,
     text: Astro.locals.t("docs.home.hero.explorer"),
+    variant: "secondary" as const,
+  },
+  {
+    attrs: { iconPlacement: "start" as const },
+    icon: "document" as const,
+    link: apiMapHref,
+    text: Astro.locals.t("docs.home.hero.typedoc"),
+    variant: "secondary" as const,
   },
 ];
 ---

@@ -1,0 +1,9 @@
+{
+  "alwaysCreateEntryPointModule": true,
+  "entryPoints": ["src/index.ts", "src/sigils.ts", "src/utils.ts"],
+  "entryPointStrategy": "resolve",
+  "githubPages": false,
+  "name": "@shajara/kernel",
+  "out": "api-map",
+  "readme": "none"
+}
