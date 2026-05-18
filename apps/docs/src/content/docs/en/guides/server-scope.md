@@ -84,10 +84,10 @@ After a shutdown signal, `shutdown.promise` completes and the top-level code lea
 The HTTP server is also an `await using` resource. When the block exits, its async
 disposable calls `server.close()`, so the HTTP layer stops accepting new requests and
 waits until the server has finished closing. `serverScope`'s async disposable calls
-`scope.cancel()`, closing this shajara-managed scope.
+`scope.cancel()`, and a normal cancellation from shutdown resolves after the
+shajara-managed scope has closed. Non-cancellation close failures still reject.
 
-`Promise.race(...)` keeps the top-level code parked until a shutdown signal arrives or
-`serverScope` closes on its own. If the scope closes first, its close result reaches the
-outer `catch` unchanged. Closing a healthy running scope finishes with a cancellation
-result, so this shutdown path treats `CanceledError` as the expected result; other errors
-should still surface.
+While the service is running, `Promise.race(...)` watches both the shutdown signal and
+`serverScope.closed`. If `serverScope.closed` settles first, the race passes that close
+result to the outer `catch`. A normal close appears there as `CanceledError`, which the
+`catch` treats as expected; other errors still surface.

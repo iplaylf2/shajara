@@ -155,9 +155,11 @@ Result semantics:
 
 Convergence semantics:
 
-- `cancel()` requests cancellation and waits for the scope's convergence result
-- `closed` settles with that same result once the scope reaches `closed`
-- cancellation and failure settle as rejections through the corresponding host error mapping
+Calling `cancel()` requests cancellation and waits until the scope reaches `closed`.
+Expected cancellation resolves the `cancel()` Promise; non-cancellation close failures
+reject through the corresponding host error mapping. `closed` remains the direct
+observation point for scope convergence, so cancellation and failure settle there as
+rejections through the same mapping.
 
 ## Host Operations
 

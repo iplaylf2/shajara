@@ -1,4 +1,3 @@
-import { CanceledError, createScope, sleep } from "@shajara/host";
 import type {
   ExplorerExampleEvent,
   ExplorerExampleId,
@@ -7,6 +6,7 @@ import type {
 import type { ExplorerReplayFrame, ExplorerReplayState } from "#/domain/explorer/contract";
 import type { JSX, Setter } from "solid-js";
 import { createReplayFrameStream, playbackReplayFrames } from "./replay-stream";
+import { createScope, sleep } from "@shajara/host";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { readCodeLines, syncCodeLines } from "./replay-code-view";
 import { spawn, wait } from "@shajara/host/primitives";
@@ -116,9 +116,7 @@ class ExplorerReplaySession {
 
     return () => {
       this.#isMounted = false;
-      this.#replayScope.cancel().catch((error) => {
-        reportUnexpectedCancelFailure(error);
-      });
+      reportAsyncFailure(this.#replayScope.cancel());
     };
   }
 
@@ -209,12 +207,12 @@ function createStateUpdater(
   };
 }
 
-function reportUnexpectedCancelFailure(error: unknown): void {
-  if (error instanceof CanceledError) {
-    return;
-  }
-
-  throw error;
+function reportAsyncFailure(settled: Promise<unknown>): void {
+  settled.catch((error) => {
+    globalThis.queueMicrotask(() => {
+      throw error;
+    });
+  });
 }
 
 const MIN_RENDER_GAP_MS = 34;

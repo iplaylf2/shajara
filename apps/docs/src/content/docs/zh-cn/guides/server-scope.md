@@ -78,9 +78,9 @@ route handler 可以把 rejection 交给 HTTP 框架的错误处理，也可以�
 
 HTTP server 也是一个 `await using` 资源。离开 block 时，它的 async disposable 会调用
 `server.close()`，让 HTTP 层停止接收新 request，并等待 server 完成关闭。`serverScope`
-的 async disposable 会调用 `scope.cancel()`，关闭这个由 shajara 管理的 scope。
+的 async disposable 会调用 `scope.cancel()`；shutdown 中的正常取消会在这个由 shajara
+管理的 scope 关闭后 resolve。非取消的关闭失败仍然会 reject。
 
-`Promise.race(...)` 会让顶层代码停在这里，直到收到 shutdown signal，或者
-`serverScope` 自行关闭。如果 scope 先关闭，它的关闭结果会按原样进入外层 `catch`。
-关闭一个正常运行的 scope 会以取消结果结束，所以这段 shutdown 把 `CanceledError` 当作
-预期结果处理；除此之外的错误仍然应该暴露。
+服务运行期间，`Promise.race(...)` 同时等待 shutdown signal 和 `serverScope.closed`。
+如果 `serverScope.closed` 先结束，race 会把这个关闭结果交给外层 `catch`。正常关闭在
+这里表现为 `CanceledError`，`catch` 会把它当作预期结果处理；除此之外的错误仍然应该暴露。

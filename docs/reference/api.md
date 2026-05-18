@@ -118,11 +118,12 @@ The returned scope exposes:
 - `closed`
 - `[Symbol.asyncDispose]()`
 
-Result semantics:
+Result forms:
 
-- `cancel()` requests cancellation and waits for the scope's convergence result
-- `closed` settles with that same result once the scope reaches `closed`
-- cancellation and failure settle as rejections with the corresponding error
+- `run(...)` returns a `StatefulPromise<Return>`
+- `cancel()` returns a `Promise<void>`; expected cancellation resolves, and
+  non-cancellation close failures reject
+- `closed` is the scope convergence Promise; cancellation and failure reject
 - calling `run(...)` on a closed scope throws synchronously
 
 ## Host Operations

@@ -47,12 +47,12 @@ describe("/ operations: abortSignal", () => {
       expect(signal.aborted).toBe(outcome.beforeCancel);
 
       const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
       await settledCancellation;
       expect(signal.aborted).toBe(outcome.afterCancel);
     } finally {
       if (scope.status !== "closed") {
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
       }
     }
   });

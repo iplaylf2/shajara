@@ -22,7 +22,7 @@ describe("/ entries: createScope", () => {
         await expect(scope.run(() => until(() => Promise.resolve(value)))).resolves.toBe(value);
         expect(scope.status).toBe(outcome.afterRun);
 
-        const cancelation = expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        const cancelation = expect(scope.cancel()).resolves.toBeUndefined();
         const closed = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
 
         await cancelation;
@@ -30,7 +30,7 @@ describe("/ entries: createScope", () => {
         expect(scope.status).toBe(outcome.afterCancel);
       } finally {
         if (scope.status !== "closed") {
-          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+          await expect(scope.cancel()).resolves.toBeUndefined();
         }
       }
     },
@@ -53,7 +53,7 @@ describe("/ entries: createScope", () => {
     try {
       expect(scope.status).toBe(outcome.beforeCancel);
 
-      const cancelation = expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      const cancelation = expect(scope.cancel()).resolves.toBeUndefined();
       const closed = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
 
       await cancelation;
@@ -62,7 +62,7 @@ describe("/ entries: createScope", () => {
       expect(scope.status).toBe(outcome.afterCancel);
     } finally {
       if (scope.status !== "closed") {
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
       }
     }
   });
@@ -78,7 +78,7 @@ describe("/ entries: createScope", () => {
       const scope = createScope();
 
       const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope[Symbol.asyncDispose]()).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope[Symbol.asyncDispose]()).resolves.toBeUndefined();
       await closedCancellation;
       expect(scope.status).toBe(outcome);
     },
@@ -94,7 +94,7 @@ describe("/ entries: createScope", () => {
     async ({ given: [value], outcome }) => {
       const scope = createScope();
 
-      await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
 
       expect(() => scope.run(() => until(() => Promise.resolve(value)))).toThrow(outcome);
     },
@@ -104,17 +104,17 @@ describe("/ entries: createScope", () => {
     {
       given: [] as const,
       outcome: {
-        firstCancel: "canceled",
-        secondCancel: "canceled",
+        status: "closed",
       } as const,
     },
   ])(
-    "reuses the settled close result when cancel is called after the scope already closed",
+    "suppresses the settled cancellation result when cancel is called after the scope already closed",
     async ({ outcome }) => {
       const scope = createScope();
 
-      await expect(scope.cancel()).rejects.toMatchObject({ kind: outcome.firstCancel });
-      await expect(scope.cancel()).rejects.toMatchObject({ kind: outcome.secondCancel });
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      expect(scope.status).toBe(outcome.status);
     },
   );
 
@@ -140,13 +140,13 @@ describe("/ entries: createScope", () => {
 
         const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
         const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
         await closedCancellation;
         await settledCancellation;
         expect(events).toEqual(outcome);
       } finally {
         if (scope.status !== "closed") {
-          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+          await expect(scope.cancel()).resolves.toBeUndefined();
         }
       }
     },
@@ -177,13 +177,13 @@ describe("/ entries: createScope", () => {
         await started.promise;
         const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
         const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
         await closedCancellation;
         await settledCancellation;
         expect(events).toEqual(outcome);
       } finally {
         if (scope.status !== "closed") {
-          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+          await expect(scope.cancel()).resolves.toBeUndefined();
         }
       }
     },
@@ -220,7 +220,7 @@ describe("/ entries: createScope", () => {
       const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
       const cancelation = scope.cancel();
 
-      await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
+      await expect(cancelation).resolves.toBeUndefined();
       await closedCancellation;
       await expect(settledError).resolves.toBeInstanceOf(ScopeError);
       await expect(settledError).resolves.toMatchObject({
