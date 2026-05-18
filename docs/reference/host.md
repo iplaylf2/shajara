@@ -180,9 +180,10 @@ the current executor from scope context; if that context is missing, they throw
 
 ### `abortSignal`
 
-`abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
-aborted while the scope is open; it aborts during that scope's convergence.
-It does not provide a way to cancel the scope from host code.
+`abortSignal()` returns an `AbortSignal` tied to the current scope. The signal stays open
+with the scope, aborts during scope convergence, and carries the corresponding error as
+`AbortSignal.reason` when the scope is canceled or fails. It does not provide a way to
+cancel the scope from host code.
 
 ### `completer`
 

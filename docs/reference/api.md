@@ -137,8 +137,8 @@ Result forms:
 yield * abortSignal();
 ```
 
-Returns an `AbortSignal` tied to the current scope. The signal aborts during that
-scope's convergence.
+Returns an `AbortSignal` tied to the current scope. The signal aborts during scope
+convergence; cancellation or failure sets `AbortSignal.reason` to the corresponding error.
 
 ### `completer`
 
