@@ -2975,7 +2975,7 @@ __metadata:
     "@astrojs/starlight": "npm:^0.39.2"
     "@shajara/host": "workspace:^"
     "@shajara/presets": "workspace:^"
-    astro: "npm:^6.3.3"
+    astro: "npm:^6.3.5"
     oxlint: "catalog:"
     solid-js: "npm:^1.9.13"
     type-fest: "catalog:"
@@ -3319,7 +3319,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^25.8.0":
+"@types/node@npm:*":
   version: 25.8.0
   resolution: "@types/node@npm:25.8.0"
   dependencies:
@@ -3341,6 +3341,15 @@ __metadata:
   dependencies:
     undici-types: "npm:~7.16.0"
   checksum: 10c0/d2c36b78b6050d8677769fa05a32243061675e81ddc2bb43955d91a671af3465506ef2731a24c0c9ab42b6b679bd5c1513de45bbe9ea278c2c07ee63b564b61b
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^25.9.0":
+  version: 25.9.0
+  resolution: "@types/node@npm:25.9.0"
+  dependencies:
+    undici-types: "npm:>=7.24.0 <7.24.7"
+  checksum: 10c0/1845f0ce5471213a4f0c887845c50993968ea863c03bb355282b59bdcc877d009a2785f0f506cfc40b8ce7548a21e33ac826e998be62d42b000bfd9ccdc6c910
   languageName: node
   linkType: hard
 
@@ -3774,9 +3783,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"astro@npm:^6.3.3":
-  version: 6.3.3
-  resolution: "astro@npm:6.3.3"
+"astro@npm:^6.3.5":
+  version: 6.3.5
+  resolution: "astro@npm:6.3.5"
   dependencies:
     "@astrojs/compiler": "npm:^4.0.0"
     "@astrojs/internal-helpers": "npm:0.9.1"
@@ -3839,7 +3848,7 @@ __metadata:
       optional: true
   bin:
     astro: ./bin/astro.mjs
-  checksum: 10c0/13d04e75d08aa7993f2e5b4949912f86f81f2b3143f28009ff7acb9d192949a80e111d490cec60c08bcc4708a1e5c68a7ebc8eb99a5cfee769b2d71936b0b13d
+  checksum: 10c0/be65b869161b42f6ab98b07a33c45c276d9d51405d8d490df84231d10b171f74b30490492aca490effda7ab03076f10f31d715533242c2488e0b9e599de35fd8
   languageName: node
   linkType: hard
 
