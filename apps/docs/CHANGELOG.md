@@ -1,5 +1,24 @@
 # @shajara/docs
 
+## 0.3.0
+
+### Minor Changes
+
+- [#38](https://github.com/iplaylf2/shajara/pull/38) [`e59832b`](https://github.com/iplaylf2/shajara/commit/e59832b2d2bde23cbb26c044590a87f4e149ef06) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Expand the docs site beyond the initial preview.
+
+  Readers can now move from first use to the API map with new guides and refreshed home
+  navigation.
+
+### Patch Changes
+
+- [#40](https://github.com/iplaylf2/shajara/pull/40) [`75a0a9f`](https://github.com/iplaylf2/shajara/commit/75a0a9f83171460495d203960d055761bd6daece) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Align server-scope docs with managed ownership.
+
+  The server-scope guide and explorer cleanup now match the host behavior for launched work
+  ownership and expected shutdown cancellation.
+
+- Updated dependencies [[`e59832b`](https://github.com/iplaylf2/shajara/commit/e59832b2d2bde23cbb26c044590a87f4e149ef06), [`75a0a9f`](https://github.com/iplaylf2/shajara/commit/75a0a9f83171460495d203960d055761bd6daece)]:
+  - @shajara/host@0.9.0
+
 ## 0.2.2
 
 ### Patch Changes

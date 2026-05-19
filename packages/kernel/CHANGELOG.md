@@ -1,5 +1,27 @@
 # @shajara/kernel
 
+## 0.9.0
+
+### Minor Changes
+
+- [#40](https://github.com/iplaylf2/shajara/pull/40) [`75a0a9f`](https://github.com/iplaylf2/shajara/commit/75a0a9f83171460495d203960d055761bd6daece) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Honor staged scope convergence.
+
+  Scope shutdown now follows the staged convergence contract consistently.
+  `Executor.halt(...)` lets integrations fail a registered open scope from outside running
+  work, and cancellation or failure waits for child scopes before structural work, then
+  waits for structural work before detached work.
+
+  The default round-limit reaper now gives those cleanup cascades more room before
+  reporting the scope as stuck.
+
+### Patch Changes
+
+- [#38](https://github.com/iplaylf2/shajara/pull/38) [`e59832b`](https://github.com/iplaylf2/shajara/commit/e59832b2d2bde23cbb26c044590a87f4e149ef06) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Complete the primitive entry tuple type surface.
+
+  `AllEntries` and `RaceEntries` are now exported alongside `all(...)` and `race(...)`.
+  Integrations can import the tuple shapes from the same primitive surface as the functions
+  that accept them.
+
 ## 0.8.0
 
 ### Minor Changes
