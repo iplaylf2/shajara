@@ -27,7 +27,6 @@ describe("/ primitives: cede", () => {
     {
       given: [] as const,
       outcome: {
-        cancelKind: "canceled",
         status: "closed",
       } as const,
     },
@@ -41,12 +40,12 @@ describe("/ primitives: cede", () => {
       });
 
       const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
       await settledCancellation;
       expect(scope.status).toBe(outcome.status);
     } finally {
       if (scope.status !== outcome.status) {
-        await expect(scope.cancel()).rejects.toMatchObject({ kind: outcome.cancelKind });
+        await expect(scope.cancel()).resolves.toBeUndefined();
       }
     }
   });

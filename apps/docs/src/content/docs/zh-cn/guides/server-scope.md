@@ -23,17 +23,15 @@ try {
 
   const app = new Hono();
 
-  app.get("/reports/:id", async (c) => {
-    const reportId = c.req.param("id");
-
-    const report = await serverScope.run(function* handleReportRequest() {
+  app.get("/reports/:id", (c) =>
+    serverScope.run(function* handleReportRequest() {
+      const reportId = c.req.param("id");
       const response = yield* until(() => fetch(`https://reports.internal/reports/${reportId}`));
+      const report = yield* until(() => response.json());
 
-      return yield* until(() => response.json());
-    });
-
-    return c.json(report);
-  });
+      return c.json(report);
+    }),
+  );
 
   await using _server = serve({ fetch: app.fetch, port: 3000 });
 
@@ -60,16 +58,14 @@ HTTP app 和 server 都在同一个 block 内创建。只要顶层代码还在�
 
 ## `scope.run(...)` 启动路由工作
 
-route handler 通过 `serverScope.run(...)` 启动一次请求工作，并等待这次工作的 Promise。
-HTTP response 仍然由 route handler 返回。
+route handler 直接返回 `serverScope.run(...)` 的 Promise。routine 是这个 GET handler
+的主体：读取路由参数、加载 report，并返回 HTTP response。
 
-这个 Promise 把这次路由工作的结果带回 handler：成功时返回 `report`；如果 routine 抛出
-非取消异常，这个 Promise 会 reject，通常表现为 `ScopeError`。这个失败只属于这一次
-`serverScope.run(...)` 启动的工作，不会自动关闭外层的 `serverScope`。
-
-route handler 可以把 rejection 交给 HTTP 框架的错误处理，也可以捕获后返回这个接口需要
-的 HTTP response。如果 `serverScope` 在请求工作仍然运行时关闭，仍属于它的路由工作会
-跟着这个 scope 收敛。
+`serverScope.run(...)` 不只是把 routine 暴露成 Promise。它也把这次路由工作纳入长期
+scope。这次工作遵循结构化并发的收敛语义：如果 routine 让非取消异常逃出，这个
+Promise 会 reject，通常表现为 `ScopeError`，同一个失败也会关闭 `serverScope`。这里
+没有可以被遗忘的 request 局部失败；它归属的 scope 也会观察到同一个失败。如果
+`serverScope` 在请求工作仍然运行时关闭，仍属于它的路由工作会跟着这个 scope 收敛。
 
 ## `using` 管理关闭
 
@@ -78,9 +74,10 @@ route handler 可以把 rejection 交给 HTTP 框架的错误处理，也可以�
 
 HTTP server 也是一个 `await using` 资源。离开 block 时，它的 async disposable 会调用
 `server.close()`，让 HTTP 层停止接收新 request，并等待 server 完成关闭。`serverScope`
-的 async disposable 会调用 `scope.cancel()`，关闭这个由 shajara 管理的 scope。
+的 async disposable 会调用 `scope.cancel()`；shutdown 中的正常取消会在这个由 shajara
+管理的 scope 关闭后 resolve。非取消的关闭失败仍然会 reject。
 
-`Promise.race(...)` 会让顶层代码停在这里，直到收到 shutdown signal，或者
-`serverScope` 自行关闭。如果 scope 先关闭，它的关闭结果会按原样进入外层 `catch`。
-关闭一个正常运行的 scope 会以取消结果结束，所以这段 shutdown 把 `CanceledError` 当作
+服务运行期间，`Promise.race(...)` 同时等待 shutdown signal 和 `serverScope.closed`。
+如果这个 scope 因为未捕获的路由失败，或其他属于这个长期边界的失败而先关闭，race 会把
+这个关闭结果交给外层 `catch`。正常关闭在这里表现为 `CanceledError`，`catch` 会把它当作
 预期结果处理；除此之外的错误仍然应该暴露。

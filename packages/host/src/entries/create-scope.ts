@@ -1,8 +1,10 @@
 import type { ExecutionScopeRef, Executor } from "@shajara/kernel";
 import type { LaunchStatus, RiteRoutine } from "#/contracts";
 import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit";
+import { CanceledError } from "#/errors";
 import { encodeRitual } from "#/boundary/index";
 import { ensureExecutor } from "#/executor";
+import { isLeft } from "@shajara/kernel/utils";
 import { launchEntry } from "#/entry-kit";
 import { park } from "@shajara/kernel";
 
@@ -14,13 +16,15 @@ import { park } from "@shajara/kernel";
 export function createScope(): Scope {
   const executor = ensureExecutor();
 
-  return new HostScope(executor, executor.scope);
+  return new ManagedScope(executor, executor.scope);
 }
 
 /** Long-lived scope for launching and canceling related routines. */
 export interface Scope {
   /**
-   * Starts a routine under this scope.
+   * Starts a routine owned by this scope.
+   * Non-cancellation failures from the launched routine propagate to this scope.
+   * Cancellation remains local to the launched routine.
    *
    * @returns Stateful promise that resolves with the routine result or rejects with a
    * shajara error.
@@ -29,8 +33,9 @@ export interface Scope {
 
   /**
    * Requests cancellation and waits for this scope to close.
+   * Expected cancellation resolves.
    *
-   * @returns Promise that settles after the scope closes.
+   * @throws Shajara error when the scope closes with a non-cancellation failure.
    */
   cancel(): Promise<void>;
 
@@ -49,7 +54,7 @@ export type ScopeStatus = LaunchStatus;
 
 export type { RunOptions, StatefulPromise };
 
-class HostScope implements Scope {
+class ManagedScope implements Scope {
   public constructor(
     private readonly executor: Executor,
     scope: ExecutionScopeRef<unknown>,
@@ -59,7 +64,21 @@ class HostScope implements Scope {
   }
 
   public run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
-    return launchEntry(this.executor, this.#entry.scope, ritual, options).settled;
+    const entry = launchEntry(this.executor, this.#entry.scope, ritual, options);
+    this.executor.onSettled(entry.scope.exitFuture, (result) => {
+      if (!isLeft(result)) {
+        return;
+      }
+
+      const failure = result.left;
+      if (failure.kind === "canceled") {
+        return;
+      }
+
+      this.executor.halt(this.#entry.scope, failure);
+    });
+
+    return entry.settled;
   }
 
   public async cancel(): Promise<void> {
@@ -67,7 +86,15 @@ class HostScope implements Scope {
       this.executor.cancel(this.#entry.scope);
     }
 
-    await this.#closed;
+    try {
+      await this.#closed;
+    } catch (error) {
+      if (error instanceof CanceledError) {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   public [Symbol.asyncDispose](): Promise<void> {

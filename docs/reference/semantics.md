@@ -226,16 +226,17 @@ A scope settles `exitFuture` only after it becomes idle: no child scopes, struct
 processes, or detached processes remain open. A scope reaches that point through one of
 three local paths:
 
-- Normal completion: child scopes and structural processes have closed. The scope cancels
-  remaining detached processes, then settles with the entry process result.
-- Cancellation: `cancel()` enters the cancellation path. The scope cancels owned work,
-  then settles with `canceled`.
+- Normal completion: after child scopes and structural processes have closed, the scope
+  cancels remaining detached processes, then settles with the entry process result.
+- Cancellation: `cancel()` enters the cancellation path, cancels owned work, then settles
+  with `canceled`.
 - Failure: after a process failure or channel owner failure, the scope enters the failure
-  path. It cancels owned work, then settles with a `ScopeFailure`.
+  path, cancels owned work, then settles with a `ScopeFailure`.
 
-Cancellation and failure use the same ownership order for canceling owned work: child
-scopes, structural processes, then detached processes. Cancellation is scoped to owned
-work and cascades through child scopes.
+Cancellation is scoped to owned work and cascades through child scopes. On cancellation
+and failure paths, the scope requests cancellation by ownership class: child scopes
+first, structural processes after child scopes have closed, and detached processes after
+structural processes have closed.
 
 A child-scope failure converges that child scope as a failure and settles the child's
 `exitFuture`. The parent waits for that child scope to reach `closed` as part of

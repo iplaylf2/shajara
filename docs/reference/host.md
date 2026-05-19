@@ -132,10 +132,14 @@ deliberate recovery boundary for host code.
 
 ## Host Entries
 
+Host entries start work from the executor root and expose host-facing promises for
+observing launched work or managed scope convergence.
+
 ### `run`
 
 `run` connects a host ritual to the long-lived executor and exposes the resulting launch
-as a Promise with `status`.
+as a Promise with `status`. An optional abort signal converges that launched work
+according to its abort reason.
 
 Result semantics:
 
@@ -155,9 +159,16 @@ Result semantics:
 
 Convergence semantics:
 
-- `cancel()` requests cancellation and waits for the scope's convergence result
-- `closed` settles with that same result once the scope reaches `closed`
-- cancellation and failure settle as rejections through the corresponding host error mapping
+`run(...)` starts work owned by the managed scope and returns the direct observation
+Promise for that work. The launched work follows the same result mapping as `run(...)`.
+A non-cancellation failure from that work also settles the managed scope; cancellation
+remains local unless the managed scope is canceled.
+
+Calling `cancel()` requests cancellation and waits until the scope reaches `closed`.
+Expected cancellation resolves the `cancel()` Promise; non-cancellation close failures
+reject through the corresponding host error mapping. `closed` remains the direct
+observation point for scope convergence, so cancellation and failure settle there as
+rejections through the same mapping.
 
 ## Host Operations
 
@@ -169,9 +180,10 @@ the current executor from scope context; if that context is missing, they throw
 
 ### `abortSignal`
 
-`abortSignal()` returns an `AbortSignal` tied to the current scope. The signal is not
-aborted while the scope is open; it aborts during that scope's convergence.
-It does not provide a way to cancel the scope from host code.
+`abortSignal()` returns an `AbortSignal` tied to the current scope. The signal stays open
+with the scope, aborts during scope convergence, and carries the corresponding error as
+`AbortSignal.reason` when the scope is canceled or fails. It does not provide a way to
+cancel the scope from host code.
 
 ### `completer`
 

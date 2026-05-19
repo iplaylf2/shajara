@@ -15,6 +15,7 @@ import { halt, park } from "#/primitives/index";
 import { DomainInterpreter } from "./domain-interpreter";
 import type { ExecutionScopeRef } from "./execution-scope";
 import { ExecutorDriver } from "./executor-driver";
+import type { Failure } from "#/failures";
 import { FaultSink } from "./fault-sink";
 import type { Pacer } from "./pacer";
 import { RoundLimitReaper } from "./round-limit-reaper";
@@ -85,6 +86,12 @@ export interface Executor extends LaunchHandle<never> {
 
   /** Requests cancellation for a registered execution scope; unknown scopes are ignored. */
   cancel(scope: ExecutionScopeRef<unknown>): void;
+
+  /**
+   * Halts a registered open execution scope with an in-band failure.
+   * Unknown, closing, or closed scopes are ignored.
+   */
+  halt(scope: ExecutionScopeRef<unknown>, failure: Failure): void;
 }
 
 /** Context key for accessing the current executor from launched work. */
@@ -180,6 +187,15 @@ class RuntimeExecutor implements Executor {
     this.#interpreter.cancel(scope, fault);
   }
 
+  public halt(scope: ExecutionScopeRef<unknown>, failure: Failure): void {
+    if (!this.#isOpenScope(scope)) {
+      return;
+    }
+
+    using fault = new FaultSink("Out-of-band failures occurred while halting a scope");
+    this.#interpreter.spawn(scope, () => halt(failure), { completionMode: "structural" }, fault);
+  }
+
   public get scope(): ExecutionScopeRef<never> {
     return this.#rootScope;
   }
@@ -264,4 +280,6 @@ class RuntimeExecutor implements Executor {
   readonly #scopeRegistry = new WeakSet<ScopeRef<unknown>>();
 }
 
-const DEFAULT_REAPER_ROUND_LIMIT = 2;
+// Reaper rounds are adjudication opportunities, not clock ticks.
+// Keep the default finite, but broad enough for multi-wave cleanup convergence.
+const DEFAULT_REAPER_ROUND_LIMIT = 32;

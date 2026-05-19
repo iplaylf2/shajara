@@ -12,7 +12,7 @@ failure semantics remain in the semantic baseline.
 - a context binding that lets launched work look up the current executor
 - the ability to launch new entry rituals under registered execution scopes
 - external observation of future settlement
-- external control for future settlement, channel operations, and entry cancellation
+- external control for future settlement, channel operations, and entry convergence
 - scheduler and reaper governance through autonomy
 
 Creation:
@@ -61,6 +61,8 @@ interface Executor extends LaunchHandle<never> {
   close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
 
   cancel(scope: ExecutionScopeRef<unknown>): void;
+
+  halt(scope: ExecutionScopeRef<unknown>, failure: Failure): void;
 }
 ```
 
@@ -132,12 +134,19 @@ environment.
 `close(endpoint, outcome)` closes a channel from outside the execution environment.
 Blocked senders and receivers resume with `{ kind: "closed", outcome }`.
 
-### Scope Cancellation
+### Scope Convergence
 
 `cancel(scope)` requests cancellation for an execution-entry scope from outside the
 execution environment.
 
-If the scope is invalid, unregistered, or closed, the request is ignored.
+`halt(scope, failure)` requests failure convergence for an open execution-entry scope
+from outside the execution environment. It uses normal scope failure semantics, so
+managed children and cleanup follow the same convergence path as an in-scope
+`halt(...)`.
+
+External convergence requests are best-effort: invalid or unregistered scope references
+are ignored, `cancel(...)` has no effect after closure, and `halt(...)` is accepted only
+while the target scope is open.
 
 ## Recovery Anchor
 

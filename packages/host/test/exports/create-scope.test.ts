@@ -22,7 +22,7 @@ describe("/ entries: createScope", () => {
         await expect(scope.run(() => until(() => Promise.resolve(value)))).resolves.toBe(value);
         expect(scope.status).toBe(outcome.afterRun);
 
-        const cancelation = expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        const cancelation = expect(scope.cancel()).resolves.toBeUndefined();
         const closed = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
 
         await cancelation;
@@ -30,7 +30,7 @@ describe("/ entries: createScope", () => {
         expect(scope.status).toBe(outcome.afterCancel);
       } finally {
         if (scope.status !== "closed") {
-          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+          await expect(scope.cancel()).resolves.toBeUndefined();
         }
       }
     },
@@ -53,7 +53,7 @@ describe("/ entries: createScope", () => {
     try {
       expect(scope.status).toBe(outcome.beforeCancel);
 
-      const cancelation = expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      const cancelation = expect(scope.cancel()).resolves.toBeUndefined();
       const closed = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
 
       await cancelation;
@@ -62,10 +62,213 @@ describe("/ entries: createScope", () => {
       expect(scope.status).toBe(outcome.afterCancel);
     } finally {
       if (scope.status !== "closed") {
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
       }
     }
   });
+
+  test.for([
+    {
+      given: [new Error("run-failed")] as const,
+      outcome: {
+        scopeCause: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
+        workCause: {
+          kind: "external",
+        },
+        workKind: "scope",
+      } as const,
+    },
+  ])("propagates routine failures to the managed scope", async ({ given: [cause], outcome }) => {
+    const scope = createScope();
+    const settled = scope.run(function* failManagedScope() {
+      throw cause;
+    });
+
+    await expect(settled).rejects.toBeInstanceOf(ScopeError);
+    await expect(settled).rejects.toMatchObject({
+      cause: {
+        ...outcome.workCause,
+        raw: cause,
+      },
+      kind: outcome.workKind,
+    });
+    await expect(scope.closed).rejects.toBeInstanceOf(ScopeError);
+    await expect(scope.closed).rejects.toMatchObject({
+      cause: {
+        ...outcome.scopeCause,
+        cause: {
+          ...outcome.scopeCause.cause,
+          raw: cause,
+        },
+      },
+      kind: outcome.workKind,
+    });
+  });
+
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        afterCancel: "closed",
+        afterRunCancellation: "open",
+      } as const,
+    },
+  ])("keeps the managed scope open after routine cancellation", async ({ outcome }) => {
+    const scope = createScope();
+
+    try {
+      const settled = scope.run(function* cancelManagedScope() {
+        throw new CanceledError();
+      });
+
+      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+      expect(scope.status).toBe(outcome.afterRunCancellation);
+
+      const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      await closedCancellation;
+      expect(scope.status).toBe(outcome.afterCancel);
+    } finally {
+      if (scope.status !== "closed") {
+        await expect(scope.cancel()).resolves.toBeUndefined();
+      }
+    }
+  });
+
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        afterCancel: "closed",
+        afterSignalAbort: "open",
+      } as const,
+    },
+  ])("keeps the managed scope open after signal cancellation", async ({ outcome }) => {
+    const controller = new globalThis.AbortController();
+    const scope = createScope();
+
+    try {
+      const settled = scope.run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      controller.abort();
+
+      await expect(settled).rejects.toBeInstanceOf(CanceledError);
+      expect(scope.status).toBe(outcome.afterSignalAbort);
+
+      const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      await closedCancellation;
+      expect(scope.status).toBe(outcome.afterCancel);
+    } finally {
+      if (scope.status !== "closed") {
+        await expect(scope.cancel()).resolves.toBeUndefined();
+      }
+    }
+  });
+
+  test.for([
+    {
+      given: [new Error("signal-abort-failed")] as const,
+      outcome: {
+        scopeCause: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
+        workCause: {
+          kind: "external",
+        },
+        workKind: "scope",
+      } as const,
+    },
+  ])(
+    "propagates signal abort failures to the managed scope",
+    async ({ given: [cause], outcome }) => {
+      const controller = new globalThis.AbortController();
+      const scope = createScope();
+      const settled = scope.run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      controller.abort(cause);
+
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
+        cause: {
+          ...outcome.workCause,
+          raw: cause,
+        },
+        kind: outcome.workKind,
+      });
+      await expect(scope.closed).rejects.toBeInstanceOf(ScopeError);
+      await expect(scope.closed).rejects.toMatchObject({
+        cause: {
+          ...outcome.scopeCause,
+          cause: {
+            ...outcome.scopeCause.cause,
+            raw: cause,
+          },
+        },
+        kind: outcome.workKind,
+      });
+    },
+  );
+
+  test.for([
+    {
+      given: [new Error("signal-abort-before-run-failed")] as const,
+      outcome: {
+        scopeCause: {
+          cause: {
+            kind: "external",
+          },
+          kind: "scope",
+        },
+        workCause: {
+          kind: "external",
+        },
+        workKind: "scope",
+      } as const,
+    },
+  ])(
+    "propagates already-aborted signal failures to the managed scope",
+    async ({ given: [cause], outcome }) => {
+      const controller = new globalThis.AbortController();
+      controller.abort(cause);
+      const scope = createScope();
+      const settled = scope.run(() => until(() => createPendingPromise()), {
+        signal: controller.signal,
+      });
+
+      await expect(settled).rejects.toBeInstanceOf(ScopeError);
+      await expect(settled).rejects.toMatchObject({
+        cause: {
+          ...outcome.workCause,
+          raw: cause,
+        },
+        kind: outcome.workKind,
+      });
+      await expect(scope.closed).rejects.toBeInstanceOf(ScopeError);
+      await expect(scope.closed).rejects.toMatchObject({
+        cause: {
+          ...outcome.scopeCause,
+          cause: {
+            ...outcome.scopeCause.cause,
+            raw: cause,
+          },
+        },
+        kind: outcome.workKind,
+      });
+    },
+  );
 
   test.for([
     {
@@ -78,7 +281,7 @@ describe("/ entries: createScope", () => {
       const scope = createScope();
 
       const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-      await expect(scope[Symbol.asyncDispose]()).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope[Symbol.asyncDispose]()).resolves.toBeUndefined();
       await closedCancellation;
       expect(scope.status).toBe(outcome);
     },
@@ -94,7 +297,7 @@ describe("/ entries: createScope", () => {
     async ({ given: [value], outcome }) => {
       const scope = createScope();
 
-      await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+      await expect(scope.cancel()).resolves.toBeUndefined();
 
       expect(() => scope.run(() => until(() => Promise.resolve(value)))).toThrow(outcome);
     },
@@ -104,17 +307,17 @@ describe("/ entries: createScope", () => {
     {
       given: [] as const,
       outcome: {
-        firstCancel: "canceled",
-        secondCancel: "canceled",
+        status: "closed",
       } as const,
     },
   ])(
-    "reuses the settled close result when cancel is called after the scope already closed",
+    "suppresses the settled cancellation result when cancel is called after the scope already closed",
     async ({ outcome }) => {
       const scope = createScope();
 
-      await expect(scope.cancel()).rejects.toMatchObject({ kind: outcome.firstCancel });
-      await expect(scope.cancel()).rejects.toMatchObject({ kind: outcome.secondCancel });
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      await expect(scope.cancel()).resolves.toBeUndefined();
+      expect(scope.status).toBe(outcome.status);
     },
   );
 
@@ -140,13 +343,13 @@ describe("/ entries: createScope", () => {
 
         const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
         const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
         await closedCancellation;
         await settledCancellation;
         expect(events).toEqual(outcome);
       } finally {
         if (scope.status !== "closed") {
-          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+          await expect(scope.cancel()).resolves.toBeUndefined();
         }
       }
     },
@@ -177,13 +380,13 @@ describe("/ entries: createScope", () => {
         await started.promise;
         const settledCancellation = expect(settled).rejects.toBeInstanceOf(CanceledError);
         const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
-        await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+        await expect(scope.cancel()).resolves.toBeUndefined();
         await closedCancellation;
         await settledCancellation;
         expect(events).toEqual(outcome);
       } finally {
         if (scope.status !== "closed") {
-          await expect(scope.cancel()).rejects.toBeInstanceOf(CanceledError);
+          await expect(scope.cancel()).resolves.toBeUndefined();
         }
       }
     },
@@ -220,7 +423,7 @@ describe("/ entries: createScope", () => {
       const closedCancellation = expect(scope.closed).rejects.toBeInstanceOf(CanceledError);
       const cancelation = scope.cancel();
 
-      await expect(cancelation).rejects.toBeInstanceOf(CanceledError);
+      await expect(cancelation).resolves.toBeUndefined();
       await closedCancellation;
       await expect(settledError).resolves.toBeInstanceOf(ScopeError);
       await expect(settledError).resolves.toMatchObject({

@@ -26,17 +26,15 @@ try {
 
   const app = new Hono();
 
-  app.get("/reports/:id", async (c) => {
-    const reportId = c.req.param("id");
-
-    const report = await serverScope.run(function* handleReportRequest() {
+  app.get("/reports/:id", (c) =>
+    serverScope.run(function* handleReportRequest() {
+      const reportId = c.req.param("id");
       const response = yield* until(() => fetch(`https://reports.internal/reports/${reportId}`));
+      const report = yield* until(() => response.json());
 
-      return yield* until(() => response.json());
-    });
-
-    return c.json(report);
-  });
+      return c.json(report);
+    }),
+  );
 
   await using _server = serve({ fetch: app.fetch, port: 3000 });
 
@@ -64,17 +62,17 @@ is waiting for a shutdown signal, `serverScope` remains open.
 
 ## `scope.run(...)` Starts Route Work
 
-The route handler starts one request's work with `serverScope.run(...)` and waits for that
-work's Promise. The HTTP response still comes from the route handler.
+The route handler returns the Promise from `serverScope.run(...)`. The routine is the
+main body of the GET handler: it reads the route parameter, loads the report, and returns
+the HTTP response.
 
-That Promise carries this route work's result back to the handler: success resolves with
-`report`; if the routine throws a non-cancellation exception, the Promise rejects, usually
-as `ScopeError`. That failure belongs only to the work started by this
-`serverScope.run(...)`; it does not automatically close the outer `serverScope`.
-
-The route handler can let the rejection reach the HTTP framework's error handling, or
-catch it and return the HTTP response this endpoint needs. If `serverScope` closes while
-request work is still running, route work still owned by it converges with that scope.
+`serverScope.run(...)` does more than expose the routine as a Promise. It also attaches
+this route work to the long-lived scope. The work follows structured concurrency
+convergence: if the routine lets a non-cancellation exception escape, the Promise rejects,
+usually as `ScopeError`, and the same failure closes `serverScope`. There is no
+request-local failure to forget; the owning scope observes it too. If `serverScope` closes
+while request work is still running, route work still owned by it converges with that
+scope.
 
 ## `using` Manages Shutdown
 
@@ -84,10 +82,11 @@ After a shutdown signal, `shutdown.promise` completes and the top-level code lea
 The HTTP server is also an `await using` resource. When the block exits, its async
 disposable calls `server.close()`, so the HTTP layer stops accepting new requests and
 waits until the server has finished closing. `serverScope`'s async disposable calls
-`scope.cancel()`, closing this shajara-managed scope.
+`scope.cancel()`, and a normal cancellation from shutdown resolves after the
+shajara-managed scope has closed. Non-cancellation close failures still reject.
 
-`Promise.race(...)` keeps the top-level code parked until a shutdown signal arrives or
-`serverScope` closes on its own. If the scope closes first, its close result reaches the
-outer `catch` unchanged. Closing a healthy running scope finishes with a cancellation
-result, so this shutdown path treats `CanceledError` as the expected result; other errors
-should still surface.
+While the service is running, `Promise.race(...)` watches both the shutdown signal and
+`serverScope.closed`. If the scope closes first because of an uncaught route failure or
+another failure that belongs to this long-lived boundary, the race passes that close
+result to the outer `catch`. A normal close appears there as `CanceledError`, which the
+`catch` treats as expected; other errors still surface.

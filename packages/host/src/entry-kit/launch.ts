@@ -1,6 +1,7 @@
 import type { ExecutionScopeRef, Executor, LaunchHandle, LaunchStatus } from "@shajara/kernel";
-import { decodeRitual, fromFailure } from "#/boundary/index";
+import { decodeRitual, fromFailure, toFailureUnknown } from "#/boundary/index";
 import { isLeft, isNone } from "@shajara/kernel/utils";
+import { CanceledError } from "#/errors";
 import type { Option } from "@shajara/kernel/utils";
 import type { RiteRoutine } from "#/contracts";
 
@@ -20,21 +21,35 @@ export function launchEntry<Result>(
           return yield* ritual();
         }
 
+        const abortSignal = signal;
+
         function onAbort(): void {
-          if (handle.status === "open") {
-            executor.cancel(handle.scope);
+          if (handle.status !== "open") {
+            return;
           }
+
+          const { reason } = abortSignal;
+          if (
+            reason === null ||
+            reason instanceof CanceledError ||
+            (reason instanceof globalThis.DOMException && reason.name === "AbortError")
+          ) {
+            executor.cancel(handle.scope);
+            return;
+          }
+
+          executor.halt(handle.scope, toFailureUnknown(reason));
         }
 
-        if (signal.aborted) {
+        if (abortSignal.aborted) {
           onAbort();
         }
 
-        signal.addEventListener("abort", onAbort, { once: true });
+        abortSignal.addEventListener("abort", onAbort, { once: true });
         try {
           return yield* ritual();
         } finally {
-          signal.removeEventListener("abort", onAbort);
+          abortSignal.removeEventListener("abort", onAbort);
         }
       }),
     ),
@@ -55,7 +70,11 @@ export interface LaunchedEntry<Result> {
 
 /** Options accepted by `run` and `Scope.run`. */
 export interface RunOptions {
-  /** Abort signal that requests cancellation for the launched scope. */
+  /**
+   * Abort signal that converges the launched scope.
+   * `null`, `CanceledError`, and `AbortError` abort reasons cancel the scope; other
+   * reasons fail it.
+   */
   readonly signal?: AbortSignal;
 }
 

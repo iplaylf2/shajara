@@ -20,8 +20,6 @@ import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-sco
 import { canceledFailure, channelFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
-import { ManagedDrain } from "./managed-drain";
-import type { ManagedDrainPhase } from "./managed-drain";
 import { PendingScopeFailure } from "./pending-scope-failure";
 import { RuntimeChannel } from "#/interpreter/runtime-channel";
 import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
@@ -46,17 +44,19 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   public *complete(process: RuntimeProcessKeeper, result: unknown): ScopeSync<void> {
     const closure = process.complete(result);
-    this.#processContainerFor(process).delete(process);
+    const closedWork = processWorkFor(process);
+    this.#processesFor(closedWork).delete(process);
 
     yield this.#defer(closure.settlement);
     yield* this.#triggerCleanup(closure.cleanups);
     yield this.#trackProcess(process);
-    yield* this.#advanceClosing();
+    yield* this.#advanceClosing(closedWork);
   }
 
   public *halt(process: RuntimeProcessKeeper, failure: Failure): ScopeSync<void> {
     const closure = process.fail(failure);
-    this.#processContainerFor(process).delete(process);
+    const closedWork = processWorkFor(process);
+    this.#processesFor(closedWork).delete(process);
 
     yield this.#defer(closure.settlement);
     yield this.#trackProcess(process);
@@ -99,7 +99,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   ): ScopeSync<ProcessRef<Relic, Descriptor>> {
     const process = provideProcess(this, descriptor);
 
-    this.#processContainerFor(process).add(process);
+    this.#processesFor(processWorkFor(process)).add(process);
 
     yield this.#trackProcess(process);
 
@@ -319,12 +319,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
     this.#exitFuture = new RuntimeFuture<unknown>();
     const entryProcess = entry(this, { completionMode: "structural" });
 
-    this.#processContainerFor(entryProcess).add(entryProcess);
+    this.#processesFor(processWorkFor(entryProcess)).add(entryProcess);
 
     this.#entryProcess = entryProcess;
   }
 
-  *#advanceClosing(): ScopeSync<void> {
+  *#advanceClosing(closedWork: ClosingWork): ScopeSync<void> {
     const state = this.#state;
     switch (state.status) {
       case "running": {
@@ -336,10 +336,12 @@ export class RuntimeScope implements ScopeRef<unknown> {
         return;
       }
       case "canceling": {
+        yield* this.#advanceCancellationFrom(closedWork);
         yield* this.#tryCanceled();
         return;
       }
       case "failing": {
+        yield* this.#advanceCancellationFrom(closedWork);
         yield* this.#tryFailed();
         return;
       }
@@ -363,9 +365,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
   }
 
   *#enterCanceling(): ScopeSync<void> {
-    const drain = new ManagedDrain();
-
-    yield* this.#transitionTo({ drain, status: "canceling" });
+    yield* this.#transitionTo({ status: "canceling" });
     yield* this.#tryCanceled();
   }
 
@@ -373,9 +373,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     failure: PendingScopeFailure,
     runCleanups: () => ScopeSync<void>,
   ): ScopeSync<void> {
-    const drain = new ManagedDrain();
-
-    yield* this.#transitionTo({ drain, failure, status: "failing" });
+    yield* this.#transitionTo({ failure, status: "failing" });
     yield* runCleanups();
     yield* this.#tryFailed();
   }
@@ -386,33 +384,27 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
       yield* this.#transitionTo({ result, status: "completed" });
       if (!this.#isRoot) {
-        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing("childScope"));
       }
     }
   }
 
   *#tryCanceled(): ScopeSync<void> {
-    const { drain } = this.#stateAs("canceling");
-
-    yield* this.#advanceDrain(drain);
-
     if (this.#isIdle) {
       yield* this.#transitionTo({ status: "canceled" });
       if (!this.#isRoot) {
-        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing("childScope"));
       }
     }
   }
 
   *#tryFailed(): ScopeSync<void> {
-    const { drain, failure } = this.#stateAs("failing");
-
-    yield* this.#advanceDrain(drain);
+    const { failure } = this.#stateAs("failing");
 
     if (this.#isIdle) {
       yield* this.#transitionTo({ failure: failure.build(), status: "failed" });
       if (!this.#isRoot) {
-        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing());
+        yield this.#signal(this.parentScope, () => this.parentScope.#advanceClosing("childScope"));
       }
     }
   }
@@ -424,12 +416,13 @@ export class RuntimeScope implements ScopeRef<unknown> {
         return unreachable();
       }
       case "closing": {
-        yield* this.#cancelDetached();
+        yield* this.#cancelDetachedProcesses();
         break;
       }
       case "canceling":
       case "failing": {
-        yield* this.#cancelManaged(state.drain);
+        yield* this.#cancelChildScopes();
+        yield* this.#advanceCancellationFrom("childScope");
         break;
       }
       case "canceled": {
@@ -449,29 +442,23 @@ export class RuntimeScope implements ScopeRef<unknown> {
     yield this.#trackScope(this);
   }
 
-  *#advanceDrain(drain: ManagedDrain): ScopeSync<void> {
-    if (drain.is("children") && !this.#hasChildScopes) {
-      yield* this.#advanceDrainTo(drain, "structural");
+  *#advanceCancellationFrom(work: ClosingWork): ScopeSync<void> {
+    if (work === "detachedProcess" || this.#hasChildScopes) {
+      return;
     }
 
-    if (drain.is("structural") && !this.#hasChildScopes && !this.#hasStructuralProcesses) {
-      yield* this.#advanceDrainTo(drain, "detached");
+    if (work === "childScope") {
+      yield* this.#cancelStructuralProcesses();
     }
+
+    if (this.#hasStructuralProcesses) {
+      return;
+    }
+
+    yield* this.#cancelDetachedProcesses();
   }
 
-  *#cancelManaged(drain: ManagedDrain): ScopeSync<void> {
-    yield* this.#cancelChildren();
-
-    if (drain.hasReached("structural")) {
-      yield* this.#cancelStructural();
-    }
-
-    if (drain.hasReached("detached")) {
-      yield* this.#cancelDetached();
-    }
-  }
-
-  *#cancelChildren(): ScopeSync<void> {
+  *#cancelChildScopes(): ScopeSync<void> {
     const children = [...this.#children];
 
     for (const child of children) {
@@ -479,11 +466,11 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  *#cancelStructural(): ScopeSync<void> {
+  *#cancelStructuralProcesses(): ScopeSync<void> {
     yield* this.#cancelProcesses(this.#structuralProcesses);
   }
 
-  *#cancelDetached(): ScopeSync<void> {
+  *#cancelDetachedProcesses(): ScopeSync<void> {
     yield* this.#cancelProcesses(this.#detachedProcesses);
   }
 
@@ -610,8 +597,8 @@ export class RuntimeScope implements ScopeRef<unknown> {
     };
   }
 
-  #processContainerFor(process: RuntimeProcessKeeper): Set<RuntimeProcessKeeper> {
-    if (process.descriptor.completionMode === "structural") {
+  #processesFor(processWork: ProcessWork): Set<RuntimeProcessKeeper> {
+    if (processWork === "structuralProcess") {
       return this.#structuralProcesses;
     }
     return this.#detachedProcesses;
@@ -619,11 +606,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
 
   #stateAs<Status extends RuntimeScopeStatus>(_status: Status): RuntimeScopeStateOf<Status> {
     return this.#state as RuntimeScopeStateOf<Status>;
-  }
-
-  *#advanceDrainTo(drain: ManagedDrain, phase: ManagedDrainPhase): ScopeSync<void> {
-    drain.advanceTo(phase);
-    yield* this.#cancelManaged(drain);
   }
 
   #removeChild(child: RuntimeScope): void {
@@ -682,16 +664,21 @@ function* noopSync(): ScopeSync<void> {
   // Intentionally empty for lint: no pending scope work.
 }
 
+function processWorkFor(process: RuntimeProcessKeeper): ProcessWork {
+  return process.descriptor.completionMode === "structural"
+    ? "structuralProcess"
+    : "detachedProcess";
+}
+
 type RuntimeScopeState = TaggedUnion<
   "status",
   {
     canceled: {};
-    canceling: { readonly drain: ManagedDrain };
+    canceling: {};
     closing: {};
     completed: { readonly result: unknown };
     failed: { readonly failure: Failure };
     failing: {
-      readonly drain: ManagedDrain;
       readonly failure: PendingScopeFailure;
     };
     running: {};
@@ -702,6 +689,10 @@ type RuntimeScopeStateOf<Status extends RuntimeScopeStatus> = Extract<
   RuntimeScopeState,
   { readonly status: Status }
 >;
+
+type ClosingWork = "childScope" | ProcessWork;
+
+type ProcessWork = "structuralProcess" | "detachedProcess";
 
 interface RuntimeChannelWaiter {
   readonly scope: RuntimeScope;

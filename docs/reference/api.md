@@ -95,7 +95,9 @@ run<Return>(
 ```
 
 The returned value is a Promise with a read-only `status`. The status can be
-`open | closing | closed`.
+`open | closing | closed`. When `options.signal` aborts the launch, `null`,
+`CanceledError`, and `AbortError` reasons cancel the launched work; other reasons fail
+it.
 
 Result:
 
@@ -118,11 +120,13 @@ The returned scope exposes:
 - `closed`
 - `[Symbol.asyncDispose]()`
 
-Result semantics:
+Result forms:
 
-- `cancel()` requests cancellation and waits for the scope's convergence result
-- `closed` settles with that same result once the scope reaches `closed`
-- cancellation and failure settle as rejections with the corresponding error
+- `run(...)` returns a `StatefulPromise<Return>`; a non-cancellation failure from that
+  work also settles the managed scope, while cancellation remains local
+- `cancel()` returns a `Promise<void>`; expected cancellation resolves, and
+  non-cancellation close failures reject
+- `closed` is the scope convergence Promise; cancellation and failure reject
 - calling `run(...)` on a closed scope throws synchronously
 
 ## Host Operations
@@ -133,8 +137,8 @@ Result semantics:
 yield * abortSignal();
 ```
 
-Returns an `AbortSignal` tied to the current scope. The signal aborts during that
-scope's convergence.
+Returns an `AbortSignal` tied to the current scope. The signal aborts during scope
+convergence; cancellation or failure sets `AbortSignal.reason` to the corresponding error.
 
 ### `completer`
 
