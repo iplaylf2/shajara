@@ -1,6 +1,6 @@
 {
   "name": "@shajara/kernel",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Structured concurrency kernel and executor primitives.",
   "keywords": [
     "concurrency",

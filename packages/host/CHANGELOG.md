@@ -1,5 +1,30 @@
 # @shajara/host
 
+## 0.9.0
+
+### Minor Changes
+
+- [#40](https://github.com/iplaylf2/shajara/pull/40) [`75a0a9f`](https://github.com/iplaylf2/shajara/commit/75a0a9f83171460495d203960d055761bd6daece) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Honor managed-scope ownership for launched work.
+
+  `Scope.run(...)` now treats launched work as owned by the managed scope.
+  Non-cancellation failures close that scope, cancellation remains local to the launched
+  work, and `Scope.cancel()` resolves after expected shutdown.
+
+  Abort-driven convergence follows the same ownership boundary. Cancellation-style abort
+  reasons cancel the launch, other reasons fail it, and `abortSignal()` preserves the scope
+  close reason on `AbortSignal.reason`.
+
+### Patch Changes
+
+- [#38](https://github.com/iplaylf2/shajara/pull/38) [`e59832b`](https://github.com/iplaylf2/shajara/commit/e59832b2d2bde23cbb26c044590a87f4e149ef06) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Complete the host boundary type surface.
+
+  `@shajara/host/boundary` now re-exports `ScopeExitFailure`, the scope-exit failure type
+  accepted by `fromFailure(...)`. Extension libraries can import the failure type from the
+  same boundary entry as the mapping helper.
+
+- Updated dependencies [[`e59832b`](https://github.com/iplaylf2/shajara/commit/e59832b2d2bde23cbb26c044590a87f4e149ef06), [`75a0a9f`](https://github.com/iplaylf2/shajara/commit/75a0a9f83171460495d203960d055761bd6daece)]:
+  - @shajara/kernel@0.9.0
+
 ## 0.8.0
 
 ### Minor Changes
