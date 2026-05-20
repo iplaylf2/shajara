@@ -91,10 +91,21 @@ In code examples, use comments only when they let the reader see a local behavio
 line where it happens. If a comment already carries that local point, the following prose
 should move to the section's rule or decision instead of restating the comment.
 
+Place result comments where the result is produced, transformed, or observed. When a
+result travels across a boundary, separate comments only when they mark distinct
+observations, such as the decision made at one point and the value or error seen at
+another. Do not use comments to narrate obvious control flow, or to make readers reason
+about helper code that is not the subject.
+
 When a reader would otherwise have to mentally execute incidental details, show the
 observable result near the code. Let that result carry the simple outcome; use the prose
 after the example to explain the shajara boundary that caused it, or the decision the
 reader should take from it.
+
+When an API routes a result across a boundary, explain the result at the boundary the page
+owns. Include declined or delegated outcomes when they change what the reader observes,
+including the case where the original result passes through unchanged. Leave generic
+downstream error handling to the page that owns that mechanism.
 
 Choose the lightest surface that shows the result. A return value can carry a final value,
 a short comment can stand in for omitted application events or intermediate states, and
@@ -114,6 +125,9 @@ useful or valuable.
 The opening should establish the relevant product surface and then move into the reader's
 task. Let motivation emerge from the example and the shape of the code instead of front
 loading abstract value claims.
+
+Do not open a page by listing the APIs it will cover. A short frame should give enough
+context for the first example; concrete API shapes can appear where the reader uses them.
 
 Describe product behavior and structure directly. Prefer saying what the routine, scope,
 process, or API call does over making the prose explain its own emphasis.
@@ -143,17 +157,20 @@ Once that entry pattern has been shown, later examples can usually show the rout
 directly, or show a routine that would be called from another routine. Repeating the entry
 boundary on every example spends space on a move the page no longer owns.
 
-Use the smallest number of routines needed to show distinct roles. Do not repeat routines
-that demonstrate the same behavior; repetition should add a new structural responsibility,
-not merely make an existing point louder.
+Use the smallest number of routines needed to show distinct roles. Routine arguments can
+be inline when their enclosing API is the local subject. When nesting several
+primitives that take routines would make multiple boundaries compete in the same block,
+separate the layers with a named routine or helper. Do not repeat routines that demonstrate
+the same behavior; repetition should add a new structural responsibility, not merely make
+an existing point louder.
 
 Treat lifecycle, cleanup, and error behavior as part of the example's design when they
 change how the reader should understand the API being taught. If they are not the page's
 job, omit them rather than carry defensive completeness. Prefer language and runtime forms
 that expose ownership or release without extra scaffolding, and remove wrappers that do
 not serve the current sample. When failure behavior is the subject, keep propagation,
-local handling, and recovery in their responsible contexts so one responsibility does not
-read like a caveat on another.
+local handling, recovery, and unchanged outcomes in their responsible contexts so one
+responsibility does not read like a caveat on another.
 
 ## Application Surface
 
