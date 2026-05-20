@@ -15,7 +15,7 @@ const siteSidebar = [
       "scope-and-process",
       "scope-convergence",
       "external-handles",
-      "server-scope",
+      "create-scope",
     ],
   },
 ] satisfies SiteSidebar;
