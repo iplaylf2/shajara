@@ -88,8 +88,7 @@ function* readClosedQueue() {
     yield* receive(receiver);
   } catch (error) {
     if (error instanceof ChannelError) {
-      // 已关闭的 condition，outcome 是 "complete"。
-      return error.detail;
+      return error.detail; // 已关闭的 condition，outcome 是 "complete"。
     }
 
     throw error;

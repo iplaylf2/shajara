@@ -29,9 +29,9 @@ function* loadSession() {
     },
   ]);
 
+  // userName is "Ada"; permissions is ["read", "write"].
   const [userName, permissions] = yield* wait(sessionFuture);
 
-  // userName is "Ada"; permissions is ["read", "write"].
   return { permissions, userName };
 }
 ```
@@ -51,7 +51,8 @@ import { sleep } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
 
 function* loadFastProfile() {
-  const profile = yield* race([
+  // Returns "network profile".
+  return yield* race([
     function* cache() {
       yield* sleep(30);
 
@@ -63,14 +64,11 @@ function* loadFastProfile() {
       return "network profile";
     },
   ]);
-
-  // profile is "network profile".
-  return profile;
 }
 ```
 
-After `network` wins, `race(...)` cancels the remaining routine and returns the winning
-value to `loadFastProfile`.
+After `network` wins, `race(...)` cancels the remaining routine before `loadFastProfile`
+resumes.
 
 This differs from `Promise.race(...)`, which settles with the first Promise result.
 `race(...)` returns the winning value only after shajara has handled the non-winning

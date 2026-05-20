@@ -20,12 +20,13 @@ shajara routine 使用 generator function 编写。用 `run(...)` 启动 routine
 ```ts
 import { run } from "@shajara/host";
 
+// message 是 "ready"。
 const message = await run(function* main() {
   return "ready";
 });
 ```
 
-`run(...)` 会启动 `main`，并返回这个 routine 结果对应的 Promise。
+`run(...)` 是应用代码进入 shajara 的入口。routine 返回后，这个 Promise 会 resolve。
 
 从这里开始，示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，
 也可以被另一个 routine 调用。
@@ -71,11 +72,12 @@ function* greetUser() {
   const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
 
+  // 返回 "Hello, Ada from Docs"。
   return `Hello, ${userName} from ${workspaceName}`;
 }
 ```
 
 `spawn(...)` 会启动 `loadWorkspaceName`，并把结果句柄返回为 `workspaceNameFuture`。
-`greetUser` 会继续执行自己的工作，再通过 `wait(...)` 取得 `workspaceName`。
+`wait(...)` 是 `greetUser` 观察这个 future 的位置。
 
 父 routine 保留清楚的并发结构：启动工作，继续当前流程，再取得结果。

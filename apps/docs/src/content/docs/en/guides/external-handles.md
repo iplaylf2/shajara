@@ -29,15 +29,12 @@ function* loadProfilePanel(userId: string) {
         throw error;
       },
     );
-
     // The panel closes while this request is still pending.
     return request;
   });
 
-  const status = yield* until(() => profileRequest);
-
-  // status is "profile request stopped".
-  return status;
+  // Returns "profile request stopped".
+  return yield* until(() => profileRequest);
 }
 ```
 
@@ -63,7 +60,6 @@ function* waitForFileChoice() {
     const { future, resolve } = yield* completer<File>();
 
     registerFileChoice(resolve);
-
     // The dialog closes before registerFileChoice calls resolve.
     return future;
   });
@@ -119,7 +115,6 @@ function* watchRoomUpdates(roomId: string) {
 
     socket.send(JSON.stringify({ kind: "subscribe" }));
     console.log("subscribed");
-
     // The room updates view closes here.
   });
 }

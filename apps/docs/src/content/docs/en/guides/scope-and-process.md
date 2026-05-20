@@ -29,6 +29,7 @@ function* loadSidebar() {
 
   yield* sleep(5);
 
+  // recommendations is ["guide", "api"].
   const recommendations = yield* wait(recommendationsFuture);
 
   return { recommendations };
@@ -36,8 +37,8 @@ function* loadSidebar() {
 ```
 
 `loadRecommendations` runs as a process in the same scope as `loadSidebar`.
-`recommendationsFuture` is an observation handle for that process result. `loadSidebar`
-keeps running and waits for the future only where it needs the value.
+`recommendationsFuture` is an observation handle for that process. `loadSidebar` keeps
+running until it reaches the wait point.
 
 `all(...)` follows the same read at a larger scale: several routines start in the current
 scope, and the caller receives one future for their ordered result.
@@ -52,7 +53,8 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  const result = yield* branch(function* saveProfileScope() {
+  // Returns "saved" after the child scope has converged.
+  return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(20);
     });
@@ -61,15 +63,12 @@ function* saveProfile() {
 
     return "saved";
   });
-
-  // result is "saved" after the child scope has converged.
-  return result;
 }
 ```
 
 The routine passed to `branch(...)` becomes the first process in the child scope. It can
-start more processes in that same scope. The caller receives `"saved"` only after the child
-scope has finished the `saveProfileScope` process and the `writeAuditTrail` process.
+start more processes in that same scope. The caller receives the entry process result
+only after the child scope has finished both processes.
 
 `race(...)` is the specialized child-scope form for alternatives: it waits until one
 routine succeeds, cancels the rest, and returns the winning value. `branch(...)` is the
@@ -91,6 +90,7 @@ function* saveWithoutWaitingHere() {
   });
 
   const status = "saving";
+  // result is "saved".
   const result = yield* wait(saveFuture);
 
   return { result, status };
@@ -98,8 +98,8 @@ function* saveWithoutWaitingHere() {
 ```
 
 The current process starts `saveProcess` and receives `saveFuture`. `saveProcess` is the
-process that waits through `saveProfileScope`; the caller can keep going until it needs the
-future's value.
+process that waits through `saveProfileScope`; the caller can keep going until this wait
+point.
 
 The API shapes keep this distinction consistent. APIs that start work in the current
 scope return a future for observing that work. APIs that open a child scope wait for that

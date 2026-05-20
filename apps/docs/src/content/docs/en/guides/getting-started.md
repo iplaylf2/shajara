@@ -21,12 +21,13 @@ call shajara operations with `yield*`.
 ```ts
 import { run } from "@shajara/host";
 
+// message is "ready".
 const message = await run(function* main() {
   return "ready";
 });
 ```
 
-`run(...)` starts `main` and returns a Promise for the routine result.
+`run(...)` is the application entry point. The Promise resolves when the routine returns.
 
 From here on, examples show the routine body. A routine can be passed to
 `run(...)` directly or called from another routine.
@@ -73,13 +74,13 @@ function* greetUser() {
   const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
 
+  // Returns "Hello, Ada from Docs".
   return `Hello, ${userName} from ${workspaceName}`;
 }
 ```
 
-`spawn(...)` starts `loadWorkspaceName` and returns `workspaceNameFuture`, a handle for
-its result. `greetUser` keeps going through its own work, then gets the workspace result
-with `wait(...)`.
+`spawn(...)` starts `loadWorkspaceName` and returns `workspaceNameFuture`. `wait(...)` is
+the point where `greetUser` observes that future.
 
 The parent routine keeps the concurrency structure visible: start work, continue the
 current flow, then wait for the result.

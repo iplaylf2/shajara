@@ -29,15 +29,12 @@ function* loadProfilePanel(userId: string) {
         throw error;
       },
     );
-
     // panel 在 request 仍然 pending 时关闭。
     return request;
   });
 
-  const status = yield* until(() => profileRequest);
-
-  // status 是 "profile request stopped"。
-  return status;
+  // 返回 "profile request stopped"。
+  return yield* until(() => profileRequest);
 }
 ```
 
@@ -62,7 +59,6 @@ function* waitForFileChoice() {
     const { future, resolve } = yield* completer<File>();
 
     registerFileChoice(resolve);
-
     // dialog 先关闭，registerFileChoice 还没调用 resolve。
     return future;
   });
@@ -116,7 +112,6 @@ function* watchRoomUpdates(roomId: string) {
 
     socket.send(JSON.stringify({ kind: "subscribe" }));
     console.log("subscribed");
-
     // room updates view 在这里关闭。
   });
 }

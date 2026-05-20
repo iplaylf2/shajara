@@ -29,9 +29,9 @@ function* loadSession() {
     },
   ]);
 
+  // userName 是 "Ada"；permissions 是 ["read", "write"]。
   const [userName, permissions] = yield* wait(sessionFuture);
 
-  // userName 是 "Ada"；permissions 是 ["read", "write"]。
   return { permissions, userName };
 }
 ```
@@ -51,7 +51,8 @@ import { sleep } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
 
 function* loadFastProfile() {
-  const profile = yield* race([
+  // 返回 "network profile"。
+  return yield* race([
     function* cache() {
       yield* sleep(30);
 
@@ -63,14 +64,10 @@ function* loadFastProfile() {
       return "network profile";
     },
   ]);
-
-  // profile 是 "network profile"。
-  return profile;
 }
 ```
 
-`network` 胜出后，`race(...)` 会取消剩下的 routine，并把胜出的值交回
-`loadFastProfile`。
+`network` 胜出后，`race(...)` 会先取消剩下的 routine，再让 `loadFastProfile` 继续。
 
 这不同于 `Promise.race(...)` 那种取得第一个 settled Promise 的语义。`race(...)`
 会在 shajara 处理完未胜出的 routine 之后，才返回胜出的值。

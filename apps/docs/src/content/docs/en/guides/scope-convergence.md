@@ -19,7 +19,8 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  const result = yield* branch(function* saveProfileScope() {
+  // Returns "profile saved" after writeAuditTrail has finished.
+  return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(30);
 
@@ -30,15 +31,12 @@ function* saveProfile() {
 
     return "profile saved";
   });
-
-  // result is "profile saved", and writeAuditTrail has finished.
-  return result;
 }
 ```
 
-`saveProfileScope` returns `"profile saved"` quickly, but the child scope still owns the
-`writeAuditTrail` process. `branch(...)` returns the entry process result to
-`saveProfile` only after that process has finished too.
+`saveProfileScope` returns before `writeAuditTrail`, but the child scope still owns that
+process. `branch(...)` waits for the owned process before returning the entry process
+result.
 
 This is structured convergence: the caller does not manually track every process inside
 the child scope. The scope gathers the structure it owns into one result boundary.
