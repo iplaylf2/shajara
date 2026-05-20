@@ -26,6 +26,11 @@ process in the current scope, a child scope, a returned future, or a direct valu
 Example-specific names should make the code readable without becoming the section's
 conceptual frame.
 
+Each section should have one local responsibility. When a rule affects several sections,
+such as ownership, terminal states, or cross-boundary behavior, give that rule a stable
+home instead of repeating it as a caveat in every section. If creating that home would
+distract from the page job, leave the rule to its later owner.
+
 Avoid preview prose that merely announces the page outline. If the next section already
 shows the next step, let the section carry that transition.
 
@@ -63,7 +68,8 @@ Prefer restructuring or rewriting when local edits would break the page's flow. 
 a section, renaming a module, or moving material is appropriate when it gives
 responsibilities stable homes and removes accumulated exceptions. Material that does not
 serve the page's current job should be replaced or removed instead of carrying exceptions
-around it.
+around it. A clean revision may replace an example, remove a supporting API, or rewrite
+the surrounding prose so the page reads like it was authored for its current design.
 
 ## Reading Shape
 
@@ -88,8 +94,10 @@ after the example to explain the shajara boundary that caused it, or the decisio
 reader should take from it.
 
 Choose the lightest surface that shows the result. A return value can carry a final value,
-a short comment can stand in for omitted application events, and `console.log(...)` is
-most useful when the order of effects is the point.
+a short comment can stand in for omitted application events or intermediate states, and
+`console.log(...)` is most useful when the order of effects is the point. If the code
+already shows literal results through comments or return values, let the prose move to the
+rule those results reveal instead of restating each value.
 
 When an explanation compares examples from multiple sections, give that comparison its own
 stable home. Do not attach cross-section interpretation to one of the sections it compares.
@@ -117,8 +125,10 @@ walkthrough.
 
 On API-family pages, each example should focus on the API named by the section.
 Supporting calls are acceptable when they create the value, state, or observation point the
-API needs, but they should not become peer subjects in the same example. If several APIs
-need equal attention, split the examples or give the comparison its own section.
+API needs, but they should not become peer subjects in the same example. If a supporting
+call introduces a second result shape or demands its own explanation, change the example
+so the named API remains the reader's focus. If several APIs need equal attention, split
+the examples or give the comparison its own section.
 
 A concrete scenario is valuable when it reveals how work is owned, observed, canceled, or
 converged. Otherwise use lighter surfaces: inline routines, literals, and comments for
@@ -202,6 +212,10 @@ current explanation, leave the code example in the vocabulary of the current lay
 Reference-layer labels belong in reference pages unless a guide is teaching that boundary.
 Importing from `@shajara/host` does not require a guide to make the host layer a concept;
 name the concrete API call or runtime object unless that layer itself is the subject.
+
+When the useful distinction is between ordinary JavaScript and shajara concurrency, name
+that boundary directly: callback code, event handlers, promises, routine code, futures, or
+scopes. Do not use `host` as a general label for surrounding JavaScript code.
 
 Treat named details as obligations. If a page names something below its current level of
 explanation, the page should either own that detail or immediately give it a worked
