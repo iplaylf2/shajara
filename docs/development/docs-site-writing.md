@@ -14,8 +14,11 @@ does not need a guide for every public API or internal concept.
 
 ## Page Ownership
 
-Start from the reader's task. Introduce a topic because the current page needs it, not
-because the concept exists elsewhere in the system.
+Start from the reader's task and let the page's path, title, and description name the
+shajara move it teaches. Introduce a topic because the current page needs it, not because
+the concept exists elsewhere in the system or because the surrounding application setting
+is familiar. Keep the application setting in examples unless that integration surface is
+itself the page's job.
 
 Keep the framing at the same level as the page job. A section that teaches routine
 orchestration should be led by the boundary or shape it is responsible for: routine flow, a
@@ -42,10 +45,9 @@ owner when naming it would not clarify the current task.
 Treat editing as design work. A revision should settle on one organizing idea and make
 every part of the page serve that idea.
 
-When a page's design changes, revise the page as a whole. Replace stale framing, examples,
-and supporting material instead of fitting new text around the previous structure.
-Compatibility with outdated framing is not a documentation goal. The opening, examples,
-headings, and ending should all serve the same design.
+When a page's design changes, revise the page as a whole. Its route, navigation entry,
+opening, examples, headings, supporting material, and ending should all point in the same
+direction.
 
 Page-level constraints should shape the page. If a constraint affects the page's
 direction, revise the page structure and surrounding explanation so the page embodies that
@@ -57,17 +59,17 @@ structure or to this writing guide. The final page should read as if it was desi
 way from the start, without discussion history or transitional language left from an
 earlier draft.
 
-Prefer restructuring or rewriting when local edits would break the page's flow. If a page
-has changed direction, remove the scaffolding left by the previous direction.
-
-Clean up stale design debt in the revision that exposes it. If previous material no
-longer fits the page's current job, replace or remove it instead of layering new
-exceptions around it.
+Prefer restructuring or rewriting when local edits would break the page's flow. Material
+that does not serve the page's current job should be replaced or removed instead of
+carrying exceptions around it.
 
 ## Reading Shape
 
 Task-oriented sections should usually move from a short task frame to the shajara-shaped
-example, then to the explanation needed to read that example.
+example, then to the explanation needed to read that example. When several
+responsibilities need to be seen together, open with the broader example and return to
+smaller excerpts as each responsibility is explained. The reader should not have to
+remember or re-parse the opening example to follow later sections.
 
 Readers should usually see the code shape before carrying a large explanation. Put
 supporting interpretation after the example unless the reader cannot understand the example
@@ -124,24 +126,25 @@ not merely make an existing point louder.
 Treat lifecycle, cleanup, and error behavior as part of the example's design when they
 change how the reader should understand the API being taught. If they are not the page's
 job, omit them rather than carry defensive completeness. Prefer language and runtime forms
-that expose ownership or release without extra scaffolding, and remove stale wrappers that
-only preserve an earlier sample shape. When failure behavior is the subject, keep
-propagation, local handling, and recovery in their responsible contexts so one
-responsibility does not read like a caveat on another.
+that expose ownership or release without extra scaffolding, and remove wrappers that do
+not serve the current sample. When failure behavior is the subject, keep propagation,
+local handling, and recovery in their responsible contexts so one responsibility does not
+read like a caveat on another.
 
 ## Application Surface
 
-The application surface should be the reader's handle on the current section, not its
-center of gravity. Choose surrounding work according to the boundary being taught. A
-Promise boundary needs recognizable asynchronous work; routine orchestration can often be
-represented by small inline routines or deterministic values. Realistic plumbing should
-appear only where it changes the shajara behavior the reader is learning.
+The application surface should help readers recognize where the shajara boundary appears,
+not become the center of gravity. Choose surrounding work according to the boundary being
+taught, and keep the shajara mechanism as the named subject. A Promise boundary needs
+recognizable asynchronous work; routine orchestration can often be represented by small
+inline routines or deterministic values. Realistic plumbing should appear only where it
+changes the shajara behavior the reader is learning.
 
 Use complete setup only when the setup is itself the integration point. Otherwise keep the
 example flat enough for the reader to see the boundary being taught. A helper is useful
 only when it names a real responsibility that would still matter outside the guide; if it
 mainly hides the boundary or makes the sample look more like an application, write the
-smallest inline shape instead.
+smallest inline example instead.
 
 Choose domain names that do not collide with shajara concepts unless the page is teaching
 that concept. For example, do not use channel, feed, scope, process, future, or resource
@@ -200,9 +203,10 @@ it was risky in another context.
 Prefer ordinary wording until a project term earns its place. Once a project term appears,
 make sure it is doing work for the reader and is attached to the right concept layer.
 
-Use enumeration only when the items are true peers under a governing idea the page has
-already named. If a list is carrying priority, causality, ownership, or a design rule,
-name that relationship and write the explanation as prose.
+Use enumeration when it helps readers scan true peers under a named relationship. Name
+that relationship before listing the items. If the items need explanation to make sense,
+keep the explanation in prose; if the relationship is already clear and comparison helps,
+enumerate them.
 
 Do not turn convenient nouns into project concepts. When shajara has no named concept for
 something, describe the concrete API call, routine, scope, process, or future instead.
@@ -211,6 +215,7 @@ Use contrast only when it clarifies a real distinction. Repeated "not this, but 
 sentences can make a guide read defensively. When a distinction matters, express the
 positive behavior first, then add the contrast only as much as needed.
 
-Natural prose matters. A guide may carry precise terminology, but the surrounding sentences
-should still read like ordinary explanation. Avoid wording that explains the text's own
-construction or the writer's private intent.
+Natural prose matters. A guide may carry precise terminology, but the surrounding
+sentences should still read like ordinary explanation. Do not make the guide announce its
+own construction, justify the sample's shape, or describe the writer's private intent.
+State the behavior the reader can see in the code and the rule it reveals.
