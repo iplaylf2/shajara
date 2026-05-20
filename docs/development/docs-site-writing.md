@@ -38,12 +38,15 @@ Page descriptions should name the reader-facing job, not enumerate the sections 
 the outline into metadata. A description that can be mechanically expanded into the page
 outline is usually too specific.
 
-Do not duplicate the job of an earlier page. When a reader reaches a follow-up guide,
-assume the previous guide has already taught its entry pattern, and spend attention on the
-new move.
+Do not duplicate the job of another page. When a reader reaches a follow-up guide, assume
+the previous guide has already taught its entry pattern, and spend attention on the new
+move. In an API family or topic sequence, shared routing, page level, and navigation
+should orient the reader without making sibling pages repeat the same contrasts or
+comparisons.
 
 Completeness belongs to the documentation set. A page can leave a concept to its later
-owner when naming it would not clarify the current task.
+owner when naming it would not clarify the current task, and it can end as soon as its own
+decision is settled.
 
 ## Revision Coherence
 
@@ -229,7 +232,13 @@ If a term naturally explains the current behavior, use it; do not replace it onl
 it was risky in another context.
 
 Prefer ordinary wording until a project term earns its place. Once a project term appears,
-make sure it is doing work for the reader and is attached to the right concept layer.
+make sure it is doing work for the reader and is attached to the right concept layer. When
+a sentence explains runtime behavior, name the concept that makes the behavior visible in
+that context; do not collapse distinct concepts into a single convenient noun. When a
+sentence describes surrounding application activity, ordinary application language can be
+clearer. Localized pages follow the same rule: translate the surrounding sentence while
+preserving the concept layer, and keep a project term when a natural word would change the
+runtime relationship.
 
 Use enumeration when it helps readers scan true peers under a named relationship. Name
 that relationship before listing the items. If the items need explanation to make sense,
