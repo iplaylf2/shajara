@@ -1,0 +1,93 @@
+---
+title: Futures
+description: Create one-result handles, settle them from routines, and choose where to wait.
+---
+
+A shajara future is a single result slot owned by the scope that created it. It does not
+start work by itself. Use `future(...)` when routine code needs to create that slot
+directly, settle it from one place, and observe it from another.
+
+## Create a Result Slot
+
+`future(...)` returns two handles for the same result. One handle observes the result; the
+other settles it.
+
+```ts
+import { future, settle, wait } from "@shajara/host/primitives";
+
+function* prepareSummary() {
+  const [summary, publishSummary] = yield* future<string>();
+
+  yield* settle(publishSummary, "ready");
+
+  const text = yield* wait(summary);
+
+  return `summary ${text}`;
+}
+```
+
+`summary` observes the result. `publishSummary` settles it.
+
+The scope that calls `future(...)` owns the result slot. If that scope converges while the
+future is still pending, shajara cancels the future instead of leaving a waiter attached
+to a result that can no longer be produced.
+
+## Try Without Waiting
+
+Use `poll(...)` when a routine wants to check the current state without waiting. It asks
+the future once and returns immediately.
+
+```ts
+import type { RiteFuture } from "@shajara/host";
+import { poll } from "@shajara/host/primitives";
+
+function* readDisplayNameNow(displayName: RiteFuture<string>) {
+  const [hasDisplayName, currentDisplayName] = yield* poll(displayName);
+
+  return hasDisplayName ? currentDisplayName : "Loading";
+}
+```
+
+`poll(displayName)` returns `[false]` if the future is pending at that moment. If the
+future has a successful value, it returns `[true, value]`.
+
+## Settle a Failure
+
+Use `settleError(...)` when a future should settle with a JavaScript failure instead of a
+successful value.
+
+```ts
+import { future, settleError, wait } from "@shajara/host/primitives";
+
+function* readRequiredTitle() {
+  const [title, rejectTitle] = yield* future<string>();
+
+  yield* settleError(rejectTitle, new Error("missing title"));
+
+  // This wait throws because the future was settled as a failure.
+  return yield* wait(title);
+}
+```
+
+Routine code observes that failure through the same future handle.
+
+## Complete From Callbacks
+
+Use `completer(...)` when ordinary JavaScript callbacks need to settle a shajara future.
+
+```ts
+import { completer } from "@shajara/host";
+import { wait } from "@shajara/host/primitives";
+
+function* waitForFileChoice() {
+  const { future: selectedFile, resolve } = yield* completer<File>();
+
+  registerFileChoice(resolve);
+
+  return yield* wait(selectedFile);
+}
+```
+
+`completer(...)` gives routine code a future and host code the callbacks that can settle
+it. Callback code calls `resolve(...)`, and routine code observes the result through the
+returned future.

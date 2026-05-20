@@ -18,6 +18,14 @@ const siteSidebar = [
       "create-scope",
     ],
   },
+  {
+    directory: "topics",
+    label: {
+      en: "Topics",
+      "zh-cn": "专题",
+    },
+    pages: ["futures"],
+  },
 ] satisfies SiteSidebar;
 
 export const starlightSidebar: StarlightSidebar = toStarlightSidebar(siteSidebar);
