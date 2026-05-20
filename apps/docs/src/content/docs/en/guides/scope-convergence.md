@@ -133,9 +133,9 @@ function* launchCampaign() {
 // campaign still running
 ```
 
-Here, `sendEmailBatch` does not leave the error to cross the process boundary. It decides
-its own failure result, the later `wait(emailStatusFuture)` receives an ordinary value,
-and the current scope can continue.
+`sendEmailBatch` does not leave the error to cross the process boundary. It decides its
+own failure result, the later `wait(emailStatusFuture)` receives an ordinary value, and
+the current scope can continue.
 
 If the `try...catch` waits until an outer `wait(emailStatusFuture)`, the process failure
 has already driven the current scope into failure convergence.

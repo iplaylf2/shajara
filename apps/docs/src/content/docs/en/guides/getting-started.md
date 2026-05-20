@@ -29,8 +29,8 @@ const message = await run(function* main() {
 
 `run(...)` is the application entry point. The Promise resolves when the routine returns.
 
-From here on, examples show the routine body. A routine can be passed to
-`run(...)` directly or called from another routine.
+Later examples show the routine body. A routine can be passed to `run(...)` directly or
+called from another routine.
 
 ## Wait for Promise work
 

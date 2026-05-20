@@ -28,8 +28,8 @@ const message = await run(function* main() {
 
 `run(...)` 是应用代码进入 shajara 的入口。routine 返回后，这个 Promise 会 resolve。
 
-从这里开始，示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，
-也可以被另一个 routine 调用。
+后面的示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，也可以被另一个
+routine 调用。
 
 ## 等待 Promise 工作
 

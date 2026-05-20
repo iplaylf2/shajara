@@ -77,7 +77,7 @@ function* loadFastProfile() {
 `all(...)` 返回 future，表示调用方仍然可以决定在哪里等待这组有序结果。`race(...)`
 返回值，表示调用方会在这些候选 routine 已经收敛成一个结果后继续。
 
-先把它读成接口形状：future 表示稍后等待；值表示这个 API 已经等待过它启动的 routine。
+可以按接口形状来读：future 表示稍后等待；值表示这个 API 已经等待过它启动的 routine。
 
 ## 从 callback 创建 future
 
@@ -120,7 +120,7 @@ function* loadProfile() {
 ```
 
 `yield* abortSignal(...)` 会把这个 signal 登记到当前 scope。返回的 signal 本身不会取消
-routine；它是在 scope 开始关闭时，交给 Promise API 的原生取消句柄。
+routine；scope 开始关闭时，Promise API 会通过这个原生句柄收到取消信号。
 
 ## 把 future 暴露成 Promise
 

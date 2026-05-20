@@ -3,8 +3,8 @@ title: Scope 与 Process
 description: 把 future 和直接返回的值读成 process 与 scope 边界。
 ---
 
-读过几个调用之后，返回形状会比函数名更重要。future 表示 routine 仍然有一个可以等待的
-结果；直接返回值，表示这次调用已经穿过一个边界并回来了。
+当调用开始返回不同形状时，返回形状会比函数名更重要。future 表示 routine 仍然有一个
+可以等待的结果；直接返回值，表示这次调用已经穿过一个边界并回来了。
 
 这层形状背后的运行时名称是 process 和 scope。process 是 scope 中正在运行的一段
 routine。scope 是拥有 process 并等待它们收敛的边界。

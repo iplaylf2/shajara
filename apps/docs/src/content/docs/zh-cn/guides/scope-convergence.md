@@ -129,7 +129,7 @@ function* launchCampaign() {
 // campaign still running
 ```
 
-这里的 `sendEmailBatch` 没有把错误留到 process 边界之外。它自己决定失败结果，
+`sendEmailBatch` 没有把错误留到 process 边界之外。它自己决定失败结果，
 `emailStatusFuture` 最后等待到的是普通值，当前 scope 里的后续流程可以继续运行。
 
 如果等到外层 `wait(emailStatusFuture)` 再 `try...catch`，这个 process 的失败已经先让

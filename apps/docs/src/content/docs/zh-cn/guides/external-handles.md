@@ -42,8 +42,8 @@ function* loadProfilePanel(userId: string) {
 会 abort。调用方仍然可以拿到这个 Promise，但这次 request 的生命周期由 `panelScope`
 决定。
 
-这个位置很重要：`yield* abortSignal()` 运行在 `panelScope` 内部，所以 signal 会登记在
-拥有 request 的同一个 scope 上。
+因为 `yield* abortSignal()` 运行在 `panelScope` 内部，signal 会登记在拥有 request 的
+同一个 scope 上。
 
 ## 取消 callback future
 
@@ -81,8 +81,8 @@ function* waitForFileChoice() {
 到来前关闭，`fileDialogScope` 会收敛并取消 pending future。`wait(selectedFile)` 观察到
 的是取消，而不是继续等待一个已经属于关闭 scope 的 callback。
 
-这里的 `yield* completer<File>()` 会在 `fileDialogScope` 中创建并登记这个 future，所以
-dialog scope 关闭后，更晚到来的 callback 不再拥有一个 live 的 shajara 结果。
+`yield* completer<File>()` 会在 `fileDialogScope` 中创建并登记这个 future，所以 dialog
+scope 关闭后，更晚到来的 callback 不能再完成这个 shajara future。
 
 ## 释放 resource provider
 

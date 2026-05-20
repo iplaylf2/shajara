@@ -80,7 +80,7 @@ routine.
 values. `race(...)` returns a value, so the caller resumes after the alternatives have
 already converged to one result.
 
-For now, read that as an interface shape: future means wait later; value means this API
+Read that as an interface shape: future means wait later; value means this API
 already waited through the routines it started.
 
 ## Build a Future From Callbacks

@@ -42,8 +42,8 @@ function* loadProfilePanel(userId: string) {
 converges, the signal aborts. The caller may still receive the Promise, but the request's
 lifetime was decided by `panelScope`.
 
-The placement matters: `yield* abortSignal()` runs inside `panelScope`, so the signal is
-registered with the same scope that owns the request.
+Because `yield* abortSignal()` runs inside `panelScope`, the signal is registered with
+the same scope that owns the request.
 
 ## Cancel Callback Futures
 
@@ -83,8 +83,8 @@ before that callback fires, `fileDialogScope` converges and cancels the pending 
 `wait(selectedFile)` then observes cancellation instead of waiting for a callback owned by
 a closed scope.
 
-Here, `yield* completer<File>()` creates and registers the future in `fileDialogScope`, so
-the later callback does not own a live shajara result after the dialog scope closes.
+`yield* completer<File>()` creates and registers the future in `fileDialogScope`, so the
+later callback cannot settle that shajara future after the dialog scope closes.
 
 ## Release Resource Providers
 

@@ -3,9 +3,9 @@ title: Scopes and Processes
 description: Read futures and direct values as process results and scope boundaries.
 ---
 
-After a few calls, the return shape starts to matter more than the function name. A future
-means the routine still has a result it can wait for; a direct value means the call has
-already crossed a boundary and come back.
+Once calls start returning different shapes, the return shape matters more than the
+function name. A future means the routine still has a result it can wait for; a direct
+value means the call has already crossed a boundary and come back.
 
 The runtime names behind that shape are process and scope. A process is one running
 routine inside a scope. A scope is the boundary that owns processes and waits for them to
