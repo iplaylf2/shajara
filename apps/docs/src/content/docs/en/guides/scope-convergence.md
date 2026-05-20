@@ -45,8 +45,8 @@ the child scope. The scope gathers the structure it owns into one result boundar
 
 ## Failure Cascades Cancellation
 
-In the host API, waiting for a scope brings the scope result back into ordinary JavaScript
-control flow. Success returns a value, and failure throws `ScopeError`.
+When routine code waits for a scope, shajara brings the scope result back through ordinary
+JavaScript control flow. Success returns a value, and failure throws `ScopeError`.
 
 ```ts
 import { ScopeError, sleep } from "@shajara/host";

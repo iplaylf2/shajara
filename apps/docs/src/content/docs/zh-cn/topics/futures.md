@@ -71,7 +71,7 @@ routine 代码会通过同一个 future 句柄观察到这个失败结果。
 
 ## 从 callback 完成 future
 
-当 shajara future 需要从原生 JavaScript 边界完成时，例如从 callback 中完成，使用
+当 shajara future 需要从普通 JavaScript 边界完成时，例如从 callback 中完成，使用
 `completer(...)`。
 
 ```ts

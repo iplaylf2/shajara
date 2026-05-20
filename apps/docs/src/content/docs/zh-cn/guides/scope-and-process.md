@@ -81,7 +81,9 @@ import { branch, spawn, wait } from "@shajara/host/primitives";
 
 function* saveWithoutWaitingHere() {
   const saveFuture = yield* spawn(function* saveProcess() {
-    return yield* branch(saveProfileScope);
+    return yield* branch(function* saveProfileScope() {
+      return "saved";
+    });
   });
 
   const status = "saving";
@@ -94,5 +96,5 @@ function* saveWithoutWaitingHere() {
 当前 process 启动 `saveProcess`，并拿到 `saveFuture`。等待 `saveProfileScope` 的是
 `saveProcess` 这个 process；调用方可以继续运行，直到需要这个 future 的值。
 
-host API 会保持这个区分：在当前 scope 中启动 process 的 API，会返回用于观察结果的
-future；打开 child scope 的 API，会在调用它的 process 里等待这个 scope，然后返回值。
+这些 API 形状会保持这个区分：在当前 scope 中启动 process 的 API，会返回用于观察结果
+的 future；打开 child scope 的 API，会在调用它的 process 里等待这个 scope，然后返回值。

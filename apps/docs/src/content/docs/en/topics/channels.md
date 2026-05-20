@@ -108,9 +108,9 @@ when they observe a closed or revoked channel.
 
 ## Receive From Callbacks
 
-Use `feed(...)` when values arrive at a plain JavaScript boundary, such as a callback or
-event handler, and need to enter shajara concurrency. The receiver stays inside routine
-code; the returned functions stay near the callback registration.
+Use `feed(...)` when values arrive at an ordinary JavaScript boundary, such as a callback
+or event handler, and need to enter shajara concurrency. The receiver stays inside
+routine code; the returned functions stay near the callback registration.
 
 ```ts
 import { feed } from "@shajara/host";

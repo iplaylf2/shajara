@@ -6,7 +6,7 @@ description: 让 request、callback future 和 resource 绑定到拥有它们的
 外部 API 常常会给你一个句柄，而这个句柄会活得比创建它的那一行代码更久。在 shajara
 里，应该在负责约束它生命周期的 scope 里创建这个句柄。
 
-## 让 Promise 工作随 scope abort
+## 让 Promise 工作随 scope 中止
 
 `abortSignal(...)` 会创建一个绑定到当前 scope 的 `AbortSignal`。当外部工作应该跟着这个
 scope 停止时，把它传给 `fetch(...)` 这类 Promise API。
@@ -42,7 +42,7 @@ function* loadProfilePanel(userId: string) {
 ```
 
 `panelScope` 创建了 request，也创建了可以停止它的 signal。当这个 scope 收敛时，signal
-会 abort。调用方仍然可以拿到这个 promise，但这次 request 的生命周期由 `panelScope`
+会 abort。调用方仍然可以拿到这个 Promise，但这次 request 的生命周期由 `panelScope`
 决定。
 
 这个位置很重要：`yield* abortSignal()` 运行在 `panelScope` 内部，所以 signal 会登记在
@@ -139,6 +139,6 @@ subscription。`provide(...)` 之后，provider 会继续停在同一个 scope �
 的 request 应该在 panel scope 里创建。绑定到 dialog 的 callback future 应该在 dialog
 scope 里创建。应该随 view 关闭的 socket 应该在 view scope 里创建。
 
-调用方仍然可以从这个 scope 拿到 promise、future 或 ready value，但这不会转移归属。
+调用方仍然可以从这个 scope 拿到 Promise、future 或 ready value，但这不会转移归属。
 创建它的 scope 收敛时，signal 会 abort，pending future 会被取消，provider cleanup
 会运行。

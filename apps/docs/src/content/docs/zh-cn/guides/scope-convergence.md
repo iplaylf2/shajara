@@ -44,8 +44,8 @@ entry process 的结果交回 `saveProfile`。
 
 ## 失败引起级联取消
 
-在 host API 里，等待 scope 会把 scope 结果带回普通 JavaScript 控制流。成功时返回值；
-失败时抛出 `ScopeError`。
+routine 代码等待 scope 时，shajara 会把 scope 结果带回普通 JavaScript 控制流。成功时
+返回值；失败时抛出 `ScopeError`。
 
 ```ts
 import { ScopeError, sleep } from "@shajara/host";

@@ -1,10 +1,11 @@
 ---
 title: Promise 常见用法
-description: 用熟悉的 Promise 用法组织 shajara routine 工作和原生 Promise 边界。
+description: 把 Promise 形状的协作方式对应到 shajara routine 工作和 Promise 边界。
 ---
 
-可以先借用熟悉的 Promise 形状来读。在 shajara routine 里，关键是看一次调用是直接给
-routine 一个值，还是给它一个可以稍后等待的句柄。
+Promise 代码常见的形状包括组合工作、竞速候选项、包装 callback，以及把值交回 Promise
+链。在 shajara routine 里，关键是看一次调用是直接给 routine 一个值，还是给它一个可以
+稍后等待的句柄。
 
 ## 像 `Promise.all` 一样组合工作
 
@@ -71,7 +72,7 @@ function* loadFastProfile() {
 `network` 胜出后，`race(...)` 会取消剩下的 routine，并把胜出的值交回
 `loadFastProfile`。
 
-这不同于 `Promise.race(...)` 那种取得第一个 settled promise 的语义。`race(...)`
+这不同于 `Promise.race(...)` 那种取得第一个 settled Promise 的语义。`race(...)`
 会在 shajara 处理完未胜出的 routine 之后，才返回胜出的值。
 
 ## 读 `all` 和 `race` 的返回形状
@@ -101,9 +102,9 @@ function* locateUser() {
 
 callback 一侧完成 future，routine 一侧用 `wait(...)` 等待同一个结果。
 
-`yield* completer(...)` 不只是 generator 调用语法。它会创建这个 future，并把它登记到
-当前 scope 的生命周期里：如果 scope 结束时 future 仍然 pending，shajara 会取消它，
-而不是留下空悬的句柄。
+`yield* completer(...)` 会在当前 scope 中创建这个 future，并返回用于完成这个 future 的
+callback 函数。如果 scope 结束时 future 仍然 pending，shajara 会取消它，而不是留下空悬
+的句柄。
 
 ## 在 Promise 边界使用 AbortSignal
 
@@ -126,8 +127,7 @@ routine；它是在 scope 开始关闭时，交给 Promise API 的原生取消�
 
 ## 把 future 暴露成 Promise
 
-在 routine 内部，如果原生 Promise 代码需要观察一个 shajara future，使用
-`promisify(...)`。
+在 routine 内部，如果 Promise 代码需要观察一个 shajara future，使用 `promisify(...)`。
 
 ```ts
 import { promisify, sleep, until } from "@shajara/host";
@@ -153,5 +153,5 @@ function* loadAndReport() {
 }
 ```
 
-future 仍然代表一个 shajara process 的结果。原生 Promise 在边界处暴露这个结果，让普通
+future 仍然代表一个 shajara process 的结果。返回的 Promise 在边界处暴露这个结果，让
 Promise 链可以继续处理它。

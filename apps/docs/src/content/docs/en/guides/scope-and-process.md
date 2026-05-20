@@ -85,7 +85,9 @@ import { branch, spawn, wait } from "@shajara/host/primitives";
 
 function* saveWithoutWaitingHere() {
   const saveFuture = yield* spawn(function* saveProcess() {
-    return yield* branch(saveProfileScope);
+    return yield* branch(function* saveProfileScope() {
+      return "saved";
+    });
   });
 
   const status = "saving";
@@ -99,6 +101,6 @@ The current process starts `saveProcess` and receives `saveFuture`. `saveProcess
 process that waits through `saveProfileScope`; the caller can keep going until it needs the
 future's value.
 
-The host API keeps this distinction consistent. APIs that start work in the current scope
-return a future for observing that work. APIs that open a child scope wait for that scope
-in the process that called them, then return a value.
+The API shapes keep this distinction consistent. APIs that start work in the current
+scope return a future for observing that work. APIs that open a child scope wait for that
+scope in the process that called them, then return a value.

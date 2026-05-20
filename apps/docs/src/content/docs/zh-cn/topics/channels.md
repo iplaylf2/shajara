@@ -104,7 +104,7 @@ open，shajara 会撤销它，并唤醒阻塞中的发送方或接收方。`send
 
 ## 从 callback 接收值
 
-当值来自原生 JavaScript 边界，例如 callback 或事件处理器，并且需要进入 shajara 并发
+当值来自普通 JavaScript 边界，例如 callback 或事件处理器，并且需要进入 shajara 并发
 边界时，使用 `feed(...)`。receiver 留在 routine 代码中；返回的函数放在注册 callback
 的位置使用。
 

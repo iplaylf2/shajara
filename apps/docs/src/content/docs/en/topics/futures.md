@@ -74,7 +74,7 @@ Routine code observes that failure through the same future handle.
 
 ## Complete From Callbacks
 
-Use `completer(...)` when a shajara future needs to be settled from a plain JavaScript
+Use `completer(...)` when a shajara future needs to be settled from an ordinary JavaScript
 boundary, such as a callback.
 
 ```ts
