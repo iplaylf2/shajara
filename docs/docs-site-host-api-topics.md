@@ -16,13 +16,12 @@
 
 优先专题：
 
+- `futures`：`future(...)`、`settle(...)`、`settleError(...)`、`poll(...)`、`wait(...)`
 - `channels`：`channel(...)`、`send(...)`、`receive(...)`、`trySend(...)`、
   `tryReceive(...)`、`close(...)`、`feed(...)`
-- `future-results`：`future(...)`、`settle(...)`、`settleError(...)`、`poll(...)`、
-  `wait(...)`
-- `recovery-boundaries`：`guard(...)`、`resumable(...)`
-- `scoped-context`：`contextKey(...)`、`bind(...)`、`lookup(...)`、`unbind(...)`
-- `autonomous-work`：`autonomy(...)`
+- `context`：`contextKey(...)`、`bind(...)`、`lookup(...)`、`unbind(...)`
+- `recovery`：`guard(...)`、`resumable(...)`
+- `autonomy`：`autonomy(...)`
 
 术语可以直接使用 shajara 的 API 名和运行时概念。需要避免的是机械列 API，而不是避免
 术语本身。
