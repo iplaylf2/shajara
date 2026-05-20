@@ -71,7 +71,8 @@ routine 代码会通过同一个 future 句柄观察到这个失败结果。
 
 ## 从 callback 完成 future
 
-当普通 JavaScript callback 需要完成 shajara future 时，使用 `completer(...)`。
+当 shajara future 需要从原生 JavaScript 边界完成时，例如从 callback 中完成，使用
+`completer(...)`。
 
 ```ts
 import { completer } from "@shajara/host";
@@ -86,5 +87,6 @@ function* waitForFileChoice() {
 }
 ```
 
-`completer(...)` 会给 routine 代码一个 future，也给 host 代码一组可以完成它的
-callback。callback 代码调用 `resolve(...)`，routine 代码通过返回的 future 观察结果。
+`completer(...)` 会把 future 留在 shajara 并发边界内，并返回一组可从 JavaScript 边界
+调用的完成函数。callback 代码调用 `resolve(...)`，routine 代码通过返回的 future 观察
+结果。

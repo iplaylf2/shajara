@@ -73,7 +73,8 @@ Routine code observes that failure through the same future handle.
 
 ## Complete From Callbacks
 
-Use `completer(...)` when ordinary JavaScript callbacks need to settle a shajara future.
+Use `completer(...)` when a shajara future needs to be settled from a plain JavaScript
+boundary, such as a callback.
 
 ```ts
 import { completer } from "@shajara/host";
@@ -88,6 +89,6 @@ function* waitForFileChoice() {
 }
 ```
 
-`completer(...)` gives routine code a future and host code the callbacks that can settle
-it. Callback code calls `resolve(...)`, and routine code observes the result through the
-returned future.
+`completer(...)` keeps the future inside shajara concurrency and returns functions that
+can be called from that JavaScript boundary. Callback code calls `resolve(...)`, and
+routine code observes the result through the returned future.
