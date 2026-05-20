@@ -59,9 +59,11 @@ structure or to this writing guide. The final page should read as if it was desi
 way from the start, without discussion history or transitional language left from an
 earlier draft.
 
-Prefer restructuring or rewriting when local edits would break the page's flow. Material
-that does not serve the page's current job should be replaced or removed instead of
-carrying exceptions around it.
+Prefer restructuring or rewriting when local edits would break the page's flow. Splitting
+a section, renaming a module, or moving material is appropriate when it gives
+responsibilities stable homes and removes accumulated exceptions. Material that does not
+serve the page's current job should be replaced or removed instead of carrying exceptions
+around it.
 
 ## Reading Shape
 
@@ -75,6 +77,10 @@ Readers should usually see the code shape before carrying a large explanation. P
 supporting interpretation after the example unless the reader cannot understand the example
 without a small setup sentence. Before and after the example, stay in the vocabulary of the
 current layer. Explain concrete code names only when they help the reader read the example.
+
+In code examples, use comments only when they let the reader see a local behavior at the
+line where it happens. If a comment already carries that local point, the following prose
+should move to the section's rule or decision instead of restating the comment.
 
 When a reader would otherwise have to mentally execute incidental details, show the
 observable result near the code. Let that result carry the simple outcome; use the prose
@@ -108,6 +114,11 @@ boundary the reader must see, then choose just enough surrounding TypeScript and
 application code to make that boundary readable. Platform glue and placeholder setup are
 useful only while they keep the shajara move legible; they should not become a second
 walkthrough.
+
+On API-family pages, each example should focus on the API named by the section.
+Supporting calls are acceptable when they create the value, state, or observation point the
+API needs, but they should not become peer subjects in the same example. If several APIs
+need equal attention, split the examples or give the comparison its own section.
 
 A concrete scenario is valuable when it reveals how work is owned, observed, canceled, or
 converged. Otherwise use lighter surfaces: inline routines, literals, and comments for
@@ -149,6 +160,9 @@ smallest inline example instead.
 Choose domain names that do not collide with shajara concepts unless the page is teaching
 that concept. For example, do not use channel, feed, scope, process, future, or resource
 as casual names when they could be read as API or runtime terms.
+
+Choose nearby example names that remain visually distinct when read quickly. Avoid names
+where related handles and values are only small variations of the same word.
 
 Avoid scaffolding that makes the reader think about TypeScript declaration mechanics or
 type inference when the page is teaching orchestration:
@@ -217,5 +231,6 @@ positive behavior first, then add the contrast only as much as needed.
 
 Natural prose matters. A guide may carry precise terminology, but the surrounding
 sentences should still read like ordinary explanation. Do not make the guide announce its
-own construction, justify the sample's shape, or describe the writer's private intent.
-State the behavior the reader can see in the code and the rule it reveals.
+own construction, justify the sample's shape, explain that a representation is important,
+or describe the writer's private intent. State the behavior the reader can see in the code
+and the rule it reveals.
