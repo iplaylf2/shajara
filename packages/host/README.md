@@ -47,8 +47,7 @@ const result = await run(function* loadPage() {
   };
 });
 
-console.log(result);
-// { header: "header", sidebar: "sidebar" }
+// result is { header: "header", sidebar: "sidebar" }
 ```
 
 The important part is not simply that two steps run concurrently. Branches start and results join in the same routine that owns the page load.
