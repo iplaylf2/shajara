@@ -3,10 +3,8 @@ title: Context
 description: 在 scope 上绑定值，并从 routine 代码中读取最近可见的绑定。
 ---
 
-shajara context 是一张沿 scope 链查找的绑定表。context key 为绑定提供带类型的身份，
-`bind(...)` 在当前 scope 上记录值，`lookup(...)` 从当前 scope 向祖先 scope 查找。
-当一个值应该留在当前 scope 的环境里，而不是作为参数层层传给每个 routine 调用时，
-使用 context。
+有些值属于当前 scope 的运行环境，而不是每个 routine 的业务参数。context 把这种值绑定
+到 scope 链上，让后续 routine 可以读取最近可见的绑定，而不用把参数层层传下去。
 
 ## 在当前 scope 绑定值
 

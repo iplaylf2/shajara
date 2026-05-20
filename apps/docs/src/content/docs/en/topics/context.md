@@ -3,10 +3,9 @@ title: Context
 description: Bind values on a scope and read the nearest visible binding from routine code.
 ---
 
-shajara context is a scope-chain binding table. A context key gives a binding its typed
-identity, `bind(...)` records a value on the current scope, and `lookup(...)` searches
-from the current scope toward its ancestors. Use context when a value should live in the
-current scope's environment instead of being passed through every routine call.
+Some values belong to the current scope's environment rather than to every routine's
+business parameters. Context binds those values on the scope chain, so later routines can
+read the nearest visible binding without threading the value through every call.
 
 ## Bind a Value in the Current Scope
 

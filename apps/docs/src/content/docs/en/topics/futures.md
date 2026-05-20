@@ -3,9 +3,10 @@ title: Futures
 description: Create one-result handles, settle them from routines, and choose where to wait.
 ---
 
-A shajara future is a single result slot owned by the scope that created it. It does not
-start work by itself. Use `future(...)` when routine code needs to create that slot
-directly, settle it from one place, and observe it from another.
+Some results should not return immediately from the current routine. They may be
+provided later by another piece of work in the same scope. A future is the single-result
+slot for that shape: one place gets settlement authority, and other routines can observe
+the result when they need it.
 
 ## Create a Result Slot
 

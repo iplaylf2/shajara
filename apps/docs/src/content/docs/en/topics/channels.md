@@ -3,10 +3,10 @@ title: Channels
 description: Move repeated values inside shajara concurrency and receive values from JavaScript callbacks.
 ---
 
-A shajara channel is a scope-owned message path for a sequence of values. It separates the
-receiver from the sender, so one routine can wait for incoming values while another
-routine supplies them. Use `channel(...)` when work needs repeated handoff; use a future
-when the work only has one result.
+When work needs to hand off a sequence of values, a future's single result is not enough.
+A channel is a scope-owned message path for that repeated handoff. It separates receiver
+authority from sender authority, so different routines can coordinate through capacity
+and waiting rules.
 
 ## Move Values Between Routines
 

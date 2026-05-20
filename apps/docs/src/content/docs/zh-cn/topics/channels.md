@@ -3,9 +3,8 @@ title: Channel
 description: 在 shajara 并发边界内传递连续值，并从 JavaScript callback 接收值。
 ---
 
-shajara channel 是由创建它的 scope 拥有的连续消息路径。它把接收权和发送权分开，
-因此一个 routine 可以等待传入值，另一个 routine 可以供应这些值。当工作需要重复交接
-值时，使用 `channel(...)`；如果工作只有一个结果，使用 future。
+当工作需要交接一串值时，future 的单次结果不够用。channel 提供一条由 scope 拥有的
+消息路径，把发送方和接收方分开，让不同 routine 可以按容量和等待规则重复交接值。
 
 ## 在 routine 之间传递值
 

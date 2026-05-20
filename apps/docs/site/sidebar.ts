@@ -24,7 +24,7 @@ const siteSidebar = [
       en: "Topics",
       "zh-cn": "专题",
     },
-    pages: ["futures", "channels", "context"],
+    pages: ["futures", "channels", "context", "recovery"],
   },
 ] satisfies SiteSidebar;
 
