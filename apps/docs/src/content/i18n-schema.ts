@@ -5,9 +5,6 @@ import { z } from "astro/zod";
 const staticExplorerUiI18nKeys = [
   "docs.404.body",
   "docs.404.description",
-  "docs.404.hero.backHome",
-  "docs.404.hero.explorer",
-  "docs.404.hero.tagline",
   "docs.404.title",
   "docs.home.body",
   "docs.home.description",

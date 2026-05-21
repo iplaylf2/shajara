@@ -1,9 +1,6 @@
 {
   "docs.404.body": "这个页面不存在，可能已移动，或尚未发布。",
   "docs.404.description": "页面未找到。",
-  "docs.404.hero.backHome": "文档首页",
-  "docs.404.hero.explorer": "流程图解",
-  "docs.404.hero.tagline": "请检查链接，返回文档，或打开流程图解。",
   "docs.404.title": "404",
   "docs.home.body": "用 JavaScript generator function 协调并发工作，在明确的位置等待结果，让取消与恢复可预期。",
   "docs.home.description": "shajara 的文档、流程图解和 API 地图。",
