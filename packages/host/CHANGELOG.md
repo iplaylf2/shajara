@@ -1,5 +1,14 @@
 # @shajara/host
 
+## 0.9.1
+
+### Patch Changes
+
+- [#43](https://github.com/iplaylf2/shajara/pull/43) [`a21411a`](https://github.com/iplaylf2/shajara/commit/a21411a493a72fda428d956cdaaa8652e434d8ee) Thanks [@iplaylf2](https://github.com/iplaylf2)! - `all(...)` and `race(...)` now preserve ordered result types for inline routine arrays
+  without requiring `as const`.
+- Updated dependencies []:
+  - @shajara/kernel@0.9.1
+
 ## 0.9.0
 
 ### Minor Changes

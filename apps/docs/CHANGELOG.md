@@ -1,5 +1,17 @@
 # @shajara/docs
 
+## 0.4.1
+
+### Patch Changes
+
+- [#43](https://github.com/iplaylf2/shajara/pull/43) [`a21411a`](https://github.com/iplaylf2/shajara/commit/a21411a493a72fda428d956cdaaa8652e434d8ee) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Refine the Flow Explorer around routine ownership.
+
+  Readers can now follow Flow Explorer examples through the same routine model described in
+  the package docs. Replay views make routine ownership and state changes easier to follow.
+
+- Updated dependencies [[`a21411a`](https://github.com/iplaylf2/shajara/commit/a21411a493a72fda428d956cdaaa8652e434d8ee)]:
+  - @shajara/host@0.9.1
+
 ## 0.4.0
 
 ### Minor Changes
