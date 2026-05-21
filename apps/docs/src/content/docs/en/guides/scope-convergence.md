@@ -19,7 +19,7 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  const result = yield* branch(function* saveProfileScope() {
+  return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(30);
 
@@ -29,24 +29,21 @@ function* saveProfile() {
     yield* sleep(5);
 
     return "profile saved";
-  });
-
-  // result is "profile saved", and writeAuditTrail has finished.
-  return result;
+  }); // "profile saved" after writeAuditTrail finishes.
 }
 ```
 
-`saveProfileScope` returns `"profile saved"` quickly, but the child scope still owns the
-`writeAuditTrail` process. `branch(...)` returns the entry process result to
-`saveProfile` only after that process has finished too.
+`saveProfileScope` returns before `writeAuditTrail`, but the child scope still owns that
+process. `branch(...)` waits for the owned process before returning the entry process
+result.
 
 This is structured convergence: the caller does not manually track every process inside
 the child scope. The scope gathers the structure it owns into one result boundary.
 
 ## Failure Cascades Cancellation
 
-In the host API, waiting for a scope brings the scope result back into ordinary JavaScript
-control flow. Success returns a value, and failure throws `ScopeError`.
+When routine code waits for a scope, shajara brings the scope result back through ordinary
+JavaScript control flow. Success returns a value, and failure throws `ScopeError`.
 
 ```ts
 import { ScopeError, sleep } from "@shajara/host";
@@ -135,9 +132,9 @@ function* launchCampaign() {
 // campaign still running
 ```
 
-Here, `sendEmailBatch` does not leave the error to cross the process boundary. It decides
-its own failure result, the later `wait(emailStatusFuture)` receives an ordinary value,
-and the current scope can continue.
+`sendEmailBatch` does not leave the error to cross the process boundary. It decides its
+own failure result, the later `wait(emailStatusFuture)` receives an ordinary value, and
+the current scope can continue.
 
 If the `try...catch` waits until an outer `wait(emailStatusFuture)`, the process failure
 has already driven the current scope into failure convergence.

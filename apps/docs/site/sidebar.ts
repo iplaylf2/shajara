@@ -15,8 +15,16 @@ const siteSidebar = [
       "scope-and-process",
       "scope-convergence",
       "external-handles",
-      "server-scope",
+      "create-scope",
     ],
+  },
+  {
+    directory: "topics",
+    label: {
+      en: "Topics",
+      "zh-cn": "专题",
+    },
+    pages: ["futures", "channels", "context", "recovery"],
   },
 ] satisfies SiteSidebar;
 

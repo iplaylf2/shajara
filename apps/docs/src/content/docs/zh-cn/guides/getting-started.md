@@ -1,9 +1,10 @@
 ---
 title: 开始使用
-description: 安装 shajara，启动 routine，并在其中使用已有的 Promise 工作。
+description: 从应用代码启动 shajara，并把已有的 Promise 工作带进 routine。
 ---
 
-应用代码通过 `@shajara/host` 进入 shajara。
+当应用代码需要进入 shajara 时，先使用 `@shajara/host`。普通 JavaScript 代码通过它启动
+入口，routine 代码再用 `yield*` 调用 shajara 操作。
 
 ## 安装
 
@@ -19,15 +20,16 @@ shajara routine 使用 generator function 编写。用 `run(...)` 启动 routine
 ```ts
 import { run } from "@shajara/host";
 
+// "ready"
 const message = await run(function* main() {
   return "ready";
 });
 ```
 
-`run(...)` 会启动这段 routine，并返回结果对应的 Promise。
+`run(...)` 是应用代码进入 shajara 的入口。routine 返回后，这个 Promise 会 resolve。
 
-从这里开始，示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，
-也可以被另一个 routine 调用。
+后面的示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，也可以被另一个
+routine 调用。
 
 ## 等待 Promise 工作
 
@@ -47,8 +49,7 @@ function* loadUser() {
 Promise 仍然由普通 JavaScript 代码创建；`until(...)` 负责把它的完成或失败
 带回 routine 的控制流。
 
-在这个例子里，`yield* until(...)` 是 routine 把控制交给 shajara，并拿回 Promise
-结果的位置。
+`yield* until(...)` 是 routine 把控制交给 shajara，并拿回 Promise 结果的位置。
 
 ## 启动并发工作并稍后取结果
 
@@ -71,11 +72,12 @@ function* greetUser() {
   const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
 
+  // "Hello, Ada from Docs"
   return `Hello, ${userName} from ${workspaceName}`;
 }
 ```
 
 `spawn(...)` 会启动 `loadWorkspaceName`，并把结果句柄返回为 `workspaceNameFuture`。
-`greetUser` 会继续执行用户相关工作，再通过 `wait(...)` 取得 `workspaceName`。
+`wait(...)` 是 `greetUser` 观察这个 future 的位置。
 
 父 routine 保留清楚的并发结构：启动工作，继续当前流程，再取得结果。

@@ -18,7 +18,7 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  const result = yield* branch(function* saveProfileScope() {
+  return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(30);
 
@@ -28,24 +28,20 @@ function* saveProfile() {
     yield* sleep(5);
 
     return "profile saved";
-  });
-
-  // result 是 "profile saved"，并且 writeAuditTrail 已经结束。
-  return result;
+  }); // writeAuditTrail 结束后得到 "profile saved"。
 }
 ```
 
-`saveProfileScope` 很快返回 `"profile saved"`，但 child scope 还拥有
-`writeAuditTrail` process。`branch(...)` 只有在这个 process 也结束之后，才把
-entry process 的结果交回 `saveProfile`。
+`saveProfileScope` 会先返回，但 child scope 还拥有 `writeAuditTrail` process。
+`branch(...)` 会等这个 process 结束后，才返回 entry process 的结果。
 
 这就是结构化收敛：调用方不需要手动追踪 child scope 里的每个 process。scope 会把
 自己拥有的结构收拢到一个结果边界。
 
 ## 失败引起级联取消
 
-在 host API 里，等待 scope 会把 scope 结果带回普通 JavaScript 控制流。成功时返回值；
-失败时抛出 `ScopeError`。
+routine 代码等待 scope 时，shajara 会把 scope 结果带回普通 JavaScript 控制流。成功时
+返回值；失败时抛出 `ScopeError`。
 
 ```ts
 import { ScopeError, sleep } from "@shajara/host";
@@ -132,7 +128,7 @@ function* launchCampaign() {
 // campaign still running
 ```
 
-这里的 `sendEmailBatch` 没有把错误留到 process 边界之外。它自己决定失败结果，
+`sendEmailBatch` 没有把错误留到 process 边界之外。它自己决定失败结果，
 `emailStatusFuture` 最后等待到的是普通值，当前 scope 里的后续流程可以继续运行。
 
 如果等到外层 `wait(emailStatusFuture)` 再 `try...catch`，这个 process 的失败已经先让

@@ -1,9 +1,11 @@
 ---
 title: Getting Started
-description: Install shajara, start a routine, and use existing Promise work inside it.
+description: Start shajara from application code and bring existing Promise work into a routine.
 ---
 
-Application code enters shajara through `@shajara/host`.
+Start with `@shajara/host` when application code needs to enter shajara. It gives
+ordinary JavaScript code an entry point, then routine code can use shajara operations
+with `yield*`.
 
 ## Install
 
@@ -19,15 +21,16 @@ call shajara operations with `yield*`.
 ```ts
 import { run } from "@shajara/host";
 
+// "ready"
 const message = await run(function* main() {
   return "ready";
 });
 ```
 
-`run(...)` starts the routine and returns a Promise for its result.
+`run(...)` is the application entry point. The Promise resolves when the routine returns.
 
-From here on, examples show the routine body. A routine can be passed to
-`run(...)` directly or called from another routine.
+Later examples show the routine body. A routine can be passed to `run(...)` directly or
+called from another routine.
 
 ## Wait for Promise work
 
@@ -47,8 +50,8 @@ function* loadUser() {
 The Promise still comes from ordinary JavaScript code; `until(...)` brings its
 fulfillment or rejection back into the routine's control flow.
 
-In this example, `yield* until(...)` is where the routine hands control to shajara and
-receives the Promise result back.
+The `yield* until(...)` call is where the routine hands control to shajara and receives
+the Promise result back.
 
 ## Start concurrent work and wait later
 
@@ -71,13 +74,13 @@ function* greetUser() {
   const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
 
+  // "Hello, Ada from Docs"
   return `Hello, ${userName} from ${workspaceName}`;
 }
 ```
 
-`spawn(...)` starts `loadWorkspaceName` and returns `workspaceNameFuture`, a handle
-for its result. `greetUser` keeps going through the user work, then gets the workspace
-result with `wait(...)`.
+`spawn(...)` starts `loadWorkspaceName` and returns `workspaceNameFuture`. `wait(...)` is
+the point where `greetUser` observes that future.
 
 The parent routine keeps the concurrency structure visible: start work, continue the
 current flow, then wait for the result.

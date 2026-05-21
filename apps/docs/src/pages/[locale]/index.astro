@@ -13,7 +13,7 @@ const explorerHref = getRelativeLocaleUrl(
   i18N.locales[locale].lang,
   "explorer",
 );
-const guideHref = getRelativeLocaleUrl(
+const docsHref = getRelativeLocaleUrl(
   i18N.locales[locale].lang,
   "guides/getting-started",
 );
@@ -23,8 +23,8 @@ const heroActions = [
   {
     attrs: { iconPlacement: "start" as const },
     icon: "open-book" as const,
-    link: guideHref,
-    text: Astro.locals.t("docs.home.hero.guides"),
+    link: docsHref,
+    text: Astro.locals.t("docs.home.hero.docs"),
     variant: "primary" as const,
   },
   {
@@ -38,7 +38,7 @@ const heroActions = [
     attrs: { iconPlacement: "start" as const },
     icon: "document" as const,
     link: apiMapHref,
-    text: Astro.locals.t("docs.home.hero.typedoc"),
+    text: Astro.locals.t("docs.home.hero.apiMap"),
     variant: "secondary" as const,
   },
 ];

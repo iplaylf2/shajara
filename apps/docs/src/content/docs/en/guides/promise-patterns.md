@@ -1,11 +1,11 @@
 ---
 title: Promise Patterns
-description: Use familiar Promise patterns to organize shajara routine work and native Promise boundaries.
+description: Relate Promise-shaped coordination to shajara routine work and Promise boundaries.
 ---
 
-Familiar Promise shapes are useful as a reading aid. In a shajara routine, the important
-question is whether a call gives the routine a value now or a handle it can wait for
-later.
+Promise code often groups work, races alternatives, wraps callbacks, and hands values
+back to Promise chains. In a shajara routine, read each pattern by asking whether the call
+gives the routine a value now or a handle it can wait for later.
 
 ## Group Work Like `Promise.all`
 
@@ -29,9 +29,9 @@ function* loadSession() {
     },
   ]);
 
+  // userName: "Ada"; permissions: ["read", "write"]
   const [userName, permissions] = yield* wait(sessionFuture);
 
-  // userName is "Ada"; permissions is ["read", "write"].
   return { permissions, userName };
 }
 ```
@@ -51,7 +51,8 @@ import { sleep } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
 
 function* loadFastProfile() {
-  const profile = yield* race([
+  // "network profile"
+  return yield* race([
     function* cache() {
       yield* sleep(30);
 
@@ -63,16 +64,13 @@ function* loadFastProfile() {
       return "network profile";
     },
   ]);
-
-  // profile is "network profile".
-  return profile;
 }
 ```
 
-After `network` wins, `race(...)` cancels the remaining routine and returns the winning
-value to `loadFastProfile`.
+After `network` wins, `race(...)` cancels the remaining routine before `loadFastProfile`
+resumes.
 
-This differs from `Promise.race(...)`, which settles with the first promise result.
+This differs from `Promise.race(...)`, which settles with the first Promise result.
 `race(...)` returns the winning value only after shajara has handled the non-winning
 routine.
 
@@ -82,14 +80,14 @@ routine.
 values. `race(...)` returns a value, so the caller resumes after the alternatives have
 already converged to one result.
 
-For now, read that as an interface shape: future means wait later; value means this API
+Read that as an interface shape: future means wait later; value means this API
 already waited through the routines it started.
 
 ## Build a Future From Callbacks
 
-When plain JavaScript code would create a promise with `new Promise(...)` or
-`Promise.withResolvers(...)`, use `completer(...)` to create a shajara future and settle it
-from callbacks.
+When ordinary JavaScript code would create a Promise with `new Promise(...)` or
+`Promise.withResolvers(...)`, use `completer(...)` to create a shajara future and settle
+it from callbacks.
 
 ```ts
 import { completer } from "@shajara/host";
@@ -107,13 +105,13 @@ function* locateUser() {
 Callback code settles the future; the routine waits for the same result with
 `wait(...)`.
 
-`yield* completer(...)` is not just generator call syntax. It creates the future and
-registers it with the current scope's lifecycle, so if that scope ends while the future is
-still pending, shajara cancels the future instead of leaving a dangling handle.
+`yield* completer(...)` creates the future in the current scope and returns callback
+functions for settling that future. If that scope ends while the future is still pending,
+shajara cancels the future instead of leaving a dangling handle.
 
 ## Use Abort Signals at Promise Boundaries
 
-Many promise-based APIs already accept an `AbortSignal`. `abortSignal(...)` returns one
+Many Promise-based APIs already accept an `AbortSignal`. `abortSignal(...)` returns one
 registered with the current scope.
 
 ```ts
@@ -133,7 +131,7 @@ handle when the scope starts closing.
 
 ## Expose a Future as a Promise
 
-Inside a routine, use `promisify(...)` when native Promise code needs to observe a shajara
+Inside a routine, use `promisify(...)` when Promise code needs to observe a shajara
 future.
 
 ```ts
@@ -160,5 +158,5 @@ function* loadAndReport() {
 }
 ```
 
-The future still represents a shajara process result. The native Promise exposes that
-result at the boundary so ordinary Promise chains can continue from it.
+The future still represents a shajara process result. The returned Promise exposes that
+result at the boundary so Promise chains can continue from it.

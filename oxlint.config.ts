@@ -2,6 +2,7 @@
 import { defineConfig } from "oxlint";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFileSync } from "node:child_process";
+
 import shared from "@shajara/presets/oxlint.shared.ts";
 
 export default defineConfig({

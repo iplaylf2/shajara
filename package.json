@@ -32,7 +32,7 @@
     "@types/node": "catalog:",
     "cspell-cli": "^10.0.0",
     "knip": "^6.14.1",
-    "oxfmt": "^0.50.0",
+    "oxfmt": "^0.51.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },
@@ -53,5 +53,5 @@
   "engines": {
     "node": ">=26.1.0"
   },
-  "packageManager": "yarn@4.14.1"
+  "packageManager": "yarn@4.15.0"
 }

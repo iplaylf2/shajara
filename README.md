@@ -1,14 +1,16 @@
 # shajara
 
 [![NPM Version](https://img.shields.io/npm/v/%40shajara%2Fhost)](https://www.npmjs.com/package/%40shajara%2Fhost)
-[![Docs](https://img.shields.io/badge/docs-shajara-blue)](https://iplaylf2.github.io/shajara)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/iplaylf2/shajara)
 
 shajara is a structured concurrency library for JavaScript applications.
 
-It keeps concurrent work inside a bounded tree: each start has an owner, each wait or communication point has a place, and completion, failure, and cancellation converge through structure instead of drifting outside the call graph.
+It gives async workflows structure, so concurrent work has a clear owner from the
+moment it starts until it completes, fails, or is canceled.
 
-For most users, `@shajara/host` is the entry point. It presents the model as a generator-based JavaScript API, so branch starts, waits, and joins stay visible in the routine that owns the workflow.
+Most application code starts with shajara through `@shajara/host`. It provides a
+generator-based API for starting concurrent work, waiting for results, and keeping that
+coordination in one visible workflow.
 
 This library is inspired by [effection](https://github.com/thefrontside/effection).
 
@@ -24,7 +26,6 @@ npm install @shajara/host
 import { run, sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
 
-// `run(...)` starts a structured concurrency orchestration.
 const result = await run(function* loadPage() {
   const header = yield* spawn(function* loadHeader() {
     yield* sleep(50);
@@ -40,21 +41,28 @@ const result = await run(function* loadPage() {
     header: yield* wait(header),
     sidebar: yield* wait(sidebar),
   };
-});
-
-console.log(result);
-// { header: "header", sidebar: "sidebar" }
+}); // { header: "header", sidebar: "sidebar" }
 ```
 
-The important part is not simply that two steps run concurrently. Branches start and results join in the same routine that owns the page load.
+The important part is not simply that two steps run concurrently. Both pieces of work
+start inside the workflow that owns the page load, and their results are collected there.
 
 ## Why use shajara
 
-In JavaScript code, `async`/`await`, promises, timers, and callbacks remain the building blocks. shajara helps when each individual operation is straightforward, but the relationships among them carry the real complexity: which work owns which branch, where failures aggregate, how cancellation crosses a boundary, and where results join.
+In JavaScript code, `async`/`await`, Promises, timers, and callbacks remain the building
+blocks. shajara helps when each individual operation is straightforward, but the
+relationships among them carry the real complexity: where each piece of concurrent work
+belongs, where failures aggregate, how cancellation crosses a boundary, and where results
+are collected.
 
 It is especially useful when:
 
 - concurrent tasks need clear ownership instead of floating independently
-- completion, failure, and cancellation all need to converge through the same concurrency tree
-- concurrency logic should stay stepwise and readable instead of being split across multiple async objects
-- built-in JavaScript async APIs handle the individual operations, but the larger concurrency shape is still hard to express and maintain
+- completion, failure, and cancellation need to converge through the same concurrency tree
+- concurrency logic should stay stepwise instead of being split across several async objects
+- built-in JavaScript async APIs handle the individual operations, but the larger
+  workflow shape is still hard to express and maintain
+
+## Documentation
+
+Read the docs at [iplaylf2.github.io/shajara](https://iplaylf2.github.io/shajara).

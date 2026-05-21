@@ -8,7 +8,7 @@ shajara, create that handle in the scope whose lifetime should bound it.
 
 ## Abort Promise Work With the Scope
 
-`abortSignal(...)` creates an `AbortSignal` tied to the current scope. Pass it to promise
+`abortSignal(...)` creates an `AbortSignal` tied to the current scope. Pass it to Promise
 APIs such as `fetch(...)` when outside work should stop with that scope.
 
 ```ts
@@ -29,24 +29,21 @@ function* loadProfilePanel(userId: string) {
         throw error;
       },
     );
-
     // The panel closes while this request is still pending.
     return request;
   });
 
-  const status = yield* until(() => profileRequest);
-
-  // status is "profile request stopped".
-  return status;
+  // "profile request stopped"
+  return yield* until(() => profileRequest);
 }
 ```
 
 `panelScope` creates the request and the signal that can stop it. When that scope
-converges, the signal aborts. The caller may still receive the promise, but the request's
+converges, the signal aborts. The caller may still receive the Promise, but the request's
 lifetime was decided by `panelScope`.
 
-The placement matters: `yield* abortSignal()` runs inside `panelScope`, so the signal is
-registered with the same scope that owns the request.
+Because `yield* abortSignal()` runs inside `panelScope`, the signal is registered with
+the same scope that owns the request.
 
 ## Cancel Callback Futures
 
@@ -63,7 +60,6 @@ function* waitForFileChoice() {
     const { future, resolve } = yield* completer<File>();
 
     registerFileChoice(resolve);
-
     // The dialog closes before registerFileChoice calls resolve.
     return future;
   });
@@ -87,8 +83,8 @@ before that callback fires, `fileDialogScope` converges and cancels the pending 
 `wait(selectedFile)` then observes cancellation instead of waiting for a callback owned by
 a closed scope.
 
-Here, `yield* completer<File>()` creates and registers the future in `fileDialogScope`, so
-the later callback does not own a live shajara result after the dialog scope closes.
+`yield* completer<File>()` creates and registers the future in `fileDialogScope`, so the
+later callback cannot settle that shajara future after the dialog scope closes.
 
 ## Release Resource Providers
 
@@ -119,7 +115,6 @@ function* watchRoomUpdates(roomId: string) {
 
     socket.send(JSON.stringify({ kind: "subscribe" }));
     console.log("subscribed");
-
     // The room updates view closes here.
   });
 }
@@ -144,6 +139,6 @@ scope is the right place for a request tied to that panel. A dialog scope is the
 place for a callback future tied to that dialog. A view scope is the right place for a
 socket that should close with that view.
 
-The caller may receive a promise, a future, or a ready value from that scope. That does
+The caller may receive a Promise, a future, or a ready value from that scope. That does
 not move ownership. When the creating scope converges, its signal aborts, its pending
 future is canceled, or its provider cleanup runs.
