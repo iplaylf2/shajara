@@ -88,14 +88,18 @@ without a small setup sentence. Before and after the example, stay in the vocabu
 current layer. Explain concrete code names only when they help the reader read the example.
 
 In code examples, use comments only when they let the reader see a local behavior at the
-line where it happens. If a comment already carries that local point, the following prose
-should move to the section's rule or decision instead of restating the comment.
+line where the reader needs it. If a comment already carries that local point, the
+following prose should move to the section's rule or decision instead of restating the
+comment.
 
-Place result comments where the result is produced, transformed, or observed. When a
-result travels across a boundary, separate comments only when they mark distinct
-observations, such as the decision made at one point and the value or error seen at
-another. Do not use comments to narrate obvious control flow, or to make readers reason
-about helper code that is not the subject.
+Attach result comments to the operation that produces, transforms, or observes the result.
+A comment can precede a single observation point when it prepares the reader for the next
+line, including a boundary observation that may return a value or throw an error. When a
+result is produced by a multi-line expression or scoped routine, show the process first and
+attach the result after the expression closes. When a result travels across a boundary,
+separate comments only when they mark distinct observations, such as the decision made at
+one point and the value or error seen at another. Do not use comments to narrate obvious
+control flow, or to make readers reason about helper code that is not the subject.
 
 When a reader would otherwise have to mentally execute incidental details, show the
 observable result near the code. Let that result carry the simple outcome; use the prose
@@ -109,9 +113,12 @@ downstream error handling to the page that owns that mechanism.
 
 Choose the lightest surface that shows the result. A return value can carry a final value,
 a short comment can stand in for omitted application events or intermediate states, and
-`console.log(...)` is most useful when the order of effects is the point. If the code
-already shows literal results through comments or return values, let the prose move to the
-rule those results reveal instead of restating each value.
+`console.log(...)` is most useful when the order of effects is the point. Use the literal
+value, result shape, or a short label when the adjacent expression already supplies the
+subject. Avoid frames such as "result is" or "returns" unless they carry a condition that
+changes how the value is read. If the code already
+shows literal results through comments or return values, let the prose move to the rule
+those results reveal instead of restating each value.
 
 When an explanation compares examples from multiple sections, give that comparison its own
 stable home. Do not attach cross-section interpretation to one of the sections it compares.
