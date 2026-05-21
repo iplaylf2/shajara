@@ -5,7 +5,7 @@
   "docs.404.hero.explorer": "打开图解页",
   "docs.404.hero.tagline": "页面未找到。请检查链接，或返回文档首页。",
   "docs.404.title": "404",
-  "docs.home.body": "shajara 让你用 generator function 书写异步编排，在明确的边界内发起并发工作、等待结果、取消未完成的工作，并从失败中恢复。",
+  "docs.home.body": "shajara 让你用 JavaScript generator function 书写异步编排，在明确的边界内发起并发工作、等待结果、取消未完成的工作，并从失败中恢复。",
   "docs.home.description": "shajara 的文档与示例入口：面向 JavaScript 应用的结构化并发库。",
   "docs.home.hero.apiMap": "API 地图",
   "docs.home.hero.docs": "阅读文档",

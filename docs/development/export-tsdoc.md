@@ -90,12 +90,12 @@ Kernel comments describe in-band results with model terms: failure, cancellation
 settlement, convergence, scope, process, future, channel, and recovery.
 
 JavaScript-native error language such as `throw`, `error`, and rejected promise belongs
-to executor or host boundaries where consumers observe that behavior directly. In-band
-kernel failure remains described as in-band failure.
+to executor boundaries or `@shajara/host` declarations where consumers observe that
+behavior directly. In-band kernel failure remains described as in-band failure.
 
-Host package comments may use JavaScript error language when package consumers observe
-that behavior directly. Name the thrown error when the public contract depends on that
-specific error.
+Comments in `@shajara/host` may use JavaScript error language when package consumers
+observe that behavior directly. Name the thrown error when the public contract depends on
+that specific error.
 
 ## Reference Boundary
 

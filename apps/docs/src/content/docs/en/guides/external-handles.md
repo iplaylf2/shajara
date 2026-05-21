@@ -128,9 +128,8 @@ function* watchRoomUpdates(roomId: string) {
 Calling `provide(socket)` settles `updatesSocket`, so `updatesScope` can send the
 subscription. After `provide(...)`, the provider stays parked under the same scope.
 
-When `updatesScope` finishes, the child scope releases the provider through normal
-generator unwinding. The `finally` block closes the socket after the room updates view has
-closed.
+When `updatesScope` finishes, the child scope releases the parked provider. The `finally`
+block closes the socket after the room updates view has closed.
 
 ## Choose the Owning Scope
 

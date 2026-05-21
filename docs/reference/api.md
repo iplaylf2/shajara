@@ -167,8 +167,8 @@ Returns:
 - `trySend(value)`
 - `close(outcome)`
 
-The receiver is consumed by coroutine channel primitives; the callbacks send or close the
-channel from host code.
+The receiver is consumed by channel primitives inside routine code; the callbacks send or
+close the channel from application code.
 
 ### `promisify`
 
@@ -263,14 +263,14 @@ For channels, `T` is the value type and `O` is the close outcome type.
 | `self`    | `SelfHandle`  |
 | `cede`    | `void`        |
 
-Host rituals use JavaScript throw semantics for current-process termination: throw a
+Host routines use JavaScript throw semantics for current-process termination: throw a
 `CanceledError` to cancel, or throw any other value to fail.
 
 ## Kernel Primitive Return Values
 
 Kernel APIs preserve runtime state in returned values. Direct kernel callers handle
-these values in band; host callers receive JavaScript values, thrown errors, or
-`Presence<T>` tuples.
+these values in band; callers through `@shajara/host` receive JavaScript values, thrown
+errors, or `Presence<T>` tuples.
 
 ### Concurrency, Scope, and Recovery
 

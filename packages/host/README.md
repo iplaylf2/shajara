@@ -3,8 +3,9 @@
 `@shajara/host` is the application-facing package in shajara and the usual entry point
 for JavaScript applications.
 
-It gives application code a generator-based surface for structured concurrency: start
-concurrent work, wait for results, and keep that coordination in one visible workflow.
+It lets you write structured-concurrency routines as JavaScript generator functions. A
+routine can start concurrent work, wait for results, and keep that coordination in one
+visible workflow.
 
 ## Installation
 
@@ -16,13 +17,13 @@ npm install @shajara/host
 
 This package is the boundary where ordinary JavaScript application code enters shajara.
 
-It exposes host entries, host operations, concurrency primitives, and boundary adapters
+It exposes entries, operations, concurrency primitives, and boundary adapters
 through interfaces that application code and extension libraries can use directly.
 
 ## What this package provides
 
-- host entries: `run`, `createScope`
-- host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
+- entries: `run`, `createScope`
+- operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
 - concurrency, communication, and control primitives: `@shajara/host/primitives`
 - boundary adapters for extension libraries: `@shajara/host/boundary`
@@ -57,7 +58,7 @@ start inside the workflow that owns the page load, and their results are collect
 ## When to use this package
 
 Use this package when you want to use shajara directly in application code or build
-host-level abstractions on top of the same generator surface.
+higher-level abstractions on top of the same routine model.
 
 It fits especially well when:
 

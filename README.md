@@ -8,9 +8,9 @@ shajara is a structured concurrency library for JavaScript applications.
 It gives async workflows structure, so concurrent work has a clear owner from the
 moment it starts until it completes, fails, or is canceled.
 
-Most application code starts with shajara through `@shajara/host`. It provides a
-generator-based API for starting concurrent work, waiting for results, and keeping that
-coordination in one visible workflow.
+Most applications enter shajara through `@shajara/host`. It lets you write
+structured-concurrency routines as JavaScript generator functions. A routine can start
+concurrent work, wait for results, and keep that coordination in one visible workflow.
 
 This library is inspired by [effection](https://github.com/thefrontside/effection).
 

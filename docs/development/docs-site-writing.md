@@ -218,14 +218,18 @@ example shape over making the reader carry incidental syntax.
 
 ## Concept Disclosure
 
-Keep code concepts and runtime concepts distinct. A routine can be the main actor in a code
-example because the reader can see it as a generator function. A scope is a runtime
-boundary; it should become the main actor only on a page that is explaining runtime
-ownership. Placement inside application code does not create a new shajara category; when
-an API has no named category for a lifetime, describe the surrounding owner in ordinary
-application language and keep project terminology attached to the runtime object. A
-process is the runtime execution of a routine inside a scope. Avoid implying a process
-hierarchy; when ownership matters, say which scope the process belongs to.
+Keep code concepts and runtime concepts distinct. In guide prose, use `routine` as the
+shajara-facing noun for user code, and say `JavaScript generator function` when
+explaining the code shape. Leave labels such as `generator-based`, `generator-style`, and
+`generator surface` out of guides unless they name a boundary the page is teaching. A
+routine can be the main actor in a code example because the reader can see it as a
+JavaScript generator function. A scope is a runtime boundary; it should become the main
+actor only on a page that is explaining runtime ownership. Placement inside application
+code does not create a new shajara category; when an API has no named category for a
+lifetime, describe the surrounding owner in ordinary application language and keep
+project terminology attached to the runtime object. A process is the runtime execution of
+a routine inside a scope. Avoid implying a process hierarchy; when ownership matters, say
+which scope the process belongs to.
 
 When a page teaches return shapes, let the reader see the concrete shape before stating the
 general style. A returned future lets the caller observe a process result in the current
@@ -237,8 +241,10 @@ Use terms at the layer they belong to. When a later concept is not doing work in
 current explanation, leave the code example in the vocabulary of the current layer.
 
 Reference-layer labels belong in reference pages unless a guide is teaching that boundary.
-Importing from `@shajara/host` does not require a guide to make the host layer a concept;
-name the concrete API call or runtime object unless that layer itself is the subject.
+The word `host` should do boundary work: package or layer contrast, especially at the
+host/kernel boundary. Importing from `@shajara/host` does not require a guide to make the
+host layer a concept; name the concrete API call or runtime object unless that layer
+itself is the subject.
 
 When the useful distinction is between ordinary JavaScript and shajara concurrency, name
 that boundary directly: callback code, event handlers, promises, routine code, futures, or

@@ -125,8 +125,8 @@ function* watchRoomUpdates(roomId: string) {
 调用 `provide(socket)` 会完成 `updatesSocket`，所以 `updatesScope` 可以发送
 subscription。`provide(...)` 之后，provider 会继续停在同一个 scope 下面。
 
-`updatesScope` 结束后，child scope 会通过正常的 generator unwinding 释放 provider。
-`finally` block 会在 room updates view 关闭之后关闭 socket。
+`updatesScope` 结束后，child scope 会释放这个 provider。`finally` block 会在 room
+updates view 关闭之后关闭 socket。
 
 ## 选择拥有句柄的 scope
 

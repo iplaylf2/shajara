@@ -14,10 +14,8 @@ npm install @shajara/kernel
 ## Role in shajara
 
 This package owns the semantic baseline, failure model, primitives, and execution
-environment.
-
-It is responsible for lower-level computation carriers and executor behavior rather
-than the generator-based API used directly in application code.
+environment. It stays at the computation and executor layer that runtime and integration
+layers build on.
 
 ## What this package provides
 

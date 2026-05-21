@@ -15,8 +15,8 @@ npm install @shajara/host
 
 ## Run a routine
 
-shajara routines are generator functions. Use `run(...)` to start one; inside the routine,
-call shajara operations with `yield*`.
+shajara routines are JavaScript generator functions. Use `run(...)` to start one; inside
+the routine, call shajara operations with `yield*`.
 
 ```ts
 import { run } from "@shajara/host";

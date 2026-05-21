@@ -5,7 +5,7 @@
   "docs.404.hero.explorer": "Open Explorer",
   "docs.404.hero.tagline": "Page not found. Check the URL or return to the docs home.",
   "docs.404.title": "404",
-  "docs.home.body": "shajara lets you write async orchestration as generator functions, with explicit boundaries for starting work, waiting for results, canceling unfinished work, and recovering from failure.",
+  "docs.home.body": "shajara lets you write async orchestration as JavaScript generator functions, with explicit boundaries for starting work, waiting for results, canceling unfinished work, and recovering from failure.",
   "docs.home.description": "Documentation and examples for shajara, a structured concurrency library for JavaScript applications.",
   "docs.home.hero.apiMap": "API Map",
   "docs.home.hero.docs": "Documentation",
