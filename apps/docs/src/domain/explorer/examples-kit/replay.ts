@@ -54,7 +54,10 @@ export function branchWait<TEvent extends ExplorerEventId, TResult>(
   return entry;
 }
 
-export function raceWait<TEvent extends ExplorerEventId, TReturns extends NonEmptyTuple<unknown>>(
+export function raceWait<
+  TEvent extends ExplorerEventId,
+  const TReturns extends NonEmptyTuple<unknown>,
+>(
   emit: ExplorerReplayEmit<TEvent>,
   replay: RaceWaitReplay<NoInfer<TEvent>>,
   entries: RaceEntryTuple<NoInfer<TEvent>, TReturns>,

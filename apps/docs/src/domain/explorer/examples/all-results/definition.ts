@@ -89,7 +89,7 @@ function createAllResultsFlowNodes(): ExplorerFlow<AllResultsDemoEvent>["nodes"]
         ],
         completedEvents: ["wait-all"],
       },
-      ["root", "all"],
+      { statusTargetIds: ["root", "all"] },
     ),
   ];
 }

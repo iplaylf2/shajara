@@ -1,7 +1,8 @@
 # Host Adaptation
 
-`@shajara/host` adapts the kernel executor and semantic model into generator-based
-JavaScript APIs for application code.
+`@shajara/host` adapts the kernel executor and semantic model into an
+application-facing routine API. Application routines are written as JavaScript generator
+functions and use `yield*` to call shajara operations and primitives.
 
 ## Host Responsibilities
 
@@ -10,12 +11,13 @@ The host layer has four responsibilities:
 - application-facing entries: `run`, `createScope`
 - host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
-- generator-style primitives from `@shajara/host/primitives`
+- host primitives from `@shajara/host/primitives` for routine code
 - mapping between kernel in-band values and host-facing JavaScript values or thrown errors
 
 ## Ritual Adaptation
 
-The host layer adapts computation through two boundaries:
+The host layer adapts computation between application routines and kernel `Ritual`s
+through two boundaries:
 
 - `decodeRitual`: `RiteRoutine<T>` -> kernel `Ritual<T>`
 - `encodeRitual`: kernel `Ritual<T>` -> `RiteCoroutine<T>`
@@ -27,11 +29,13 @@ type RiteRoutine<T> = () => RiteCoroutine<T>;
 type RiteCoroutine<T> = Generator<Sigil, T, unknown>;
 ```
 
-In the host layer, `Ritual` means the generator form of the same computation.
+`RiteRoutine<T>` is the runnable routine shape accepted by host entries and primitives.
+Application code normally supplies that shape with a JavaScript `function*`.
+`RiteCoroutine<T>` is the generator object produced when the routine is called.
 
-When a started coroutine is unwound, generator control flow continues through
-`try...finally`. The host `resource(...)` operation uses that same generator cleanup
-model for provider work that remains attached to its owning scope until release.
+When a started `RiteCoroutine` is unwound, JavaScript generator control flow continues
+through `try...finally`. The host `resource(...)` operation uses that same cleanup model
+for provider work that remains attached to its owning scope until release.
 
 ## Result Model
 
@@ -45,7 +49,8 @@ Host optional results use `Presence<T>`:
 
 Typical rewrites:
 
-- `wait(future)`: kernel returns `Either<Failure, T>`; host returns `T` and throws on failure.
+- `wait(future)`: kernel returns `Either<Failure, T>`; host returns `T` and throws on
+  failure.
 - `lookup(key)`: kernel returns `Option<T>`; host returns `Presence<T>`.
 - `poll(future)`: kernel returns `Option<Either<Failure, T>>`; host returns
   `Presence<T>` and throws when the settled future failed.
@@ -60,30 +65,29 @@ Typical rewrites:
 
 Scoped host primitives adapt kernel handles into host-facing values:
 
-- host `branch(entry)` waits for the child scope's `exitFuture` and returns the child value
-- host `autonomy(entry, options)` waits for the autonomous child scope and returns its value
-- host `guard(entry, recover)` waits for the guarded child scope and returns its value
-- host `race(entries)` waits for the race scope, then returns the winning value
-- host `resumable(entry)` waits for the recovery outcome future and returns that value
+- `branch(entry)` waits for the child scope's `exitFuture` and returns the child value
+- `autonomy(entry, options)` waits for the autonomous child scope and returns its value
+- `guard(entry, recover)` waits for the guarded child scope and returns its value
+- `race(entries)` waits for the race scope, then returns the winning value
+- `resumable(entry)` waits for the recovery outcome future and returns that value
 
 Host APIs that expose independently observed results keep future handles:
 
-- host primitives `all(entries)` and `spawn(entry)` return host futures
-- host operation `completer()` returns a host future with completion callbacks
-- host operation `resource(body)` returns a host future for the provided value
+- host primitives `all(entries)` and `spawn(entry)` return `RiteFuture`s
+- host operation `completer()` returns a `RiteFuture` with completion callbacks
+- host operation `resource(body)` returns a `RiteFuture` for the provided value
 
 ## Error Mapping
 
-The host layer maps errors thrown by host code into kernel failures at the ritual
-boundary and maps kernel failures back into thrown errors at host-facing observation
-points.
+The host layer maps errors thrown by application code into kernel failures at the
+`Ritual` boundary and maps kernel failures back into thrown errors at host-facing
+observation points.
 
 ### Writing into Kernel
 
-The following paths write host-side failures into the kernel:
+The following paths convert JavaScript failures into kernel failures:
 
-- throwing from a host ritual, recovery handler, host operation, or host integration
-  callback
+- throwing from a routine, recovery handler, operation, or integration callback
 - `settleError(futureSettle, error)`
 - `completer.reject(error)`
 - a promise rejection observed by `until(thunk)`
@@ -117,7 +121,7 @@ Host recovery is built on the kernel `guard` and `resumable` primitives.
 entry.
 
 Host recovery receives a child scope exit failure after host error mapping, so the
-recovery handler shape is:
+handler shape is:
 
 ```ts
 type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<Presence<unknown>>;
@@ -128,7 +132,7 @@ type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<Presence<unknown
 - throw to complete the recovery request with that thrown failure
 
 The executor root provides a final recovery anchor. Installing `guard` creates a
-deliberate recovery boundary for host code.
+deliberate recovery boundary for routine code.
 
 ## Host Entries
 
@@ -137,9 +141,9 @@ observing launched work or managed scope convergence.
 
 ### `run`
 
-`run` connects a host ritual to the long-lived executor and exposes the resulting launch
-as a Promise with `status`. An optional abort signal converges that launched work
-according to its abort reason.
+`run` connects a routine to the long-lived executor and exposes the resulting launch as a
+Promise with `status`. An optional abort signal converges that launched work according to
+its abort reason.
 
 Result semantics:
 
@@ -172,10 +176,10 @@ rejections through the same mapping.
 
 ## Host Operations
 
-Host operations are coroutine helpers. They run inside host routines and translate
-browser APIs, promises, callbacks, and other application effects into future, channel, or
-process convergence visible to the executor. Operations that need executor services read
-the current executor from scope context; if that context is missing, they throw
+Host operations are routine helpers. They run inside routines and translate browser APIs,
+promises, callbacks, and other application effects into future, channel, or process
+convergence visible to the executor. Operations that need executor services read the
+current executor from scope context; if that context is missing, they throw
 `OperationContextError`.
 
 ### `abortSignal`
@@ -183,11 +187,11 @@ the current executor from scope context; if that context is missing, they throw
 `abortSignal()` returns an `AbortSignal` tied to the current scope. The signal stays open
 with the scope, aborts during scope convergence, and carries the corresponding error as
 `AbortSignal.reason` when the scope is canceled or fails. It does not provide a way to
-cancel the scope from host code.
+cancel the scope from application code.
 
 ### `completer`
 
-`completer()` exposes a host future with completion callbacks:
+`completer()` exposes a `RiteFuture` with completion callbacks:
 
 - `future`
 - `resolve(value)`
@@ -197,18 +201,18 @@ If still pending, the future is canceled when the current scope converges.
 
 ### `feed`
 
-`feed(capacity, overloadRewrite?)` exposes channel input capabilities to host code:
+`feed(capacity, overloadRewrite?)` exposes channel input capabilities to application code:
 
 - `receiver`
 - `trySend(value)`
 - `close(outcome)`
 
-The returned receiver stays inside coroutine code, while the callbacks send or close the
-channel from host code.
+The returned receiver stays inside routine code, while the callbacks send or close the
+channel from application code.
 
 ### `promisify`
 
-`promisify(future)` exposes a host future as a `Promise`. The promise resolves with the
+`promisify(future)` exposes a `RiteFuture` as a `Promise`. The promise resolves with the
 future's value and rejects when the future fails or is canceled.
 
 ### `resource`
@@ -217,13 +221,13 @@ future's value and rejects when the future fails or is canceled.
 the current scope until release. The operation returns a future for the provided value.
 
 The body receives `provide(value)`. Calling `provide` settles the returned future and
-then parks the provider process. During convergence of that scope, the provider is
-released through normal generator unwinding, so `try...finally` cleanup in the provider
-body runs on the same scope lifecycle.
+then parks the provider process. During convergence of that scope, the provider routine
+is unwound, so `try...finally` cleanup in the provider body runs on the same scope
+lifecycle.
 
 ### `sleep`
 
-`sleep(milliseconds)` uses a host timer to resume a waiting computation.
+`sleep(milliseconds)` uses a timer to resume a waiting computation.
 
 ### `until`
 
@@ -236,7 +240,7 @@ The host form of `autonomy(entry, options)` reuses kernel `autonomy`. Scheduler 
 use the executor behavior described in `executor.md`, including cancellation when
 scheduler assignment throws.
 
-The `reaper` option is adapted into a host coroutine shape:
+The `reaper` option is adapted into the host routine model:
 
 - `(scope) => RiteCoroutine<void>` is the host reaper shape
 - returning normally means "keep waiting"

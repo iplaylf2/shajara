@@ -1,7 +1,7 @@
 ---
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 
-const { body, description, heroActions, tagline, title } = Astro.props;
+const { description, heroActions, tagline, title } = Astro.props;
 const frontmatter = {
   description,
   hero: {
@@ -12,23 +12,24 @@ const frontmatter = {
   title,
 };
 
+interface HeroAction {
+  attrs?: {
+    iconPlacement?: "start" | "end";
+  };
+  icon: "document" | "open-book" | "right-arrow" | "window";
+  link: string;
+  text: string;
+  variant?: "primary" | "secondary" | "minimal";
+}
+
 interface Props {
-  body: string;
   description: string;
-  heroActions: {
-    attrs?: {
-      iconPlacement?: "start" | "end";
-    };
-    icon: "document" | "open-book" | "right-arrow" | "window";
-    link: string;
-    text: string;
-    variant?: "primary" | "secondary" | "minimal";
-  }[];
-  tagline: string;
+  heroActions?: HeroAction[];
+  tagline?: string;
   title: string;
 }
 ---
 
 <StarlightPage frontmatter={frontmatter}>
-  <p>{body}</p>
+  <slot />
 </StarlightPage>

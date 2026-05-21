@@ -6,7 +6,6 @@ import { channel as kernelChannel } from "@shajara/kernel";
 
 /**
  * Opens a channel owned by the current scope.
- * Negative or `NaN` capacity throws immediately.
  *
  * @param capacity - `0` creates rendezvous delivery, finite positives create bounded
  * buffering, and `Infinity` creates unbounded buffering.

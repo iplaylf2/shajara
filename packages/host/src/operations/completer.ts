@@ -5,10 +5,10 @@ import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary/index";
 
 /**
- * Creates a future that can be settled from JavaScript callbacks.
+ * Creates a future with settlement callbacks.
  * If still pending, the future is canceled when the current scope converges.
  *
- * @returns Future and settlement callbacks for external code.
+ * @returns Future plus `resolve` and `reject` callbacks.
  */
 export function* completer<Return>(): RiteCoroutine<Completer<Return>> {
   const executor = yield* currentExecutor();

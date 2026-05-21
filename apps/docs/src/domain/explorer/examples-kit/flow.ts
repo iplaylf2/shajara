@@ -1,6 +1,7 @@
 import type {
   ExplorerChannelDirection,
   ExplorerChannelState,
+  ExplorerCursorTargetId,
   ExplorerFlowLink,
   ExplorerFlowNode,
   ExplorerWaitInterruption,
@@ -93,7 +94,14 @@ export function callerNode<TEvent extends string>(
   label: string,
   lifecycle: FlowNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
-  return processNode("caller", id, label, lifecycle);
+  return {
+    activeEvents: lifecycle.activeEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "caller",
+    label,
+    statusTargetIds: [id],
+  };
 }
 
 export function workerNode<TEvent extends string>(
@@ -101,14 +109,21 @@ export function workerNode<TEvent extends string>(
   label: string,
   lifecycle: FlowNodeLifecycle<TEvent>,
 ): ExplorerFlowNode<TEvent> {
-  return processNode("worker", id, label, lifecycle);
+  return {
+    activeEvents: lifecycle.activeEvents,
+    completedEvents: lifecycle.completedEvents,
+    id,
+    kind: "worker",
+    label,
+    statusTargetIds: [id],
+  };
 }
 
 export function coordinatorNode<TEvent extends string>(
   id: string,
   label: string,
   lifecycle: FlowNodeLifecycle<TEvent>,
-  statusTargetIds: readonly string[] = [id],
+  options: CoordinatorNodeOptions = {},
 ): ExplorerFlowNode<TEvent> {
   return {
     activeEvents: lifecycle.activeEvents,
@@ -116,7 +131,7 @@ export function coordinatorNode<TEvent extends string>(
     id,
     kind: "coordinator",
     label,
-    statusTargetIds,
+    statusTargetIds: options.statusTargetIds ?? [id],
   };
 }
 
@@ -139,26 +154,14 @@ export function scopeNode<TEvent extends string>(
   };
 }
 
-function processNode<TEvent extends string>(
-  kind: "caller" | "worker",
-  id: string,
-  label: string,
-  lifecycle: FlowNodeLifecycle<TEvent>,
-): ExplorerFlowNode<TEvent> {
-  return {
-    activeEvents: lifecycle.activeEvents,
-    completedEvents: lifecycle.completedEvents,
-    id,
-    kind,
-    label,
-    statusTargetIds: [id],
-  };
-}
-
 interface WaitLinkOptions<TEvent extends string> {
   activeEvents: readonly TEvent[];
   displayLabel: ExplorerFlowLink<TEvent>["displayLabel"];
   interruption: ExplorerWaitInterruption<TEvent>;
+}
+
+interface CoordinatorNodeOptions {
+  readonly statusTargetIds?: readonly ExplorerCursorTargetId[];
 }
 
 interface FlowNodeLifecycle<TEvent extends string> {

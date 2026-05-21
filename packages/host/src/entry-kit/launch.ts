@@ -8,7 +8,7 @@ import type { RiteRoutine } from "#/contracts";
 export function launchEntry<Result>(
   executor: Executor,
   scope: ExecutionScopeRef<unknown>,
-  ritual: RiteRoutine<Result>,
+  routine: RiteRoutine<Result>,
   options?: RunOptions,
 ): LaunchedEntry<Result> {
   const signal = options?.signal;
@@ -16,9 +16,9 @@ export function launchEntry<Result>(
   const handle = requireLaunch(
     executor.launch(
       scope,
-      decodeRitual(function* guardedRitual(): ReturnType<RiteRoutine<Result>> {
+      decodeRitual(function* guardedRoutine(): ReturnType<RiteRoutine<Result>> {
         if (!signal) {
-          return yield* ritual();
+          return yield* routine();
         }
 
         const abortSignal = signal;
@@ -47,7 +47,7 @@ export function launchEntry<Result>(
 
         abortSignal.addEventListener("abort", onAbort, { once: true });
         try {
-          return yield* ritual();
+          return yield* routine();
         } finally {
           abortSignal.removeEventListener("abort", onAbort);
         }
@@ -86,7 +86,7 @@ export interface StatefulPromise<Return> extends Promise<Return> {
 
 function requireLaunch<Return>(handle: Option<LaunchHandle<Return>>): LaunchHandle<Return> {
   if (isNone(handle)) {
-    throw new Error("Cannot launch ritual with an illegal scope.");
+    throw new Error("Cannot launch routine with an illegal scope.");
   }
 
   return handle.value;

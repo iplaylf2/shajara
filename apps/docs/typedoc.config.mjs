@@ -7,9 +7,9 @@ const config = {
   entryPointStrategy: "packages",
   entryPoints: [`${workspaceRoot}/packages/host`, `${workspaceRoot}/packages/kernel`],
   githubPages: false,
-  name: "shajara API",
+  name: "shajara API Map",
   navigationLinks: {
-    Overview: site.basePath,
+    Docs: site.basePath,
   },
   out: "public/api-map",
   readme: "none",

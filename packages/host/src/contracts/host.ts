@@ -8,10 +8,10 @@ export abstract class ShajaraError extends Error implements FailureShape {
   public override readonly name: string = "ShajaraError";
 }
 
-/** Callable entry that creates a coroutine when launched. */
+/** Routine body accepted by host entries and primitives. */
 export type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 
-/** Generator coroutine that yields shajara instructions and returns a result. */
+/** Generator object produced by a routine. */
 export type RiteCoroutine<Return> = Generator<Sigil, Return, unknown>;
 
 /** Observation handle for a future result. */

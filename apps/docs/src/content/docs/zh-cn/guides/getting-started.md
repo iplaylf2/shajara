@@ -14,8 +14,8 @@ npm install @shajara/host
 
 ## 运行一个 routine
 
-shajara routine 使用 generator function 编写。用 `run(...)` 启动 routine；在 routine
-内部，shajara 操作用 `yield*` 调用。
+shajara routine 使用 JavaScript generator function 编写。用 `run(...)` 启动 routine；
+在 routine 内部，shajara 操作用 `yield*` 调用。
 
 ```ts
 import { run } from "@shajara/host";

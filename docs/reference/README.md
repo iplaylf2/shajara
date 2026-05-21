@@ -16,7 +16,7 @@ semantics -> executor -> host -> api
 - [executor.md](executor.md): execution environment, including `Executor`,
   `ExecutionScopeRef`, entry handles, future observation, external control, pacing, and
   autonomy.
-- [host.md](host.md): host adaptation, including generator routines, host error mapping,
+- [host.md](host.md): host adaptation, including the routine model, host error mapping,
   host operations, and host-facing primitives.
 - [api.md](api.md): public interface, including package export surfaces, entry
   signatures, operation and primitive return values, and result forms.
@@ -37,7 +37,7 @@ boundary. Concepts from documents to its right stay outside its scope.
 | future settlement observation                                   | `executor.md`  |
 | external future settlement, channel control, entry cancellation | `executor.md`  |
 | `Pacer`, slice progression, scheduler and reaper                | `executor.md`  |
-| generator routines, `Presence`, host error mapping              | `host.md`      |
+| routine model, `Presence`, host error mapping                   | `host.md`      |
 | host entries and operations                                     | `host.md`      |
 | package exports, signatures, result forms                       | `api.md`       |
 

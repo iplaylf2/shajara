@@ -10,7 +10,7 @@ describe("/ primitives: autonomy", () => {
       given: ["autonomy-ready"] as const,
       outcome: "autonomy-ready",
     },
-  ])("returns the autonomous ritual result", async ({ given: [value], outcome }) => {
+  ])("returns the autonomous routine result", async ({ given: [value], outcome }) => {
     const settled = run(function* awaitAutonomousResult() {
       return yield* autonomy(
         function* runAutonomousEntry() {

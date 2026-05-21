@@ -9,7 +9,7 @@ describe("/ primitives: cede", () => {
       outcome: ["before", "after"],
     },
   ])(
-    "cede resumes the current ritual after yielding cooperatively",
+    "cede resumes the current routine after yielding cooperatively",
     async ({ given: [before, after], outcome }) => {
       const events: string[] = [];
       const settled = run(function* recordAroundCede() {

@@ -1,8 +1,8 @@
-import type { ExplorerEventId, ExplorerFlowNode as FlowNodeSpec } from "#/domain/explorer/contract";
+import type { ExplorerEventId, ExplorerFlowNode } from "#/domain/explorer/contract";
 import type { FlowNode, FlowScene } from "./flow-model";
 
 export function resolveScopeGroups<TEvent extends ExplorerEventId>(
-  graphNodes: readonly FlowNodeSpec<TEvent>[],
+  graphNodes: readonly ExplorerFlowNode<TEvent>[],
   nodePositions: ReadonlyMap<string, FlowNode<TEvent>>,
 ): FlowScene<TEvent>["groups"] {
   return graphNodes
@@ -11,7 +11,7 @@ export function resolveScopeGroups<TEvent extends ExplorerEventId>(
 }
 
 function createScopeGroup<TEvent extends ExplorerEventId>(
-  node: Extract<FlowNodeSpec<TEvent>, { readonly kind: "scope" }>,
+  node: Extract<ExplorerFlowNode<TEvent>, { readonly kind: "scope" }>,
   nodePositions: ReadonlyMap<string, FlowNode<TEvent>>,
 ): FlowScene<TEvent>["groups"][number] {
   const ownedNodes = node.ownedNodeIds.map((nodeId) => readNode(nodePositions, nodeId));

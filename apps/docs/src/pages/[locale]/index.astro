@@ -45,9 +45,10 @@ const heroActions = [
 ---
 
 <SplashPage
-  body={Astro.locals.t("docs.home.body")}
   description={Astro.locals.t("docs.home.description")}
   heroActions={heroActions}
   tagline={Astro.locals.t("docs.home.hero.tagline")}
   title={Astro.locals.t("docs.home.title")}
-/>
+>
+  <p>{Astro.locals.t("docs.home.body")}</p>
+</SplashPage>

@@ -12,7 +12,7 @@ describe("/ entries: run", () => {
       } as const,
     },
   ])(
-    "returns a stateful promise that resolves with the ritual result",
+    "returns a stateful promise that resolves with the routine result",
     async ({ given: [value], outcome }) => {
       const settled = run(() => until(() => Promise.resolve(value)));
 
@@ -30,7 +30,7 @@ describe("/ entries: run", () => {
         beforeAbort: "open",
       } as const,
     },
-  ])("cancels the launched ritual when the abort signal fires", async ({ outcome }) => {
+  ])("cancels the launched routine when the abort signal fires", async ({ outcome }) => {
     const controller = new globalThis.AbortController();
     const settled = run(() => until(() => createPendingPromise()), {
       signal: controller.signal,
@@ -50,7 +50,7 @@ describe("/ entries: run", () => {
       given: [null] as const,
     },
   ])(
-    "cancels the launched ritual when the abort reason is cancellation-like",
+    "cancels the launched routine when the abort reason is cancellation-like",
     async ({ given: [reason] }) => {
       const controller = new globalThis.AbortController();
       const settled = run(() => until(() => createPendingPromise()), {
@@ -74,7 +74,7 @@ describe("/ entries: run", () => {
       } as const,
     },
   ])(
-    "halts the launched ritual when the abort reason is non-cancellation failure",
+    "halts the launched routine when the abort reason is non-cancellation failure",
     async ({ given: [cause], outcome }) => {
       const controller = new globalThis.AbortController();
       const settled = run(() => until(() => createPendingPromise()), {

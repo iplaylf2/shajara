@@ -6,14 +6,14 @@ import { launchEntry } from "#/entry-kit";
 /**
  * Starts a routine in a root scope.
  *
- * @returns Stateful promise that resolves with the routine result or rejects with a
- * shajara error.
+ * @returns Stateful promise that resolves with the routine result or rejects when the
+ * launched scope fails or is canceled.
  */
 export function run<Return>(
-  ritual: RiteRoutine<Return>,
+  routine: RiteRoutine<Return>,
   options?: RunOptions,
 ): StatefulPromise<Return> {
   const executor = ensureExecutor();
 
-  return launchEntry(executor, executor.scope, ritual, options).settled;
+  return launchEntry(executor, executor.scope, routine, options).settled;
 }

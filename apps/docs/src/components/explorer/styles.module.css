@@ -276,7 +276,7 @@
   font-weight: 540;
   cursor: text;
   dominant-baseline: central;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   pointer-events: auto;
   text-anchor: middle;
   text-transform: uppercase;
@@ -288,16 +288,20 @@
 }
 
 .flowNodeStatusDone {
-  fill: #687b8f;
+  fill: #2f7d5b;
 }
 
 .flowNodeStatusPending {
-  fill: #8ca0b5;
-  opacity: 0.5;
+  fill: #b4c1cf;
+  opacity: 0.78;
+}
+
+.flowNodeStatusRunning {
+  fill: #117f91;
 }
 
 .flowNodeCaller .flowNode {
-  fill: #f4f9ff;
+  fill: #f7fbff;
   stroke: #86a8cb;
 }
 
@@ -525,14 +529,29 @@
   stroke-dasharray: none;
 }
 
+.flowNodeBlocked .flowNode {
+  fill: #fff8f3;
+  stroke: #a26955;
+  stroke-width: 2.1;
+}
+
 .flowNodeDone .flowNode {
-  fill: #f8fbff;
-  stroke: #9fb1c4;
-  stroke-width: 1.35;
+  fill: #f4f7fa;
+  stroke: #8fa2b7;
+  stroke-width: 1.45;
 }
 
 .flowNodeDone .flowNodeText {
   fill: #425367;
+}
+
+.flowNodePending .flowNode {
+  fill: #f7fbff;
+  stroke: #c1cfde;
+}
+
+.flowNodePending .flowNodeText {
+  fill: #26394e;
 }
 
 .flowLink {

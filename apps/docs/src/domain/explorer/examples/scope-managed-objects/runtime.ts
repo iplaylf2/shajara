@@ -84,7 +84,7 @@ export function* scopeManagedObjectsDemo(
           });
 
           try {
-            return [createdTicket, createdUpdates] as const;
+            return [createdTicket, createdUpdates];
           } finally {
             emit({
               actions: [

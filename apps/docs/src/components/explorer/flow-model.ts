@@ -2,13 +2,14 @@ import type {
   ExplorerChannelDirection,
   ExplorerChannelState,
   ExplorerEventId,
+  ExplorerFlowLink,
+  ExplorerFlowNode,
   ExplorerWaitInterruption,
-  ExplorerFlowLink as FlowLinkSpec,
 } from "#/domain/explorer/contract";
 
 export interface FlowLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
-  displayLabel: FlowLinkSpec<TEvent>["displayLabel"];
+  displayLabel: ExplorerFlowLink<TEvent>["displayLabel"];
   from: string;
   interruption: ExplorerWaitInterruption<TEvent> | { readonly kind: "none" };
   label: string;
@@ -16,13 +17,13 @@ export interface FlowLink<TEvent extends ExplorerEventId> {
   labelY: number;
   path: string;
   to: string;
-  variant: FlowLinkSpec<TEvent>["kind"];
+  variant: ExplorerFlowLink<TEvent>["kind"];
 }
 
 export type FlowNode<TEvent extends ExplorerEventId> =
   | ChannelFlowNode<TEvent>
-  | FutureFlowNode<TEvent>
-  | ProcessFlowNode<TEvent>;
+  | CoroutineFlowNode<TEvent>
+  | FutureFlowNode<TEvent>;
 
 export interface ChannelFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
   channelDirection: ExplorerChannelDirection;
@@ -36,9 +37,9 @@ export interface FutureFlowNode<TEvent extends ExplorerEventId> extends FlowNode
   variant: "future";
 }
 
-export interface ProcessFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
-  statusTargetIds: readonly string[];
-  variant: "caller" | "coordinator" | "worker";
+export interface CoroutineFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
+  statusTargetIds: ExplorerCoroutineFlowNode<TEvent>["statusTargetIds"];
+  variant: ExplorerCoroutineFlowNode<TEvent>["kind"];
 }
 
 export interface ScopeFlowGroup<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
@@ -70,3 +71,8 @@ export interface FlowScene<TEvent extends ExplorerEventId> {
   nodes: readonly FlowNode<TEvent>[];
   viewBox: string;
 }
+
+type ExplorerCoroutineFlowNode<TEvent extends ExplorerEventId> = Extract<
+  ExplorerFlowNode<TEvent>,
+  { kind: "caller" | "coordinator" | "worker" }
+>;
