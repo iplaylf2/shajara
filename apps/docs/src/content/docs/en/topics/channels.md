@@ -1,5 +1,5 @@
 ---
-title: Channels
+title: Repeated-Value Channels
 description: Move repeated values inside shajara concurrency and receive values from JavaScript callbacks.
 ---
 

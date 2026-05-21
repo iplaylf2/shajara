@@ -1,5 +1,5 @@
 ---
-title: Channel
+title: 连续传值 Channel
 description: 在 shajara 并发边界内传递连续值，并从 JavaScript callback 接收值。
 ---
 

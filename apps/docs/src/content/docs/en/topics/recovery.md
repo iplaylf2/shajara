@@ -1,5 +1,5 @@
 ---
-title: Recovery
+title: Guard Boundaries and Recovery
 description: Recover a failed child scope at a guard boundary and deliver the recovery result to the resumable wait point.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: Context
+title: Scope Context
 description: Bind values on a scope and read the nearest visible binding from routine code.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: Future
+title: 单次结果 Future
 description: 创建单次结果句柄，从 routine 中完成它，并选择等待结果的位置。
 ---
 

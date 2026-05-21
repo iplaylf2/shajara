@@ -1,5 +1,5 @@
 ---
-title: Futures
+title: Single-Result Futures
 description: Create one-result handles, settle them from routines, and choose where to wait.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: Context
+title: Scope Context
 description: 在 scope 上绑定值，并从 routine 代码中读取最近可见的绑定。
 ---
 

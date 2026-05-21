@@ -1,5 +1,5 @@
 ---
-title: Recovery
+title: Guard 边界与失败恢复
 description: 在 guard 边界恢复失败的 child scope，并把恢复结果交回 resumable 的等待点。
 ---
 
