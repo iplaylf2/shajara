@@ -29,7 +29,7 @@ function* loadSession() {
     },
   ]);
 
-  // userName is "Ada"; permissions is ["read", "write"].
+  // userName: "Ada"; permissions: ["read", "write"]
   const [userName, permissions] = yield* wait(sessionFuture);
 
   return { permissions, userName };
@@ -51,7 +51,7 @@ import { sleep } from "@shajara/host";
 import { race } from "@shajara/host/primitives";
 
 function* loadFastProfile() {
-  // Returns "network profile".
+  // "network profile"
   return yield* race([
     function* cache() {
       yield* sleep(30);

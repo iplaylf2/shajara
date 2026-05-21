@@ -92,7 +92,7 @@ function* readClosedQueue() {
     yield* receive(receiver);
   } catch (error) {
     if (error instanceof ChannelError) {
-      return error.detail; // Closed condition with outcome "complete".
+      return error.detail; // outcome: "complete"
     }
 
     throw error;

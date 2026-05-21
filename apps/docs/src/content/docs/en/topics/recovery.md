@@ -18,7 +18,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // This wait returns "manual approval".
+  // "manual approval"
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -32,7 +32,7 @@ function* publishListing() {
       return `publish with ${approval}`;
     },
     function* approveManually() {
-      // Handle this recovery request with "manual approval".
+      // Recovery value: "manual approval".
       return [true, "manual approval"];
     },
   );
@@ -57,7 +57,7 @@ import { CanceledError } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // After delegation, this wait returns "manual approval".
+  // After delegation: "manual approval".
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -73,7 +73,7 @@ function* publishWithManualFallback() {
         return [true, "scan canceled"];
       }
 
-      // Decline this request and delegate to an ancestor guard.
+      // Delegate to an ancestor guard.
       return [false];
     },
   );
@@ -85,7 +85,7 @@ function* publishWithPolicy() {
       return yield* publishWithManualFallback();
     },
     function* approveManually() {
-      // Handle the delegated request with "manual approval".
+      // Delegated recovery value: "manual approval".
       return [true, "manual approval"];
     },
   );
@@ -109,7 +109,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // This wait throws Error("manual approval unavailable").
+  // Throws Error("manual approval unavailable").
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -123,7 +123,7 @@ function* publishListing() {
       return `publish with ${approval}`;
     },
     function* requireManualApproval(): RiteCoroutine<never> {
-      // This recovery result is the thrown Error.
+      // Recovery result: thrown Error.
       throw new Error("manual approval unavailable");
     },
   );

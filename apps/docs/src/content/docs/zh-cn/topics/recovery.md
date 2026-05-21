@@ -17,7 +17,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // 这个等待点返回 "manual approval"。
+  // "manual approval"
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -31,7 +31,7 @@ function* publishListing() {
       return `publish with ${approval}`;
     },
     function* approveManually() {
-      // 处理这次恢复请求，恢复值是 "manual approval"。
+      // 恢复值："manual approval"。
       return [true, "manual approval"];
     },
   );
@@ -55,7 +55,7 @@ import { CanceledError } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // 委托后，这个等待点返回 "manual approval"。
+  // 委托后："manual approval"。
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -71,7 +71,7 @@ function* publishWithManualFallback() {
         return [true, "scan canceled"];
       }
 
-      // 不处理这次请求，继续交给祖先 guard。
+      // 继续交给祖先 guard。
       return [false];
     },
   );
@@ -83,7 +83,7 @@ function* publishWithPolicy() {
       return yield* publishWithManualFallback();
     },
     function* approveManually() {
-      // 处理被委托上来的请求，恢复值是 "manual approval"。
+      // 委托后的恢复值："manual approval"。
       return [true, "manual approval"];
     },
   );
@@ -105,7 +105,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // 这个等待点抛出 Error("manual approval unavailable")。
+  // 抛出 Error("manual approval unavailable")。
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -119,7 +119,7 @@ function* publishListing() {
       return `publish with ${approval}`;
     },
     function* requireManualApproval(): RiteCoroutine<never> {
-      // 这次恢复结果是抛出这个 Error。
+      // 恢复结果：抛出 Error。
       throw new Error("manual approval unavailable");
     },
   );

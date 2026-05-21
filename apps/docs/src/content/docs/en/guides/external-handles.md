@@ -33,7 +33,7 @@ function* loadProfilePanel(userId: string) {
     return request;
   });
 
-  // Returns "profile request stopped".
+  // "profile request stopped"
   return yield* until(() => profileRequest);
 }
 ```

@@ -21,7 +21,7 @@ call shajara operations with `yield*`.
 ```ts
 import { run } from "@shajara/host";
 
-// message is "ready".
+// "ready"
 const message = await run(function* main() {
   return "ready";
 });
@@ -74,7 +74,7 @@ function* greetUser() {
   const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
 
-  // Returns "Hello, Ada from Docs".
+  // "Hello, Ada from Docs"
   return `Hello, ${userName} from ${workspaceName}`;
 }
 ```

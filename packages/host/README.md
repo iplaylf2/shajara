@@ -33,7 +33,6 @@ through interfaces that application code and extension libraries can use directl
 import { run, sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
 
-// result is { header: "header", sidebar: "sidebar" }.
 const result = await run(function* loadPage() {
   const header = yield* spawn(function* loadHeader() {
     yield* sleep(50);
@@ -49,7 +48,7 @@ const result = await run(function* loadPage() {
     header: yield* wait(header),
     sidebar: yield* wait(sidebar),
   };
-});
+}); // { header: "header", sidebar: "sidebar" }
 ```
 
 The important part is not simply that two steps run concurrently. Both pieces of work

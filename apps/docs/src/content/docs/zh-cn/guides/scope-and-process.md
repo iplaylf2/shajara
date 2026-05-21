@@ -26,7 +26,7 @@ function* loadSidebar() {
 
   yield* sleep(5);
 
-  // recommendations 是 ["guide", "api"]。
+  // ["guide", "api"]
   const recommendations = yield* wait(recommendationsFuture);
 
   return { recommendations };
@@ -49,7 +49,6 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  // child scope 收敛完成后返回 "saved"。
   return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(20);
@@ -58,7 +57,7 @@ function* saveProfile() {
     yield* sleep(5);
 
     return "saved";
-  });
+  }); // child scope 收敛后得到 "saved"。
 }
 ```
 
@@ -85,7 +84,7 @@ function* saveWithoutWaitingHere() {
   });
 
   const status = "saving";
-  // result 是 "saved"。
+  // "saved"
   const result = yield* wait(saveFuture);
 
   return { result, status };

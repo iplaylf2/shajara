@@ -20,7 +20,7 @@ shajara routine 使用 generator function 编写。用 `run(...)` 启动 routine
 ```ts
 import { run } from "@shajara/host";
 
-// message 是 "ready"。
+// "ready"
 const message = await run(function* main() {
   return "ready";
 });
@@ -72,7 +72,7 @@ function* greetUser() {
   const userName = "Ada";
   const workspaceName = yield* wait(workspaceNameFuture);
 
-  // 返回 "Hello, Ada from Docs"。
+  // "Hello, Ada from Docs"
   return `Hello, ${userName} from ${workspaceName}`;
 }
 ```

@@ -62,7 +62,7 @@ function* readRequiredTitle() {
 
   yield* settleError(rejectTitle, new Error("missing title"));
 
-  // 这里会抛出，因为这个 future 已经被完成为失败结果。
+  // future 已完成为失败结果；这里抛出异常。
   return yield* wait(title);
 }
 ```

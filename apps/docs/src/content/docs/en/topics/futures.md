@@ -65,7 +65,7 @@ function* readRequiredTitle() {
 
   yield* settleError(rejectTitle, new Error("missing title"));
 
-  // This wait throws because the future was settled as a failure.
+  // Throws because the future was settled as a failure.
   return yield* wait(title);
 }
 ```

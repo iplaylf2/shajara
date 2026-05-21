@@ -29,7 +29,7 @@ function* loadSidebar() {
 
   yield* sleep(5);
 
-  // recommendations is ["guide", "api"].
+  // ["guide", "api"]
   const recommendations = yield* wait(recommendationsFuture);
 
   return { recommendations };
@@ -53,7 +53,6 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  // Returns "saved" after the child scope has converged.
   return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(20);
@@ -62,7 +61,7 @@ function* saveProfile() {
     yield* sleep(5);
 
     return "saved";
-  });
+  }); // "saved" after the child scope converges.
 }
 ```
 
@@ -90,7 +89,7 @@ function* saveWithoutWaitingHere() {
   });
 
   const status = "saving";
-  // result is "saved".
+  // "saved"
   const result = yield* wait(saveFuture);
 
   return { result, status };

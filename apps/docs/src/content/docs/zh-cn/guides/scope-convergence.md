@@ -18,7 +18,6 @@ import { sleep } from "@shajara/host";
 import { branch, spawn } from "@shajara/host/primitives";
 
 function* saveProfile() {
-  // writeAuditTrail 结束后返回 "profile saved"。
   return yield* branch(function* saveProfileScope() {
     yield* spawn(function* writeAuditTrail() {
       yield* sleep(30);
@@ -29,7 +28,7 @@ function* saveProfile() {
     yield* sleep(5);
 
     return "profile saved";
-  });
+  }); // writeAuditTrail 结束后得到 "profile saved"。
 }
 ```
 
