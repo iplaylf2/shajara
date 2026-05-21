@@ -55,7 +55,7 @@ import { CanceledError } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // 委托后："manual approval"。
+  // "manual approval"
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -83,7 +83,7 @@ function* publishWithPolicy() {
       return yield* publishWithManualFallback();
     },
     function* approveManually() {
-      // 委托后的恢复值："manual approval"。
+      // 恢复值："manual approval"。
       return [true, "manual approval"];
     },
   );

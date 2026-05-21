@@ -57,7 +57,7 @@ import { CanceledError } from "@shajara/host";
 import { guard, resumable } from "@shajara/host/primitives";
 
 function* scanPhotosWithRecovery() {
-  // After delegation: "manual approval".
+  // "manual approval"
   return yield* resumable(function* scanPhotos(): RiteCoroutine<string> {
     throw new Error("scanner offline");
   });
@@ -85,7 +85,7 @@ function* publishWithPolicy() {
       return yield* publishWithManualFallback();
     },
     function* approveManually() {
-      // Delegated recovery value: "manual approval".
+      // Recovery value: "manual approval".
       return [true, "manual approval"];
     },
   );
