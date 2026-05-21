@@ -11,7 +11,7 @@ import { toFailureUnknown } from "./failure-mapping";
  * Converts a host `RiteRoutine` into a kernel `Ritual`.
  * `CanceledError` becomes kernel cancellation, and other thrown values become in-band failures.
  *
- * @returns Kernel ritual that drives the host coroutine.
+ * @returns Kernel ritual that drives the host routine.
  */
 export function decodeRitual<Relic>(routine: RiteRoutine<Relic>): Ritual<Relic> {
   function decoded(): Wisp<Relic> {

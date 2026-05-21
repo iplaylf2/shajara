@@ -89,7 +89,7 @@ The `@shajara/kernel/sigils` subpath exposes lower-level sigil constructors:
 
 ```ts
 run<Return>(
-  ritual: RiteRoutine<Return>,
+  routine: RiteRoutine<Return>,
   options?: { signal?: AbortSignal },
 ): StatefulPromise<Return>
 ```
@@ -114,7 +114,7 @@ createScope(): Scope
 
 The returned scope exposes:
 
-- `run(ritual, options?)`
+- `run(routine, options?)`
 - `cancel()`
 - `status`
 - `closed`

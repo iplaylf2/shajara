@@ -8,17 +8,17 @@ import { guard as kernelGuard } from "@shajara/kernel";
 import { waitChild } from "#/primitives-kit";
 
 /**
- * Runs a child routine with a recovery boundary for nested `resumable` work.
+ * Runs a child routine with a recovery boundary for nested `resumable(...)` work.
  *
  * @returns Child routine result.
  * @throws Shajara error when the guarded scope is canceled or fails.
  */
 export function* guard<Return>(
-  entry: RiteRoutine<Return>,
+  routine: RiteRoutine<Return>,
   recover: RecoveryHandler,
 ): RiteCoroutine<Return> {
   const child = yield* encodeRitual(() =>
-    kernelGuard(decodeRitual(entry), toKernelRecoveryHandler(recover)),
+    kernelGuard(decodeRitual(routine), toKernelRecoveryHandler(recover)),
   )();
   return yield* waitChild(child);
 }
@@ -26,7 +26,7 @@ export function* guard<Return>(
 /** Recovery result where `[true, value]` handles the request and `[false]` delegates it. */
 export type RecoveryDecision = Presence<unknown>;
 
-/** Recovery handler for a child-scope exit failure offered by `resumable`. */
+/** Recovery handler for a child scope exit failure offered by `resumable(...)`. */
 export type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<RecoveryDecision>;
 
 function toKernelRecoveryHandler(recover: RecoveryHandler): KernelRecoveryHandler {

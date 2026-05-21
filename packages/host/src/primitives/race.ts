@@ -8,8 +8,8 @@ import { race as kernelRace } from "@shajara/kernel";
 import { wait } from "./wait";
 
 /**
- * Runs routines in a race scope, cancels losing work after the first success, and waits for
- * the winning value.
+ * Runs routines in a race scope and returns the first successful value.
+ * Non-winning routines are canceled before the caller resumes.
  *
  * @returns First successful routine result.
  * @throws Shajara error when the race scope is canceled or fails.

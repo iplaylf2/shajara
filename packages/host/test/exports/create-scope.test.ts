@@ -13,7 +13,7 @@ describe("/ entries: createScope", () => {
       } as const,
     },
   ])(
-    "runs rituals in a child scope that stays open until canceled",
+    "runs routines in a child scope that stays open until canceled",
     async ({ given: [value], outcome }) => {
       const scope = createScope();
 
@@ -44,7 +44,7 @@ describe("/ entries: createScope", () => {
         beforeCancel: "open",
       } as const,
     },
-  ])("cancels pending rituals during scope cancellation", async ({ outcome }) => {
+  ])("cancels pending routines during scope cancellation", async ({ outcome }) => {
     const scope = createScope();
     const settled = expect(
       scope.run(() => until(() => createPendingPromise())),
@@ -290,10 +290,10 @@ describe("/ entries: createScope", () => {
   test.for([
     {
       given: ["late"] as const,
-      outcome: "Cannot launch ritual with an illegal scope.",
+      outcome: "Cannot launch routine with an illegal scope.",
     },
   ])(
-    "throws when asked to run a ritual after the scope has already closed",
+    "throws when asked to run a routine after the scope has already closed",
     async ({ given: [value], outcome }) => {
       const scope = createScope();
 
@@ -361,7 +361,7 @@ describe("/ entries: createScope", () => {
       outcome: ["cleanup"],
     },
   ])(
-    "runs RiteRoutine finally blocks when cancellation unwinds a started ritual",
+    "runs RiteRoutine finally blocks when cancellation unwinds a started routine",
     async ({ given: [cleanupEntry], outcome }) => {
       const events: string[] = [];
       const started = Promise.withResolvers<null>();

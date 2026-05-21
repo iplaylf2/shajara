@@ -26,16 +26,18 @@ export interface Scope {
    * Non-cancellation failures from the launched routine propagate to this scope.
    * Cancellation remains local to the launched routine.
    *
-   * @returns Stateful promise that resolves with the routine result or rejects with a
-   * shajara error.
+   * @returns Stateful promise that resolves with the routine result or rejects when the
+   * launched routine fails or is canceled.
+   * @throws Error when this scope is already closed.
    */
-  run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
+  run<Return>(routine: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
 
   /**
    * Requests cancellation and waits for this scope to close.
    * Expected cancellation resolves.
    *
-   * @throws Shajara error when the scope closes with a non-cancellation failure.
+   * @returns Promise that resolves after expected cancellation or rejects when the scope
+   * closes with a non-cancellation failure.
    */
   cancel(): Promise<void>;
 
@@ -63,8 +65,8 @@ class ManagedScope implements Scope {
     this.#closed = Promise.resolve(this.#entry.settled);
   }
 
-  public run<Return>(ritual: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
-    const entry = launchEntry(this.executor, this.#entry.scope, ritual, options);
+  public run<Return>(routine: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return> {
+    const entry = launchEntry(this.executor, this.#entry.scope, routine, options);
     this.executor.onSettled(entry.scope.exitFuture, (result) => {
       if (!isLeft(result)) {
         return;
