@@ -3,8 +3,8 @@ import { explorerExamples } from "#/domain/explorer/examples";
 import { z } from "astro/zod";
 
 const staticExplorerUiI18nKeys = [
-  "docs.404.body",
   "docs.404.description",
+  "docs.404.tagline",
   "docs.404.title",
   "docs.home.body",
   "docs.home.description",

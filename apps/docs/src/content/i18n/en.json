@@ -1,6 +1,6 @@
 {
-  "docs.404.body": "The page does not exist, has moved, or has not been published.",
   "docs.404.description": "Page not found.",
+  "docs.404.tagline": "The page does not exist, has moved, or has not been published.",
   "docs.404.title": "404",
   "docs.home.body": "Use JavaScript generator functions to coordinate concurrent work, wait at explicit points, and make cancellation and recovery predictable.",
   "docs.home.description": "Documentation, Flow Explorer, and API Map for shajara.",

@@ -1,6 +1,6 @@
 ---
-import { siteLocales } from "#site";
 import SplashPage from "#/components/splash-page.astro";
+import { siteLocales } from "#site";
 
 export function getStaticPaths() {
   return siteLocales.map((locale) => ({ params: { locale } }));
@@ -8,7 +8,7 @@ export function getStaticPaths() {
 ---
 
 <SplashPage
-  body={Astro.locals.t("docs.404.body")}
   description={Astro.locals.t("docs.404.description")}
+  tagline={Astro.locals.t("docs.404.tagline")}
   title={Astro.locals.t("docs.404.title")}
 />
