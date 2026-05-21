@@ -2,14 +2,14 @@ import type {
   ExplorerChannelDirection,
   ExplorerChannelState,
   ExplorerEventId,
+  ExplorerFlowLink,
+  ExplorerFlowNode,
   ExplorerWaitInterruption,
-  ExplorerFlowLink as FlowLinkSpec,
-  ExplorerFlowNode as FlowNodeSpec,
 } from "#/domain/explorer/contract";
 
 export interface FlowLink<TEvent extends ExplorerEventId> {
   activeEvents: readonly TEvent[];
-  displayLabel: FlowLinkSpec<TEvent>["displayLabel"];
+  displayLabel: ExplorerFlowLink<TEvent>["displayLabel"];
   from: string;
   interruption: ExplorerWaitInterruption<TEvent> | { readonly kind: "none" };
   label: string;
@@ -17,7 +17,7 @@ export interface FlowLink<TEvent extends ExplorerEventId> {
   labelY: number;
   path: string;
   to: string;
-  variant: FlowLinkSpec<TEvent>["kind"];
+  variant: ExplorerFlowLink<TEvent>["kind"];
 }
 
 export type FlowNode<TEvent extends ExplorerEventId> =
@@ -38,8 +38,8 @@ export interface FutureFlowNode<TEvent extends ExplorerEventId> extends FlowNode
 }
 
 export interface CoroutineFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
-  statusTargetIds: CoroutineFlowNodeSpec<TEvent>["statusTargetIds"];
-  variant: CoroutineFlowNodeSpec<TEvent>["kind"];
+  statusTargetIds: ExplorerCoroutineFlowNode<TEvent>["statusTargetIds"];
+  variant: ExplorerCoroutineFlowNode<TEvent>["kind"];
 }
 
 export interface ScopeFlowGroup<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
@@ -72,7 +72,7 @@ export interface FlowScene<TEvent extends ExplorerEventId> {
   viewBox: string;
 }
 
-type CoroutineFlowNodeSpec<TEvent extends ExplorerEventId> = Extract<
-  FlowNodeSpec<TEvent>,
+type ExplorerCoroutineFlowNode<TEvent extends ExplorerEventId> = Extract<
+  ExplorerFlowNode<TEvent>,
   { kind: "caller" | "coordinator" | "worker" }
 >;

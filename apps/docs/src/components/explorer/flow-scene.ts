@@ -1,8 +1,4 @@
-import type {
-  ExplorerEventId,
-  ExplorerFlow,
-  ExplorerFlowNode as FlowNodeSpec,
-} from "#/domain/explorer/contract";
+import type { ExplorerEventId, ExplorerFlow, ExplorerFlowNode } from "#/domain/explorer/contract";
 import type { FlowNode, FlowScene } from "./flow-model";
 import { createFlowLink } from "./flow-link-layout";
 import { readFlowViewBox } from "./flow-view-box";
@@ -84,12 +80,12 @@ const nodeSize = {
   scope: { height: 0, width: 0 },
   worker: { height: WORKER_NODE_HEIGHT, width: WORKER_NODE_WIDTH },
 } as const satisfies Record<
-  FlowNodeSpec<ExplorerEventId>["kind"],
+  ExplorerFlowNode<ExplorerEventId>["kind"],
   { readonly height: number; readonly width: number }
 >;
 
 function resolveNodeLayout<TEvent extends ExplorerEventId>(
-  graphNodes: readonly FlowNodeSpec<TEvent>[],
+  graphNodes: readonly ExplorerFlowNode<TEvent>[],
 ): FlowNode<TEvent>[] {
   const callerNodes = graphNodes.filter((node) => node.kind === "caller");
   const channelNodes = graphNodes.filter((node) => node.kind === "channel");
@@ -124,7 +120,7 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
 }
 
 function createAuxiliaryChannelNode<TEvent extends ExplorerEventId>(
-  node: FlowNodeSpec<TEvent>,
+  node: ExplorerFlowNode<TEvent>,
   options: { readonly hasScopeNode: boolean },
 ): FlowNode<TEvent> {
   if (options.hasScopeNode) {
@@ -137,7 +133,7 @@ function createAuxiliaryChannelNode<TEvent extends ExplorerEventId>(
 }
 
 function createAuxiliaryFutureNode<TEvent extends ExplorerEventId>(
-  node: FlowNodeSpec<TEvent>,
+  node: ExplorerFlowNode<TEvent>,
   options: { readonly hasScopeNode: boolean },
 ): FlowNode<TEvent> {
   if (options.hasScopeNode) {
@@ -150,7 +146,7 @@ function createAuxiliaryFutureNode<TEvent extends ExplorerEventId>(
 }
 
 function createFlowNode<TEvent extends ExplorerEventId>(
-  node: FlowNodeSpec<TEvent>,
+  node: ExplorerFlowNode<TEvent>,
   lane: number,
   column: number,
   options?: FlowNodeLayoutOptions,
@@ -162,7 +158,7 @@ function createFlowNode<TEvent extends ExplorerEventId>(
 }
 
 function createPositionedFlowNode<TEvent extends ExplorerEventId>(
-  node: FlowNodeSpec<TEvent>,
+  node: ExplorerFlowNode<TEvent>,
   left: number,
   top: number,
   options: FlowNodeLayoutOptions = {},

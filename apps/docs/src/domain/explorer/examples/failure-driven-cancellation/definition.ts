@@ -87,22 +87,18 @@ function createCampaignScopeNode(): ExplorerFlow<FailureDrivenCancellationDemoEv
 }
 
 function createCampaignNode(): ExplorerFlow<FailureDrivenCancellationDemoEvent>["nodes"][number] {
-  return coordinatorNode(
-    "campaign",
-    "sendCampaign",
-    {
-      activeEvents: [
-        "launch-scope",
-        "launch-email",
-        "spawn-email",
-        "launch-audience",
-        "spawn-audience",
-        "campaign-sleep",
-        "campaign-cancel",
-      ],
-      completedEvents: ["campaign-cancel"],
-    },
-  );
+  return coordinatorNode("campaign", "sendCampaign", {
+    activeEvents: [
+      "launch-scope",
+      "launch-email",
+      "spawn-email",
+      "launch-audience",
+      "spawn-audience",
+      "campaign-sleep",
+      "campaign-cancel",
+    ],
+    completedEvents: ["campaign-cancel"],
+  });
 }
 
 function createEmailNode(): ExplorerFlow<FailureDrivenCancellationDemoEvent>["nodes"][number] {

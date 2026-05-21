@@ -1,9 +1,9 @@
-import type { ExplorerEventId, ExplorerFlowLink as FlowLinkSpec } from "#/domain/explorer/contract";
+import type { ExplorerEventId, ExplorerFlowLink } from "#/domain/explorer/contract";
 import type { FlowLink, FlowNode } from "./flow-model";
 import { resolveFlowLinkPath } from "./flow-link-path";
 
 export function createFlowLink<TEvent extends ExplorerEventId>(
-  link: FlowLinkSpec<TEvent>,
+  link: ExplorerFlowLink<TEvent>,
   nodePositions: ReadonlyMap<string, FlowNode<TEvent>>,
 ): FlowLink<TEvent> {
   const from = readNode(nodePositions, link.from);
@@ -57,10 +57,14 @@ function readFlowLinkToX<TEvent extends ExplorerEventId>(
   direction: FlowLinkDirection,
 ): number {
   if (node.variant === "future") {
-    return readFutureLinkX(node, -direction as FlowLinkDirection);
+    return readFutureLinkX(node, reverseFlowLinkDirection(direction));
   }
 
   return direction === FORWARD_DIRECTION ? node.left : node.left + node.width;
+}
+
+function reverseFlowLinkDirection(direction: FlowLinkDirection): FlowLinkDirection {
+  return direction === FORWARD_DIRECTION ? BACKWARD_DIRECTION : FORWARD_DIRECTION;
 }
 
 function readFutureLinkX<TEvent extends ExplorerEventId>(
