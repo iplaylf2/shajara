@@ -92,7 +92,7 @@ function createFirstResultFlowNodes(): ExplorerFlow<FirstResultDemoEvent>["nodes
         ],
         completedEvents: ["race-wait-result"],
       },
-      ["root", "race"],
+      { statusTargetIds: ["root", "race"] },
     ),
   ];
 }

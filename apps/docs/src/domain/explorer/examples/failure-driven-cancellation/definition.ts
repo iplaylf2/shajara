@@ -102,7 +102,6 @@ function createCampaignNode(): ExplorerFlow<FailureDrivenCancellationDemoEvent>[
       ],
       completedEvents: ["campaign-cancel"],
     },
-    ["campaign"],
   );
 }
 

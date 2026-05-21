@@ -10,9 +10,9 @@ import {
 import type { ChannelDataBlockedAnchor } from "./channel-data-link";
 import { ChannelDataLink } from "./channel-data-link";
 import { ChannelNode } from "./channel-node";
+import { CoroutineNode } from "./coroutine-node";
 import { FutureNode } from "./future-node";
 import type { JSX } from "solid-js";
-import { ProcessNode } from "./process-node";
 import { ScopeGroups } from "./scope-group";
 import { createMemo } from "solid-js";
 import styles from "./styles.module.css";
@@ -97,7 +97,7 @@ function FlowNode<TEvent extends ExplorerEventId>(props: {
     return <FutureNode node={props.node} state={props.state} />;
   }
 
-  return <ProcessNode node={props.node} state={props.state} />;
+  return <CoroutineNode node={props.node} state={props.state} />;
 }
 
 function FlowLinks<TEvent extends ExplorerEventId>(props: {

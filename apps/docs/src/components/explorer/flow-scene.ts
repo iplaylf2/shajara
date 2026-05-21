@@ -63,12 +63,12 @@ const COORDINATOR_NODE_WIDTH = 154;
 const NODE_LABEL_HORIZONTAL_PADDING = 42;
 const NODE_LABEL_AVERAGE_GLYPH_WIDTH = 11.5;
 const HALF_DIVISOR = 2;
-const FIRST_WORKER_INDEX = 0;
+const FIRST_LANE_INDEX = 0;
 const NO_FUTURE_NODE_COUNT = 0;
 const NO_COORDINATOR_NODE_COUNT = 0;
 const NO_SCOPE_NODE_COUNT = 0;
-const SINGLE_WORKER_COUNT = 1;
-const PAIRED_WORKER_COUNT = 2;
+const SINGLE_LANE_COUNT = 1;
+const PAIRED_LANE_COUNT = 2;
 
 const defaultLayout = {
   columns: [CALLER_COLUMN_X, COORDINATOR_COLUMN_X, WORKER_COLUMN_X, FUTURE_WORKER_COLUMN_X],
@@ -97,8 +97,8 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
   const futureNodes = graphNodes.filter((node) => node.kind === "future");
   const scopeNodes = graphNodes.filter((node) => node.kind === "scope");
   const workerNodes = graphNodes.filter((node) => node.kind === "worker");
-  const processLaneCount = Math.max(coordinatorNodes.length, workerNodes.length);
-  const resolvedCenterLane = readCenterLane(processLaneCount);
+  const laneCount = Math.max(coordinatorNodes.length, workerNodes.length);
+  const resolvedCenterLane = readCenterLane(laneCount);
   const hasFutureNode = futureNodes.length > NO_FUTURE_NODE_COUNT;
   const hasCoordinatorNode = coordinatorNodes.length > NO_COORDINATOR_NODE_COUNT;
   const hasScopeNode = scopeNodes.length > NO_SCOPE_NODE_COUNT;
@@ -110,13 +110,13 @@ function resolveNodeLayout<TEvent extends ExplorerEventId>(
     ...workerNodes.map((node, index) =>
       createFlowNode(
         node,
-        readWorkerLane(index, processLaneCount),
+        readIndexedLane(index, laneCount),
         readWorkerColumn({ hasCoordinatorNode, hasFutureNode, hasScopeNode }),
         { size: readWorkerNodeSize({ hasCoordinatorNode, hasFutureNode, hasScopeNode }) },
       ),
     ),
     ...coordinatorNodes.map((node, index) =>
-      createFlowNode(node, readWorkerLane(index, processLaneCount), COORDINATOR_COLUMN, {
+      createFlowNode(node, readIndexedLane(index, laneCount), COORDINATOR_COLUMN, {
         size: readCoordinatorNodeSize(coordinatorNodes.length),
       }),
     ),
@@ -216,25 +216,25 @@ function createPositionedFlowNode<TEvent extends ExplorerEventId>(
   };
 }
 
-function readCenterLane(workerCount: number): number {
-  if (workerCount <= SINGLE_WORKER_COUNT) {
+function readCenterLane(laneCount: number): number {
+  if (laneCount <= SINGLE_LANE_COUNT) {
     return CENTER_LANE_INDEX;
   }
 
-  if (workerCount > defaultLayout.lanes.length) {
-    throw new Error("Too many explorer flow workers.");
+  if (laneCount > defaultLayout.lanes.length) {
+    throw new Error("Too many explorer flow lanes.");
   }
 
-  return Math.floor(workerCount / HALF_DIVISOR);
+  return Math.floor(laneCount / HALF_DIVISOR);
 }
 
-function readWorkerLane(index: number, workerCount: number): number {
-  if (workerCount <= SINGLE_WORKER_COUNT) {
+function readIndexedLane(index: number, laneCount: number): number {
+  if (laneCount <= SINGLE_LANE_COUNT) {
     return CENTER_LANE_INDEX;
   }
 
-  if (workerCount === PAIRED_WORKER_COUNT) {
-    return index === FIRST_WORKER_INDEX ? TOP_LANE_INDEX : BOTTOM_LANE_INDEX;
+  if (laneCount === PAIRED_LANE_COUNT) {
+    return index === FIRST_LANE_INDEX ? TOP_LANE_INDEX : BOTTOM_LANE_INDEX;
   }
 
   return index;
@@ -268,7 +268,7 @@ function readWorkerNodeSize(options: WorkerColumnOptions): FlowNodeSize {
 }
 
 function readCoordinatorNodeSize(coordinatorCount: number): FlowNodeSize {
-  return coordinatorCount > SINGLE_WORKER_COUNT
+  return coordinatorCount > SINGLE_LANE_COUNT
     ? { height: WORKER_NODE_HEIGHT, width: COORDINATOR_NODE_WIDTH }
     : nodeSize.coordinator;
 }

@@ -4,6 +4,7 @@ import type {
   ExplorerEventId,
   ExplorerWaitInterruption,
   ExplorerFlowLink as FlowLinkSpec,
+  ExplorerFlowNode as FlowNodeSpec,
 } from "#/domain/explorer/contract";
 
 export interface FlowLink<TEvent extends ExplorerEventId> {
@@ -21,8 +22,8 @@ export interface FlowLink<TEvent extends ExplorerEventId> {
 
 export type FlowNode<TEvent extends ExplorerEventId> =
   | ChannelFlowNode<TEvent>
-  | FutureFlowNode<TEvent>
-  | ProcessFlowNode<TEvent>;
+  | CoroutineFlowNode<TEvent>
+  | FutureFlowNode<TEvent>;
 
 export interface ChannelFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
   channelDirection: ExplorerChannelDirection;
@@ -36,9 +37,9 @@ export interface FutureFlowNode<TEvent extends ExplorerEventId> extends FlowNode
   variant: "future";
 }
 
-export interface ProcessFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
-  statusTargetIds: readonly string[];
-  variant: "caller" | "coordinator" | "worker";
+export interface CoroutineFlowNode<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
+  statusTargetIds: CoroutineFlowNodeSpec<TEvent>["statusTargetIds"];
+  variant: CoroutineFlowNodeSpec<TEvent>["kind"];
 }
 
 export interface ScopeFlowGroup<TEvent extends ExplorerEventId> extends FlowNodeBase<TEvent> {
@@ -70,3 +71,8 @@ export interface FlowScene<TEvent extends ExplorerEventId> {
   nodes: readonly FlowNode<TEvent>[];
   viewBox: string;
 }
+
+type CoroutineFlowNodeSpec<TEvent extends ExplorerEventId> = Extract<
+  FlowNodeSpec<TEvent>,
+  { kind: "caller" | "coordinator" | "worker" }
+>;

@@ -1,13 +1,13 @@
 import type { ExplorerEventId, ExplorerReplayState } from "#/domain/explorer/contract";
+import type { CoroutineFlowNode } from "./flow-model";
 import type { FlowNodeStatusValue } from "./flow-status";
 import type { JSX } from "solid-js";
-import type { ProcessFlowNode } from "./flow-model";
 import { createMemo } from "solid-js";
 import { readNodeStatus } from "./flow-status";
 import styles from "./styles.module.css";
 
-export function ProcessNode<TEvent extends ExplorerEventId>(props: {
-  node: ProcessFlowNode<TEvent>;
+export function CoroutineNode<TEvent extends ExplorerEventId>(props: {
+  node: CoroutineFlowNode<TEvent>;
   state: ExplorerReplayState<TEvent>;
 }): JSX.Element {
   const status = createMemo(() => readNodeStatus(props.node, props.state));
@@ -33,13 +33,13 @@ export function ProcessNode<TEvent extends ExplorerEventId>(props: {
         x={props.node.left}
         y={props.node.top}
       />
-      <ProcessNodeLabel node={props.node} />
-      <ProcessNodeStatus node={props.node} status={displayStatus()} />
+      <CoroutineNodeLabel node={props.node} />
+      <CoroutineNodeStatus node={props.node} status={displayStatus()} />
     </g>
   );
 }
 
-type ProcessNodeDisplayStatus = Exclude<FlowNodeStatusValue, null> | "pending";
+type CoroutineNodeDisplayStatus = Exclude<FlowNodeStatusValue, null> | "pending";
 
 const HALF = 2;
 const NODE_TEXT_STACK_OFFSET_Y = 12;
@@ -50,8 +50,8 @@ const flowNodeClasses = {
   worker: styles["flowNodeWorker"]!,
 } as const;
 
-function ProcessNodeLabel<TEvent extends ExplorerEventId>(props: {
-  node: ProcessFlowNode<TEvent>;
+function CoroutineNodeLabel<TEvent extends ExplorerEventId>(props: {
+  node: CoroutineFlowNode<TEvent>;
 }): JSX.Element {
   const centerX = props.node.left + props.node.width / HALF;
   const centerY = props.node.centerY - NODE_TEXT_STACK_OFFSET_Y;
@@ -63,9 +63,9 @@ function ProcessNodeLabel<TEvent extends ExplorerEventId>(props: {
   );
 }
 
-function ProcessNodeStatus<TEvent extends ExplorerEventId>(props: {
-  node: ProcessFlowNode<TEvent>;
-  status: ProcessNodeDisplayStatus;
+function CoroutineNodeStatus<TEvent extends ExplorerEventId>(props: {
+  node: CoroutineFlowNode<TEvent>;
+  status: CoroutineNodeDisplayStatus;
 }): JSX.Element {
   return (
     <text

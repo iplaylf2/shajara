@@ -89,7 +89,6 @@ function createScopeOwnedWorkFlowNodes(): ExplorerFlow<ScopeOwnedWorkDemoEvent>[
         activeEvents: ["launch-scope", "launch-index", "spawn-index", "inner-return"],
         completedEvents: ["inner-return"],
       },
-      ["commit"],
     ),
     workerNode("index", "updateSearchIndex", {
       activeEvents: ["spawn-index", "index-sleep", "index-close"],
