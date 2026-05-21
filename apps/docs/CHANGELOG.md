@@ -1,5 +1,16 @@
 # @shajara/docs
 
+## 0.4.0
+
+### Minor Changes
+
+- [#41](https://github.com/iplaylf2/shajara/pull/41) [`edba577`](https://github.com/iplaylf2/shajara/commit/edba57726ca19c5a5e371ee87d64879e0db2013b) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Refine the docs site around task-focused guides and topics.
+
+  Readers can now follow a `createScope()` guide for long-lived boundaries and use dedicated
+  topic pages for futures, channels, context, and recovery. The refreshed home page
+  separates the documentation, Explorer, and API map entry points more clearly, while the
+  project and package overviews point readers to the docs.
+
 ## 0.3.0
 
 ### Minor Changes
