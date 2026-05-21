@@ -28,7 +28,7 @@ export function createAllResultsDemoCode() {
     codeLine("settings-sleep", `      yield* sleep(${SETTINGS_DELAY_MS});`, ["settings-return"]),
     codeLine("settings-return", '      return "settings";', ["settings-return"]),
     codeLine("settings-close", "    },", ["settings-return"]),
-    codeLine("all-close", "  ] as const);", ["wait-all"]),
+    codeLine("all-close", "  ]);", ["wait-all"]),
     codeSpacer(),
     codeLine("wait-all", "  const [user, settings] = yield* wait(pageData);", ["wait-all"]),
     codeLine("return-page", "  return { user, settings };", ["done"]),
@@ -100,7 +100,7 @@ export function* allResultsDemo(
           });
         }
       },
-    ] as const);
+    ]);
 
     emit({ actions: [setCursor(cursorAt("root", "wait-all", "blocked"))] });
     const [user, settings] = yield* wait(pageData);

@@ -38,7 +38,7 @@ export function createFirstResultDemoCode() {
     ]),
     codeLine("network-return", '      return "fresh profile";', ["network-return"]),
     codeLine("network-close", "    },", ["network-return"]),
-    codeLine("race-close", "  ] as const);", ["race-wait-result"]),
+    codeLine("race-close", "  ]);", ["race-wait-result"]),
     codeSpacer(),
     codeLine("return-profile", "  return profile;", ["done"]),
     codeLine("done", "}", ["done"]),
@@ -115,7 +115,7 @@ export function* firstResultDemo(
             targetId: "network",
             waitEvent: "race-wait-network",
           },
-        ] as const,
+        ],
       ),
     );
 

@@ -14,7 +14,7 @@ import { wait } from "./wait";
  * @returns First successful routine result.
  * @throws Shajara error when the race scope is canceled or fails.
  */
-export function* race<Returns extends NonEmptyTuple<unknown>>(
+export function* race<const Returns extends NonEmptyTuple<unknown>>(
   routines: RiteRoutineTuple<Returns>,
 ): RiteCoroutine<ArrayValues<Returns>> {
   const outcome = yield* encodeRitual(() => kernelRace<Returns>(decodeRituals(routines)))();

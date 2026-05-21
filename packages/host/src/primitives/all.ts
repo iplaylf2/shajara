@@ -9,7 +9,7 @@ import { all as kernelAll } from "@shajara/kernel";
  *
  * @returns Future whose successful result preserves routine order.
  */
-export function all<Returns extends UnknownArray>(
+export function all<const Returns extends UnknownArray>(
   routines: RiteRoutineTuple<Returns>,
 ): RiteCoroutine<RiteFuture<Returns>> {
   return encodeRitual(() => kernelAll(decodeRituals(routines)))();

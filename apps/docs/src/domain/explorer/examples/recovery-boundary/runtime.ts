@@ -35,11 +35,9 @@ export function createRecoveryBoundaryDemoCode() {
     codeLine("handler-sleep", `      yield* sleep(${MANUAL_APPROVAL_DELAY_MS});`, [
       "handler-return",
     ]),
-    codeLine(
+    codeLine("handler-return", `      return [true, \`manual approval: \${error.kind}\`];`, [
       "handler-return",
-      `      return [true, \`manual approval: \${error.kind}\`] as const;`,
-      ["handler-return"],
-    ),
+    ]),
     codeLine("handler-close", "    },", ["handler-return"]),
     codeLine("guard-close", "  );", ["guard-wait-root", "guard-closed"]),
     codeLine("done", "}", ["done"]),
@@ -119,7 +117,7 @@ export function* recoveryBoundaryDemo(
         });
 
         try {
-          return [true, `manual approval: ${error.kind}`] as const;
+          return [true, `manual approval: ${error.kind}`];
         } finally {
           emit({
             actions: [
