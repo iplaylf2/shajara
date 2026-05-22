@@ -4,8 +4,8 @@ description: Relate Promise-shaped coordination to shajara routine work and Prom
 ---
 
 Promise code often groups work, races alternatives, wraps callbacks, and hands values
-back to Promise chains. In a shajara routine, read each pattern by asking whether the call
-gives the routine a value now or a handle it can wait for later.
+back to Promise chains. In a shajara routine, read each pattern by asking whether the
+shajara API gives the routine a value now or a handle it can wait for later.
 
 ## Group Work Like `Promise.all`
 

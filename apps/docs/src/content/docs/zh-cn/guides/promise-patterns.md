@@ -4,7 +4,7 @@ description: 把 Promise 形状的协作方式对应到 shajara routine 工作�
 ---
 
 Promise 代码常见的形状包括组合工作、竞速候选项、包装 callback，以及把值交回 Promise
-链。在 shajara routine 里，关键是看一次调用是直接给 routine 一个值，还是给它一个可以
+链。在 shajara routine 里，关键是看 shajara API 会直接给 routine 一个值，还是给它一个可以
 稍后等待的句柄。
 
 ## 像 `Promise.all` 一样组合工作
@@ -37,7 +37,7 @@ function* loadSession() {
 ```
 
 `all(...)` 会启动这些 routine，并返回一个 future，里面保留它们的有序结果。调用方可以
-在这组工作启动后继续运行，并在需要这些值的位置调用 `wait(...)`。
+在这组工作启动后继续运行，并在需要这些值的位置使用 `wait(...)`。
 
 这和 `Promise.all(...)` 的结果形状接近，但等待结果的位置在 routine 里保持显式。启动
 这组 routine 和等待它们的结果，是两个独立动作。

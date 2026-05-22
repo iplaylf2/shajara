@@ -12,7 +12,8 @@ result to the process waiting for it.
 ## Wait for the Whole Child Scope
 
 `branch(...)` opens a child scope and waits for that scope to converge. The routine passed
-to it becomes the scope's entry process, but it is not the only work the scope may contain.
+to it is used as the scope's entry process, but it is not the only work the scope may
+contain.
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -33,9 +34,9 @@ function* saveProfile() {
 }
 ```
 
-`saveProfileScope` returns before `writeAuditTrail`, but the child scope still owns that
-process. `branch(...)` waits for the owned process before returning the entry process
-result.
+`saveProfileScope` returns before `writeAuditTrail`, but the child scope still owns the
+process created for `writeAuditTrail`. `branch(...)` waits for the owned process before
+returning the entry process result.
 
 This is structured convergence: the caller does not manually track every process inside
 the child scope. The scope gathers the structure it owns into one result boundary.
@@ -93,14 +94,13 @@ their success logs.
 The caller sees a `ScopeError` because it observes the whole child scope's failure result,
 not just the original error thrown by one process.
 
-## Handle Local Failure Inside a Spawned Routine
+## Handle Local Failure Before the Process Boundary
 
-`spawn(...)` returns a future, but the process it starts still belongs to the current
+`spawn(...)` returns a future, but the process it creates still belongs to the current
 scope. If that process fails, the current scope enters failure convergence too.
 
 When spawned work is allowed to fail but that failure should not cancel the rest of the
-same scope, handle it inside the routine passed to `spawn(...)` and turn it into an
-ordinary result.
+same scope, handle it inside that routine and turn it into an ordinary result.
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -132,9 +132,9 @@ function* launchCampaign() {
 // campaign still running
 ```
 
-`sendEmailBatch` does not leave the error to cross the process boundary. It decides its
-own failure result, the later `wait(emailStatusFuture)` receives an ordinary value, and
-the current scope can continue.
+The `sendEmailBatch` routine handles the error before it crosses the process boundary. It
+decides its own failure result, the later `wait(emailStatusFuture)` receives an ordinary
+value, and the current scope can continue.
 
-If the `try...catch` waits until an outer `wait(emailStatusFuture)`, the process failure
+If the `try...catch` is moved out around `wait(emailStatusFuture)`, the process failure
 has already driven the current scope into failure convergence.

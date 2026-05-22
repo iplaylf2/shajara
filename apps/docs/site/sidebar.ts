@@ -4,6 +4,14 @@ import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 const siteSidebar = [
   {
+    directory: "concepts",
+    label: {
+      en: "Concepts",
+      "zh-cn": "概念",
+    },
+    pages: ["routines-and-coroutines"],
+  },
+  {
     directory: "guides",
     label: {
       en: "Guides",
