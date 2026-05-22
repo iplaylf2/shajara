@@ -1,6 +1,9 @@
 {
   "basePath": "/shajara",
   "description": "Documentation, Flow Explorer, and API Map for shajara.",
+  "externalPaths": {
+    "apiMap": "api-map/index.html"
+  },
   "origin": "https://iplaylf2.github.io",
   "repositoryUrl": "https://github.com/iplaylf2/shajara",
   "title": "shajara"
