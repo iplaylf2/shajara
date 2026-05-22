@@ -51,9 +51,11 @@ boundary. Concepts from documents to its right stay outside its scope.
   advanced through host adaptation.
 - **Scope** means the structured concurrency boundary that owns child scopes, processes,
   context, futures, and channels.
+- **Scope tree** means the runtime parent-child structure of scopes.
 - **Process** means the semantic runtime instance of a `Wisp`; each process belongs to
-  exactly one scope.
-- **Branch** means a child scope created under the current scope.
+  exactly one scope, but is not itself a scope tree node.
+- **Branch** means a child scope created under the scope of the process that performs the
+  branch operation.
 - **Future** means the observation handle for a result that may settle later.
 - **Scoped outcome** means a pair of a scope reference and an outcome future.
 - **Convergence** means a process, future, or scope reaching its final result.
