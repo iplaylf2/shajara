@@ -1,49 +1,65 @@
 ---
 title: Routine 与 Coroutine
-description: 理解 routine 是交给 shajara 的代码，coroutine 是 shajara 推进的一次运行。
+description: 理解 routine 是在 JavaScript 中书写 shajara 工作的方式，coroutine 是 shajara 推进的一次运行。
 ---
 
-routine 是交给 shajara 运行的代码。在 JavaScript 中，它写成 `function*`；使用 shajara
-时，你不需要先了解 generator 机制。需要记住的是：routine 内部用普通 JavaScript 组织
-流程；在需要 shajara 处理等待、并发或边界时，用 `yield*` 把控制交给 shajara。
+routine 是在 JavaScript 中书写 shajara 工作的方式。它写成 `function*`，但重点不是先学习
+generator 机制。普通 JavaScript 组织工作流程，`yield*` 则是 routine 为了等待、委托或
+并发工作而把控制权交给 shajara 的位置。
 
-coroutine 是 routine 启动后的那次运行。shajara 负责创建、暂停、继续和清理 coroutine；
-应用代码通常只传递 routine、等待 future 或接收返回值。
+coroutine 是 routine 的一次运行。调用 routine 会创建 coroutine；把 routine 传给
+`spawn(...)` 这类 API，则让 shajara 创建并推进这次有归属的运行。routine 仍然是代码形状，
+coroutine 则是 shajara 推进的那次运行。
 
-## Routine 交给 shajara 运行
+## Routine 是可复用的 shajara 工作
 
-应用代码可以通过 `run(...)` 把 routine 交给 shajara：
-
-```ts
-import { run } from "@shajara/host";
-
-// "ready"
-const message = await run(function* main() {
-  return "ready";
-});
-```
-
-`main` 是 routine。`run(...)` 从应用代码启动它；返回的 Promise 会以 routine 的返回值
-resolve。
-
-## Coroutine 是 routine 的一次运行
-
-routine 描述要运行的代码；coroutine 是这段代码的一次运行。同一个 routine 被启动两次时，
-shajara 会推进两条不同的 coroutine。每条 coroutine 都有自己的当前位置、局部状态和等待点。
-
-TypeScript 导出的类型可以按这个轮廓理解：
+TypeScript 类型对应着这个 JavaScript 形式：
 
 ```ts
 type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 type RiteCoroutine<Return> = Generator<unknown, Return, unknown>;
 ```
 
-`RiteRoutine<Return>` 是可以交给 shajara 的 routine；`RiteCoroutine<Return>` 是 shajara
-会推进并最终产出 `Return` 的一次运行。
+`RiteRoutine<Return>` 是产出 `RiteCoroutine<Return>` 的函数。在应用代码中，`function*`
+写出的就是这种形式。routine 可以被命名、传递，并在稍后调用。在某个 API 或另一段 routine
+调用它之前，它没有当前位置。
 
-`Rite` 前缀用于把 shajara 的公开类型与其他语言或库里的类似 routine、coroutine 概念区分开。
+`RiteCoroutine<Return>` 是那次调用产出的 generator 对象。它有当前位置、局部状态，并且
+最终会产出一个 `Return` 值。
 
-## 在 routine 中组合另一段 routine
+`Rite` 前缀来自 shajara 内部的 `Ritual` 模型。在公开 API 中，它用于命名 shajara 接受并
+推进的 routine 与 coroutine 形状。
+
+## Coroutine 是一次启动后的实例
+
+每次调用 routine 都会产生一条独立的 coroutine。因此，同一段 routine 可以启动多次，而
+这些运行之间不会共享当前位置或局部状态。
+
+```ts
+import { sleep } from "@shajara/host";
+
+function* loadPanel() {
+  yield* sleep(10);
+
+  return "panel";
+}
+
+function* renderDashboard() {
+  const primaryPanel = yield* loadPanel();
+  const secondaryPanel = yield* loadPanel();
+
+  return { primaryPanel, secondaryPanel };
+}
+```
+
+`loadPanel` 是一段 routine。每次 `loadPanel()` 调用都会从它产生一条新的 coroutine；
+`yield*` 会在当前位置委托这条 coroutine。第二次调用会从 `loadPanel` 顶部开始，并不会
+继续第一次调用产出的那条 coroutine。
+
+## `yield*` 在当前 process 内委托 coroutine
+
+委托会保留当前 process 作为运行时归属。当前 coroutine 在 `yield*` 表达式处暂停，shajara
+推进被委托的 coroutine，返回值再回到同一个表达式。
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -61,51 +77,30 @@ function* loadGreeting() {
 }
 ```
 
-`loadProfile()` 是普通 JavaScript 调用，它会从这段 routine 产生一条 coroutine。`yield*`
-在当前位置委托这条 coroutine，直到它返回；整个 `yield* loadProfile()` 表达式的值，就是
-`loadProfile` 产出的返回值。
+`loadProfile()` 是普通 JavaScript 调用，它从另一段 routine 产生 coroutine。`sleep(...)`
+也会返回一条 coroutine。这两种情况下，`yield*` 都是在当前 process 内把 coroutine 交给
+shajara，整个表达式的值就是被委托 coroutine 的返回值。
 
-## `yield*` 标记运行时交接点
+委托本身不会创建一个用于稍后观察的 future。调用方直接在这个表达式处等待。
 
-在 routine 内部，`yield*` 是把 coroutine 交给运行时的位置。这个 coroutine 可以来自另一段
-routine，也可以来自 shajara API。shajara 可以暂停当前 coroutine，推进被委托的
-coroutine，并在有结果后把结果送回同一个位置。
+## Process 入口增加运行时归属
 
-```ts
-import { until } from "@shajara/host";
-
-function* loadDisplayName(userId: string) {
-  const response = yield* until(() => fetch(`/api/users/${userId}`));
-  const user = yield* until(() => response.json());
-
-  return user.displayName;
-}
-```
-
-Promise 工作仍然来自普通 JavaScript API。`until(...)` 返回 coroutine；`yield* until(...)`
-是当前 routine 在 shajara 控制流中等待这个 Promise 结果的位置。
-
-这里不能把 `yield*` 简写成 `yield`。`yield` 不会把 coroutine 委托给运行时；当你在
-routine 中使用 `until(...)`、`wait(...)`、`spawn(...)` 这类返回 coroutine 的 API 时，
-写法应该是 `yield* until(...)` 这样的形式。
-
-## Routine 可以作为 process 入口
-
-当 routine 通过 `yield* spawn(...)` 启动另一段 routine 时，shajara 会在当前 scope 里为
-这段工作建立 process，并在这个 process 里推进对应的 coroutine。routine 是 process 的
-入口，coroutine 是正在推进的一次运行，process 是由 scope 拥有的运行时身份，让这段工作
-有清楚的归属和结果 future。
+把 routine 传给 `spawn(...)` 这类 API 时，这段 routine 会获得另一个角色。这个 API 会把
+它当作入口，shajara 会在合适的 scope 中创建 process，并由这个 process 推进从 routine
+产出的 coroutine。
 
 ```ts
 import { sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
 
-function* renderPage() {
-  const sidebarFuture = yield* spawn(function* loadSidebar() {
-    yield* sleep(20);
+function* loadSidebar() {
+  yield* sleep(20);
 
-    return ["guide", "api"];
-  });
+  return ["guide", "api"];
+}
+
+function* renderPage() {
+  const sidebarFuture = yield* spawn(loadSidebar);
 
   const title = "Dashboard";
   const sidebar = yield* wait(sidebarFuture);
@@ -114,6 +109,9 @@ function* renderPage() {
 }
 ```
 
-`loadSidebar` 是 routine。`yield* spawn(...)` 会把它作为当前 scope 里一个 process 的
-入口，并把用于观察这个 process 结果的 future 交回 `renderPage`。这个 process 会推进从
-`loadSidebar` 启动的 coroutine。`renderPage` 会继续运行，直到走到 `wait(...)` 的位置。
+`spawn(loadSidebar)` 会把 `loadSidebar` 作为当前 scope 中一个 process 的入口。这个 process
+推进从 `loadSidebar` 创建的 coroutine，`sidebarFuture` 则观察这个 process 的结果。
+`renderPage` 会继续运行，直到它选择等待这个 future。
+
+如果 `renderPage` 写成 `yield* loadSidebar()`，同一段 routine 就会形成不同的运行时关系：
+那会在当前 process 内委托一条 coroutine，而不是创建一个带有独立 future 的新 process。

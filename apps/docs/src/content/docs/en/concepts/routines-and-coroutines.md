@@ -1,53 +1,69 @@
 ---
 title: Routines and Coroutines
-description: Understand routines as code handed to shajara and coroutines as individual runs shajara advances.
+description: Understand routines as the way shajara work is written in JavaScript and coroutines as the runs shajara advances.
 ---
 
-A routine is code handed to shajara. In JavaScript, it is written with `function*`; when
-using shajara, you do not need to know the generator protocol first. The important part
-is that ordinary JavaScript organizes the flow, and `yield*` hands control to shajara
-when the routine needs waiting, concurrency, or a boundary.
+A routine is how shajara work is written in JavaScript. It uses
+`function*`, but the point is not to learn the generator protocol first. Ordinary
+JavaScript organizes the workflow, and `yield*` is where the routine hands control to
+shajara for waiting, delegation, or concurrent work.
 
-A coroutine is one run of a routine. shajara creates, suspends, resumes, and cleans up
-coroutines; application code usually passes routines, waits on futures, or receives
-returned values.
+A coroutine is one run of a routine. Calling a routine creates a coroutine; passing a
+routine to an API such as `spawn(...)` lets shajara create and drive that run as owned
+work. The routine remains the code shape, and the coroutine is the run shajara advances.
 
-## A Routine Is Handed to Shajara
+## A Routine Is Reusable Shajara Work
 
-Application code can hand a routine to shajara with `run(...)`:
-
-```ts
-import { run } from "@shajara/host";
-
-// "ready"
-const message = await run(function* main() {
-  return "ready";
-});
-```
-
-`main` is a routine. `run(...)` starts it from application code; the returned Promise
-resolves with the value the routine returns.
-
-## A Coroutine Is One Run of a Routine
-
-A routine describes code to run; a coroutine is one execution of that code. If the same
-routine starts twice, shajara advances two different coroutines. Each coroutine has its
-own current position, local state, and wait point.
-
-You can read the exported TypeScript types by this outline:
+The TypeScript types mirror the JavaScript form:
 
 ```ts
 type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 type RiteCoroutine<Return> = Generator<unknown, Return, unknown>;
 ```
 
-`RiteRoutine<Return>` is a routine that can be handed to shajara. `RiteCoroutine<Return>`
-is one run that shajara advances until it produces `Return`.
+`RiteRoutine<Return>` is a function that produces a `RiteCoroutine<Return>`. In
+application code, `function*` is how that form is written. A routine can be named, passed
+around, and called later. It has no current position until an API or another routine
+calls it.
 
-The `Rite` prefix distinguishes shajara's public types from similar routine and coroutine
-concepts in other languages or libraries.
+`RiteCoroutine<Return>` is the generator object produced by that call. It has a current
+position, local state, and eventually a `Return` value.
 
-## Compose One Routine Inside Another
+The `Rite` prefix comes from shajara's internal `Ritual` model. In public APIs, it names
+the routine and coroutine shapes shajara accepts and advances.
+
+## A Coroutine Is One Started Instance
+
+Each call to a routine produces a separate coroutine. The same routine can therefore be
+started more than once without sharing the current position or local state between those
+runs.
+
+```ts
+import { sleep } from "@shajara/host";
+
+function* loadPanel() {
+  yield* sleep(10);
+
+  return "panel";
+}
+
+function* renderDashboard() {
+  const primaryPanel = yield* loadPanel();
+  const secondaryPanel = yield* loadPanel();
+
+  return { primaryPanel, secondaryPanel };
+}
+```
+
+`loadPanel` is one routine. Each `loadPanel()` call creates a new coroutine from it, and
+`yield*` delegates that coroutine at the current position. The second call starts from
+the top of `loadPanel`; it does not resume the coroutine created by the first call.
+
+## `yield*` Delegates Inside the Current Process
+
+Delegation keeps the current process as the runtime owner. The current coroutine pauses
+at the `yield*` expression, shajara advances the delegated coroutine, and the returned
+value comes back to the same expression.
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -65,55 +81,32 @@ function* loadGreeting() {
 }
 ```
 
-`loadProfile()` is an ordinary JavaScript call that produces a coroutine from that
-routine. `yield*` delegates that coroutine at the current position until it returns. This
-means the whole `yield* loadProfile()` expression evaluates to the return value produced
-by `loadProfile`.
+`loadProfile()` is an ordinary JavaScript call that produces a coroutine from another
+routine. `sleep(...)` also returns a coroutine. In both cases, `yield*` hands that
+coroutine to shajara inside the current process, and the expression evaluates to the
+delegated coroutine's return value.
 
-## `yield*` Marks a Runtime Hand-Off
+The delegation itself does not create a future for later observation. The caller waits
+directly at that expression.
 
-Inside a routine, `yield*` is where a coroutine is handed to the runtime. That coroutine
-can come from another routine or from a shajara API. shajara can suspend the current
-coroutine, advance the delegated coroutine, and send the result back to the same
-position.
+## Process Entries Add Runtime Ownership
 
-```ts
-import { until } from "@shajara/host";
-
-function* loadDisplayName(userId: string) {
-  const response = yield* until(() => fetch(`/api/users/${userId}`));
-  const user = yield* until(() => response.json());
-
-  return user.displayName;
-}
-```
-
-The Promise work still belongs to ordinary JavaScript APIs. `until(...)` returns a
-coroutine; `yield* until(...)` is where the current routine waits for that Promise result
-inside shajara control flow.
-
-Do not replace `yield*` with `yield`. `yield` does not delegate a coroutine to the
-runtime; when a routine uses an API such as `until(...)`, `wait(...)`, or `spawn(...)`
-that returns a coroutine, write it in the form `yield* until(...)`.
-
-## A Routine Can Be a Process Entry
-
-When the current routine starts another routine through `yield* spawn(...)`, shajara
-creates a process for that work in the current scope and drives the resulting coroutine
-inside that process. The routine is the process entry, the coroutine is the run being
-advanced, and the process is the scope-owned runtime identity that gives the work a clear
-owner and result future.
+Passing a routine to an API such as `spawn(...)` gives that routine a different role.
+The API uses the routine as an entry, shajara creates a process in the appropriate scope,
+and that process drives the coroutine produced from the routine.
 
 ```ts
 import { sleep } from "@shajara/host";
 import { spawn, wait } from "@shajara/host/primitives";
 
-function* renderPage() {
-  const sidebarFuture = yield* spawn(function* loadSidebar() {
-    yield* sleep(20);
+function* loadSidebar() {
+  yield* sleep(20);
 
-    return ["guide", "api"];
-  });
+  return ["guide", "api"];
+}
+
+function* renderPage() {
+  const sidebarFuture = yield* spawn(loadSidebar);
 
   const title = "Dashboard";
   const sidebar = yield* wait(sidebarFuture);
@@ -122,7 +115,10 @@ function* renderPage() {
 }
 ```
 
-`loadSidebar` is a routine. `yield* spawn(...)` uses it as the entry for a process in the
-current scope and returns a future to `renderPage` for observing that process result. That
-process drives the coroutine created from `loadSidebar`. `renderPage` keeps running until
-it reaches the `wait(...)` point.
+`spawn(loadSidebar)` uses `loadSidebar` as the entry for a process in the current scope.
+The process drives the coroutine created from `loadSidebar`, and `sidebarFuture` observes
+that process result. `renderPage` keeps running until it chooses to wait for that future.
+
+The same routine would have a different runtime relationship if `renderPage` wrote
+`yield* loadSidebar()` instead: that would delegate a coroutine inside the current
+process instead of creating a new process with its own future.
