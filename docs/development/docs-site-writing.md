@@ -8,33 +8,16 @@ The documentation set can be complete without asking every page to be complete. 
 should teach the move it owns, leave later moves to later pages, and read as a coherent
 finished page with one clear direction.
 
+## Documentation Architecture
+
 A guide sequence is an entry path, not a compressed reference. It should stop when the
 reader has enough structural moves to continue through reference pages and examples; it
 does not need a guide for every public API or internal concept.
 
-## Page Ownership
-
 Start from the reader's task and let the page's path, title, and description name the
 shajara move it teaches. Introduce a topic because the current page needs it, not because
 the concept exists elsewhere in the system or because the surrounding application setting
-is familiar. Keep the application setting in examples unless that integration surface is
-itself the page's job.
-
-Keep the framing at the same level as the page job. A section should be led by the
-boundary, owner, observation point, or result shape it is responsible for. Example-specific
-names should make the code readable without becoming the section's conceptual frame.
-
-Each section should have one local responsibility. When a rule affects several sections,
-such as ownership, terminal states, or cross-boundary behavior, give that rule a stable
-home instead of repeating it as a caveat in every section. If creating that home would
-distract from the page job, leave the rule to its later owner.
-
-Avoid preview prose that merely announces the page outline. If the next section already
-shows the next step, let the section carry that transition.
-
-Page descriptions should name the reader-facing job, not enumerate the sections or turn
-the outline into metadata. A description that can be mechanically expanded into the page
-outline is usually too specific.
+is familiar.
 
 Do not duplicate the job of another page. When a reader reaches a follow-up guide, assume
 the previous guide has already taught its entry pattern, and spend attention on the new
@@ -46,45 +29,108 @@ Completeness belongs to the documentation set. A page can leave a concept to its
 owner when naming it would not clarify the current task, and it can end as soon as its own
 decision is settled.
 
-## Revision Coherence
+## Page Composition
 
-Treat editing as design work. A revision should settle on one organizing idea and make
-every part of the page serve that idea.
-
-When a page's design changes, revise the page as a whole. Its route, navigation entry,
+A page should have one organizing idea. Its route, navigation entry, title, description,
 opening, examples, headings, supporting material, and ending should all point in the same
 direction.
 
-Page-level constraints should shape the page. If a constraint affects the page's
-direction, revise the page structure and surrounding explanation so the page embodies that
-constraint. Do not attach it as a local note, caveat, or warning near the sentence that
-happened to expose the issue.
+The opening should establish the relevant product surface and then move into the reader's
+task. Let motivation emerge from the example and the shape of the code instead of front
+loading abstract value claims. Do not open a page by listing the APIs it will cover; a
+short frame should give enough context for the first example.
 
-If the same clarification keeps appearing, promote the underlying rule to the page's
-structure or to this writing guide. Add material to this guide only after extracting the
-general writing principle; do not turn the content model, outline, or local vocabulary of
-one page into site-wide guidance. The final page should read as if it was authored for its
-current design from the start.
+Page descriptions should name the reader-facing job, not enumerate the sections or turn
+the outline into metadata. A description that can be mechanically expanded into the page
+outline is usually too specific.
 
-Prefer restructuring or rewriting when local edits would break the page's flow. Splitting
-a section, renaming a module, or moving material is appropriate when it gives
-responsibilities stable homes and removes accumulated exceptions. Material that does not
-serve the page's current job should be replaced or removed instead of carrying exceptions
-around it. A clean revision may replace an example, remove a supporting API, or rewrite
-the surrounding prose so the page reads like it was authored for its current design.
+Each section should have one local responsibility. Keep the framing at the same level as
+the section job: a section should be led by the boundary, owner, observation point, or
+result shape it is responsible for. Example-specific names should make the code readable
+without becoming the section's conceptual frame.
 
-## Reading Shape
+When a rule affects several sections, such as ownership, terminal states, or
+cross-boundary behavior, give that rule a stable home instead of repeating it as a caveat
+in every section. If creating that home would distract from the page job, leave the rule to
+its later owner.
 
-Task-oriented sections should usually move from a short task frame to the shajara-shaped
-example, then to the explanation needed to read that example. When several
-responsibilities need to be seen together, open with the broader example and return to
-smaller excerpts as each responsibility is explained. The reader should not have to
-remember or re-parse the opening example to follow later sections.
+Avoid preview prose that merely announces the page outline. If the next section already
+shows the next step, let the section carry that transition. When an explanation compares
+examples from multiple sections, give that comparison its own stable home. Do not attach
+cross-section interpretation to one of the sections it compares.
+
+Use enumeration when it helps readers scan true peers under a named relationship. Name
+that relationship before listing the items. If the items need explanation to make sense,
+keep the explanation in prose; if the relationship is already clear and comparison helps,
+enumerate them.
+
+## Example Design
+
+Examples should be designed around the shajara structure the page owns. Decide which
+boundary the reader must see, then choose just enough surrounding TypeScript and
+application code to make that boundary readable. Platform glue and placeholder setup are
+useful only while they keep the shajara move legible; they should not become a second
+walkthrough.
 
 Readers should usually see the code shape before carrying a large explanation. Put
 supporting interpretation after the example unless the reader cannot understand the example
 without a small setup sentence. Before and after the example, stay in the vocabulary of the
 current layer. Explain concrete code names only when they help the reader read the example.
+
+On API-family pages, each example should focus on the API named by the section.
+Supporting calls are acceptable when they create the value, state, or observation point the
+API needs, but they should not become peer subjects in the same example. If a supporting
+call introduces a second result shape or demands its own explanation, change the example
+so the named API remains the reader's focus. If several APIs need equal attention, split
+the examples or give the comparison its own section.
+
+A concrete scenario is valuable when it reveals how work is owned, observed, canceled, or
+converged. Otherwise use lighter surfaces: inline routines, literals, and comments for
+omitted callbacks, user actions, or teardown points. The example's size should be justified
+by a shajara responsibility, not by making the surrounding application feel complete.
+
+The application surface should help readers recognize where the shajara boundary appears,
+not become the center of gravity. Choose surrounding work according to the boundary being
+taught, and keep the shajara mechanism as the named subject. A Promise boundary needs
+recognizable asynchronous work; routine orchestration can often be represented by small
+inline routines or deterministic values. Realistic plumbing should appear only where it
+changes the shajara behavior the reader is learning.
+
+Use complete setup only when the setup is itself the integration point. Otherwise keep the
+example flat enough for the reader to see the boundary being taught. A helper is useful
+only when it names a real responsibility that would still matter outside the guide; if it
+mainly hides the boundary or makes the sample look more like an application, write the
+smallest inline example instead.
+
+Show the application-to-routine entry only when that crossing is the move being taught.
+Once that entry pattern has been shown, later examples can usually show the routine body
+directly. When another routine appears, it should reveal the boundary the page owns rather
+than appear as incidental background. Repeating the entry boundary on every example spends
+space on a move the page no longer owns.
+
+Use the smallest number of routines needed to show distinct roles. Routine arguments can
+be inline when their enclosing API is the local subject. When nesting APIs that accept
+routines would make multiple boundaries compete in the same block, separate the layers
+with a named routine or helper. Do not repeat routines that demonstrate the same behavior;
+repetition should add a new structural responsibility, not merely make an existing point
+louder.
+
+Treat lifecycle, cleanup, and error behavior as part of the example's design when they
+change how the reader should understand the API being taught. If they are not the page's
+job, omit them rather than carry defensive completeness. Prefer language and runtime forms
+that expose ownership or release without extra scaffolding, and remove wrappers that do
+not serve the current sample. When failure behavior is the subject, keep propagation,
+local handling, recovery, and unchanged outcomes in their responsible contexts so one
+responsibility does not read like a caveat on another.
+
+Choose domain names that do not collide with shajara concepts unless the page is teaching
+that concept. For example, do not use channel, feed, scope, process, future, or resource
+as casual names when they could be read as API or runtime terms.
+
+Choose nearby example names that remain visually distinct when read quickly. Avoid names
+where related handles and values are only small variations of the same word.
+
+## Result Presentation
 
 In code examples, use comments only when they let the reader see a local behavior at the
 line where the reader needs it. If a comment already carries that local point, the
@@ -110,113 +156,20 @@ owns. Include declined or delegated outcomes when they change what the reader ob
 including the case where the original result passes through unchanged. Leave generic
 downstream error handling to the page that owns that mechanism.
 
+When a page teaches return shapes, let the reader see the concrete shape before stating the
+general style. Explain the shape as a way to read the API in the current example, not as a
+taxonomy detached from the example.
+
 Choose the lightest surface that shows the result. A return value can carry a final value,
 a short comment can stand in for omitted application events or intermediate states, and
 `console.log(...)` is most useful when the order of effects is the point. Use the literal
 value, result shape, or a short label when the adjacent expression already supplies the
 subject. Avoid frames such as "result is" or "returns" unless they carry a condition that
-changes how the value is read. If the code already
-shows literal results through comments or return values, let the prose move to the rule
-those results reveal instead of restating each value.
+changes how the value is read. If the code already shows literal results through comments
+or return values, let the prose move to the rule those results reveal instead of restating
+each value.
 
-When an explanation compares examples from multiple sections, give that comparison its own
-stable home. Do not attach cross-section interpretation to one of the sections it compares.
-
-## Product Voice
-
-Write as the project explaining itself, not as an external review describing a third-party
-tool. Prefer direct explanation of how shajara is used over broad evaluation of when it is
-useful or valuable.
-
-The opening should establish the relevant product surface and then move into the reader's
-task. Let motivation emerge from the example and the shape of the code instead of front
-loading abstract value claims.
-
-Do not open a page by listing the APIs it will cover. A short frame should give enough
-context for the first example; concrete API shapes can appear where the reader uses them.
-
-Describe product behavior and structure directly. Prefer saying what the routine, scope,
-process, or API call does over making the prose explain its own emphasis.
-
-## Example Design
-
-Examples should be designed around the shajara structure the page owns. Decide which
-boundary the reader must see, then choose just enough surrounding TypeScript and
-application code to make that boundary readable. Platform glue and placeholder setup are
-useful only while they keep the shajara move legible; they should not become a second
-walkthrough.
-
-On API-family pages, each example should focus on the API named by the section.
-Supporting calls are acceptable when they create the value, state, or observation point the
-API needs, but they should not become peer subjects in the same example. If a supporting
-call introduces a second result shape or demands its own explanation, change the example
-so the named API remains the reader's focus. If several APIs need equal attention, split
-the examples or give the comparison its own section.
-
-A concrete scenario is valuable when it reveals how work is owned, observed, canceled, or
-converged. Otherwise use lighter surfaces: inline routines, literals, and comments for
-omitted callbacks, user actions, or teardown points. The example's size should be justified
-by a shajara responsibility, not by making the surrounding application feel complete.
-
-Show the application-to-routine entry only when that crossing is the move being taught.
-Once that entry pattern has been shown, later examples can usually show the routine body
-directly. When another routine appears, it should reveal the boundary the page owns rather
-than appear as incidental background. Repeating the entry boundary on every example spends
-space on a move the page no longer owns.
-
-Use the smallest number of routines needed to show distinct roles. Routine arguments can
-be inline when their enclosing API is the local subject. When nesting APIs that accept
-routines would make multiple boundaries compete in the same block, separate the layers
-with a named routine or helper. Do not repeat routines that demonstrate the same behavior;
-repetition should add a new structural responsibility, not merely make an existing point
-louder.
-
-Treat lifecycle, cleanup, and error behavior as part of the example's design when they
-change how the reader should understand the API being taught. If they are not the page's
-job, omit them rather than carry defensive completeness. Prefer language and runtime forms
-that expose ownership or release without extra scaffolding, and remove wrappers that do
-not serve the current sample. When failure behavior is the subject, keep propagation,
-local handling, recovery, and unchanged outcomes in their responsible contexts so one
-responsibility does not read like a caveat on another.
-
-## Application Surface
-
-The application surface should help readers recognize where the shajara boundary appears,
-not become the center of gravity. Choose surrounding work according to the boundary being
-taught, and keep the shajara mechanism as the named subject. A Promise boundary needs
-recognizable asynchronous work; routine orchestration can often be represented by small
-inline routines or deterministic values. Realistic plumbing should appear only where it
-changes the shajara behavior the reader is learning.
-
-Use complete setup only when the setup is itself the integration point. Otherwise keep the
-example flat enough for the reader to see the boundary being taught. A helper is useful
-only when it names a real responsibility that would still matter outside the guide; if it
-mainly hides the boundary or makes the sample look more like an application, write the
-smallest inline example instead.
-
-Choose domain names that do not collide with shajara concepts unless the page is teaching
-that concept. For example, do not use channel, feed, scope, process, future, or resource
-as casual names when they could be read as API or runtime terms.
-
-Choose nearby example names that remain visually distinct when read quickly. Avoid names
-where related handles and values are only small variations of the same word.
-
-Avoid scaffolding that makes the reader think about TypeScript declaration mechanics or
-type inference when the page is teaching orchestration:
-
-```ts
-declare function loadUserName(userId: string): Promise<string>;
-
-yield *
-  all([
-    /* ... */
-  ] as const);
-```
-
-If a clean example exposes an API typing weakness, prefer improving the API or changing the
-example shape over making the reader carry incidental syntax.
-
-## Concept Disclosure
+## Concept Boundaries
 
 Let the page level decide how much concept to disclose. Guides can rely on useful
 intuition when it lets the reader use the API correctly; concept pages can slow down to
@@ -227,12 +180,6 @@ example creates a reason for them.
 Treat named details as obligations. If a page names something below its current level of
 explanation, the page should either own that detail or immediately give it a worked
 example. If the current page will not meet that obligation, leave the detail to its owner.
-
-When a page teaches return shapes, let the reader see the concrete shape before stating the
-general style. Explain the shape as a way to read the API in the current example, not as a
-taxonomy detached from the example.
-
-## Concept Boundaries
 
 Keep syntax, public API, and runtime ownership as separate layers. A page can name the
 syntax form, the public type, or the runtime object when that layer explains the current
@@ -261,7 +208,12 @@ Reference-layer labels belong in reference pages unless a guide is teaching that
 boundary. Import paths, package names, and layer names should do boundary work; they
 should not become generic labels for surrounding application code.
 
-## Language Discipline
+## Voice And Terminology
+
+Write as the project explaining itself, not as an external review describing a third-party
+tool. Prefer direct explanation of how shajara is used over broad evaluation of when it is
+useful or valuable. Describe product behavior and structure directly; do not make the
+prose explain its own emphasis.
 
 Terminology should be deliberate, not mechanically avoided. If a project term has a
 specific meaning, avoid using the same word casually when it would confuse that concept.
@@ -279,17 +231,35 @@ clearer. Localized pages follow the same rule: translate the surrounding sentenc
 preserving the concept layer, and keep a project term when a natural word would change the
 runtime relationship.
 
-Use enumeration when it helps readers scan true peers under a named relationship. Name
-that relationship before listing the items. If the items need explanation to make sense,
-keep the explanation in prose; if the relationship is already clear and comparison helps,
-enumerate them.
-
 Use contrast only when it clarifies a real distinction. Repeated "not this, but that"
 sentences can make a guide read defensively. When a distinction matters, express the
 positive behavior first, then add the contrast only as much as needed.
 
 Natural prose matters. A guide may carry precise terminology, but the surrounding
-sentences should still read like ordinary explanation. Do not make the guide announce its
-own construction, justify the sample's shape, explain that a representation is important,
-or describe the writer's private intent. State the behavior the reader can see in the code
-and the rule it reveals.
+sentences should still read like ordinary explanation. Avoid prose that announces the page
+construction, defends the sample shape, labels a representation as important, or exposes
+internal rationale. State the behavior the reader can see in the code and the rule it
+reveals.
+
+## Revision Hygiene
+
+Treat editing as design work. A revision should settle on one organizing idea and make
+every part of the page serve that idea.
+
+Page-level constraints should shape the page. If a constraint affects the page's
+direction, revise the page structure and surrounding explanation so the page embodies that
+constraint. Do not attach it as a local note, caveat, or warning beside the nearest
+sentence.
+
+If the same clarification keeps appearing, promote the underlying rule to the page's
+structure or to this writing guide. Add material to this guide only after extracting the
+general writing principle; do not turn the content model, outline, or local vocabulary of
+one page into site-wide guidance. The final page should read as if it was authored for its
+current design from the start.
+
+Prefer restructuring or rewriting when local edits would break the page's flow. Splitting
+a section, renaming a module, or moving material is appropriate when it gives
+responsibilities stable homes and removes accumulated exceptions. Material that does not
+serve the page's current job should be replaced or removed instead of carrying exceptions
+around it. A clean revision may replace an example, remove a supporting API, or rewrite
+the surrounding prose so the page reads like it was authored for its current design.
