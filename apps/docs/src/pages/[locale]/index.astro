@@ -1,5 +1,5 @@
 ---
-import { i18N, site, siteLocales } from "#site";
+import { getFirstDocSlug, i18N, site, siteLocales } from "#site";
 import SplashPage from "#/components/splash-page.astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
@@ -15,7 +15,7 @@ const explorerHref = getRelativeLocaleUrl(
 );
 const docsHref = getRelativeLocaleUrl(
   i18N.locales[locale].lang,
-  "guides/getting-started",
+  getFirstDocSlug(),
 );
 const apiMapHref = `${site.basePath}/api-map/index.html`;
 

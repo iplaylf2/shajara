@@ -1,6 +1,14 @@
 import { i18N, siteLocales } from "./i18n";
+import type { NonEmptyTuple } from "type-fest";
 import type { SiteLocale } from "./i18n";
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
+
+export function getFirstDocSlug(): string {
+  const [section] = siteSidebar;
+  const [page] = section.pages;
+
+  return `${section.directory}/${page}`;
+}
 
 const siteSidebar = [
   {
@@ -57,7 +65,7 @@ function toStarlightSidebarText(text: LocalizedSidebarText): StarlightSidebarTex
 interface SiteSidebarSection {
   directory: string;
   label: LocalizedSidebarText;
-  pages: readonly string[];
+  pages: SidebarPages;
 }
 
 interface StarlightSidebarText {
@@ -66,5 +74,6 @@ interface StarlightSidebarText {
 }
 
 type StarlightSidebar = NonNullable<StarlightUserConfig["sidebar"]>;
-type SiteSidebar = readonly SiteSidebarSection[];
+type SiteSidebar = NonEmptyTuple<SiteSidebarSection>;
 type LocalizedSidebarText = Record<SiteLocale, string>;
+type SidebarPages = NonEmptyTuple<string>;
