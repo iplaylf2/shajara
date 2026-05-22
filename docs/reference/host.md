@@ -2,7 +2,7 @@
 
 `@shajara/host` adapts the kernel executor and semantic model into an
 application-facing routine API. Application routines are written as JavaScript generator
-functions and use `yield*` to call shajara operations and primitives.
+functions and use `yield*` to delegate to host operations and primitives.
 
 ## Host Responsibilities
 
@@ -87,7 +87,7 @@ observation points.
 
 The following paths convert JavaScript failures into kernel failures:
 
-- throwing from a routine, recovery handler, operation, or integration callback
+- throwing from a routine, recovery handler, host operation, or integration callback
 - `settleError(futureSettle, error)`
 - `completer.reject(error)`
 - a promise rejection observed by `until(thunk)`
@@ -176,8 +176,8 @@ rejections through the same mapping.
 
 ## Host Operations
 
-Host operations are routine helpers. They run inside routines and translate browser APIs,
-promises, callbacks, and other application effects into future, channel, or process
+The host `operations` module contains APIs used from routine code. They translate browser
+APIs, promises, callbacks, and other application effects into future, channel, or process
 convergence visible to the executor. Operations that need executor services read the
 current executor from scope context; if that context is missing, they throw
 `OperationContextError`.

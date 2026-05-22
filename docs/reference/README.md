@@ -16,10 +16,10 @@ semantics -> executor -> host -> api
 - [executor.md](executor.md): execution environment, including `Executor`,
   `ExecutionScopeRef`, entry handles, future observation, external control, pacing, and
   autonomy.
-- [host.md](host.md): host adaptation, including the routine model, host error mapping,
-  host operations, and host-facing primitives.
+- [host.md](host.md): host adaptation, including the routine and coroutine model, host
+  error mapping, host operations, and host-facing primitives.
 - [api.md](api.md): public interface, including package export surfaces, entry
-  signatures, operation and primitive return values, and result forms.
+  signatures, host operation and primitive return values, and result forms.
 
 A document may restate a rule from the documents to its left when describing its own
 boundary. Concepts from documents to its right stay outside its scope.
@@ -37,17 +37,24 @@ boundary. Concepts from documents to its right stay outside its scope.
 | future settlement observation                                   | `executor.md`  |
 | external future settlement, channel control, entry cancellation | `executor.md`  |
 | `Pacer`, slice progression, scheduler and reaper                | `executor.md`  |
-| routine model, `Presence`, host error mapping                   | `host.md`      |
-| host entries and operations                                     | `host.md`      |
+| routine and coroutine model, `Presence`, host error mapping     | `host.md`      |
+| host entries, `operations` module                               | `host.md`      |
 | package exports, signatures, result forms                       | `api.md`       |
 
 ## Core Terms
 
 - **Entry** means a runnable boundary that external code can start, such as `launch(...)`,
   `run(...)`, or `createScope().run(...)`.
+- **Routine** means application-supplied code accepted by host entries or host-facing
+  primitives and adapted to a kernel `Ritual`.
+- **Coroutine** means a running host generator instance produced from a routine and
+  advanced through host adaptation.
 - **Scope** means the structured concurrency boundary that owns child scopes, processes,
   context, futures, and channels.
+- **Process** means the semantic runtime instance of a `Wisp`; each process belongs to
+  exactly one scope.
 - **Branch** means a child scope created under the current scope.
+- **Future** means the observation handle for a result that may settle later.
 - **Scoped outcome** means a pair of a scope reference and an outcome future.
 - **Convergence** means a process, future, or scope reaching its final result.
 - **Lifecycle state** means an observable progress state, such as `open`, `closing`, or
