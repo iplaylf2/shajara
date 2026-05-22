@@ -20,11 +20,9 @@ the concept exists elsewhere in the system or because the surrounding applicatio
 is familiar. Keep the application setting in examples unless that integration surface is
 itself the page's job.
 
-Keep the framing at the same level as the page job. A section that teaches routine
-orchestration should be led by the boundary or shape it is responsible for: routine flow, a
-process in the current scope, a child scope, a returned future, or a direct value.
-Example-specific names should make the code readable without becoming the section's
-conceptual frame.
+Keep the framing at the same level as the page job. A section should be led by the
+boundary, owner, observation point, or result shape it is responsible for. Example-specific
+names should make the code readable without becoming the section's conceptual frame.
 
 Each section should have one local responsibility. When a rule affects several sections,
 such as ownership, terminal states, or cross-boundary behavior, give that rule a stable
@@ -63,9 +61,10 @@ constraint. Do not attach it as a local note, caveat, or warning near the senten
 happened to expose the issue.
 
 If the same clarification keeps appearing, promote the underlying rule to the page's
-structure or to this writing guide. The final page should read as if it was designed that
-way from the start, without discussion history or transitional language left from an
-earlier draft.
+structure or to this writing guide. Add material to this guide only after extracting the
+general writing principle; do not turn the content model, outline, or local vocabulary of
+one page into site-wide guidance. The final page should read as if it was authored for its
+current design from the start.
 
 Prefer restructuring or rewriting when local edits would break the page's flow. Splitting
 a section, renaming a module, or moving material is appropriate when it gives
@@ -92,10 +91,10 @@ line where the reader needs it. If a comment already carries that local point, t
 following prose should move to the section's rule or decision instead of restating the
 comment.
 
-Attach result comments to the operation that produces, transforms, or observes the result.
+Attach result comments to the expression that produces, transforms, or observes the result.
 A comment can precede a single observation point when it prepares the reader for the next
 line, including a boundary observation that may return a value or throw an error. When a
-result is produced by a multi-line expression or scoped routine, show the process first and
+result is produced by a multi-line expression or scoped block, show the block first and
 attach the result after the expression closes. When a result travels across a boundary,
 separate comments only when they mark distinct observations, such as the decision made at
 one point and the value or error seen at another. Do not use comments to narrate obvious
@@ -159,17 +158,18 @@ converged. Otherwise use lighter surfaces: inline routines, literals, and commen
 omitted callbacks, user actions, or teardown points. The example's size should be justified
 by a shajara responsibility, not by making the surrounding application feel complete.
 
-Use `run(...)` when crossing from application code into a routine is the move being taught.
+Show the application-to-routine entry only when that crossing is the move being taught.
 Once that entry pattern has been shown, later examples can usually show the routine body
-directly, or show a routine that would be called from another routine. Repeating the entry
-boundary on every example spends space on a move the page no longer owns.
+directly. When another routine appears, it should reveal the boundary the page owns rather
+than appear as incidental background. Repeating the entry boundary on every example spends
+space on a move the page no longer owns.
 
 Use the smallest number of routines needed to show distinct roles. Routine arguments can
-be inline when their enclosing API is the local subject. When nesting several
-primitives that take routines would make multiple boundaries compete in the same block,
-separate the layers with a named routine or helper. Do not repeat routines that demonstrate
-the same behavior; repetition should add a new structural responsibility, not merely make
-an existing point louder.
+be inline when their enclosing API is the local subject. When nesting APIs that accept
+routines would make multiple boundaries compete in the same block, separate the layers
+with a named routine or helper. Do not repeat routines that demonstrate the same behavior;
+repetition should add a new structural responsibility, not merely make an existing point
+louder.
 
 Treat lifecycle, cleanup, and error behavior as part of the example's design when they
 change how the reader should understand the API being taught. If they are not the page's
@@ -218,48 +218,57 @@ example shape over making the reader carry incidental syntax.
 
 ## Concept Disclosure
 
-Keep code concepts and runtime concepts distinct. In guide prose, use `routine` as the
-shajara-facing noun for user code, and say `JavaScript generator function` when
-explaining the code shape. Leave labels such as `generator-based`, `generator-style`, and
-`generator surface` out of guides unless they name a boundary the page is teaching. A
-routine can be the main actor in a code example because the reader can see it as a
-JavaScript generator function. A scope is a runtime boundary; it should become the main
-actor only on a page that is explaining runtime ownership. Placement inside application
-code does not create a new shajara category; when an API has no named category for a
-lifetime, describe the surrounding owner in ordinary application language and keep
-project terminology attached to the runtime object. A process is the runtime execution of
-a routine inside a scope. Avoid implying a process hierarchy; when ownership matters, say
-which scope the process belongs to.
-
-When a page teaches return shapes, let the reader see the concrete shape before stating the
-general style. A returned future lets the caller observe a process result in the current
-scope. A returned value from a child-scope API means the calling process has already waited
-through that scope. Explain this as a way to read the API, not as a taxonomy detached from
-the example.
-
-Use terms at the layer they belong to. When a later concept is not doing work in the
-current explanation, leave the code example in the vocabulary of the current layer.
-
-Reference-layer labels belong in reference pages unless a guide is teaching that boundary.
-The word `host` should do boundary work: package or layer contrast, especially at the
-host/kernel boundary. Importing from `@shajara/host` does not require a guide to make the
-host layer a concept; name the concrete API call or runtime object unless that layer
-itself is the subject.
-
-When the useful distinction is between ordinary JavaScript and shajara concurrency, name
-that boundary directly: callback code, event handlers, promises, routine code, futures, or
-scopes. Do not use `host` as a general label for surrounding JavaScript code.
+Let the page level decide how much concept to disclose. Guides can rely on useful
+intuition when it lets the reader use the API correctly; concept pages can slow down to
+name the distinction behind that intuition. Even on concept pages, explain the positive
+model before adding contrasts, and do not introduce hypothetical misreadings before the
+example creates a reason for them.
 
 Treat named details as obligations. If a page names something below its current level of
 explanation, the page should either own that detail or immediately give it a worked
 example. If the current page will not meet that obligation, leave the detail to its owner.
+
+When a page teaches return shapes, let the reader see the concrete shape before stating the
+general style. Explain the shape as a way to read the API in the current example, not as a
+taxonomy detached from the example.
+
+## Concept Boundaries
+
+Keep syntax, public API, and runtime ownership as separate layers. A page can name the
+syntax form, the public type, or the runtime object when that layer explains the current
+behavior; it should not make one layer stand in for another. Do not make readers learn a
+lower-level mechanism before they can understand the move the page owns.
+
+When a page connects a concept to TypeScript, expose the declaration shape that readers
+will see at the use site. Avoid invented aliases or example-only names that make the
+concept look more local to the sample than it is.
+
+Explain delegation through the boundary the current example uses. The same syntax can
+express different relationships depending on the value being delegated and the API that
+produced it. Name the relationship visible in the example instead of flattening every case
+into the same verb. Operator details belong only where they change what the reader can
+write or observe.
+
+Describe ownership with the runtime object that owns the behavior. If an API uses code as
+the entry for owned work, keep the ownership language attached to the created runtime
+identity and its scope, not to local control flow inside the code.
+
+Do not promote internal module names, implementation labels, or convenient ordinary nouns
+into reader-facing concepts. If no public concept owns the behavior, describe the concrete
+API call, code block, runtime object, or surrounding application owner instead.
+
+Reference-layer labels belong in reference pages unless a guide is teaching that
+boundary. Import paths, package names, and layer names should do boundary work; they
+should not become generic labels for surrounding application code.
 
 ## Language Discipline
 
 Terminology should be deliberate, not mechanically avoided. If a project term has a
 specific meaning, avoid using the same word casually when it would confuse that concept.
 If a term naturally explains the current behavior, use it; do not replace it only because
-it was risky in another context.
+it was risky in another context. Use terms at the layer they belong to; when a later
+concept is not doing work in the current explanation, keep the code example in the
+vocabulary of the current layer.
 
 Prefer ordinary wording until a project term earns its place. Once a project term appears,
 make sure it is doing work for the reader and is attached to the right concept layer. When
@@ -274,9 +283,6 @@ Use enumeration when it helps readers scan true peers under a named relationship
 that relationship before listing the items. If the items need explanation to make sense,
 keep the explanation in prose; if the relationship is already clear and comparison helps,
 enumerate them.
-
-Do not turn convenient nouns into project concepts. When shajara has no named concept for
-something, describe the concrete API call, routine, scope, process, or future instead.
 
 Use contrast only when it clarifies a real distinction. Repeated "not this, but that"
 sentences can make a guide read defensively. When a distinction matters, express the
