@@ -19,11 +19,12 @@ shajara move it teaches. Introduce a topic because the current page needs it, no
 the concept exists elsewhere in the system or because the surrounding application setting
 is familiar.
 
-Do not duplicate the job of another page. When a reader reaches a follow-up guide, assume
-the previous guide has already taught its entry pattern, and spend attention on the new
-move. In an API family or topic sequence, shared routing, page level, and navigation
-should orient the reader without making sibling pages repeat the same contrasts or
-comparisons.
+Do not duplicate the job of another page. Position each page in the reader's path before
+writing its opening. When a reader reaches a follow-up guide or concept page, assume the
+earlier pages have already taught their entry pattern and useful intuition, and spend
+attention on the new move or mechanism. In an API family or topic sequence, shared
+routing, page level, and navigation should orient the reader without making sibling pages
+repeat the same contrasts or comparisons.
 
 Completeness belongs to the documentation set. A page can leave a concept to its later
 owner when naming it would not clarify the current task, and it can end as soon as its own
@@ -36,9 +37,11 @@ opening, examples, headings, supporting material, and ending should all point in
 direction.
 
 The opening should establish the relevant product surface and then move into the reader's
-task. Let motivation emerge from the example and the shape of the code instead of front
-loading abstract value claims. Do not open a page by listing the APIs it will cover; a
-short frame should give enough context for the first example.
+task or conceptual move. Let motivation emerge from the example and the shape of the code
+instead of front loading abstract value claims. Do not open a page by listing the APIs it
+will cover or summarizing the whole outline. A short frame should give enough context for
+the first example; on later concept pages, it can start from the usage surface readers
+already recognize and reveal the mechanism behind it.
 
 Page descriptions should name the reader-facing job, not enumerate the sections or turn
 the outline into metadata. A description that can be mechanically expanded into the page
@@ -186,7 +189,9 @@ owner.
 
 Keep syntax, public API, and runtime ownership as separate layers. A page can name the
 syntax form, the public type, or the runtime object when that layer explains the current
-behavior; it should not make one layer stand in for another. Do not make readers learn a
+behavior; it should not make one layer stand in for another. When a shajara concept is
+written through a JavaScript form, use that form to explain the shajara move instead of
+turning the page into a standalone language lesson. Do not make readers learn a
 lower-level mechanism before they can understand the move the page owns.
 
 When a page connects a concept to TypeScript, expose the declaration shape that readers
@@ -246,8 +251,8 @@ positive behavior first, then add the contrast only as much as needed.
 Natural prose matters. A guide may carry precise terminology, but the surrounding
 sentences should still read like ordinary explanation. Avoid prose that announces the page
 construction, defends the sample shape, labels a representation as important, or exposes
-internal rationale. State the behavior the reader can see in the code and the rule it
-reveals.
+internal rationale. Editorial intent belongs in the revision process; final prose should
+state the behavior the reader can see in the code and the rule it reveals.
 
 ## Revision Hygiene
 
@@ -271,3 +276,7 @@ responsibilities stable homes and removes accumulated exceptions. Material that 
 serve the page's current job should be replaced or removed instead of carrying exceptions
 around it. A clean revision may replace an example, remove a supporting API, or rewrite
 the surrounding prose so the page reads like it was authored for its current design.
+
+Before finishing, read the edited page as prose. Remove instruction fragments, stale
+contrasts, and mechanical phrases introduced by the edit. The reader should see the
+page's content model, not the revision history that produced it.
