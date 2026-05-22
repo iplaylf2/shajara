@@ -9,7 +9,7 @@ const siteSidebar = [
       en: "Concepts",
       "zh-cn": "概念",
     },
-    pages: ["routines-and-coroutines"],
+    pages: ["routines-and-coroutines", "scope-tree"],
   },
   {
     directory: "guides",
