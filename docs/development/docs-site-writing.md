@@ -173,13 +173,16 @@ each value.
 
 Let the page level decide how much concept to disclose. Guides can rely on useful
 intuition when it lets the reader use the API correctly; concept pages can slow down to
-name the distinction behind that intuition. Even on concept pages, explain the positive
-model before adding contrasts, and do not introduce hypothetical misreadings before the
-example creates a reason for them.
+name the distinction behind that intuition and disclose the stable mechanisms behind it.
+Adjacent runtime objects should appear only when they change how readers understand that
+mechanism. Even on concept pages, explain the positive model before adding contrasts, and
+do not introduce hypothetical misreadings before the example creates a reason for them.
 
-Treat named details as obligations. If a page names something below its current level of
-explanation, the page should either own that detail or immediately give it a worked
-example. If the current page will not meet that obligation, leave the detail to its owner.
+Treat named details as obligations. A true detail is not automatically relevant: if it
+does not change how the reader understands the page's mechanism, omit it. If a page names
+something below or adjacent to its current level of explanation, the page should either
+make its local role clear, own that detail with a worked example, or leave it to its
+owner.
 
 Keep syntax, public API, and runtime ownership as separate layers. A page can name the
 syntax form, the public type, or the runtime object when that layer explains the current
@@ -230,6 +233,11 @@ sentence describes surrounding application activity, ordinary application langua
 clearer. Localized pages follow the same rule: translate the surrounding sentence while
 preserving the concept layer, and keep a project term when a natural word would change the
 runtime relationship.
+
+Do not turn ordinary descriptive phrases into named concepts through headings, repeated
+framing, capitalization, or translation choices unless the documentation set will keep
+using them as concepts. If a phrase only describes the local position, owner, or action,
+let it remain ordinary prose.
 
 Use contrast only when it clarifies a real distinction. Repeated "not this, but that"
 sentences can make a guide read defensively. When a distinction matters, express the
