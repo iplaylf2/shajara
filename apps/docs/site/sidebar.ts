@@ -40,7 +40,7 @@ const siteSidebar = [
       en: "Concepts",
       "zh-cn": "概念",
     },
-    pages: ["routines-and-coroutines", "scope-tree"],
+    pages: ["routines-and-coroutines", "scope-tree", "handle-ownership"],
   },
 ] satisfies SiteSidebar;
 
