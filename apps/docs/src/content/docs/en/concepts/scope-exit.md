@@ -4,12 +4,12 @@ description: Understand scope exit as the result a scope reports after owned wor
 ---
 
 The scope tree explains where shajara places child scopes and processes. Scope exit is
-where the work owned by a scope becomes one observable result.
+where one node of that tree reports a result.
 
-A child scope may contain an entry process, processes created by `spawn(...)`, child
-scopes, futures, and channels. Those inner objects can still settle or reach terminal
-states on their own. When routine code waits for that scope, it is not reading every
-inner result. It is reading the result the scope reports after its owned work converges.
+A child scope is also the root of a subtree. It may contain an entry process, processes
+created by `spawn(...)`, and further child scopes. Work inside that subtree can still
+have local results. When routine code waits for that scope, it waits for the work in the
+subtree to converge, then reads the result reported by the scope.
 
 ## Exit Belongs to the Boundary
 
@@ -32,10 +32,10 @@ function* publishListing() {
 }
 ```
 
-`writeSearchIndex` is the process that throws the original error. `publishListing` is
-not waiting on that process future; it is waiting on `listingScope`. The visible result
-is therefore the child scope's failed exit. The relevant part of the thrown `ScopeError`
-has this shape:
+`writeSearchIndex` is a process inside `listingScope`, and it throws the original error.
+`publishListing` is not waiting on that process future. It is waiting on `listingScope`,
+the boundary created by `branch(...)`. The visible result is therefore that scope's failed
+exit. The relevant part of the thrown `ScopeError` has this shape:
 
 ```ts
 {
@@ -47,14 +47,15 @@ has this shape:
 }
 ```
 
-The original error remains attached inside the cause, but the boundary seen by the
-caller is the scope.
+The original error remains attached inside the cause, but the boundary seen by the caller
+is the scope.
 
 For a normal exit, the same reading applies: after all owned work converges, the scope
-reports the entry value. For cancellation, it reports cancellation. The useful distinction
-is not the list of outcomes; it is the boundary being observed.
+reports the entry value. For cancellation, the same boundary reports cancellation after
+the work in that subtree has been canceled. The useful distinction is not the list of
+outcomes; it is the boundary being observed.
 
 Scope exit is therefore different from waiting on a future or using a channel endpoint.
 Waiting on a future reads that future's settlement. Sending to or receiving from a
-channel reads that channel's state. Observing a scope reads the boundary itself, and
-that boundary decides how unfinished work and owned objects end.
+channel reads that channel's state. Observing a scope reads the boundary itself: the
+waiting routine receives the scope's exit, not every result inside it.
