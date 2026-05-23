@@ -24,7 +24,7 @@ function* readPanelTitle() {
     return title;
   });
 
-  // 抛出 CanceledError，因为 panelScope 收敛时 title 仍然 pending。
+  // 抛出 UnfulfilledError，因为 panelScope 收敛时 title 仍然 pending。
   return yield* wait(panelTitle);
 }
 ```
@@ -32,8 +32,8 @@ function* readPanelTitle() {
 owner 在 `future(...)` 调用发生时确定。它运行在 `panelScope` 内部，所以 `panelScope`
 拥有这个结果槽。返回 `title` 会让调用方拿到观察句柄，但不会把结果槽移动到调用方的 scope。
 
-当 `panelScope` 收敛时，如果这个 future 仍然 pending，它会被 canceled。后续
-`wait(panelTitle)` 会抛出 `CanceledError`，观察到的是创建它的 scope 所决定的最终状态。
+当 `panelScope` 收敛时，如果这个 future 仍然 pending，它会变成 unfulfilled。后续
+`wait(panelTitle)` 会抛出 `UnfulfilledError`，观察到的是创建它的 scope 所决定的最终状态。
 
 ## 在生命周期所属的位置创建
 

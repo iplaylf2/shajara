@@ -117,8 +117,8 @@ The result domain of a future is fixed to `Either<Failure, T>`. Therefore:
 - `poll(future)` returns `Option<Either<Failure, T>>`
 - the same future may be observed repeatedly by multiple waiters
 
-When the owner scope converges, any unfinished futures owned by that scope converge as
-`canceled`.
+When the owner scope converges, any pending futures owned by that scope converge as
+`unfulfilled`.
 
 ### `ContextKey`
 
@@ -183,13 +183,14 @@ owner-scope disposal.
 
 ## Failure
 
-There are five failure kinds:
+The failure kinds are:
 
 - `canceled`
 - `channel`
 - `external`
 - `interrupted`
 - `scope`
+- `unfulfilled`
 
 Their meanings are:
 
@@ -198,6 +199,7 @@ Their meanings are:
 - `external`: an external exception or rejected value mapped into a failure result
 - `interrupted`: runtime progression was interrupted by an out-of-band failure
 - `scope`: a scope converged through its local failure path
+- `unfulfilled`: a future's owner scope closed before the future settled
 
 `ScopeFailure` carries:
 
@@ -275,7 +277,7 @@ The runtime can force a scope directly into failure convergence. Forced failure 
 the target scope:
 
 - it ends blocked processes within that scope
-- it converges any unfinished futures owned by that scope when the target scope converges
+- it applies the same owner-scope convergence rule to pending futures owned by that scope
 - it settles the target scope with a `ScopeFailure` caused by the given failure
 
 ## Stepping

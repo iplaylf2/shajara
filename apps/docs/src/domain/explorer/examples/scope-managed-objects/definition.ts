@@ -133,7 +133,7 @@ function createTicketNode(): ExplorerFlow<ScopeManagedObjectsDemoEvent>["nodes"]
       "objects-returned",
       "wait-ticket",
     ],
-    completedEvents: ["ticket-canceled"],
+    completedEvents: ["ticket-unfulfilled"],
   });
 }
 

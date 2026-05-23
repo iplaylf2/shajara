@@ -103,6 +103,7 @@ The host layer uses `fromFailure(...)` for unified mapping:
 - `channel` -> `ChannelError`
 - `interrupted` -> `InterruptedError`
 - `scope` -> `ScopeError`
+- `unfulfilled` -> `UnfulfilledError`
 - `external` -> the original `Error` or `ExternalError`
 
 `ScopeError` means the caller observes that a scope converged as a failure. The primary
@@ -197,7 +198,7 @@ cancel the scope from application code.
 - `resolve(value)`
 - `reject(error)`
 
-If still pending, the future is canceled when the current scope converges.
+The returned future is owned by the current scope.
 
 ### `feed`
 
@@ -213,7 +214,7 @@ channel from application code.
 ### `promisify`
 
 `promisify(future)` exposes a `RiteFuture` as a `Promise`. The promise resolves with the
-future's value and rejects when the future fails or is canceled.
+future's value. If the future fails, the promise rejects with the mapped error.
 
 ### `resource`
 

@@ -1,11 +1,10 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Returns an in-band failure for a value that originated outside the computation.
+ * Creates a failure for a value that originated outside the computation.
  *
  * @param raw - Original external value.
  * @param message - Caller-facing failure message.
- * @returns External failure value.
  */
 export function externalFailure(raw: unknown, message: string): ExternalFailure {
   return {

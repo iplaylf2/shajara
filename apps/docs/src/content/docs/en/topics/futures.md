@@ -30,8 +30,8 @@ function* prepareSummary() {
 `summary` observes the result. `publishSummary` settles it.
 
 The scope that calls `future(...)` owns the result slot. If that scope converges while the
-future is still pending, shajara cancels the future instead of leaving a waiter attached
-to a result that can no longer be produced.
+future is still pending, shajara settles the future as unfulfilled instead of leaving a
+waiter attached to a result that can no longer be produced.
 
 ## Try Without Waiting
 

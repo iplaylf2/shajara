@@ -5,8 +5,7 @@ import { future } from "#/primitives/index";
 import { toFailure } from "#/boundary/index";
 
 /**
- * Creates a future with settlement callbacks.
- * If still pending, the future is canceled when the current scope converges.
+ * Creates a future owned by the current scope with settlement callbacks.
  *
  * @returns Future plus `resolve` and `reject` callbacks.
  */

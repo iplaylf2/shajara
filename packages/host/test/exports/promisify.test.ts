@@ -1,4 +1,12 @@
-import { CanceledError, ScopeError, completer, createScope, promisify, run, until } from "#/index";
+import {
+  ScopeError,
+  UnfulfilledError,
+  completer,
+  createScope,
+  promisify,
+  run,
+  until,
+} from "#/index";
 import { describe, expect, test } from "vitest";
 import { future } from "#/primitives";
 
@@ -64,10 +72,14 @@ describe("/ operations: promisify", () => {
   test.for([
     {
       given: [] as const,
-      outcome: CanceledError,
+      outcome: {
+        error: UnfulfilledError,
+        kind: "unfulfilled",
+        message: "Future was not fulfilled before its owner scope closed",
+      } as const,
     },
   ])(
-    "rejects when the observed future is canceled by owner-scope convergence",
+    "rejects when owner-scope convergence leaves the observed future unfulfilled",
     async ({ outcome }) => {
       const observed: Promise<never>[] = [];
 
@@ -78,7 +90,11 @@ describe("/ operations: promisify", () => {
         }),
       ).resolves.toBeUndefined();
 
-      await expect(observed[0]).rejects.toBeInstanceOf(outcome);
+      await expect(observed[0]).rejects.toBeInstanceOf(outcome.error);
+      await expect(observed[0]).rejects.toMatchObject({
+        kind: outcome.kind,
+        message: outcome.message,
+      });
     },
   );
 });

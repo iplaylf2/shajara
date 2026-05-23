@@ -26,7 +26,7 @@ function* readPanelTitle() {
     return title;
   });
 
-  // Throws CanceledError because panelScope converged while title was still pending.
+  // Throws UnfulfilledError because panelScope converged while title was still pending.
   return yield* wait(panelTitle);
 }
 ```
@@ -35,9 +35,9 @@ The owner is chosen at `future(...)`. That call runs inside `panelScope`, so
 `panelScope` owns the result slot. Returning `title` gives the caller an observation
 handle, but it does not move the result slot into the caller's scope.
 
-When `panelScope` converges with the future still pending, that future is canceled. The
-later `wait(panelTitle)` throws `CanceledError`, observing the final state chosen by the
-creating scope.
+When `panelScope` converges with the future still pending, that future becomes
+unfulfilled. The later `wait(panelTitle)` throws `UnfulfilledError`, observing the final
+state chosen by the creating scope.
 
 ## Create Where the Lifetime Belongs
 
