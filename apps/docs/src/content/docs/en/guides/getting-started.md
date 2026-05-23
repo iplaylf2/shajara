@@ -3,9 +3,9 @@ title: Getting Started
 description: Start shajara from application code and bring existing Promise work into a routine.
 ---
 
-Start with `@shajara/host` when application code needs to enter shajara. It gives
-ordinary JavaScript code an entry point, then routine code can use shajara operations
-with `yield*`.
+Start with `@shajara/host` when application code needs to enter shajara. Ordinary
+JavaScript code uses it to start an entry routine; inside a routine, `yield*` hands
+control to shajara.
 
 ## Install
 
@@ -16,7 +16,7 @@ npm install @shajara/host
 ## Run a routine
 
 shajara routines are JavaScript generator functions. Use `run(...)` to start one; inside
-the routine, call shajara operations with `yield*`.
+the routine, `yield*` hands control to shajara and resumes when the result is ready.
 
 ```ts
 import { run } from "@shajara/host";
@@ -29,8 +29,8 @@ const message = await run(function* main() {
 
 `run(...)` is the application entry point. The Promise resolves when the routine returns.
 
-Later examples show the routine body. A routine can be passed to `run(...)` directly or
-called from another routine.
+Later examples show the routine body and omit the surrounding `run(...)` entry from
+application code.
 
 ## Wait for Promise work
 
@@ -50,8 +50,8 @@ function* loadUser() {
 The Promise still comes from ordinary JavaScript code; `until(...)` brings its
 fulfillment or rejection back into the routine's control flow.
 
-The `yield* until(...)` call is where the routine hands control to shajara and receives
-the Promise result back.
+The `yield* until(...)` expression is where the routine hands control to shajara and
+receives the Promise result back.
 
 ## Start concurrent work and wait later
 

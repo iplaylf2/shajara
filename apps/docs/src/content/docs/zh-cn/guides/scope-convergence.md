@@ -10,7 +10,7 @@ scope 收敛时，会先收拢它拥有的工作，再把最终结果交给等�
 
 ## 等待整个 child scope
 
-`branch(...)` 会打开 child scope，并等待这个 scope 收敛。传入的 routine 是这个
+`branch(...)` 会打开 child scope，并等待这个 scope 收敛。传入的 routine 会被用作这个
 scope 的 entry process，但它不是 scope 里唯一可能存在的工作。
 
 ```ts
@@ -32,7 +32,7 @@ function* saveProfile() {
 }
 ```
 
-`saveProfileScope` 会先返回，但 child scope 还拥有 `writeAuditTrail` process。
+`saveProfileScope` 会先返回，但 child scope 还拥有为 `writeAuditTrail` 创建的 process。
 `branch(...)` 会等这个 process 结束后，才返回 entry process 的结果。
 
 这就是结构化收敛：调用方不需要手动追踪 child scope 里的每个 process。scope 会把
@@ -90,13 +90,13 @@ scope，所以 `refreshAudience` 和 entry process 都不会走到自己的成�
 调用方看到的是 `ScopeError`，因为它观察到的是整个 child scope 的失败结果，而不只是
 某个 process 抛出的原始错误。
 
-## 在传给 `spawn` 的 routine 内处理局部失败
+## 在 process 边界前处理局部失败
 
-`spawn(...)` 返回 future，但它启动的 process 仍然属于当前 scope。如果这个 process
+`spawn(...)` 返回 future，但它创建的 process 仍然属于当前 scope。如果这个 process
 失败，当前 scope 也会进入失败收敛。
 
 当一段由 `spawn(...)` 启动的工作可以失败，但这个失败不应该取消同一个 scope 里的其他
-工作时，在传给 `spawn(...)` 的 routine 内部处理它，并把失败转换成普通结果。
+工作时，在这段 routine 内部处理它，并把失败转换成普通结果。
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -128,8 +128,8 @@ function* launchCampaign() {
 // campaign still running
 ```
 
-`sendEmailBatch` 没有把错误留到 process 边界之外。它自己决定失败结果，
+`sendEmailBatch` 在错误跨出 process 边界前处理了它。它自己决定失败结果，
 `emailStatusFuture` 最后等待到的是普通值，当前 scope 里的后续流程可以继续运行。
 
-如果等到外层 `wait(emailStatusFuture)` 再 `try...catch`，这个 process 的失败已经先让
+如果等到外层 `wait(emailStatusFuture)` 才 `try...catch`，这个 process 的失败已经先让
 当前 scope 进入失败收敛。

@@ -4,7 +4,7 @@ description: 从应用代码启动 shajara，并把已有的 Promise 工作带�
 ---
 
 当应用代码需要进入 shajara 时，先使用 `@shajara/host`。普通 JavaScript 代码通过它启动
-入口，routine 代码再用 `yield*` 调用 shajara 操作。
+入口 routine；routine 内部再用 `yield*` 把控制交给 shajara。
 
 ## 安装
 
@@ -15,7 +15,7 @@ npm install @shajara/host
 ## 运行一个 routine
 
 shajara routine 使用 JavaScript generator function 编写。用 `run(...)` 启动 routine；
-在 routine 内部，shajara 操作用 `yield*` 调用。
+在 routine 内部，`yield*` 把控制交给 shajara，并在结果准备好后回到当前位置。
 
 ```ts
 import { run } from "@shajara/host";
@@ -28,8 +28,7 @@ const message = await run(function* main() {
 
 `run(...)` 是应用代码进入 shajara 的入口。routine 返回后，这个 Promise 会 resolve。
 
-后面的示例只展示 routine 本身。这段 routine 可以直接传给 `run(...)`，也可以被另一个
-routine 调用。
+后面的示例只展示 routine 本身，省略从应用代码进入 shajara 的 `run(...)` 外壳。
 
 ## 等待 Promise 工作
 

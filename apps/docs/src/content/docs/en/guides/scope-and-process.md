@@ -3,18 +3,18 @@ title: Scopes and Processes
 description: Read futures and direct values as process results and scope boundaries.
 ---
 
-Once calls start returning different shapes, the return shape matters more than the
-function name. A future means the routine still has a result it can wait for; a direct
-value means the call has already crossed a boundary and come back.
+When APIs return different shapes, the return shape matters more than the function name.
+A future means there is still a result to wait for; a direct value means the call has
+already crossed a boundary and come back.
 
-The runtime names behind that shape are process and scope. A process is one running
-routine inside a scope. A scope is the boundary that owns processes and waits for them to
-converge.
+The runtime names behind that shape are process and scope. A process is the runtime
+identity a scope creates for work started from a routine entry. A scope is the boundary
+that owns processes and waits for them to converge.
 
 ## One Process, One Future
 
-`spawn(...)` starts one process in the current scope and returns that process's exit
-future.
+`spawn(...)` uses one routine as the entry for one process in the current scope and
+returns that process's exit future.
 
 ```ts
 import { sleep } from "@shajara/host";
@@ -36,7 +36,7 @@ function* loadSidebar() {
 }
 ```
 
-`loadRecommendations` runs as a process in the same scope as `loadSidebar`.
+`loadRecommendations` starts as a process in the same scope as `loadSidebar`.
 `recommendationsFuture` is an observation handle for that process. `loadSidebar` keeps
 running until it reaches the wait point.
 
@@ -65,9 +65,9 @@ function* saveProfile() {
 }
 ```
 
-The routine passed to `branch(...)` becomes the first process in the child scope. It can
-start more processes in that same scope. The caller receives the entry process result
-only after the child scope has finished both processes.
+The routine passed to `branch(...)` is used as the child scope's entry process. It can
+start more processes in that same scope. The caller receives the entry process result only
+after the child scope has finished both processes.
 
 `race(...)` is the specialized child-scope form for alternatives: it waits until one
 routine succeeds, cancels the rest, and returns the winning value. `branch(...)` is the
@@ -82,7 +82,7 @@ shapes:
 import { branch, spawn, wait } from "@shajara/host/primitives";
 
 function* saveWithoutWaitingHere() {
-  const saveFuture = yield* spawn(function* saveProcess() {
+  const saveFuture = yield* spawn(function* saveProfileEntry() {
     return yield* branch(function* saveProfileScope() {
       return "saved";
     });
@@ -96,9 +96,9 @@ function* saveWithoutWaitingHere() {
 }
 ```
 
-The current process starts `saveProcess` and receives `saveFuture`. `saveProcess` is the
-process that waits through `saveProfileScope`; the caller can keep going until this wait
-point.
+The current process starts `saveProfileEntry` and receives `saveFuture`. The process
+created for `saveProfileEntry` is the one that waits through `saveProfileScope`; the
+caller can keep going until this wait point.
 
 The API shapes keep this distinction consistent. APIs that start work in the current
 scope return a future for observing that work. APIs that open a child scope wait for that
