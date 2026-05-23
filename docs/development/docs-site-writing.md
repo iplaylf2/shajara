@@ -46,7 +46,8 @@ already recognize and reveal the mechanism behind it.
 
 Page descriptions should name the reader-facing job, not enumerate the sections or turn
 the outline into metadata. A description that can be mechanically expanded into the page
-outline is usually too specific.
+outline is usually too specific. On concept pages, a description can say how to read the
+mechanism, not merely that the reader will understand it.
 
 Each section should have one local responsibility. Keep the framing at the same level as
 the section job: a section should be led by the boundary, owner, observation point, or
@@ -64,9 +65,11 @@ examples from multiple sections, give that comparison its own stable home. Do no
 cross-section interpretation to one of the sections it compares.
 
 Use enumeration when it helps readers scan true peers under a named relationship. Name
-that relationship before listing the items. If the items need explanation to make sense,
-keep the explanation in prose; if the relationship is already clear and comparison helps,
-enumerate them.
+that relationship before listing the items. Do not enumerate APIs merely to prove coverage
+or completeness; when a list mixes creation, observation, ownership, and usage roles,
+classify the relationship in prose or move the detail to reference material. If the items
+need explanation to make sense, keep the explanation in prose; if the relationship is
+already clear and comparison helps, enumerate them.
 
 ## Example Design
 
@@ -212,8 +215,10 @@ Keep syntax, public API, and runtime ownership as separate layers. A page can na
 syntax form, the public type, or the runtime object when that layer explains the current
 behavior; it should not make one layer stand in for another. When a shajara concept is
 written through a JavaScript form, use that form to explain the shajara move instead of
-turning the page into a standalone language lesson. Do not make readers learn a
-lower-level mechanism before they can understand the move the page owns.
+turning the page into a standalone language lesson. If a language operation creates an
+object before shajara advances or owns the resulting work, keep those moments distinct.
+Do not make readers learn a lower-level mechanism before they can understand the move the
+page owns.
 
 When a page connects a concept to TypeScript, expose the declaration shape that readers
 will see at the use site. Avoid invented aliases or example-only names that make the
