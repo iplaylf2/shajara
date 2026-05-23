@@ -1,5 +1,15 @@
 # @shajara/kernel
 
+## 0.10.0
+
+### Minor Changes
+
+- [#47](https://github.com/iplaylf2/shajara/pull/47) [`b01bf11`](https://github.com/iplaylf2/shajara/commit/b01bf1110f635b7144e030f9ee597aa5aa905ad2) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Settle scope-owned pending futures as unfulfilled.
+
+  Future results now use `UnfulfilledFailure` when their owner scope closes before
+  the future produces a result. The kernel exports `UnfulfilledFailure` and
+  `unfulfilledFailure()` alongside the other failure variants.
+
 ## 0.9.1
 
 ## 0.9.0
