@@ -1,10 +1,9 @@
 import type { FailureShape } from "#/contracts";
 
 /**
- * Returns an in-band failure for execution interrupted outside normal convergence.
+ * Creates a failure for execution interrupted outside normal convergence.
  *
  * @param cause - Out-of-band value that interrupted progression.
- * @returns Interrupted failure value.
  */
 export function interruptedFailure(cause: unknown): InterruptedFailure {
   return {

@@ -17,7 +17,7 @@ import type {
 } from "#/contracts";
 import type { OverloadRewrite, ReceiveResult, SendResult } from "#/sigils/index";
 import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-scope-reconciler";
-import { canceledFailure, channelFailure } from "#/failures";
+import { canceledFailure, channelFailure, unfulfilledFailure } from "#/failures";
 import { either, option, readonlySet } from "fp-ts";
 import type { Failure } from "#/failures";
 import { PendingScopeFailure } from "./pending-scope-failure";
@@ -492,9 +492,9 @@ export class RuntimeScope implements ScopeRef<unknown> {
       yield* this.#revoke(channel);
     }
 
-    const canceled = either.left(canceledFailure());
+    const unfulfilled = either.left(unfulfilledFailure());
     for (const future of this.#derivedFutures) {
-      const settlement = future.settle(canceled);
+      const settlement = future.settle(unfulfilled);
 
       yield this.#defer(settlement);
     }

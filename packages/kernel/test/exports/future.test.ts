@@ -1,7 +1,17 @@
-import { cede, externalFailure, future, poll, settle, spawn, wait } from "#/index";
+import {
+  branch,
+  cede,
+  externalFailure,
+  future,
+  poll,
+  settle,
+  spawn,
+  unfulfilledFailure,
+  wait,
+} from "#/index";
 import { describe, expect, test } from "vitest";
 import { interpretRitual, unwrapExitedSucceeded } from "#test/harness";
-import { isSome, left, none, right, some } from "#/utils";
+import { isRight, isSome, left, none, right, some } from "#/utils";
 import { pipe } from "fp-ts/function";
 import { wisp } from "#/internal/fp";
 
@@ -61,6 +71,35 @@ describe("/ primitives: future, poll, wait", () => {
               ),
               wisp.chain(() => wait(futureKey)),
             ),
+          ),
+        ),
+      );
+      const step = await ritual.waitForClosed();
+      const actual = unwrapExitedSucceeded(step);
+
+      expect(actual).toEqual(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: [] as const,
+      outcome: left(unfulfilledFailure()),
+    },
+  ])(
+    "settles pending futures as unfulfilled when their owner scope closes",
+    async ({ outcome }) => {
+      await using ritual = interpretRitual(() =>
+        pipe(
+          branch(() =>
+            pipe(
+              future<string>(),
+              wisp.map(([futureKey]) => futureKey),
+            ),
+          ),
+          wisp.chain(({ scope }) => wait(scope.exitFuture)),
+          wisp.chain((childResult) =>
+            isRight(childResult) ? wait(childResult.right) : wisp.of(left(childResult.left)),
           ),
         ),
       );
