@@ -100,8 +100,7 @@ function* locateUser() {
 callback 一侧完成 future，routine 一侧用 `wait(...)` 等待同一个结果。
 
 `yield* completer(...)` 会在当前 scope 中创建这个 future，并返回用于完成这个 future 的
-callback 函数。如果 scope 结束时 future 仍然 pending，shajara 会取消它，而不是留下空悬
-的句柄。
+callback 函数。callback 代码拿到的是完成权；这个 future 仍然属于创建它的 scope。
 
 ## 在 Promise 边界使用 AbortSignal
 

@@ -45,14 +45,14 @@ lifetime was decided by `panelScope`.
 Because `yield* abortSignal()` runs inside `panelScope`, the signal is registered with
 the same scope that owns the request.
 
-## Cancel Callback Futures
+## Keep Callback Futures in Scope
 
 `completer(...)` creates a future that JavaScript callbacks can settle. If the current
-scope closes while that future is still pending, the future is canceled before a later
-callback can use it as a live result.
+scope closes while that future is still pending, shajara settles it before a later
+callback can write a result into a future owned by a closed scope.
 
 ```ts
-import { CanceledError, completer } from "@shajara/host";
+import { completer } from "@shajara/host";
 import { branch, wait } from "@shajara/host/primitives";
 
 function* waitForFileChoice() {
@@ -64,24 +64,17 @@ function* waitForFileChoice() {
     return future;
   });
 
-  try {
-    const file = yield* wait(selectedFile);
+  // Throws UnfulfilledError because fileDialogScope closed before the callback settled.
+  const file = yield* wait(selectedFile);
 
-    return file.name;
-  } catch (error) {
-    if (!(error instanceof CanceledError)) {
-      throw error;
-    }
-
-    return "file dialog closed";
-  }
+  return file.name;
 }
 ```
 
 `registerFileChoice(resolve)` stands in for a file input callback. If the dialog closes
-before that callback fires, `fileDialogScope` converges and cancels the pending future.
-`wait(selectedFile)` then observes cancellation instead of waiting for a callback owned by
-a closed scope.
+before that callback fires, `fileDialogScope` converges and the pending future becomes
+unfulfilled. `wait(selectedFile)` observes that state instead of waiting for a callback
+owned by a closed scope.
 
 `yield* completer<File>()` creates and registers the future in `fileDialogScope`, so the
 later callback cannot settle that shajara future after the dialog scope closes.
@@ -139,5 +132,5 @@ place for a callback future tied to that dialog. A view scope is the right place
 socket that should close with that view.
 
 The caller may receive a Promise, a future, or a ready value from that scope. That does
-not move ownership. When the creating scope converges, its signal aborts, its pending
-future is canceled, or its provider cleanup runs.
+not move ownership. The creating scope still controls the request signal, callback
+future, or provider cleanup.

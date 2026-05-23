@@ -1,5 +1,5 @@
 // oxlint-disable max-lines-per-function
-import { CanceledError, ChannelError, sleep } from "@shajara/host";
+import { ChannelError, UnfulfilledError, sleep } from "@shajara/host";
 import type { RiteCoroutine, RiteFuture } from "@shajara/host";
 import { branch, channel, future, tryReceive, wait } from "@shajara/host/primitives";
 import {
@@ -36,7 +36,7 @@ export function createScopeManagedObjectsDemoCode() {
     ]),
     codeSpacer(),
     codeLine("wait-ticket", "  try { yield* wait(ticket); }", ["ticket-caught"]),
-    codeLine("ticket-caught", "  catch (error) { observeCanceled(error); }", ["ticket-caught"]),
+    codeLine("ticket-caught", "  catch (error) { observeUnfulfilled(error); }", ["ticket-caught"]),
     codeLine("object-sleep", `  yield* sleep(${OBJECT_DELAY_MS});`, ["object-sleep"]),
     codeLine("receive-updates", "  try { yield* tryReceive(updates); }", ["updates-caught"]),
     codeLine("updates-caught", "  catch (error) { observeRevoked(error); }", ["updates-caught"]),
@@ -105,7 +105,7 @@ export function* scopeManagedObjectsDemo(
           "objects-returned",
           "scope-wait-root",
           "scope-closed",
-          "ticket-canceled",
+          "ticket-unfulfilled",
           "updates-revoked",
         ]),
         setCursor(cursorAt("root", "after-branch-sleep", "running")),
@@ -123,7 +123,7 @@ export function* scopeManagedObjectsDemo(
     try {
       yield* wait(ticket);
     } catch (error) {
-      if (!(error instanceof CanceledError)) {
+      if (!(error instanceof UnfulfilledError)) {
         throw error;
       }
 
@@ -175,7 +175,7 @@ export type ScopeManagedObjectsDemoEvent = ExplorerAuthoredEvent<
   | "scope-closing"
   | "scope-closed"
   | "scope-wait-root"
-  | "ticket-canceled"
+  | "ticket-unfulfilled"
   | "updates-revoked"
 >;
 

@@ -45,13 +45,14 @@ function* loadProfilePanel(userId: string) {
 因为 `yield* abortSignal()` 运行在 `panelScope` 内部，signal 会登记在拥有 request 的
 同一个 scope 上。
 
-## 取消 callback future
+## 让 callback future 留在 scope 内
 
 `completer(...)` 会创建一个 future，让 JavaScript callback 可以完成它。如果当前 scope
-关闭时这个 future 仍然 pending，它会在更晚的 callback 到来之前被取消。
+关闭时这个 future 仍然 pending，shajara 会先让它收敛，避免更晚的 callback 再把结果写入已经
+关闭的 scope 所拥有的 future。
 
 ```ts
-import { CanceledError, completer } from "@shajara/host";
+import { completer } from "@shajara/host";
 import { branch, wait } from "@shajara/host/primitives";
 
 function* waitForFileChoice() {
@@ -63,23 +64,16 @@ function* waitForFileChoice() {
     return future;
   });
 
-  try {
-    const file = yield* wait(selectedFile);
+  // 抛出 UnfulfilledError，因为 callback 完成之前 fileDialogScope 已经关闭。
+  const file = yield* wait(selectedFile);
 
-    return file.name;
-  } catch (error) {
-    if (!(error instanceof CanceledError)) {
-      throw error;
-    }
-
-    return "file dialog closed";
-  }
+  return file.name;
 }
 ```
 
 `registerFileChoice(resolve)` 代表 file input callback。如果 dialog 在这个 callback
-到来前关闭，`fileDialogScope` 会收敛并取消 pending future。`wait(selectedFile)` 观察到
-的是取消，而不是继续等待一个已经属于关闭 scope 的 callback。
+到来前关闭，`fileDialogScope` 会收敛，pending future 会变成 unfulfilled。
+`wait(selectedFile)` 观察到的是这个状态，而不是继续等待一个已经属于关闭 scope 的 callback。
 
 `yield* completer<File>()` 会在 `fileDialogScope` 中创建并登记这个 future，所以 dialog
 scope 关闭后，更晚到来的 callback 不能再完成这个 shajara future。
@@ -135,5 +129,4 @@ updates view 关闭之后关闭 socket。
 scope 里创建。应该随 view 关闭的 socket 应该在 view scope 里创建。
 
 调用方仍然可以从这个 scope 拿到 Promise、future 或 ready value，但这不会转移归属。
-创建它的 scope 收敛时，signal 会 abort，pending future 会被取消，provider cleanup
-会运行。
+创建它的 scope 仍然控制 request signal、callback future 或 provider cleanup。

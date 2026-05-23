@@ -106,8 +106,8 @@ Callback code settles the future; the routine waits for the same result with
 `wait(...)`.
 
 `yield* completer(...)` creates the future in the current scope and returns callback
-functions for settling that future. If that scope ends while the future is still pending,
-shajara cancels the future instead of leaving a dangling handle.
+functions for settling that future. Callback code receives settlement authority, but the
+future remains owned by the scope that created it.
 
 ## Use Abort Signals at Promise Boundaries
 

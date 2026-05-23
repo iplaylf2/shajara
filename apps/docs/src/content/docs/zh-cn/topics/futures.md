@@ -28,7 +28,8 @@ function* prepareSummary() {
 `summary` 用来观察结果。`publishSummary` 用来完成结果。
 
 调用 `future(...)` 的 scope 拥有这个结果槽。如果这个 scope 收敛时 future 仍然
-pending，shajara 会取消这个 future，而不是让等待方继续挂在一个已经不会产出的结果上。
+pending，shajara 会让这个 future 以 unfulfilled 收敛，而不是让等待方继续挂在一个已经
+不会产出的结果上。
 
 ## 试探一次而不等待
 
