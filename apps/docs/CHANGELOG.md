@@ -1,5 +1,14 @@
 # @shajara/docs
 
+## 0.5.0
+
+### Minor Changes
+
+- [#45](https://github.com/iplaylf2/shajara/pull/45) [`9b72360`](https://github.com/iplaylf2/shajara/commit/9b72360dda5773cf2a8980fbabc4fb31ab9b136a) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Add a Concepts section to the docs site.
+
+  Readers can now move from task-focused guides into concept pages when they need more
+  background on how shajara structures routine work and ownership.
+
 ## 0.4.1
 
 ### Patch Changes
