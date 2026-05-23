@@ -167,9 +167,11 @@ owns. Include declined or delegated outcomes when they change what the reader ob
 including the case where the original result passes through unchanged. Leave generic
 downstream error handling to the page that owns that mechanism.
 
-When a page teaches return shapes, let the reader see the concrete shape before stating the
-general style. Explain the shape as a way to read the API in the current example, not as a
-taxonomy detached from the example.
+When a page teaches a result shape, let the reader see the concrete shape before stating
+the general style. A nearby comment can name a simple observed value or error; when the
+shape itself is the point, put the literal shape in the prose after the example. Explain
+the shape as a way to read the API or boundary in the current example, not as a taxonomy
+detached from the example.
 
 Choose the lightest surface that shows the result. A return value can carry a final value,
 a short comment can stand in for omitted application events or intermediate states, and
@@ -190,10 +192,12 @@ mechanism. Even on concept pages, explain the positive model before adding contr
 do not introduce hypothetical misreadings before the example creates a reason for them.
 
 A concept page should leave readers with a transferable reading rule, not just a tour of
-APIs that happen to share a runtime object. If a concept page would only regroup topic or
-guide material, keep the rule inside the page that already owns the reader's task. When a
-concept uses examples from topics or guides, keep those examples subordinate to the
-mechanism the page owns.
+APIs that happen to share a runtime object. If one example is enough to expose that rule,
+the page can stop there. If a concept page would only regroup topic or guide material,
+keep the rule inside the page that already owns the reader's task. When a concept uses
+examples from topics or guides, keep those examples subordinate to the mechanism the page
+owns, and do not expand them into a guide-style sequence, an outcome taxonomy, or a
+balanced set of peer sections unless those peers are the mechanism itself.
 
 Treat named details as obligations. A true detail is not automatically relevant: if it
 does not change how the reader understands the page's mechanism, omit it. If a page names
