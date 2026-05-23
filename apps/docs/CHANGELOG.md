@@ -1,5 +1,17 @@
 # @shajara/docs
 
+## 0.5.1
+
+### Patch Changes
+
+- [#47](https://github.com/iplaylf2/shajara/pull/47) [`b01bf11`](https://github.com/iplaylf2/shajara/commit/b01bf1110f635b7144e030f9ee597aa5aa905ad2) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Align docs with unfulfilled future ownership.
+
+  The docs site and scope-managed objects Explorer example now describe owner-scope closure
+  as producing unfulfilled pending futures.
+
+- Updated dependencies [[`b01bf11`](https://github.com/iplaylf2/shajara/commit/b01bf1110f635b7144e030f9ee597aa5aa905ad2)]:
+  - @shajara/host@0.10.0
+
 ## 0.5.0
 
 ### Minor Changes

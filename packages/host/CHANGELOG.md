@@ -1,5 +1,20 @@
 # @shajara/host
 
+## 0.10.0
+
+### Minor Changes
+
+- [#47](https://github.com/iplaylf2/shajara/pull/47) [`b01bf11`](https://github.com/iplaylf2/shajara/commit/b01bf1110f635b7144e030f9ee597aa5aa905ad2) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Surface unfulfilled futures as `UnfulfilledError`.
+
+  `wait(...)` and `poll(...)` now throw `UnfulfilledError`, and `promisify(...)` rejects
+  with the same error, when a future's owner scope closed before it settled.
+  `fromFailure(...)` maps kernel `unfulfilled` failures to `UnfulfilledError`.
+
+### Patch Changes
+
+- Updated dependencies [[`b01bf11`](https://github.com/iplaylf2/shajara/commit/b01bf1110f635b7144e030f9ee597aa5aa905ad2)]:
+  - @shajara/kernel@0.10.0
+
 ## 0.9.1
 
 ### Patch Changes
