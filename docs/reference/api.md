@@ -19,7 +19,8 @@ Names available from the root entry include:
 - host operations: `abortSignal`, `completer`, `feed`, `promisify`, `resource`,
   `sleep`, `until`
 - error types: `ShajaraError`, `CanceledError`, `ChannelError`, `ExternalError`,
-  `InterruptedError`, `OperationContextError`, `ScopeError`, `ScopeExitError`
+  `InterruptedError`, `OperationContextError`, `ScopeError`, `ScopeExitError`,
+  `UnfulfilledError`
 - host contracts: `RiteRoutine`, `RiteCoroutine`, `RiteFuture`, `RiteFutureSettle`,
   `RiteFutureHandle`, `Presence`
 - re-exported kernel contracts: `ContextKey`, `Failure`, `FailureShape`, `FutureKey`,
@@ -59,7 +60,8 @@ Names available from the root entry include:
   `ProcessDescriptor`, `CompletionMode`, `FutureKey`, `FutureSettleKey`, `FutureHandle`,
   `FutureResult`, `ContextKey`, `contextKey`
 - failures: `Failure`, `FailureShape`, `ScopeExitFailure`, `canceledFailure`,
-  `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`
+  `channelFailure`, `externalFailure`, `interruptedFailure`, `scopeFailure`,
+  `unfulfilledFailure`
 - executor: `createExecutor`, `currentExecutorKey`, `Executor`, `BindTurn`,
   `LaunchHandle`, `LaunchStatus`, `Pacer`, `Slice`, `ExecutionScopeRef`,
   `Processor`
@@ -152,7 +154,7 @@ Returns:
 - `resolve(value)`
 - `reject(error)`
 
-If still pending, the future is canceled when the current scope converges.
+The returned future is owned by the current scope.
 
 ### `feed`
 
@@ -177,7 +179,7 @@ yield * promisify(future);
 ```
 
 Returns a `Promise<Return>` that observes a `RiteFuture<Return>`. The promise resolves
-with the future's value and rejects when the future fails or is canceled.
+with the future's value. If the future fails, the promise rejects with the mapped error.
 
 ### `resource`
 
