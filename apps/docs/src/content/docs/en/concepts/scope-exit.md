@@ -1,10 +1,10 @@
 ---
 title: Scope Exit
-description: Understand scope exit as the result a scope reports after owned work converges.
+description: Read scope exit as the boundary result reported after owned work converges.
 ---
 
-The scope tree explains where shajara places child scopes and processes. Scope exit is
-where one node of that tree reports a result.
+A scope is both a placement node in the scope tree and a result boundary. Scope exit is
+the result that boundary reports after its owned work has converged.
 
 A child scope is also the root of a subtree. It may contain an entry process, processes
 created by `spawn(...)`, and further child scopes. Work inside that subtree can still

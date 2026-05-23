@@ -1,10 +1,10 @@
 ---
 title: 句柄与 Scope 归属
-description: 理解 shajara 如何决定拥有一个句柄的 scope。
+description: 根据创建运行时对象的 scope，读取句柄的生命周期。
 ---
 
-scope 树说明 shajara 如何放置 child scope 和 process。对于可以被传递的句柄值，这条放置
-规则同样适用：创建句柄的调用运行在哪个 scope，句柄背后的运行时对象就由哪个 scope 拥有。
+句柄是一个 JavaScript 值，用来访问 shajara 的运行时状态。scope 树决定这份状态位于哪里：
+创建句柄的调用运行在哪个 scope，句柄背后的运行时对象就由哪个 scope 拥有。
 
 创建之后，句柄值可以移动。它可以从 child scope 返回，可以传给另一段 routine，也可以被 callback
 代码保留。移动这个值，不会移动它的 owner。
@@ -93,9 +93,11 @@ scope 上。
 - `future(...)` 和 `completer(...)` 会在当前 scope 中创建 future。
 - `channel(...)` 和 `feed(...)` 会在当前 scope 中创建 channel。
 - `abortSignal(...)` 会把 signal 注册到当前 scope。
-- `resource(...)` 会启动 provider work，并让它挂在当前 scope 上直到 release。
+- `resource(...)` 会创建用于提供值的 future，并启动挂在当前 scope 上直到 release 的
+  provider work。
 
-使用句柄的调用不会选择新的 owner。`wait(...)`、`poll(...)`、`settle(...)`、`send(...)`、
-`receive(...)`、`close(...)` 和 `promisify(...)` 作用于已有的 future 或 channel。把
-`AbortSignal` 传给外部 API，或保留 `resource(...)` 提供的值，也是在使用已经绑定到某个
-scope 的关系。owner 仍然是创建句柄时所在的 scope。
+使用句柄的调用不会选择新的 owner。观察或完成 future 的调用，例如 `wait(...)` 和
+`settle(...)`，作用于已有的 future。发送、接收或关闭 channel 的调用，作用于已有的
+channel。把 `AbortSignal` 传给外部 API，通过 `promisify(...)` 暴露 future，或保留
+`resource(...)` 提供的值，也是在使用已经绑定到某个 scope 的关系。owner 仍然是创建句柄时所在的
+scope。

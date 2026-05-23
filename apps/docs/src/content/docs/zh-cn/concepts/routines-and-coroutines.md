@@ -1,15 +1,15 @@
 ---
 title: Routine 与 Coroutine
-description: 理解 routine 是在 JavaScript 中书写 shajara 工作的方式，coroutine 是 shajara 推进的一次运行。
+description: 区分可复用的 routine 代码，以及 shajara 推进的 coroutine 实例。
 ---
 
 routine 是在 JavaScript 中书写 shajara 工作的方式。它写成 `function*`，但重点不是先学习
 generator 机制。普通 JavaScript 组织工作流程，`yield*` 则是 routine 为了等待、委托或
 并发工作而把控制权交给 shajara 的位置。
 
-coroutine 是 routine 的一次运行。调用 routine 会创建 coroutine；把 routine 传给
-`spawn(...)` 这类 API，则让 shajara 创建并推进这次有归属的运行。routine 仍然是代码形状，
-coroutine 则是 shajara 推进的那次运行。
+coroutine 是 routine 的一次运行实例。调用 routine 会创建一条 coroutine；当前 routine 代码
+委托给它，或 `spawn(...)` 这类 API 把 routine 用作 process 入口时，shajara 才开始推进它。
+routine 仍然是代码形状，coroutine 则是 shajara 推进的那次运行。
 
 ## Routine 是可复用的 shajara 工作
 
@@ -17,23 +17,23 @@ TypeScript 类型对应着这个 JavaScript 形式：
 
 ```ts
 type RiteRoutine<Return> = () => RiteCoroutine<Return>;
-type RiteCoroutine<Return> = Generator<unknown, Return, unknown>;
+type RiteCoroutine<Return> = Generator<Sigil, Return, unknown>;
 ```
 
 `RiteRoutine<Return>` 是产出 `RiteCoroutine<Return>` 的函数。在应用代码中，`function*`
 写出的就是这种形式。routine 可以被命名、传递，并在稍后调用。在某个 API 或另一段 routine
 调用它之前，它没有当前位置。
 
-`RiteCoroutine<Return>` 是那次调用产出的 generator 对象。它有当前位置、局部状态，并且
-最终会产出一个 `Return` 值。
+`RiteCoroutine<Return>` 是那次调用产出的 generator 对象。它有当前位置和局部状态，会在运行中
+yield 出由 shajara 处理的 `Sigil` 指令，并最终产出一个 `Return` 值。
 
-`Rite` 前缀来自 shajara 内部的 `Ritual` 模型。在公开 API 中，它用于命名 shajara 接受并
-推进的 routine 与 coroutine 形状。
+应用代码通常写 `yield*` 来使用 shajara operation，从而进入 `Sigil` 这一层；它不需要直接构造
+指令。公开 API 中的 `Rite` 名称，用于标记 shajara 接受并推进的 routine 与 coroutine 形状。
 
-## Coroutine 是一次启动后的实例
+## Coroutine 是一次运行实例
 
-每次调用 routine 都会产生一条独立的 coroutine。因此，同一段 routine 可以启动多次，而
-这些运行之间不会共享当前位置或局部状态。
+每次调用 routine 都会产生一条独立的 coroutine 对象。因此，同一段 routine 可以有多次运行，
+而这些运行之间不会共享当前位置或局部状态。
 
 ```ts
 import { sleep } from "@shajara/host";

@@ -1,6 +1,6 @@
 ---
 title: Routines and Coroutines
-description: Understand routines as the way shajara work is written in JavaScript and coroutines as the runs shajara advances.
+description: Separate reusable routine code from the coroutine instances shajara advances.
 ---
 
 A routine is how shajara work is written in JavaScript. It uses
@@ -8,9 +8,10 @@ A routine is how shajara work is written in JavaScript. It uses
 JavaScript organizes the workflow, and `yield*` is where the routine hands control to
 shajara for waiting, delegation, or concurrent work.
 
-A coroutine is one run of a routine. Calling a routine creates a coroutine; passing a
-routine to an API such as `spawn(...)` lets shajara create and drive that run as owned
-work. The routine remains the code shape, and the coroutine is the run shajara advances.
+A coroutine is one instance of a routine. Calling a routine creates that coroutine;
+shajara starts advancing it when current routine code delegates to it, or when an API
+such as `spawn(...)` uses the routine as a process entry. The routine remains the code
+shape, and the coroutine is the run shajara advances.
 
 ## A Routine Is Reusable Shajara Work
 
@@ -18,7 +19,7 @@ The TypeScript types mirror the JavaScript form:
 
 ```ts
 type RiteRoutine<Return> = () => RiteCoroutine<Return>;
-type RiteCoroutine<Return> = Generator<unknown, Return, unknown>;
+type RiteCoroutine<Return> = Generator<Sigil, Return, unknown>;
 ```
 
 `RiteRoutine<Return>` is a function that produces a `RiteCoroutine<Return>`. In
@@ -27,16 +28,18 @@ around, and called later. It has no current position until an API or another rou
 calls it.
 
 `RiteCoroutine<Return>` is the generator object produced by that call. It has a current
-position, local state, and eventually a `Return` value.
+position and local state, yields `Sigil` instructions that shajara handles between
+steps, and eventually produces a `Return` value.
 
-The `Rite` prefix comes from shajara's internal `Ritual` model. In public APIs, it names
-the routine and coroutine shapes shajara accepts and advances.
+Application code usually reaches the `Sigil` layer by yielding shajara operations with
+`yield*`; it does not construct instructions directly. The public `Rite` names mark the
+routine and coroutine shapes shajara accepts and advances.
 
-## A Coroutine Is One Started Instance
+## A Coroutine Is One Instance
 
-Each call to a routine produces a separate coroutine. The same routine can therefore be
-started more than once without sharing the current position or local state between those
-runs.
+Each call to a routine produces a separate coroutine object. The same routine can
+therefore have several runs without sharing the current position or local state between
+those runs.
 
 ```ts
 import { sleep } from "@shajara/host";

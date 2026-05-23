@@ -1,11 +1,9 @@
 ---
 title: Scope 树
-description: 理解 shajara 如何在 scope 树里放置 child scope 和 process。
+description: 根据创建调用发生时的运行时位置，读取 child scope 和 process 的放置。
 ---
 
-> 命名来源：`shajara` 取意于“树”。本文讨论的 scope 树，就是这个名字指向的运行时结构。
-
-shajara 的结构化并发运行在一棵 scope 树里。树上的节点是 scope；child scope 挂在创建它的
+shajara 的结构化并发组织成一棵 scope 树。树上的节点是 scope；child scope 挂在创建它的
 parent scope 下面。process 不会成为树节点，它在某个 scope 里运行。
 
 scope 树记录 shajara 如何放置 child scope 和 process。routine 代码创建新结构时，位置由

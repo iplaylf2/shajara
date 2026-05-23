@@ -1,11 +1,11 @@
 ---
 title: Handles and Scope Ownership
-description: Understand how shajara chooses the scope that owns a handle.
+description: Read handle lifetime from the scope that created the runtime object behind it.
 ---
 
-The scope tree shows where shajara places child scopes and processes. Handles use the
-same placement rule for values that can be passed around: the call that creates a handle
-runs in one scope, and that scope owns the runtime object behind the handle.
+A handle is a JavaScript value that gives access to shajara runtime state. The scope tree
+chooses where that state lives: the call that creates a handle runs in one scope, and
+that scope owns the runtime object behind the handle.
 
 After creation, the handle value can move. It can be returned from a child scope, passed to
 another routine, or kept by callback code. Moving the value does not move the owner.
@@ -99,10 +99,12 @@ To find the owner, look for the call that creates the runtime object:
 - `future(...)` and `completer(...)` create futures in the current scope.
 - `channel(...)` and `feed(...)` create channels in the current scope.
 - `abortSignal(...)` registers a signal with the current scope.
-- `resource(...)` starts provider work attached to the current scope until release.
+- `resource(...)` creates a future for the provided value and provider work attached to
+  the current scope until release.
 
-Calls that use a handle do not choose a new owner. `wait(...)`, `poll(...)`,
-`settle(...)`, `send(...)`, `receive(...)`, `close(...)`, and `promisify(...)` act on an
-existing future or channel. Passing an `AbortSignal` to an outside API, or keeping the
-provided value from `resource(...)`, also uses a relationship that has already been
-attached to a scope. The owner is still the scope where the handle was created.
+Calls that use a handle do not choose a new owner. Future calls that observe or settle,
+such as `wait(...)` and `settle(...)`, act on an existing future. Channel calls that
+send, receive, or close act on an existing channel. Passing an `AbortSignal` to an
+outside API, exposing a future through `promisify(...)`, or keeping the provided value
+from `resource(...)` also uses a relationship that has already been attached to a scope.
+The owner is still the scope where the handle was created.

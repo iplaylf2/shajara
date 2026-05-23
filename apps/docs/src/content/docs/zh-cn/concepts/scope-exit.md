@@ -1,10 +1,10 @@
 ---
 title: Scope 退出
-description: 理解 scope 退出是 scope 拥有的工作收敛后对外报告的结果。
+description: 把 scope 退出读作 owned work 收敛后由边界报告的结果。
 ---
 
-scope 树说明 shajara 如何放置 child scope 和 process。scope 退出则是这棵树上的一个节点
-对外报告结果的位置。
+scope 既是 scope 树里的放置节点，也是结果边界。scope 退出是这个边界在自己拥有的工作收敛后
+报告的结果。
 
 child scope 也是一棵子树的根。它里面可能有 entry process、通过 `spawn(...)` 创建的 process，
 也可能有更深一层的 child scope。这棵子树里的工作仍然可以各自有局部结果。当 routine 代码等待这个

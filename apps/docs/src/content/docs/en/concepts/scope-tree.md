@@ -1,14 +1,11 @@
 ---
 title: Scope Tree
-description: Understand how shajara places child scopes and processes in the scope tree.
+description: Read child scopes and processes from the runtime location of the creation call.
 ---
 
-> Naming: `shajara` is named for a tree. The scope tree described here is the runtime
-> structure behind that name.
-
-shajara's structured concurrency runs inside a scope tree. The tree nodes are scopes, and
-each child scope is attached under the parent scope that created it. A process does not
-become a tree node. It runs inside a scope.
+shajara's structured concurrency is arranged as a scope tree. The tree nodes are scopes,
+and each child scope is attached under the parent scope that created it. A process does
+not become a tree node. It runs inside a scope.
 
 The scope tree records where shajara places child scopes and processes. When routine code
 creates new structure, placement is decided by the scope where the call runs.
