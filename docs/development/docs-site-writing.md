@@ -120,10 +120,11 @@ louder.
 
 Treat lifecycle, cleanup, and error behavior as part of the example's design when they
 change how the reader should understand the API being taught. If they are not the page's
-job, omit them rather than carry defensive completeness. Prefer language and runtime forms
-that expose ownership or release without extra scaffolding, and remove wrappers that do
-not serve the current sample. When failure behavior is the subject, keep propagation,
-local handling, recovery, and unchanged outcomes in their responsible contexts so one
+job, omit them rather than carry defensive completeness: do not add `try...catch`,
+teardown, callback cleanup, or other wrappers merely to make an example look
+like production code. Prefer language and runtime forms that expose ownership or release
+without extra scaffolding. When failure behavior is the subject, keep propagation, local
+handling, recovery, and unchanged outcomes in their responsible contexts so one
 responsibility does not read like a caveat on another.
 
 Choose domain names that do not collide with shajara concepts unless the page is teaching
@@ -147,12 +148,19 @@ result is produced by a multi-line expression or scoped block, show the block fi
 attach the result after the expression closes. When a result travels across a boundary,
 separate comments only when they mark distinct observations, such as the decision made at
 one point and the value or error seen at another. Do not use comments to narrate obvious
-control flow, or to make readers reason about helper code that is not the subject.
+control flow, or to make readers reason about helper code that is not the subject. Within
+one page, comments that serve the same result role should use a consistent attachment
+pattern instead of mixing line-end and preceding-line comments for equivalent observations.
 
 When a reader would otherwise have to mentally execute incidental details, show the
 observable result near the code. Let that result carry the simple outcome; use the prose
 after the example to explain the shajara boundary that caused it, or the decision the
 reader should take from it.
+
+When a failure is observed but handling that failure is not the page's subject, prefer a
+result comment at the observation point over a full handling block. The comment may name
+the thrown error and the local condition that causes it; the prose after the example
+should carry the rule the page is teaching.
 
 When an API routes a result across a boundary, explain the result at the boundary the page
 owns. Include declined or delegated outcomes when they change what the reader observes,
@@ -180,6 +188,12 @@ name the distinction behind that intuition and disclose the stable mechanisms be
 Adjacent runtime objects should appear only when they change how readers understand that
 mechanism. Even on concept pages, explain the positive model before adding contrasts, and
 do not introduce hypothetical misreadings before the example creates a reason for them.
+
+A concept page should leave readers with a transferable reading rule, not just a tour of
+APIs that happen to share a runtime object. If a concept page would only regroup topic or
+guide material, keep the rule inside the page that already owns the reader's task. When a
+concept uses examples from topics or guides, keep those examples subordinate to the
+mechanism the page owns.
 
 Treat named details as obligations. A true detail is not automatically relevant: if it
 does not change how the reader understands the page's mechanism, omit it. If a page names
