@@ -26,9 +26,10 @@ attention on the new move or mechanism. In an API family or topic sequence, shar
 routing, page level, and navigation should orient the reader without making sibling pages
 repeat the same contrasts or comparisons.
 
-Completeness belongs to the documentation set. A page can leave a concept to its later
-owner when naming it would not clarify the current task, and it can end as soon as its own
-decision is settled.
+Completeness belongs to the documentation set. A page can be short when its own decision
+is settled. It can leave a concept to its later owner when naming it would not clarify the
+current task, and it should not borrow material from neighboring pages just to feel
+complete.
 
 ## Page Composition
 
@@ -188,8 +189,10 @@ Let the page level decide how much concept to disclose. Guides can rely on usefu
 intuition when it lets the reader use the API correctly; concept pages can slow down to
 name the distinction behind that intuition and disclose the stable mechanisms behind it.
 Adjacent runtime objects should appear only when they change how readers understand that
-mechanism. Even on concept pages, explain the positive model before adding contrasts, and
-do not introduce hypothetical misreadings before the example creates a reason for them.
+mechanism or help locate it inside a structure the reader already knows. They should not
+turn the neighboring concept into the page's job. Even on concept pages, explain the
+positive model before adding contrasts, and do not introduce hypothetical misreadings
+before the example creates a reason for them.
 
 A concept page should leave readers with a transferable reading rule, not just a tour of
 APIs that happen to share a runtime object. If one example is enough to expose that rule,
@@ -281,6 +284,11 @@ Page-level constraints should shape the page. If a constraint affects the page's
 direction, revise the page structure and surrounding explanation so the page embodies that
 constraint. Do not attach it as a local note, caveat, or warning beside the nearest
 sentence.
+
+When a revision fills a missing relationship, fit it to the page's existing organizing
+idea. The added detail should not become the new center unless the page's job has changed;
+otherwise, adjust the example or surrounding prose so the relationship reads as part of
+the page's design.
 
 If the same clarification keeps appearing, promote the underlying rule to the page's
 structure or to this writing guide. Add material to this guide only after extracting the
