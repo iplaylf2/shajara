@@ -7,7 +7,7 @@ import { wait as kernelWait } from "@shajara/kernel";
  * Waits for a future to settle successfully.
  *
  * @returns Future value.
- * @throws Shajara error when the future is rejected or canceled.
+ * @throws Error represented by the future failure.
  */
 export function* wait<Result>(future: RiteFuture<Result>): RiteCoroutine<Result> {
   const outcome = yield* encodeRitual(() => kernelWait(future))();

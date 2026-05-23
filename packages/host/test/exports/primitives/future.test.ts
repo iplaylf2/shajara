@@ -1,6 +1,6 @@
-import { cede, future, poll, settle, spawn, wait } from "#/primitives";
+import { UnfulfilledError, run } from "#/index";
+import { branch, cede, future, poll, settle, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
-import { run } from "#/index";
 
 describe("/ primitives: future, poll, wait", () => {
   test.for([
@@ -74,6 +74,40 @@ describe("/ primitives: future, poll, wait", () => {
       });
 
       await expect(settled).resolves.toBe(outcome);
+    },
+  );
+
+  test.for([
+    {
+      given: [] as const,
+      outcome: {
+        error: UnfulfilledError,
+        kind: "unfulfilled",
+        message: "Future was not fulfilled before its owner scope closed",
+      } as const,
+    },
+  ])(
+    "throws UnfulfilledError for a pending future whose owner scope closes",
+    async ({ outcome }) => {
+      const settled = run(function* observeUnfulfilledFuture() {
+        const pending = yield* branch(function* createPendingFuture() {
+          const [futureKey] = yield* future<string>();
+
+          return futureKey;
+        });
+
+        try {
+          return yield* wait(pending);
+        } catch (error) {
+          return error;
+        }
+      });
+
+      await expect(settled).resolves.toBeInstanceOf(outcome.error);
+      await expect(settled).resolves.toMatchObject({
+        kind: outcome.kind,
+        message: outcome.message,
+      });
     },
   );
 });
