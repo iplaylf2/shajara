@@ -5,7 +5,7 @@ import { wait } from "#/primitives/index";
 
 /**
  * Invokes `thunk` and waits for its promise-like result inside the current routine.
- * Rejected promise-like results become errors thrown from the current routine.
+ * A rejected promise-like result is thrown from the current routine.
  *
  * @returns Fulfillment value from the promise-like result.
  */

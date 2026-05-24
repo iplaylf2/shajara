@@ -1,6 +1,6 @@
 ---
-title: Scope 退出
-description: 把 scope 退出读作 owned work 收敛后由边界报告的结果。
+title: scope 退出
+description: 把 scope 退出读作其拥有的工作收敛后由边界报告的结果。
 ---
 
 scope 既是 scope 树里的放置节点，也是结果边界。scope 退出是这个边界在自己拥有的工作收敛后

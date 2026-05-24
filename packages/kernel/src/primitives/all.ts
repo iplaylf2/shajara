@@ -8,9 +8,9 @@ import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
 /**
- * Starts entries concurrently in the current scope and returns an aggregate future.
+ * Starts ritual entries concurrently in the current scope and returns without waiting.
  *
- * @returns Future whose successful result preserves entry order.
+ * @returns Future whose successful value preserves entry order.
  */
 export function all<EntryReturns extends readonly unknown[]>(
   entries: AllEntries<EntryReturns>,
@@ -18,7 +18,7 @@ export function all<EntryReturns extends readonly unknown[]>(
   return spawn(allAggregator(entries));
 }
 
-/** Defines entries whose relics form the aggregate result tuple. */
+/** Ritual entries whose relics form the aggregate result tuple. */
 export type AllEntries<EntryReturns extends readonly unknown[]> = {
   readonly [Index in keyof EntryReturns]: Ritual<EntryReturns[Index]>;
 };

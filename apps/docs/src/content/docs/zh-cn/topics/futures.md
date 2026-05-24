@@ -1,5 +1,5 @@
 ---
-title: 单次结果 Future
+title: 单次结果 future
 description: 创建单次结果句柄，从 routine 中完成它，并选择等待结果的位置。
 ---
 
@@ -52,7 +52,7 @@ function* readDisplayNameNow(displayName: RiteFuture<string>) {
 
 ## 完成失败结果
 
-当一个 future 应该以 JavaScript failure 完成，而不是得到成功值时，使用
+当一个 future 应该以 JavaScript `Error` 完成，而不是得到成功值时，使用
 `settleError(...)`。
 
 ```ts
@@ -70,9 +70,9 @@ function* readRequiredTitle() {
 
 routine 代码会通过同一个 future 句柄观察到这个失败结果。
 
-## 从 callback 完成 future
+## 从回调完成 future
 
-当 shajara future 需要从普通 JavaScript 边界完成时，例如从 callback 中完成，使用
+当 shajara future 需要从普通 JavaScript 边界完成时，例如从回调中完成，使用
 `completer(...)`。
 
 ```ts
@@ -88,6 +88,5 @@ function* waitForFileChoice() {
 }
 ```
 
-`completer(...)` 会把 future 留在 shajara 并发边界内，并返回一组可从 JavaScript 边界
-调用的完成函数。callback 代码调用 `resolve(...)`，routine 代码通过返回的 future 观察
-结果。
+`completer(...)` 会在当前 scope 中创建 future，并返回一组可从 JavaScript 边界调用的
+完成函数。回调代码调用 `resolve(...)`，routine 代码通过返回的 future 观察结果。

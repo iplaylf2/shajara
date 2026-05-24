@@ -13,7 +13,7 @@ import { wait } from "./wait";
 import { wisp } from "#/internal/fp";
 
 /**
- * Runs entries in a race scope and cancels losing work after the first success.
+ * Runs ritual entries in a race scope and cancels losing work after the first success.
  * If the race scope fails before a winner, the outcome future carries that failure.
  *
  * @returns Race scope and winner future.
@@ -37,7 +37,7 @@ export function race<EntryReturns extends NonEmptyTuple<unknown>>(
   );
 }
 
-/** Defines entries whose relics form the race winner type. */
+/** Ritual entries whose relics form the race winner type. */
 export type RaceEntries<EntryReturns extends NonEmptyTuple<unknown>> = {
   readonly [Index in keyof EntryReturns]: Ritual<EntryReturns[Index]>;
 };

@@ -1,6 +1,6 @@
 ---
-title: 连续传值 Channel
-description: 在 shajara 并发边界内传递连续值，并从 JavaScript callback 接收值。
+title: 连续传值 channel
+description: 在 routine 之间传递连续值，并从 JavaScript 回调桥接值。
 ---
 
 当工作需要交接一串值时，future 的单次结果不够用。channel 提供一条由 scope 拥有的
@@ -101,10 +101,10 @@ open，shajara 会撤销它，并唤醒阻塞中的发送方或接收方。`send
 `trySend(...)` 和 `tryReceive(...)` 观察到已关闭或已撤销的 channel 时，会抛出
 `ChannelError`。
 
-## 从 callback 接收值
+## 从回调接收值
 
-当值来自普通 JavaScript 边界，例如 callback 或事件处理器，并且需要进入 shajara 并发
-边界时，使用 `feed(...)`。receiver 留在 routine 代码中；返回的函数放在注册 callback
+当值来自普通 JavaScript 边界，例如回调或事件处理器，并且需要进入 shajara 并发
+边界时，使用 `feed(...)`。receiver 留在 routine 代码中；返回的函数放在注册回调
 的位置使用。
 
 ```ts
@@ -125,5 +125,5 @@ function* takeTwoUploads() {
 }
 ```
 
-`feed(...)` 在当前 scope 中创建 channel。routine 代码消费 receiver，callback 代码可以
+`feed(...)` 在当前 scope 中创建 channel。routine 代码消费 receiver，回调代码可以
 从这个 JavaScript 边界调用 `trySend(...)` 或 `close(...)`。

@@ -11,7 +11,7 @@ import { waitChild } from "#/primitives-kit";
  * Runs a child routine with a recovery boundary for nested `resumable(...)` work.
  *
  * @returns Child routine result.
- * @throws Shajara error when the guarded scope is canceled or fails.
+ * @throws Error when the guarded scope is canceled or fails.
  */
 export function* guard<Return>(
   routine: RiteRoutine<Return>,
@@ -26,7 +26,7 @@ export function* guard<Return>(
 /** Recovery result where `[true, value]` handles the request and `[false]` delegates it. */
 export type RecoveryDecision = Presence<unknown>;
 
-/** Recovery handler for a child scope exit failure offered by `resumable(...)`. */
+/** Recovery handler for scope-exit errors reported by nested `resumable(...)` waits. */
 export type RecoveryHandler = (error: ScopeExitError) => RiteCoroutine<RecoveryDecision>;
 
 function toKernelRecoveryHandler(recover: RecoveryHandler): KernelRecoveryHandler {

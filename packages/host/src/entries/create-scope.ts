@@ -26,8 +26,7 @@ export interface Scope {
    * Non-cancellation failures from the launched routine propagate to this scope.
    * Cancellation remains local to the launched routine.
    *
-   * @returns Stateful promise that resolves with the routine result or rejects when the
-   * launched routine fails or is canceled.
+   * @returns Stateful promise for the launched routine result and lifecycle state.
    * @throws Error when this scope is already closed.
    */
   run<Return>(routine: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;

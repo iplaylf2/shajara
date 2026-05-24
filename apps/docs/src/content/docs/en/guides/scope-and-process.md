@@ -1,6 +1,6 @@
 ---
 title: Scopes and Processes
-description: Read futures and direct values as process results and scope boundaries.
+description: Use return shapes to distinguish process futures from child-scope values.
 ---
 
 When APIs return different shapes, the return shape matters more than the function name.
@@ -101,5 +101,5 @@ created for `saveProfileEntry` is the one that waits through `saveProfileScope`;
 caller can keep going until this wait point.
 
 The API shapes keep this distinction consistent. APIs that start work in the current
-scope return a future for observing that work. APIs that open a child scope wait for that
+scope return a future for that work's result. APIs that open a child scope wait for that
 scope in the process that called them, then return a value.

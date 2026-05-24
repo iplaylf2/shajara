@@ -1,6 +1,6 @@
 ---
-title: Guard 边界与失败恢复
-description: 在 guard 边界恢复失败的 child scope，并把恢复结果交回 resumable 的等待点。
+title: guard 边界与恢复
+description: 通过 guard 边界把 child scope 的失败路由到 resumable 等待点。
 ---
 
 有些 child scope 的失败不应该立刻由等待它的 routine 决定结果，而是应该先交给外层
@@ -42,7 +42,7 @@ function* publishListing() {
 `[true, value]` 会通过 `scanPhotosWithRecovery()` 返回，所以 `reviewListing` 会从这个
 等待点继续。
 
-恢复值属于 `resumable(...)`。`guard(...)` 的返回值仍然是 guarded entry 的结果。
+恢复值由 `resumable(...)` 返回；`guard(...)` 返回的仍然是传给它的 routine 的结果。
 
 ## 委托给祖先边界
 
@@ -130,5 +130,5 @@ function* publishListing() {
 `Error`。两种结果都会回到同一个 `resumable(...)` 等待点：`[true, value]` 让等待点返回
 `value`，抛错让等待点抛出这个 `Error`。
 
-Recovery 用在 child scope 已经退出、等待它的调用方应该得到一个替代结果的场景。这个
+recovery 用在 child scope 已经退出、等待它的调用方应该得到一个替代结果的场景。这个
 替代结果可以是返回值，也可以是被抛出的错误。

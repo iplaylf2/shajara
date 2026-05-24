@@ -8,7 +8,7 @@ export abstract class ShajaraError extends Error implements FailureShape {
   public override readonly name: string = "ShajaraError";
 }
 
-/** Routine body accepted by host entries and primitives. */
+/** Routine body accepted by entries and primitives. */
 export type RiteRoutine<Return> = () => RiteCoroutine<Return>;
 
 /** Generator object produced by a routine. */

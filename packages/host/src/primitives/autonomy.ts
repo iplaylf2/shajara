@@ -13,7 +13,7 @@ import { waitChild } from "#/primitives-kit";
  * Runs a child routine with a scheduler or reaper policy and waits for scope convergence.
  *
  * @returns Child routine result.
- * @throws Shajara error when the autonomous scope is canceled or fails.
+ * @throws Error when the autonomous scope is canceled or fails.
  */
 export function* autonomy<Return>(
   routine: RiteRoutine<Return>,
@@ -40,7 +40,7 @@ export interface ReaperOption {
   readonly reaper: Reaper;
 }
 
-/** Reaper routine for a closing autonomous scope; throw to fail that scope. */
+/** Reaper routine for a closing autonomous scope; throwing fails that scope. */
 export type Reaper = (scope: ScopeRef<unknown>) => RiteCoroutine<void>;
 
 function toKernelAutonomyOptions(options: AutonomyOptions): KernelAutonomyOptions {

@@ -1,6 +1,6 @@
 ---
 title: 开始使用
-description: 从应用代码启动 shajara，并把已有的 Promise 工作带进 routine。
+description: 从应用代码启动 shajara，并把已有 Promise 工作带入 routine。
 ---
 
 当应用代码需要进入 shajara 时，先使用 `@shajara/host`。普通 JavaScript 代码通过它启动
@@ -32,8 +32,8 @@ const message = await run(function* main() {
 
 ## 等待 Promise 工作
 
-应用代码里通常已经在使用会返回 Promise 的 API。`fetch(...)` 就是其中一种。
-`until(...)` 用来在 routine 内部等待这类工作。
+应用代码通常从 `fetch(...)` 这类 Promise API 开始。`until(...)` 用来在 routine 内部
+等待这类工作。
 
 ```ts
 import { until } from "@shajara/host";

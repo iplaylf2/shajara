@@ -1,11 +1,11 @@
 ---
 title: Promise 常见用法
-description: 把 Promise 形状的协作方式对应到 shajara routine 工作和 Promise 边界。
+description: 通过 shajara 的值、future 和 Promise 边界读取常见 Promise 协作。
 ---
 
-Promise 代码常见的形状包括组合工作、竞速候选项、包装 callback，以及把值交回 Promise
-链。在 shajara routine 里，关键是看 shajara API 会直接给 routine 一个值，还是给它一个可以
-稍后等待的句柄。
+Promise 代码常见的形状包括组合工作、竞速候选项、包装回调，以及把值交回 Promise
+链。在 shajara routine 里，关键是看 API 会在当前位置返回一个值，还是返回一个可在稍后
+观察的 future。
 
 ## 像 `Promise.all` 一样组合工作
 
@@ -77,12 +77,12 @@ function* loadFastProfile() {
 `all(...)` 返回 future，表示调用方仍然可以决定在哪里等待这组有序结果。`race(...)`
 返回值，表示调用方会在这些候选 routine 已经收敛成一个结果后继续。
 
-可以按接口形状来读：future 表示稍后等待；值表示这个 API 已经等待过它启动的 routine。
+可以按接口形状来读：future 表示稍后等待；值表示 API 已经等待过它启动的 routine。
 
-## 从 callback 创建 future
+## 从回调创建 future
 
-普通 JavaScript 里会用 `new Promise(...)` 或 `Promise.withResolvers(...)` 包装 callback
-时，在 shajara 里可以用 `completer(...)` 创建 future，并从 callback 里完成它。
+普通 JavaScript 里会用 `new Promise(...)` 或 `Promise.withResolvers(...)` 包装回调时，
+在 shajara 里可以用 `completer(...)` 创建 future，并从回调里完成它。
 
 ```ts
 import { completer } from "@shajara/host";
@@ -97,10 +97,10 @@ function* locateUser() {
 }
 ```
 
-callback 一侧完成 future，routine 一侧用 `wait(...)` 等待同一个结果。
+回调一侧完成 future，routine 一侧用 `wait(...)` 等待同一个结果。
 
 `yield* completer(...)` 会在当前 scope 中创建这个 future，并返回用于完成这个 future 的
-callback 函数。callback 代码拿到的是完成权；这个 future 仍然属于创建它的 scope。
+回调函数。回调代码拿到的是完成权；这个 future 仍然属于创建它的 scope。
 
 ## 在 Promise 边界使用 AbortSignal
 

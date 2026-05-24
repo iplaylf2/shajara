@@ -17,7 +17,7 @@ export interface SelfSigil extends SigilShape {
   readonly [ECHO_TOKEN]?: readonly [SelfHandle];
 }
 
-/** Current process reference and its enclosing scope reference. */
+/** Current process reference and its owning scope reference. */
 export interface SelfHandle {
   readonly scope: ScopeRef<unknown>;
   readonly process: ProcessRef<unknown>;

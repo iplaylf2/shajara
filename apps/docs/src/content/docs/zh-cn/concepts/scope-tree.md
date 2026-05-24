@@ -1,5 +1,5 @@
 ---
-title: Scope 树
+title: scope 树
 description: 根据创建调用发生时的运行时位置，读取 child scope 和 process 的放置。
 ---
 
@@ -9,7 +9,7 @@ parent scope 下面。process 不会成为树节点，它在某个 scope 里运�
 scope 树记录 shajara 如何放置 child scope 和 process。routine 代码创建新结构时，位置由
 调用发生时所在的 scope 决定。
 
-## Scope 是树节点
+## scope 是树节点
 
 `branch(...)` 会在当前 scope 下面创建 child scope。传给 `branch(...)` 的 routine 会作为
 这个 child scope 的入口运行。
@@ -49,7 +49,7 @@ renderPage scope
 └─ renderTimeline scope
 ```
 
-## Process 在节点里运行
+## process 在节点里运行
 
 process 是 scope 为 routine 入口创建的运行时身份。创建 process 时，shajara 会启动作为
 入口的 routine。这个 process 归属于创建它的 scope；scope 树记录的正是这种归属。process

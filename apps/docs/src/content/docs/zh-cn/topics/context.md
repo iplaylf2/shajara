@@ -1,5 +1,5 @@
 ---
-title: Scope Context
+title: scope context
 description: 在 scope 上绑定值，并从 routine 代码中读取最近可见的绑定。
 ---
 
@@ -112,5 +112,5 @@ child scope 先用 `"draft"` 遮蔽 parent scope 的绑定。`unbind(modeKey)` �
 
 context lookup 会沿 scope 链读取当前可见的绑定。结果是 optional，因为绑定可能不存在。
 
-适合放进 context 的值，通常已经属于当前 scope 的环境：request identifier、
-tracing handle、本地配置，或其他会被多段 routine 读取的值。
+适合放进 context 的值，通常已经属于当前 scope 的环境：请求标识、追踪句柄、本地配置，
+或其他会被多段 routine 读取的值。

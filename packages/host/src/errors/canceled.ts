@@ -1,7 +1,7 @@
 import type { CanceledFailure } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 
-/** Error thrown when active work is canceled before completion. */
+/** Error thrown when work is canceled before completion. */
 export class CanceledError extends ShajaraError implements CanceledFailure {
   public constructor() {
     super("Canceled before completion");

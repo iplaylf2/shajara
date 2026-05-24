@@ -1,6 +1,6 @@
 ---
 title: Guard Boundaries and Recovery
-description: Recover a failed child scope at a guard boundary and deliver the recovery result to the resumable wait point.
+description: Route child-scope failure through guard boundaries to the resumable wait point.
 ---
 
 Some child-scope failures should not be decided immediately by the routine waiting for
@@ -43,8 +43,8 @@ function* publishListing() {
 `[true, value]` becomes the value returned through `scanPhotosWithRecovery()`, so
 `reviewListing` continues from that wait point.
 
-The recovery value belongs to `resumable(...)`. The return value of `guard(...)` is still
-the result of the guarded entry.
+The recovery value is returned by `resumable(...)`; `guard(...)` still returns the result
+of the routine passed to it.
 
 ## Delegate to an Ancestor
 

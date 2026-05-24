@@ -1,6 +1,6 @@
 ---
 title: Repeated-Value Channels
-description: Move repeated values inside shajara concurrency and receive values from JavaScript callbacks.
+description: Move repeated values between routines and bridge values from JavaScript callbacks.
 ---
 
 When work needs to hand off a sequence of values, a future's single result is not enough.

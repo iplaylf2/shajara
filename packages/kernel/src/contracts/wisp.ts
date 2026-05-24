@@ -2,7 +2,7 @@ import type { Echo, SigilShape } from "./sigil";
 import type { UnknownArray } from "type-fest";
 
 /**
- * Creates a computation node waiting for a sigil echo.
+ * Creates a computation node that waits for a sigil echo.
  *
  * @param sigil - Instruction the interpreter must satisfy before the computation resumes.
  * @param resonate - Continuation invoked with the sigil echo.
@@ -34,14 +34,14 @@ export function evoke<Sigil extends SigilShape>(sigil: Sigil): Wisp<Echo<Sigil>>
 }
 
 /**
- * Deferred computation entry without arguments.
+ * Reusable computation entry without arguments.
  *
  * @returns Initial computation node.
  */
 export type Ritual<Relic> = Incantation<[], Relic>;
 
 /**
- * Callable computation entry.
+ * Reusable computation entry with arguments.
  *
  * @returns Initial computation node.
  */
