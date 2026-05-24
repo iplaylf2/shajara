@@ -1,5 +1,15 @@
 # @shajara/docs
 
+## 0.6.0
+
+### Minor Changes
+
+- [#51](https://github.com/iplaylf2/shajara/pull/51) [`47871fb`](https://github.com/iplaylf2/shajara/commit/47871fb1982a4ad6ca712f0d124de767cb3cdc5d) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Add a Scope Autonomy concept page to the docs site.
+
+  Readers can now use the Concepts section to understand when `autonomy(...)`, `cede()`,
+  custom schedulers, and reapers matter for a child scope subtree's local progression and
+  closing policy.
+
 ## 0.5.2
 
 ### Patch Changes
