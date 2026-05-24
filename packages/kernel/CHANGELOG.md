@@ -1,5 +1,14 @@
 # @shajara/kernel
 
+## 0.10.1
+
+### Patch Changes
+
+- [#49](https://github.com/iplaylf2/shajara/pull/49) [`f73c082`](https://github.com/iplaylf2/shajara/commit/f73c0824771e2e3711360aec7b17f79630483874) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Refine generated API hints around public contracts.
+
+  Published declaration comments now use package-level wording for scope ownership, result
+  observation, and failure or recovery contracts without changing runtime behavior.
+
 ## 0.10.0
 
 ### Minor Changes
