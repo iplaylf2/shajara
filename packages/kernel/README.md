@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="shajara" src="https://iplaylf2.github.io/shajara/favicon.svg" width="80">
+</p>
+
 # @shajara/kernel
 
 `@shajara/kernel` is the low-level package in shajara.

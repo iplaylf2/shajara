@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="internal/brand/logo/dark.svg">
+    <img alt="shajara" src="internal/brand/logo/light.svg" width="96">
+  </picture>
+</p>
+
 # shajara
 
 [![NPM Version](https://img.shields.io/npm/v/%40shajara%2Fhost)](https://www.npmjs.com/package/%40shajara%2Fhost)
