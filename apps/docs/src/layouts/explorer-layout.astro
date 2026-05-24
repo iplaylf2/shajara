@@ -1,6 +1,6 @@
 ---
+import { i18N, site } from "#site";
 import type { SiteLocale } from "#site";
-import { i18N } from "#site";
 
 interface Props {
   locale: SiteLocale;
@@ -10,6 +10,7 @@ interface Props {
 const { locale, title } = Astro.props;
 const { lang } = i18N.locales[locale];
 const dir = Astro.locals.t.dir();
+const faviconHref = `${site.basePath}/favicon.svg`;
 ---
 
 <!doctype html>
@@ -17,6 +18,7 @@ const dir = Astro.locals.t.dir();
   <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <link href={faviconHref} rel="icon" type="image/svg+xml" />
     <title>{title}</title>
     <style>
       :root {

@@ -1,0 +1,14 @@
+{
+  "name": "@shajara/brand",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./favicon.svg": "./logo/light.svg",
+    "./logo/dark.svg": "./logo/dark.svg",
+    "./logo/light.svg": "./logo/light.svg"
+  },
+  "devDependencies": {
+    "@shajara/presets": "workspace:^",
+    "oxlint": "catalog:"
+  }
+}

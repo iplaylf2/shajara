@@ -19,6 +19,9 @@ export default defineConfig({
         node: true,
       },
       files: ["typedoc.config.mjs"],
+      rules: {
+        "import/no-nodejs-modules": "off",
+      },
     },
   ],
 });

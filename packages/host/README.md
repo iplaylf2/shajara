@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="shajara" src="https://iplaylf2.github.io/shajara/favicon.svg" width="80">
+</p>
+
 # @shajara/host
 
 `@shajara/host` is the application-facing package in shajara and the usual entry point

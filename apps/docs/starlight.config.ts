@@ -6,6 +6,11 @@ export const docsConfig: StarlightUserConfig = {
   description: site.description,
   disable404Route: true,
   locales: starlightLocales,
+  logo: {
+    alt: "",
+    dark: "@shajara/brand/logo/dark.svg",
+    light: "@shajara/brand/logo/light.svg",
+  },
   sidebar: starlightSidebar,
   social: [
     {
