@@ -3,6 +3,11 @@ title: Scope Autonomy
 description: Let a child scope subtree converge under local progression and closing policy.
 ---
 
+:::note[Optional]
+Most shajara usage can rely on the default scheduler. Read this page when a scope subtree
+needs local progression or closing policy.
+:::
+
 After a small slice of synchronous work, a long loop can give the current scheduler a
 chance to advance another queued process. The routine stays in one continuous control
 flow.

@@ -3,6 +3,11 @@ title: scope 自治
 description: 让 child scope 子树按局部推进与关闭策略收敛。
 ---
 
+:::note[选读]
+日常使用 shajara 时，通常只需要依赖默认调度。需要让某棵 scope 子树使用局部推进或关闭策略时，
+再阅读这一页。
+:::
+
 长循环在完成一小段同步工作后，也可以主动让出一次推进机会。routine 仍然保持连续的控制流，
 当前 scheduler 则可以先推进队列里的其他 process。
 
