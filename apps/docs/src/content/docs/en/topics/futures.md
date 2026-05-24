@@ -1,6 +1,6 @@
 ---
 title: Single-Result Futures
-description: Create one-result handles, settle them from routines, and choose where to wait.
+description: Create single-result handles, settle them from routines, and choose where to wait.
 ---
 
 Some results should not return immediately from the current routine. They may be
@@ -90,6 +90,6 @@ function* waitForFileChoice() {
 }
 ```
 
-`completer(...)` keeps the future inside shajara concurrency and returns functions that
-can be called from that JavaScript boundary. Callback code calls `resolve(...)`, and
-routine code observes the result through the returned future.
+`completer(...)` creates the future in the current scope and returns functions that can
+be called from that JavaScript boundary. Callback code calls `resolve(...)`, and routine
+code observes the result through the returned future.

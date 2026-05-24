@@ -1,5 +1,5 @@
 ---
-title: Routine 与 Coroutine
+title: routine 与 coroutine
 description: 区分可复用的 routine 代码，以及 shajara 推进的 coroutine 实例。
 ---
 
@@ -11,7 +11,7 @@ coroutine 是 routine 的一次运行实例。调用 routine 会创建一条 cor
 委托给它，或 `spawn(...)` 这类 API 把 routine 用作 process 入口时，shajara 才开始推进它。
 routine 仍然是代码形状，coroutine 则是 shajara 推进的那次运行。
 
-## Routine 是可复用的 shajara 工作
+## routine 是可复用的 shajara 工作
 
 TypeScript 类型对应着这个 JavaScript 形式：
 
@@ -30,7 +30,7 @@ yield 出由 shajara 处理的 `Sigil` 指令，并最终产出一个 `Return` �
 应用代码通常写 `yield*` 来使用 shajara operation，从而进入 `Sigil` 这一层；它不需要直接构造
 指令。公开 API 中的 `Rite` 名称，用于标记 shajara 接受并推进的 routine 与 coroutine 形状。
 
-## Coroutine 是一次运行实例
+## coroutine 是一次运行实例
 
 每次调用 routine 都会产生一条独立的 coroutine 对象。因此，同一段 routine 可以有多次运行，
 而这些运行之间不会共享当前位置或局部状态。
@@ -83,7 +83,7 @@ shajara，整个表达式的值就是被委托 coroutine 的返回值。
 
 委托本身不会创建一个用于稍后观察的 future。调用方直接在这个表达式处等待。
 
-## Process 入口增加运行时归属
+## process 入口增加运行时归属
 
 把 routine 传给 `spawn(...)` 这类 API 时，这段 routine 会获得另一个角色。这个 API 会把
 它当作入口，shajara 会在合适的 scope 中创建 process，并由这个 process 推进从 routine

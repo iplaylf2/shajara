@@ -1,10 +1,10 @@
 ---
 title: 外部句柄
-description: 让 request、callback future 和 resource 绑定到拥有它们的 scope。
+description: 在应当约束生命周期的 scope 中创建外部句柄。
 ---
 
-外部 API 常常会给你一个句柄，而这个句柄会活得比创建它的那一行代码更久。在 shajara
-里，应该在负责约束它生命周期的 scope 里创建这个句柄。
+外部 API 常会返回比创建语句活得更久的句柄。在 shajara 里，每个句柄都应创建在负责
+约束其生命周期的 scope 中。
 
 ## 让 Promise 工作随 scope 中止
 
@@ -29,7 +29,7 @@ function* loadProfilePanel(userId: string) {
         throw error;
       },
     );
-    // panel 在 request 仍然 pending 时关闭。
+    // panel 在请求仍然 pending 时关闭。
     return request;
   });
 
@@ -38,17 +38,17 @@ function* loadProfilePanel(userId: string) {
 }
 ```
 
-`panelScope` 创建了 request，也创建了可以停止它的 signal。当这个 scope 收敛时，signal
-会 abort。调用方仍然可以拿到这个 Promise，但这次 request 的生命周期由 `panelScope`
+`panelScope` 创建了请求，也创建了可以停止它的 signal。当这个 scope 收敛时，signal
+会 abort。调用方仍然可以拿到这个 Promise，但这次请求的生命周期由 `panelScope`
 决定。
 
-因为 `yield* abortSignal()` 运行在 `panelScope` 内部，signal 会登记在拥有 request 的
+因为 `yield* abortSignal()` 运行在 `panelScope` 内部，signal 会登记在拥有请求的
 同一个 scope 上。
 
-## 让 callback future 留在 scope 内
+## 让回调 future 留在 scope 内
 
-`completer(...)` 会创建一个 future，让 JavaScript callback 可以完成它。如果当前 scope
-关闭时这个 future 仍然 pending，shajara 会先让它收敛，避免更晚的 callback 再把结果写入已经
+`completer(...)` 会创建一个 future，让 JavaScript 回调可以完成它。如果当前 scope
+关闭时这个 future 仍然 pending，shajara 会先让它收敛，避免更晚的回调再把结果写入已经
 关闭的 scope 所拥有的 future。
 
 ```ts
@@ -64,25 +64,25 @@ function* waitForFileChoice() {
     return future;
   });
 
-  // 抛出 UnfulfilledError，因为 callback 完成之前 fileDialogScope 已经关闭。
+  // 抛出 UnfulfilledError，因为回调完成之前 fileDialogScope 已经关闭。
   const file = yield* wait(selectedFile);
 
   return file.name;
 }
 ```
 
-`registerFileChoice(resolve)` 代表 file input callback。如果 dialog 在这个 callback
-到来前关闭，`fileDialogScope` 会收敛，pending future 会变成 unfulfilled。
-`wait(selectedFile)` 观察到的是这个状态，而不是继续等待一个已经属于关闭 scope 的 callback。
+`registerFileChoice(resolve)` 代表文件选择回调。如果 dialog 在这个回调到来前关闭，
+`fileDialogScope` 会收敛，pending future 会变成 unfulfilled。`wait(selectedFile)`
+观察到的是这个状态，而不是继续等待一个已经属于关闭 scope 的回调。
 
 `yield* completer<File>()` 会在 `fileDialogScope` 中创建并登记这个 future，所以 dialog
-scope 关闭后，更晚到来的 callback 不能再完成这个 shajara future。
+scope 关闭后，更晚到来的回调不能再完成这个 shajara future。
 
 ## 释放 resource provider
 
-有些外部资源需要 setup、ready value，以及所属 scope 关闭时的 cleanup。`resource(...)`
-直接提供这个形状：provider 打开外部资源，在它可用时调用 `provide(value)`，然后继续
-附着在当前 scope 上，直到这个 scope 释放它。
+有些外部资源需要建立、就绪值，以及所属 scope 关闭时的清理。`resource(...)` 直接提供
+这个形状：provider 打开外部资源，在它可用时调用 `provide(value)`，然后继续附着在
+当前 scope 上，直到这个 scope 释放它。
 
 ```ts
 import { resource } from "@shajara/host";
@@ -116,8 +116,8 @@ function* watchRoomUpdates(roomId: string) {
 // closed
 ```
 
-调用 `provide(socket)` 会完成 `updatesSocket`，所以 `updatesScope` 可以发送
-subscription。`provide(...)` 之后，provider 会继续停在同一个 scope 下面。
+调用 `provide(socket)` 会完成 `updatesSocket`，所以 `updatesScope` 可以发送订阅。
+`provide(...)` 之后，provider 会继续停在同一个 scope 下面。
 
 `updatesScope` 结束后，child scope 会释放这个 provider。`finally` block 会在 room
 updates view 关闭之后关闭 socket。
@@ -125,8 +125,8 @@ updates view 关闭之后关闭 socket。
 ## 选择拥有句柄的 scope
 
 在哪个 scope 里创建句柄，取决于哪段 scope 决定外部工作什么时候停止。绑定到 panel
-的 request 应该在 panel scope 里创建。绑定到 dialog 的 callback future 应该在 dialog
+的请求应该在 panel scope 里创建。绑定到 dialog 的回调 future 应该在 dialog
 scope 里创建。应该随 view 关闭的 socket 应该在 view scope 里创建。
 
-调用方仍然可以从这个 scope 拿到 Promise、future 或 ready value，但这不会转移归属。
-创建它的 scope 仍然控制 request signal、callback future 或 provider cleanup。
+调用方仍然可以从这个 scope 拿到 Promise、future 或就绪值，但这不会转移归属。创建它的
+scope 仍然控制 signal、future 或 provider 清理。

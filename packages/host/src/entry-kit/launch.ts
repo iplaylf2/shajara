@@ -64,16 +64,15 @@ export function launchEntry<Result>(
 export interface LaunchedEntry<Result> {
   /** Scope that owns the launched routine. */
   readonly scope: ExecutionScopeRef<Result>;
-  /** Promise for observing the launched routine result. */
+  /** Promise for the launched routine result. */
   readonly settled: StatefulPromise<Result>;
 }
 
 /** Options accepted by `run` and `Scope.run`. */
 export interface RunOptions {
   /**
-   * Abort signal that converges the launched scope.
-   * `null`, `CanceledError`, and `AbortError` abort reasons cancel the scope; other
-   * reasons fail it.
+   * Abort signal linked to the launched routine.
+   * Abort reasons that represent cancellation cancel the routine; other reasons fail it.
    */
   readonly signal?: AbortSignal;
 }

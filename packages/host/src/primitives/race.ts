@@ -12,7 +12,7 @@ import { wait } from "./wait";
  * Non-winning routines are canceled before the caller resumes.
  *
  * @returns First successful routine result.
- * @throws Shajara error when the race scope is canceled or fails.
+ * @throws Error when the race scope is canceled or fails.
  */
 export function* race<const Returns extends NonEmptyTuple<unknown>>(
   routines: RiteRoutineTuple<Returns>,

@@ -1,11 +1,11 @@
 ---
 title: Promise Patterns
-description: Relate Promise-shaped coordination to shajara routine work and Promise boundaries.
+description: Read familiar Promise coordination through shajara values, futures, and Promise boundaries.
 ---
 
-Promise code often groups work, races alternatives, wraps callbacks, and hands values
-back to Promise chains. In a shajara routine, read each pattern by asking whether the
-shajara API gives the routine a value now or a handle it can wait for later.
+Familiar Promise code groups work, races alternatives, wraps callbacks, and hands values
+back to Promise chains. In a shajara routine, read each pattern by asking whether the API
+returns a value at the current point or a future to observe later.
 
 ## Group Work Like `Promise.all`
 
@@ -80,8 +80,8 @@ routine.
 values. `race(...)` returns a value, so the caller resumes after the alternatives have
 already converged to one result.
 
-Read that as an interface shape: future means wait later; value means this API
-already waited through the routines it started.
+Read that as an interface shape: future means wait later; value means the API already
+waited through the routines it started.
 
 ## Build a Future From Callbacks
 

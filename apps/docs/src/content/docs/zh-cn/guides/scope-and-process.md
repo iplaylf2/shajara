@@ -1,6 +1,6 @@
 ---
-title: Scope 与 Process
-description: 把 future 和直接返回的值读成 process 与 scope 边界。
+title: scope 与 process
+description: 用返回形状区分 process future 和 child scope 返回值。
 ---
 
 遇到不同 API 返回不同形状时，返回形状会比函数名更重要。future 表示还有一个可以等待的
@@ -41,7 +41,7 @@ function* loadSidebar() {
 `all(...)` 可以沿用同一种读法，只是形状更大：多段 routine 在当前 scope 中启动，调用方
 拿到一个 future，之后通过它取得有序结果。
 
-## Child scope 返回一个值
+## child scope 返回一个值
 
 `branch(...)` 会为一段 routine 打开 child scope，等待这个 scope，再把 scope 的结果作为
 值返回。
@@ -67,7 +67,7 @@ function* saveProfile() {
 scope 里启动更多 process。只有当 child scope 里的两个 process 都结束后，调用方才会拿到
 entry process 的结果。
 
-`race(...)` 是专门处理候选 routine 的 child-scope 形式：它等到一个 routine 成功，
+`race(...)` 是专门处理候选 routine 的 child scope 形式：它等到一个 routine 成功，
 取消其余 routine，再返回胜出的值。`branch(...)` 是让一段 routine 在自己的 scope 里
 运行的通用形式。
 

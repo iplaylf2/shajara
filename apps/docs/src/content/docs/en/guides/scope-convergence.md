@@ -1,6 +1,6 @@
 ---
 title: Structured Scope Convergence
-description: Understand what a child scope waits for before it returns or fails.
+description: Read what a child scope gathers before it returns or fails.
 ---
 
 Returning from a child scope is not the same as returning from one function. The child

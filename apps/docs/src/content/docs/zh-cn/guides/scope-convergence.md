@@ -1,6 +1,6 @@
 ---
-title: Scope 的结构化收敛
-description: 理解 child scope 在返回或失败之前会等待哪些工作。
+title: scope 的结构化收敛
+description: 读取 child scope 在返回或失败前会收拢哪些工作。
 ---
 
 从 child scope 返回，不等于从一个 function 返回。child scope 可能还拥有其他 process，

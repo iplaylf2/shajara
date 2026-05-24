@@ -5,7 +5,7 @@ import { branch } from "./branch";
 import { withRecoveryPoint } from "#/primitives-kit";
 
 /**
- * Opens a child scope that handles nested `resumable` recovery requests.
+ * Opens a child scope that handles nested `resumable(...)` recovery requests.
  *
  * @returns Guarded child scope and process references.
  */

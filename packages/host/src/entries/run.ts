@@ -6,8 +6,7 @@ import { launchEntry } from "#/entry-kit";
 /**
  * Starts a routine in a root scope.
  *
- * @returns Stateful promise that resolves with the routine result or rejects when the
- * launched scope fails or is canceled.
+ * @returns Stateful promise for the routine result and lifecycle state.
  */
 export function run<Return>(
   routine: RiteRoutine<Return>,

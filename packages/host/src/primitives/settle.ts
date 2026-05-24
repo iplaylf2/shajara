@@ -3,7 +3,7 @@ import { encodeRitual } from "#/boundary/index";
 import { settle as kernelSettle } from "@shajara/kernel";
 import { right } from "@shajara/kernel/utils";
 
-/** Settles a future with a successful value. */
+/** Requests settlement of a future with a successful value. */
 export function settle<Result>(
   futureSettle: RiteFutureSettle<Result>,
   value: Result,

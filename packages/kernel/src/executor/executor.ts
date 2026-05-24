@@ -65,7 +65,7 @@ export interface Executor extends LaunchHandle<never> {
   ): Disposer;
 
   /**
-   * Attempts to settle a future through its settlement authority from outside the computation.
+   * Attempts to settle a future through its settlement authority from outside computation code.
    *
    * @returns `true` when the settlement is accepted, or `false` after prior convergence.
    */

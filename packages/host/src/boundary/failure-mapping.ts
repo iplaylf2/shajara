@@ -13,7 +13,7 @@ import { ShajaraError } from "#/contracts";
 import { externalFailure } from "@shajara/kernel";
 
 /**
- * Converts a JavaScript `Error` into a shajara failure.
+ * Converts a JavaScript `Error` into an in-band failure.
  * Existing `ShajaraError` instances keep their failure identity.
  *
  * @returns Failure value suitable for settlement.
@@ -25,7 +25,7 @@ export function toFailure(error: Error): Failure {
   return externalFailure(error, `${error.name}: ${error.message}`);
 }
 
-/** Converts any caught JavaScript value into a shajara failure. */
+/** Converts any caught JavaScript value into an in-band failure. */
 export function toFailureUnknown(caught: unknown): Failure {
   if (caught instanceof Error) {
     return toFailure(caught);
@@ -37,7 +37,7 @@ export function toFailureUnknown(caught: unknown): Failure {
 export function fromFailure(failure: ScopeExitFailure): ScopeExitError;
 
 /**
- * Converts a shajara failure into a JavaScript error.
+ * Converts an in-band failure into a JavaScript error.
  * Existing `ShajaraError` failures are returned unchanged.
  * External failures carrying an `Error` return the original error.
  *

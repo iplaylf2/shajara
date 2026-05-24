@@ -1,10 +1,10 @@
 ---
 title: External Handles
-description: Keep requests, callback futures, and resources tied to the scope that owns them.
+description: Create external handles in the scope that should bound their lifetime.
 ---
 
-Outside APIs often give you a handle that outlives the line of code that created it. In
-shajara, create that handle in the scope whose lifetime should bound it.
+External APIs often return handles that outlive the line of code that created them. In
+shajara, create each handle in the scope whose lifetime should bound it.
 
 ## Abort Promise Work With the Scope
 
@@ -81,7 +81,7 @@ later callback cannot settle that shajara future after the dialog scope closes.
 
 ## Release Resource Providers
 
-Some outside resources need setup, a ready value, and cleanup when the owning scope
+Some external resources need setup, a ready value, and cleanup when the owning scope
 closes. `resource(...)` gives that shape directly: the provider opens the resource, calls
 `provide(value)` when it is ready, then stays attached to the current scope until that
 scope releases it.
@@ -132,5 +132,5 @@ place for a callback future tied to that dialog. A view scope is the right place
 socket that should close with that view.
 
 The caller may receive a Promise, a future, or a ready value from that scope. That does
-not move ownership. The creating scope still controls the request signal, callback
-future, or provider cleanup.
+not move ownership. The creating scope still controls the signal, future, or provider
+cleanup.

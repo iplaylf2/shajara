@@ -16,7 +16,7 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
   return wisp.liftF(branchSigil(entry, descriptor));
 }
 
-/** Scope reference paired with the outcome future owned by a composed primitive. */
+/** Scope reference paired with an outcome future exposed by a composed primitive. */
 export type ScopedOutcome<Result> = readonly [scope: ScopeRef<unknown>, outcome: FutureKey<Result>];
 
 export type { BranchHandle } from "#/sigils/index";

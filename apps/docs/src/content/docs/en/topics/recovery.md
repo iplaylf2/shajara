@@ -1,6 +1,6 @@
 ---
 title: Guard Boundaries and Recovery
-description: Recover a failed child scope at a guard boundary and deliver the recovery result to the resumable wait point.
+description: Route child-scope failure through guard boundaries to the resumable wait point.
 ---
 
 Some child-scope failures should not be decided immediately by the routine waiting for

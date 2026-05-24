@@ -13,7 +13,7 @@ control to shajara.
 npm install @shajara/host
 ```
 
-## Run a routine
+## Run a Routine
 
 shajara routines are JavaScript generator functions. Use `run(...)` to start one; inside
 the routine, `yield*` hands control to shajara and resumes when the result is ready.
@@ -32,10 +32,10 @@ const message = await run(function* main() {
 Later examples show the routine body and omit the surrounding `run(...)` entry from
 application code.
 
-## Wait for Promise work
+## Wait for Promise Work
 
-Most application code already uses APIs that return Promises. `fetch(...)` is
-one of them. `until(...)` lets a routine wait for that work.
+Application code often begins with Promise APIs such as `fetch(...)`. `until(...)` lets a
+routine wait for that work.
 
 ```ts
 import { until } from "@shajara/host";
@@ -53,7 +53,7 @@ fulfillment or rejection back into the routine's control flow.
 The `yield* until(...)` expression is where the routine hands control to shajara and
 receives the Promise result back.
 
-## Start concurrent work and wait later
+## Start Concurrent Work and Wait Later
 
 When one asynchronous step can run alongside the current flow, the parent
 routine can start it and wait for its result where that value is needed.

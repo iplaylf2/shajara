@@ -2,13 +2,13 @@ import type { Either } from "#/utils/index";
 import type { Failure } from "#/failures";
 import type { KEY_TOKEN } from "./token";
 
-/** Observation authority for a future's in-band convergence result. */
+/** Observation authority for a future's in-band settlement result. */
 export interface FutureKey<Result> {
   readonly [KEY_TOKEN]: "future";
   readonly [RESULT_TOKEN]?: readonly [FutureResult<Result>];
 }
 
-/** Settlement authority for a future's in-band convergence result. */
+/** Settlement authority for a future's in-band settlement result. */
 export interface FutureSettleKey<Result> {
   readonly [KEY_TOKEN]: "future-settle";
   readonly [RESULT_TOKEN]?: readonly [FutureResult<Result>];

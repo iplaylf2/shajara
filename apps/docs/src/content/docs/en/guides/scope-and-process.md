@@ -1,6 +1,6 @@
 ---
 title: Scopes and Processes
-description: Read futures and direct values as process results and scope boundaries.
+description: Use return shapes to distinguish process futures from child-scope values.
 ---
 
 When APIs return different shapes, the return shape matters more than the function name.

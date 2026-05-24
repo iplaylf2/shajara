@@ -1,10 +1,10 @@
 ---
 title: createScope() 的长期边界
-description: 在应用入口创建长期 scope，让外部回调启动的 routine 有共同归属。
+description: 在应用入口打开长期 scope，让回调启动的 routine 有共同归属。
 ---
 
 有些 shajara 工作不是由另一段 routine 启动的，而是由应用入口收到的事件触发：HTTP
-server 收到 request，worker 收到 message，UI shell 收到事件。这个入口通常比单次回调
+服务收到请求，worker 收到消息，UI shell 收到事件。这个入口通常比单次回调
 活得更久，因此需要一个可以承接这些 routine 的长期 scope。
 
 `createScope()` 用来在普通应用代码中打开这个边界。外部回调从它启动 routine；入口退出
@@ -12,8 +12,8 @@ server 收到 request，worker 收到 message，UI shell 收到事件。这个�
 
 ## 在入口处打开 scope
 
-下面的 Hono 服务在启动流程中创建 `serviceScope`。收到 request 后，route handler 从
-这个 scope 启动请求 routine；收到 shutdown signal 后，顶层流程离开等待，`await using`
+下面的 Hono 服务在启动流程中创建 `serviceScope`。收到请求后，route handler 从这个
+scope 启动请求 routine；收到 shutdown signal 后，顶层流程离开等待，`await using`
 释放 HTTP server 和 shajara scope。
 
 ```ts
@@ -81,7 +81,7 @@ routine，表示这个失败属于拥有它的长期 scope。
 
 ## 让 scope 跟随入口
 
-`serviceScope` 和 HTTP server 位于同一个顶层 `try` block。这个 scope 不随单次 request
+`serviceScope` 和 HTTP server 位于同一个顶层 `try` block。这个 scope 不随单次请求
 创建或销毁；顶层流程还在等待时，它保持打开。
 
 ```ts
@@ -103,7 +103,7 @@ try {
 ```
 
 `await using` 让 scope 的释放跟随入口生命周期。服务离开 block 时，HTTP server 停止接收
-新 request，`serviceScope` 也开始关闭；仍属于它的请求工作会跟着这个 scope 收敛。
+新请求，`serviceScope` 也开始关闭；仍属于它的请求工作会跟着这个 scope 收敛。
 
 ## 等待 scope 的关闭结果
 

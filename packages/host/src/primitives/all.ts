@@ -7,7 +7,7 @@ import { all as kernelAll } from "@shajara/kernel";
 /**
  * Starts routines concurrently in the current scope and returns without waiting.
  *
- * @returns Future whose successful result preserves routine order.
+ * @returns Future that settles successfully with values in routine order.
  */
 export function all<const Returns extends UnknownArray>(
   routines: RiteRoutineTuple<Returns>,

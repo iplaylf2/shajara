@@ -1,6 +1,6 @@
 ---
 title: Long-Lived Boundaries with createScope()
-description: Create a long-lived scope at an application entry so external callbacks share one owner.
+description: Open a long-lived scope at an application entry so callbacks share one owner.
 ---
 
 Some shajara work does not start from another routine. It starts when an application

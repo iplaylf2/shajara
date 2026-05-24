@@ -1,7 +1,7 @@
 import type { FailureShape, ScopeFailure } from "@shajara/kernel";
 import { ShajaraError } from "#/contracts";
 
-/** Error thrown when a scope converges through its local failure path. */
+/** Error thrown when a scope closes with a failure. */
 export class ScopeError extends ShajaraError implements ScopeFailure {
   /**
    * Creates a scope error from a scope failure.
