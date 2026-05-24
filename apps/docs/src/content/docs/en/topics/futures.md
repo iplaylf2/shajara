@@ -54,7 +54,7 @@ future has a successful value, it returns `[true, value]`.
 
 ## Settle a Failure
 
-Use `settleError(...)` when a future should settle with a JavaScript failure instead of a
+Use `settleError(...)` when a future should settle with a JavaScript `Error` instead of a
 successful value.
 
 ```ts

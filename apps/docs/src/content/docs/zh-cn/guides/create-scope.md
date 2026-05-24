@@ -131,5 +131,4 @@ await Promise.race([shutdown.promise, serviceScope.closed]);
 }
 ```
 
-正常关闭在这里表现为 `CanceledError`，`catch` 会把它当作预期结果处理；除此之外的错误
-仍然应该暴露。
+预期的取消会以 `CanceledError` 进入 `catch`；除此之外的错误仍然应该暴露。

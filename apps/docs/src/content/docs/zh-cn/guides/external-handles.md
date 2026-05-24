@@ -1,10 +1,10 @@
 ---
 title: 外部句柄
-description: 在应当约束生命周期的 scope 中创建外部句柄。
+description: 在控制生命周期的 scope 中创建外部句柄。
 ---
 
-外部 API 常会返回比创建语句活得更久的句柄。在 shajara 里，每个句柄都应创建在负责
-约束其生命周期的 scope 中。
+外部 API 常会返回比创建语句活得更久的句柄。在 shajara 里，每个句柄都应创建在控制其
+生命周期的 scope 中。
 
 ## 让 Promise 工作随 scope 中止
 
@@ -124,7 +124,7 @@ updates view 关闭之后关闭 socket。
 
 ## 选择拥有句柄的 scope
 
-在哪个 scope 里创建句柄，取决于哪段 scope 决定外部工作什么时候停止。绑定到 panel
+在哪个 scope 里创建句柄，取决于哪个 scope 决定外部工作什么时候停止。绑定到 panel
 的请求应该在 panel scope 里创建。绑定到 dialog 的回调 future 应该在 dialog
 scope 里创建。应该随 view 关闭的 socket 应该在 view scope 里创建。
 

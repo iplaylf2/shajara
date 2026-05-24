@@ -82,7 +82,7 @@ function* sendAfterQueueScopeCloses() {
 ```
 
 `branch(...)` 返回后，`queueSender` 仍然是一个可持有的 JavaScript 值，但它背后的 channel
-属于 `queueScope`。`queueScope` 收敛时，仍然 open 的 channel 会被 revoked。后续
+属于 `queueScope`。`queueScope` 收敛时，仍然 open 的 channel 会被撤销。后续
 `send(...)` 会使用这个 endpoint，并抛出 `ChannelError`；它不会把 channel 挂到调用方
 scope 上。
 

@@ -96,5 +96,5 @@ function* saveWithoutWaitingHere() {
 当前 process 启动 `saveProfileEntry`，并拿到 `saveFuture`。为 `saveProfileEntry` 创建的
 process 会等待 `saveProfileScope`；调用方可以继续运行，直到来到这个等待点。
 
-这些 API 的返回形状会保持这个区分：在当前 scope 中启动 process 的 API，会返回用于观察
-结果的 future；打开 child scope 的 API，会在调用它的 process 里等待这个 scope，然后返回值。
+这些 API 的返回形状会保持这个区分：在当前 scope 中启动 process 的 API，会返回这段
+工作的 future；打开 child scope 的 API，会在调用它的 process 里等待这个 scope，然后返回值。

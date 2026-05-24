@@ -42,7 +42,7 @@ function* publishListing() {
 `[true, value]` 会通过 `scanPhotosWithRecovery()` 返回，所以 `reviewListing` 会从这个
 等待点继续。
 
-恢复值属于 `resumable(...)`。`guard(...)` 的返回值仍然是 guarded entry 的结果。
+恢复值由 `resumable(...)` 返回；`guard(...)` 返回的仍然是传给它的 routine 的结果。
 
 ## 委托给祖先边界
 

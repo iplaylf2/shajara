@@ -1,15 +1,15 @@
 ---
 title: External Handles
-description: Create external handles in the scope that should bound their lifetime.
+description: Create external handles in the scope that controls their lifetime.
 ---
 
 External APIs often return handles that outlive the line of code that created them. In
-shajara, create each handle in the scope whose lifetime should bound it.
+shajara, create each handle in the scope that controls its lifetime.
 
 ## Abort Promise Work With the Scope
 
 `abortSignal(...)` creates an `AbortSignal` tied to the current scope. Pass it to Promise
-APIs such as `fetch(...)` when outside work should stop with that scope.
+APIs such as `fetch(...)` when external work should stop with that scope.
 
 ```ts
 import { abortSignal, until } from "@shajara/host";
@@ -126,7 +126,7 @@ block closes the socket after the room updates view has closed.
 
 ## Choose the Owning Scope
 
-Create the handle in the scope that decides when the outside work should stop. A panel
+Create the handle in the scope that decides when the external work should stop. A panel
 scope is the right place for a request tied to that panel. A dialog scope is the right
 place for a callback future tied to that dialog. A view scope is the right place for a
 socket that should close with that view.

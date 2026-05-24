@@ -52,7 +52,7 @@ function* readDisplayNameNow(displayName: RiteFuture<string>) {
 
 ## 完成失败结果
 
-当一个 future 应该以 JavaScript failure 完成，而不是得到成功值时，使用
+当一个 future 应该以 JavaScript `Error` 完成，而不是得到成功值时，使用
 `settleError(...)`。
 
 ```ts

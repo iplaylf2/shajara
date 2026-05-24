@@ -140,5 +140,4 @@ uncaught request failure or another failure that belongs to this long-lived boun
 }
 ```
 
-A normal close appears there as `CanceledError`, which the `catch` treats as expected;
-other errors still surface.
+Expected cancellation reaches the `catch` as `CanceledError`; other errors still surface.

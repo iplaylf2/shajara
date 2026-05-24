@@ -133,8 +133,8 @@ function* launchCampaign() {
 ```
 
 The `sendEmailBatch` routine handles the error before it crosses the process boundary. It
-decides its own failure result, the later `wait(emailStatusFuture)` receives an ordinary
-value, and the current scope can continue.
+turns the local failure into an ordinary result, the later `wait(emailStatusFuture)`
+receives that value, and the current scope can continue.
 
 If the `try...catch` is moved out around `wait(emailStatusFuture)`, the process failure
 has already driven the current scope into failure convergence.

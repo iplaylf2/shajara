@@ -105,6 +105,6 @@ To find the owner, look for the call that creates the runtime object:
 Calls that use a handle do not choose a new owner. Future calls that observe or settle,
 such as `wait(...)` and `settle(...)`, act on an existing future. Channel calls that
 send, receive, or close act on an existing channel. Passing an `AbortSignal` to an
-outside API, exposing a future through `promisify(...)`, or keeping the provided value
+external API, exposing a future through `promisify(...)`, or keeping the provided value
 from `resource(...)` also uses a relationship that has already been attached to a scope.
 The owner is still the scope where the handle was created.
