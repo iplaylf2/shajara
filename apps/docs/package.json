@@ -16,7 +16,8 @@
   "type": "module",
   "scripts": {
     "api-map": "typedoc",
-    "build": "yarn api-map && yarn build:site",
+    "brand-assets": "yarn node -e \"const { copyFileSync, mkdirSync } = require('node:fs'); const { dirname } = require('node:path'); const target = 'public/favicon.svg'; mkdirSync(dirname(target), { recursive: true }); copyFileSync(require.resolve('@shajara/brand/favicon.svg'), target);\"",
+    "build": "yarn api-map && yarn brand-assets && yarn build:site",
     "build:site": "astro build",
     "dev": "astro dev --host",
     "preview": "astro preview --host",
@@ -31,6 +32,7 @@
     "@astrojs/check": "^0.9.9",
     "@astrojs/solid-js": "^6.0.1",
     "@astrojs/starlight": "^0.39.2",
+    "@shajara/brand": "workspace:^",
     "@shajara/presets": "workspace:^",
     "astro": "^6.3.7",
     "oxlint": "catalog:",

@@ -2973,6 +2973,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@shajara/brand@workspace:^, @shajara/brand@workspace:internal/brand":
+  version: 0.0.0-use.local
+  resolution: "@shajara/brand@workspace:internal/brand"
+  dependencies:
+    "@shajara/presets": "workspace:^"
+    oxlint: "catalog:"
+  languageName: unknown
+  linkType: soft
+
 "@shajara/docs@workspace:apps/docs":
   version: 0.0.0-use.local
   resolution: "@shajara/docs@workspace:apps/docs"
@@ -2980,6 +2989,7 @@ __metadata:
     "@astrojs/check": "npm:^0.9.9"
     "@astrojs/solid-js": "npm:^6.0.1"
     "@astrojs/starlight": "npm:^0.39.2"
+    "@shajara/brand": "workspace:^"
     "@shajara/host": "workspace:^"
     "@shajara/presets": "workspace:^"
     astro: "npm:^6.3.7"

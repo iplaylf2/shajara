@@ -8,8 +8,8 @@ export const docsConfig: StarlightUserConfig = {
   locales: starlightLocales,
   logo: {
     alt: "",
-    dark: "./src/assets/logo-dark.svg",
-    light: "./src/assets/logo-light.svg",
+    dark: "@shajara/brand/logo/dark.svg",
+    light: "@shajara/brand/logo/light.svg",
   },
   sidebar: starlightSidebar,
   social: [

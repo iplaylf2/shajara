@@ -8,6 +8,19 @@ export function collectWorkspaces(repoRoot: string, entryExtensions: string[]): 
   );
 }
 
+export interface WorkspaceListItem {
+  location: string;
+  name: string;
+}
+
+export interface WorkspaceSpec {
+  entries: string[];
+  name: string;
+  relativePath: string;
+  sourceRoots: Set<string>;
+  tsconfigPath: string;
+}
+
 function listWorkspaces(repoRoot: string): WorkspaceListItem[] {
   return execFileSync("yarn", ["workspaces", "list", "--json"], {
     cwd: repoRoot,
@@ -176,16 +189,4 @@ const diagnosticsHost = {
   },
 };
 
-interface WorkspaceListItem {
-  location: string;
-  name: string;
-}
-
-export interface WorkspaceSpec {
-  entries: string[];
-  name: string;
-  relativePath: string;
-  sourceRoots: Set<string>;
-  tsconfigPath: string;
-}
 type ParsedTsconfig = typescript.ParsedCommandLine;
