@@ -18,7 +18,6 @@
   "ignoreDependencies": [
     "@astrojs/check",
     "@changesets/cli",
-    "@shajara/brand",
     "@shajara/forge",
     "cspell-cli",
     "oxfmt",
