@@ -1,5 +1,18 @@
 # @shajara/docs
 
+## 0.5.2
+
+### Patch Changes
+
+- [#49](https://github.com/iplaylf2/shajara/pull/49) [`f73c082`](https://github.com/iplaylf2/shajara/commit/f73c0824771e2e3711360aec7b17f79630483874) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Refine the docs site around ownership and result terminology.
+
+  Readers now see consistent wording for external handles, scope ownership, future
+  completion, process results, and recovery boundaries across guides, topics, concepts, and
+  Explorer copy.
+
+- Updated dependencies [[`f73c082`](https://github.com/iplaylf2/shajara/commit/f73c0824771e2e3711360aec7b17f79630483874)]:
+  - @shajara/host@0.10.1
+
 ## 0.5.1
 
 ### Patch Changes
