@@ -1,16 +1,9 @@
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  viewBox="24 24 80 80"
-  role="img"
-  aria-labelledby="title desc"
->
-  <title id="title">shajara</title>
-  <desc id="desc">A single-line scope resonance sigil.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 24 80 80" role="img">
   <defs>
     <linearGradient id="shajara-resonance" x1="42" x2="90" y1="88" y2="38" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#8b5cf6" />
-      <stop offset="0.52" stop-color="#4a5cff" />
-      <stop offset="1" stop-color="#60a5fa" />
+      <stop offset="0" stop-color="#c4b5fd" />
+      <stop offset="0.52" stop-color="#91a0ff" />
+      <stop offset="1" stop-color="#93c5fd" />
     </linearGradient>
   </defs>
   <path
