@@ -44,7 +44,7 @@ const siteSidebar = [
       "routines-and-coroutines",
       "scope-tree",
       "scope-exit",
-      "handle-ownership",
+      "handles-and-scope-ownership",
       "scope-autonomy",
     ],
   },
