@@ -1,5 +1,14 @@
 # @shajara/docs
 
+## 0.6.1
+
+### Patch Changes
+
+- [#53](https://github.com/iplaylf2/shajara/pull/53) [`898cf63`](https://github.com/iplaylf2/shajara/commit/898cf633d9d36e383cfd790e952d5952dcc41d66) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Add shajara branding to the docs site logo, favicon, API Map, and Flow Explorer.
+
+- Updated dependencies [[`898cf63`](https://github.com/iplaylf2/shajara/commit/898cf633d9d36e383cfd790e952d5952dcc41d66)]:
+  - @shajara/host@0.10.2
+
 ## 0.6.0
 
 ### Minor Changes

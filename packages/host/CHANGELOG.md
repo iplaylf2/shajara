@@ -1,5 +1,14 @@
 # @shajara/host
 
+## 0.10.2
+
+### Patch Changes
+
+- [#53](https://github.com/iplaylf2/shajara/pull/53) [`898cf63`](https://github.com/iplaylf2/shajara/commit/898cf633d9d36e383cfd790e952d5952dcc41d66) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Add the shajara logo to the package README pages.
+
+- Updated dependencies [[`898cf63`](https://github.com/iplaylf2/shajara/commit/898cf633d9d36e383cfd790e952d5952dcc41d66)]:
+  - @shajara/kernel@0.10.2
+
 ## 0.10.1
 
 ### Patch Changes
