@@ -6,6 +6,8 @@ frontmatter
 geolocation
 knip
 labelledby
+linecap
+linejoin
 mktemp
 oxfmt
 oxlint
