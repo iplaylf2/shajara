@@ -89,12 +89,16 @@ Supporting calls are acceptable when they create the value, state, or observatio
 API needs, but they should not become peer subjects in the same example. If a supporting
 call introduces a second result shape or demands its own explanation, change the example
 so the named API remains the reader's focus. If several APIs need equal attention, split
-the examples or give the comparison its own section.
+the examples or give the comparison its own section. When neighboring examples teach
+related boundaries, give them comparable surrounding surfaces so the reader sees the
+shajara mechanism as the difference, not incidental application work.
 
 A concrete scenario is valuable when it reveals how work is owned, observed, canceled, or
-converged. Otherwise use lighter surfaces: inline routines, literals, and comments for
-omitted callbacks, user actions, or teardown points. The example's size should be justified
-by a shajara responsibility, not by making the surrounding application feel complete.
+converged. Otherwise use lighter surfaces: inline routines, literals, and comments where
+callbacks, user actions, or teardown points are omitted, so missing context is visible
+without inventing helpers or objects that look reusable outside the example. The example's
+size should be justified by a shajara responsibility, not by making the surrounding
+application feel complete.
 
 The application surface should help readers recognize where the shajara boundary appears,
 not become the center of gravity. Choose surrounding work according to the boundary being
