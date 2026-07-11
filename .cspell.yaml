@@ -15,3 +15,4 @@ useGitignore: true
 ignorePaths:
   - /.cspell
   - "*.lock"
+  - /pnpm-lock.yaml

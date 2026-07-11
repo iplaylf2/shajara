@@ -16,8 +16,8 @@
   "type": "module",
   "scripts": {
     "api-map": "typedoc",
-    "brand-assets": "yarn node -e \"const { copyFileSync, mkdirSync } = require('node:fs'); const { dirname } = require('node:path'); const target = 'public/favicon.svg'; mkdirSync(dirname(target), { recursive: true }); copyFileSync(require.resolve('@shajara/brand/favicon.svg'), target);\"",
-    "build": "yarn api-map && yarn brand-assets && yarn build:site",
+    "brand-assets": "node -e \"const { copyFileSync, mkdirSync } = require('node:fs'); const { dirname } = require('node:path'); const target = 'public/favicon.svg'; mkdirSync(dirname(target), { recursive: true }); copyFileSync(require.resolve('@shajara/brand/favicon.svg'), target);\"",
+    "build": "pnpm api-map && pnpm brand-assets && pnpm build:site",
     "build:site": "astro build",
     "dev": "astro dev --host",
     "preview": "astro preview --host",
@@ -39,13 +39,5 @@
     "type-fest": "catalog:",
     "typedoc": "catalog:",
     "typescript": "catalog:"
-  },
-  "dependenciesMeta": {
-    "@astrojs/check": {
-      "unplugged": true
-    },
-    "astro": {
-      "unplugged": true
-    }
   }
 }

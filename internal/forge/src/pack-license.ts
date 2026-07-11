@@ -1,7 +1,7 @@
 import { copyFile, rm } from "node:fs/promises";
+import { requireEnvPath, resolveWorkspaceRoot } from "./support/environment.ts";
 import { parseArgs } from "node:util";
 import path from "node:path";
-import { requireEnvPath } from "./support/environment.ts";
 
 const licensePaths = resolveLicensePaths();
 const mode = parseMode();
@@ -21,8 +21,8 @@ switch (mode) {
 }
 
 function resolveLicensePaths() {
-  const repoRoot = requireEnvPath("PROJECT_CWD");
-  const packageRoot = requireEnvPath("INIT_CWD");
+  const repoRoot = resolveWorkspaceRoot();
+  const packageRoot = path.dirname(requireEnvPath("npm_package_json"));
 
   return {
     packageLicensePath: path.resolve(packageRoot, "LICENSE"),

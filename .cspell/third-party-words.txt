@@ -20,4 +20,4 @@ typedoc
 vite
 vitest
 withastro
-yarnrc
+esbuild

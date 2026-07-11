@@ -2,6 +2,7 @@
 import { defineConfig } from "oxlint";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 
 import shared from "@shajara/presets/oxlint.shared.ts";
 
@@ -11,19 +12,20 @@ export default defineConfig({
 });
 
 function workspaceIgnorePatterns(): string[] {
-  const output = execFileSync("yarn", ["workspaces", "list", "--json"], {
+  const workspaceRoot = path.dirname(
+    execFileSync("pnpm", ["root", "--workspace-root"], { encoding: "utf8" }).trim(),
+  );
+  const output = execFileSync("pnpm", ["list", "--recursive", "--depth", "-1", "--json"], {
+    cwd: workspaceRoot,
     encoding: "utf8",
   });
 
-  return output
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as YarnWorkspace)
-    .map((workspace) => workspace.location)
-    .filter((location) => location !== ".")
-    .map((location) => `${location}/**`);
+  return (JSON.parse(output) as PnpmWorkspace[])
+    .map((workspace) => workspace.path)
+    .filter((workspacePath) => workspacePath !== workspaceRoot)
+    .map((workspacePath) => `${path.relative(workspaceRoot, workspacePath)}/**`);
 }
 
-interface YarnWorkspace {
-  location: string;
+interface PnpmWorkspace {
+  path: string;
 }

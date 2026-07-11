@@ -6,22 +6,17 @@
     "name": "iplaylf2",
     "url": "https://github.com/iplaylf2"
   },
-  "workspaces": [
-    "internal/*",
-    "packages/*",
-    "apps/*"
-  ],
   "type": "module",
   "scripts": {
-    "build": "yarn workspaces foreach -At run build",
+    "build": "pnpm -r build",
     "depcruise": "shajara-forge depcruise",
     "format": "oxfmt --write .",
-    "lint": "yarn workspaces foreach -Ap exec -- oxlint --config oxlint.config.ts",
+    "lint": "pnpm -r exec oxlint --config oxlint.config.ts",
     "pack:license": "shajara-forge pack:license",
-    "release": "yarn workspaces foreach -At --no-private npm publish --access public --provenance --tolerate-republish",
+    "release": "changeset publish",
     "spellcheck": "cspell-cli .",
-    "test": "yarn workspaces foreach -Ap run test",
-    "typecheck": "yarn workspaces foreach -Ap run typecheck",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
     "version-packages": "changeset version"
   },
   "devDependencies": {
@@ -36,19 +31,8 @@
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },
-  "dependenciesMeta": {
-    "oxfmt": {
-      "unplugged": true
-    },
-    "oxlint": {
-      "unplugged": true
-    },
-    "tinypool": {
-      "unplugged": true
-    }
-  },
   "engines": {
     "node": ">=26.1.0"
   },
-  "packageManager": "yarn@4.15.0"
+  "packageManager": "pnpm@11.11.0"
 }

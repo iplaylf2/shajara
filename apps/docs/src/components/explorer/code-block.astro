@@ -11,7 +11,7 @@ const { code, id } = Astro.props;
 const source = code.map((line) => line.text).join("\n");
 const FIRST_LINE = 1;
 const lineTransformer = {
-  line(node: CodeLineNode, lineNumber: number) {
+  line(node: { properties: object }, lineNumber: number) {
     const line = code.at(lineNumber - FIRST_LINE);
 
     if (!line) {
@@ -22,19 +22,18 @@ const lineTransformer = {
 
     if (!isExplorerExampleCodeLine(line)) {
       className.push(styles["explorerCodeSpacer"]);
-      node.properties ??= {};
-      node.properties["class"] = className.join(" ");
+      Object.assign(node.properties, { class: className.join(" ") });
       return;
     }
 
     const lineEvent = line.id;
     const completedEvents = line.completion.events;
 
-    node.properties ??= {};
-    node.properties["class"] = className.join(" ");
-    node.properties["data-explorer-line-event"] = lineEvent;
-    node.properties["data-explorer-completed-events"] =
-      completedEvents.join(" ");
+    Object.assign(node.properties, {
+      class: className.join(" "),
+      "data-explorer-completed-events": completedEvents.join(" "),
+      "data-explorer-line-event": lineEvent,
+    });
   },
   name: "explorer-code-lines",
 };
@@ -44,15 +43,6 @@ interface Props {
   id: string;
 }
 
-interface CodeLineNode {
-  properties?: CodeLineProperties;
-}
-
-interface CodeLineProperties {
-  class?: string;
-  "data-explorer-completed-events"?: string;
-  "data-explorer-line-event"?: ExplorerEventId;
-}
 ---
 
 <Code

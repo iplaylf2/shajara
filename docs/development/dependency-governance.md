@@ -62,7 +62,7 @@ unless there is a clear reason not to.
 
 ## Dependency Analysis
 
-Use `yarn depcruise` to enforce directory-level dependency discipline across all
+Use `pnpm depcruise` to enforce directory-level dependency discipline across all
 directories under the target source tree.
 
 Treat the result as a structural check on the boundaries expressed by the code. When it

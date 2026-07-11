@@ -1,4 +1,12 @@
-approvedGitRepositories: []
+packages:
+  - internal/*
+  - packages/*
+  - apps/*
+
+allowBuilds:
+  core-js: false
+  esbuild: false
+  sharp: false
 
 catalog:
   "@types/node": ^26.1.1
@@ -11,5 +19,3 @@ catalog:
   vite: ^8.1.4
   vite-plugin-dts: ^5.0.3
   vitest: ^4.1.10
-
-enableScripts: false

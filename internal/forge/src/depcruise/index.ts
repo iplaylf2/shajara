@@ -5,9 +5,9 @@ import { collectWorkspaceViolations } from "./violations.ts";
 import { collectWorkspaces } from "#src/support/workspaces.ts";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { requireEnvPath } from "#src/support/environment.ts";
+import { resolveWorkspaceRoot } from "#src/support/environment.ts";
 
-const repoRoot = requireEnvPath("PROJECT_CWD");
+const repoRoot = resolveWorkspaceRoot();
 const depcruiseOptions = await loadDepcruiseOptions(repoRoot);
 const workspaces = collectWorkspaces(repoRoot, getCruiseEntryExtensions(depcruiseOptions));
 const cycleReports = await Promise.all(

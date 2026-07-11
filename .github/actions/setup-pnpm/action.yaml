@@ -1,0 +1,27 @@
+name: Setup Node and pnpm
+description: Set up pnpm and Node.js using the versions declared in package.json, then enable pnpm caching.
+
+outputs:
+  node-version:
+    description: The Node.js version resolved from package.json.
+    value: ${{ steps.setup-node.outputs.node-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        package_json_file: package.json
+
+    - name: Set up Node.js
+      id: setup-node
+      uses: actions/setup-node@v6
+      with:
+        node-version-file: package.json
+        registry-url: https://registry.npmjs.org
+        cache: pnpm
+
+    - name: Verify pnpm
+      shell: bash
+      run: pnpm --version
