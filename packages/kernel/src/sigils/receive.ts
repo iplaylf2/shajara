@@ -1,6 +1,5 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { ChannelReceiver } from "./channel";
-import type { TaggedUnion } from "type-fest";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
+import type { ChannelReceiver } from "./channel.js";
 
 /**
  * Creates a sigil that waits for a channel receiver to produce a value or terminal state.
@@ -24,7 +23,7 @@ export interface ReceiveSigil<Value, Outcome> extends SigilShape {
 }
 
 /** Receive echo: delivered value, explicit close, or revoked terminal state. */
-export type ReceiveResult<Value, Outcome> = TaggedUnion<
-  "kind",
-  { value: { readonly value: Value }; closed: { readonly outcome: Outcome }; revoked: {} }
->;
+export type ReceiveResult<Value, Outcome> =
+  | { readonly kind: "value"; readonly value: Value }
+  | { readonly kind: "closed"; readonly outcome: Outcome }
+  | { readonly kind: "revoked" };

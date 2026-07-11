@@ -1,16 +1,15 @@
-import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts/index.js";
 import { either, readonlyArray } from "fp-ts";
-import type { ScopedOutcome } from "./branch";
-import { branch } from "./branch";
-import { cancel } from "./cancel";
-import { future } from "./future";
-import { noop } from "#/utils/index";
+import type { ScopedOutcome } from "./branch.js";
+import { branch } from "./branch.js";
+import { cancel } from "./cancel.js";
+import { future } from "./future.js";
+import { noop } from "#/utils/index.js";
 import { pipe } from "fp-ts/function";
-import { settle } from "./settle";
-import { spawn } from "./spawn";
-import { wait } from "./wait";
-import { wisp } from "#/internal/fp";
+import { settle } from "./settle.js";
+import { spawn } from "./spawn.js";
+import { wait } from "./wait.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Runs ritual entries in a race scope and cancels losing work after the first success.
@@ -18,12 +17,12 @@ import { wisp } from "#/internal/fp";
  *
  * @returns Race scope and winner future.
  */
-export function race<EntryReturns extends NonEmptyTuple<unknown>>(
+export function race<EntryReturns extends readonly [unknown, ...unknown[]]>(
   entries: RaceEntries<EntryReturns>,
-): Wisp<ScopedOutcome<ArrayValues<EntryReturns>>> {
+): Wisp<ScopedOutcome<EntryReturns[number]>> {
   return pipe(
     wisp.Do,
-    wisp.bind("winner", () => future<ArrayValues<EntryReturns>>()),
+    wisp.bind("winner", () => future<EntryReturns[number]>()),
     wisp.bind("scope", ({ winner: [, winnerSettle] }) =>
       pipe(
         branch(raceArena(entries, winnerSettle)),
@@ -38,7 +37,7 @@ export function race<EntryReturns extends NonEmptyTuple<unknown>>(
 }
 
 /** Ritual entries whose relics form the race winner type. */
-export type RaceEntries<EntryReturns extends NonEmptyTuple<unknown>> = {
+export type RaceEntries<EntryReturns extends readonly [unknown, ...unknown[]]> = {
   readonly [Index in keyof EntryReturns]: Ritual<EntryReturns[Index]>;
 };
 

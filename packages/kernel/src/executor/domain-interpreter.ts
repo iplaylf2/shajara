@@ -1,13 +1,20 @@
-import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy";
-import type { ProcessRef, Ritual, ScopeDescriptor, ScopeRef, Suppressor } from "#/contracts";
-import { ReaperDomain, SchedulerDomain } from "./domains";
+import type { AutonomyOptions, ReaperOption, SchedulerOption } from "./autonomy.js";
+import type {
+  ProcessRef,
+  Ritual,
+  ScopeDescriptor,
+  ScopeRef,
+  Suppressor,
+} from "#/contracts/index.js";
+import { ReaperDomain, SchedulerDomain } from "./domains/index.js";
+import type { Option } from "#/utils/index.js";
 import { option, readonlyArray } from "fp-ts";
-import type { Failure } from "#/failures";
-import { FaultSink } from "./fault-sink";
-import { Interpreter } from "#/interpreter/index";
-import type { ProcessorTaskStatus } from "./processor";
-import type { ScopeZone } from "#/interpreter/index";
-import { autonomyOf } from "./autonomy";
+import type { Failure } from "#/failures/index.js";
+import { FaultSink } from "./fault-sink.js";
+import { Interpreter } from "#/interpreter/index.js";
+import type { ProcessorTaskStatus } from "./processor.js";
+import type { ScopeZone } from "#/interpreter/index.js";
+import { autonomyOf } from "./autonomy.js";
 
 export class DomainInterpreter extends Interpreter {
   public static createByAutonomy(
@@ -21,7 +28,7 @@ export class DomainInterpreter extends Interpreter {
 
   public *startReaperTasks(
     suppressor: Suppressor,
-  ): Iterable<readonly [ScopeRef<unknown>, ProcessRef<option.Option<Failure>>]> {
+  ): Iterable<readonly [ScopeRef<unknown>, ProcessRef<Option<Failure>>]> {
     for (const reaperDomain of ReaperDomain.domains(this.#reaperDomainRoot)) {
       if (!reaperDomain.hasClosingScope) {
         continue;

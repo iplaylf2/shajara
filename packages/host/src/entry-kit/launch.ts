@@ -1,9 +1,9 @@
 import type { ExecutionScopeRef, Executor, LaunchHandle, LaunchStatus } from "@shajara/kernel";
-import { decodeRitual, fromFailure, toFailureUnknown } from "#/boundary/index";
+import { decodeRitual, fromFailure, toFailureUnknown } from "#/boundary/index.js";
 import { isLeft, isNone } from "@shajara/kernel/utils";
-import { CanceledError } from "#/errors";
+import { CanceledError } from "#/errors/index.js";
 import type { Option } from "@shajara/kernel/utils";
-import type { RiteRoutine } from "#/contracts";
+import type { RiteRoutine } from "#/contracts/index.js";
 
 export function launchEntry<Result>(
   executor: Executor,

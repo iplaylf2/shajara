@@ -1,5 +1,5 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { Failure } from "#/failures";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
+import type { Failure } from "#/failures/index.js";
 
 /**
  * Creates a sigil that converges the current process with failure.

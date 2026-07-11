@@ -1,6 +1,6 @@
-import type { ProcessRef, ScopeRef } from "#/contracts";
-import type { RuntimeProcessKeeper } from "./keeper";
-import type { RuntimeProcessRunner } from "./runner";
+import type { ProcessRef, ScopeRef } from "#/contracts/index.js";
+import type { RuntimeProcessKeeper } from "./keeper.js";
+import type { RuntimeProcessRunner } from "./runner.js";
 
 export interface RuntimeProcessHandle<Relic> extends ProcessRef<Relic> {
   keeper(): RuntimeProcessKeeper;

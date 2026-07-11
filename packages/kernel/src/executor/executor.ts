@@ -1,4 +1,4 @@
-import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
+import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index.js";
 import type {
   ContextKey,
   FutureKey,
@@ -7,21 +7,21 @@ import type {
   Ritual,
   ScopeRef,
   Suppressor,
-} from "#/contracts";
-import type { Disposer, Option } from "#/utils/index";
-import type { LaunchHandle, LaunchStatus } from "./launch-handle";
+} from "#/contracts/index.js";
+import type { Disposer, Option } from "#/utils/index.js";
+import type { LaunchHandle, LaunchStatus } from "./launch-handle.js";
 import { either, option } from "fp-ts";
-import { halt, park } from "#/primitives/index";
-import { DomainInterpreter } from "./domain-interpreter";
-import type { ExecutionScopeRef } from "./execution-scope";
-import { ExecutorDriver } from "./executor-driver";
-import type { Failure } from "#/failures";
-import { FaultSink } from "./fault-sink";
-import type { Pacer } from "./pacer";
-import { RoundLimitReaper } from "./round-limit-reaper";
-import { contextKey } from "#/contracts";
-import { noop } from "#/utils/index";
-import { withRecoveryAnchor } from "#/primitives-kit";
+import { halt, park } from "#/primitives/index.js";
+import { DomainInterpreter } from "./domain-interpreter.js";
+import type { ExecutionScopeRef } from "./execution-scope.js";
+import { ExecutorDriver } from "./executor-driver.js";
+import type { Failure } from "#/failures/index.js";
+import { FaultSink } from "./fault-sink.js";
+import type { Pacer } from "./pacer.js";
+import { RoundLimitReaper } from "./round-limit-reaper.js";
+import { contextKey } from "#/contracts/index.js";
+import { noop } from "#/utils/index.js";
+import { withRecoveryAnchor } from "#/primitives-kit/index.js";
 
 /**
  * Attaches executor turn requests to the embedding environment.

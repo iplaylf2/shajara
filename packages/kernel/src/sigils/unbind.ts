@@ -1,4 +1,4 @@
-import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
+import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that removes the current scope's binding for a context key.

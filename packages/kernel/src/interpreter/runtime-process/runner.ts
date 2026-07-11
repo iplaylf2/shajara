@@ -1,7 +1,7 @@
-import type { Echo, ProcessRef } from "#/contracts";
-import type { SelfHandle, Sigil } from "#/sigils/index";
-import type { CleanupTask } from "./keeper";
-import type { Failure } from "#/failures";
+import type { Echo, ProcessRef } from "#/contracts/index.js";
+import type { SelfHandle, Sigil } from "#/sigils/index.js";
+import type { CleanupTask } from "./keeper.js";
+import type { Failure } from "#/failures/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {

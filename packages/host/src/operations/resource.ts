@@ -1,6 +1,6 @@
-import type { RiteCoroutine, RiteFuture, RiteFutureSettle } from "#/contracts";
-import { future, settle } from "#/primitives/index";
-import { park, spawnDetached } from "#/operations-kit";
+import type { RiteCoroutine, RiteFuture, RiteFutureSettle } from "#/contracts/index.js";
+import { future, settle } from "#/primitives/index.js";
+import { park, spawnDetached } from "#/operations-kit/index.js";
 
 /**
  * Starts provider work that publishes one ready value in the current scope.

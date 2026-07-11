@@ -1,11 +1,10 @@
-import type { ArrayValues, NonEmptyTuple } from "type-fest";
-import { decodeRituals, encodeRitual } from "#/boundary/index";
-import { CanceledError } from "#/errors";
-import type { RiteCoroutine } from "#/contracts";
-import type { RiteRoutineTuple } from "#/boundary/index";
+import { decodeRituals, encodeRitual } from "#/boundary/index.js";
+import { CanceledError } from "#/errors/index.js";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import type { RiteRoutineTuple } from "#/boundary/index.js";
 import type { ScopedOutcome } from "@shajara/kernel";
 import { race as kernelRace } from "@shajara/kernel";
-import { wait } from "./wait";
+import { wait } from "./wait.js";
 
 /**
  * Runs routines in a race scope and returns the first successful value.
@@ -14,9 +13,9 @@ import { wait } from "./wait";
  * @returns First successful routine result.
  * @throws Error when the race scope is canceled or fails.
  */
-export function* race<const Returns extends NonEmptyTuple<unknown>>(
+export function* race<const Returns extends readonly [unknown, ...unknown[]]>(
   routines: RiteRoutineTuple<Returns>,
-): RiteCoroutine<ArrayValues<Returns>> {
+): RiteCoroutine<Returns[number]> {
   const outcome = yield* encodeRitual(() => kernelRace<Returns>(decodeRituals(routines)))();
   return yield* waitRaceOutcome(outcome);
 }

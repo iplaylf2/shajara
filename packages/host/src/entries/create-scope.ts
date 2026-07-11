@@ -1,12 +1,12 @@
 import type { ExecutionScopeRef, Executor } from "@shajara/kernel";
-import type { LaunchStatus, RiteRoutine } from "#/contracts";
+import type { LaunchStatus, RiteRoutine } from "#/contracts/index.js";
 // oxlint-disable-next-line unicorn/prefer-export-from -- These types are also used locally.
-import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit";
-import { CanceledError } from "#/errors";
-import { encodeRitual } from "#/boundary/index";
-import { ensureExecutor } from "#/executor";
+import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit/index.js";
+import { CanceledError } from "#/errors/index.js";
+import { encodeRitual } from "#/boundary/index.js";
+import { ensureExecutor } from "#/executor/index.js";
 import { isLeft } from "@shajara/kernel/utils";
-import { launchEntry } from "#/entry-kit";
+import { launchEntry } from "#/entry-kit/index.js";
 import { park } from "@shajara/kernel";
 
 /**

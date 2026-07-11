@@ -1,5 +1,5 @@
 import type { InterruptedFailure } from "@shajara/kernel";
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 
 /** Error thrown when runtime progression is interrupted outside normal convergence. */
 export class InterruptedError extends ShajaraError implements InterruptedFailure {

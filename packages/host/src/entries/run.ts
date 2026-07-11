@@ -1,7 +1,7 @@
-import type { RunOptions, StatefulPromise } from "#/entry-kit";
-import type { RiteRoutine } from "#/contracts";
-import { ensureExecutor } from "#/executor";
-import { launchEntry } from "#/entry-kit";
+import type { RunOptions, StatefulPromise } from "#/entry-kit/index.js";
+import type { RiteRoutine } from "#/contracts/index.js";
+import { ensureExecutor } from "#/executor/index.js";
+import { launchEntry } from "#/entry-kit/index.js";
 
 /**
  * Starts a routine in a root scope.

@@ -1,5 +1,5 @@
-import type { ContextKey, Presence, RiteCoroutine } from "#/contracts";
-import { encodeRitual, unwrapOption } from "#/boundary/index";
+import type { ContextKey, Presence, RiteCoroutine } from "#/contracts/index.js";
+import { encodeRitual, unwrapOption } from "#/boundary/index.js";
 import { lookup as kernelLookup } from "@shajara/kernel";
 
 /**

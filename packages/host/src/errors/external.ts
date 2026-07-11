@@ -1,5 +1,5 @@
 import type { ExternalFailure } from "@shajara/kernel";
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 
 /** Error wrapper for an external failure whose raw value is not an `Error`. */
 export class ExternalError extends ShajaraError implements ExternalFailure {

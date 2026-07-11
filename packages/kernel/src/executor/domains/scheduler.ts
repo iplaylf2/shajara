@@ -1,8 +1,8 @@
-import { Domain } from "./domain";
-import type { ProcessRef } from "#/contracts";
-import type { ProcessState } from "#/interpreter/index";
-import type { ProcessorTask } from "#/executor/processor";
-import type { Scheduler } from "#/executor/autonomy";
+import { Domain } from "./domain.js";
+import type { ProcessRef } from "#/contracts/index.js";
+import type { ProcessState } from "#/interpreter/index.js";
+import type { ProcessorTask } from "#/executor/processor.js";
+import type { Scheduler } from "#/executor/autonomy.js";
 
 export class SchedulerDomain extends Domain<SchedulerDomain> {
   public static root(scheduler: Scheduler, createTask: SchedulerTaskFactory): SchedulerDomain {

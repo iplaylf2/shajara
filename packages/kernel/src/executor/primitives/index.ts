@@ -1,1 +1,1 @@
-export * from "./autonomy";
+export * from "./autonomy.js";

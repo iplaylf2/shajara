@@ -1,2 +1,2 @@
-export * from "./executor";
-export * from "./scope";
+export * from "./executor.js";
+export * from "./scope.js";

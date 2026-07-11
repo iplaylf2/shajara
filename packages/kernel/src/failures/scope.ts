@@ -1,4 +1,4 @@
-import type { FailureShape } from "#/contracts";
+import type { FailureShape } from "#/contracts/index.js";
 
 /**
  * Creates the failure value for a scope that failed while closing.

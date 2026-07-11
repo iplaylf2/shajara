@@ -1,5 +1,5 @@
-import type { Failure, RiteCoroutine, RiteFuture } from "#/contracts";
-import { encodeRitual, unwrapEither } from "#/boundary/index";
+import type { Failure, RiteCoroutine, RiteFuture } from "#/contracts/index.js";
+import { encodeRitual, unwrapEither } from "#/boundary/index.js";
 import type { Either } from "@shajara/kernel/utils";
 import { wait as kernelWait } from "@shajara/kernel";
 

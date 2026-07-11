@@ -1,9 +1,9 @@
-import type { ChannelHandle, OverloadRewrite } from "#/sigils/index";
-import type { Wisp } from "#/contracts";
-import { channelFailure } from "#/failures";
-import { channel as channelSigil } from "#/sigils/index";
-import { halt } from "./halt";
-import { wisp } from "#/internal/fp";
+import type { ChannelHandle, OverloadRewrite } from "#/sigils/index.js";
+import type { Wisp } from "#/contracts/index.js";
+import { channelFailure } from "#/failures/index.js";
+import { channel as channelSigil } from "#/sigils/index.js";
+import { halt } from "./halt.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Opens a channel owned by the current scope.
@@ -36,6 +36,6 @@ export type {
   ChannelReceiver,
   ChannelSender,
   OverloadRewrite,
-} from "#/sigils/index";
+} from "#/sigils/index.js";
 
 const MINIMUM_CAPACITY = 0;

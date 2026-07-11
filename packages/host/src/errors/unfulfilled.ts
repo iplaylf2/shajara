@@ -1,4 +1,4 @@
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 import type { UnfulfilledFailure } from "@shajara/kernel";
 
 /** Error thrown when a future's owner scope closes before the future settles. */

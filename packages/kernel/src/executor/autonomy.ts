@@ -1,7 +1,7 @@
-import type { ProcessRef, ScopeDescriptor, ScopeRef, Wisp } from "#/contracts";
-import type { Failure } from "#/failures";
-import type { Option } from "#/utils/index";
-import type { Processor } from "./processor";
+import type { ProcessRef, ScopeDescriptor, ScopeRef, Wisp } from "#/contracts/index.js";
+import type { Failure } from "#/failures/index.js";
+import type { Option } from "#/utils/index.js";
+import type { Processor } from "./processor.js";
 
 export function describeAutonomy(options: AutonomyOptions): AutonomyScopeDescriptor {
   return {

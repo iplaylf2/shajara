@@ -6,11 +6,11 @@ import type {
   ReaperOption,
   Scheduler,
   SchedulerOption,
-} from "#/executor/autonomy";
-import type { Ritual, Wisp } from "#/contracts";
-import type { BranchHandle } from "#/primitives/index";
-import { branch } from "#/primitives/index";
-import { describeAutonomy } from "#/executor/autonomy";
+} from "#/executor/autonomy.js";
+import type { Ritual, Wisp } from "#/contracts/index.js";
+import type { BranchHandle } from "#/primitives/index.js";
+import { branch } from "#/primitives/index.js";
+import { describeAutonomy } from "#/executor/autonomy.js";
 
 /**
  * Opens a child scope whose scheduler or reaper policy is supplied by the caller.

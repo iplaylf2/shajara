@@ -1,2 +1,2 @@
-export * from "./handle";
-export * from "./runtime-channel";
+export * from "./handle.js";
+export * from "./runtime-channel.js";

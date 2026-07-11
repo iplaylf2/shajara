@@ -1,6 +1,6 @@
-import type { ChannelReceiver, ChannelSender, ReceiveResult } from "#/sigils/index";
-import type { Failure, ScopeExitFailure } from "#/failures";
-import type { FutureResult, FutureSettleKey, Ritual, Wisp } from "#/contracts";
+import type { ChannelReceiver, ChannelSender, ReceiveResult } from "#/sigils/index.js";
+import type { Failure, ScopeExitFailure } from "#/failures/index.js";
+import type { FutureResult, FutureSettleKey, Ritual, Wisp } from "#/contracts/index.js";
 import {
   bind,
   channel,
@@ -12,13 +12,13 @@ import {
   settle,
   spawn,
   wait,
-} from "#/sigils/index";
-import { wisp, wispOption } from "#/internal/fp";
-import type { Option } from "fp-ts/Option";
-import { contextKey } from "#/contracts";
+} from "#/sigils/index.js";
+import type { Either, Option } from "#/utils/index.js";
+import { wisp, wispOption } from "#/internal/fp/index.js";
+import { contextKey } from "#/contracts/index.js";
 import { either } from "fp-ts";
-import { interruptedFailure } from "#/failures";
-import { narrowAs } from "#/utils/index";
+import { interruptedFailure } from "#/failures/index.js";
+import { narrowAs } from "#/utils/index.js";
 import { pipe } from "fp-ts/function";
 
 export function withRecoveryAnchor<Relic>(entry: Ritual<Relic>): Ritual<Relic> {
@@ -63,7 +63,7 @@ export function withRecoveryPoint<Relic>(
           serveRecovery(receiver, (request) =>
             pipe(
               handle(request.failure),
-              wispOption.matchE<unknown, either.Either<Failure, unknown>>(
+              wispOption.matchE<unknown, Either<Failure, unknown>>(
                 () => wisp.liftF(send(ancestor, request)),
                 (recovery) => wisp.liftF(settle(request.replyTo, recovery)),
               ),
@@ -105,9 +105,7 @@ export function requestRecovery<Relic>(failure: ScopeExitFailure): Wisp<FutureRe
  *
  * @returns Recovery result, or `none` to delegate to an ancestor route.
  */
-export type RecoveryHandler = (
-  failure: ScopeExitFailure,
-) => Wisp<Option<either.Either<Failure, unknown>>>;
+export type RecoveryHandler = (failure: ScopeExitFailure) => Wisp<Option<Either<Failure, unknown>>>;
 
 function serveRecovery(
   receiver: ChannelReceiver<RecoveryRequest, unknown>,

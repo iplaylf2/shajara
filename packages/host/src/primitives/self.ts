@@ -1,5 +1,5 @@
-import type { RiteCoroutine, SelfHandle } from "#/contracts";
-import { encodeRitual } from "#/boundary/index";
+import type { RiteCoroutine, SelfHandle } from "#/contracts/index.js";
+import { encodeRitual } from "#/boundary/index.js";
 import { self as kernelSelf } from "@shajara/kernel";
 
 /**

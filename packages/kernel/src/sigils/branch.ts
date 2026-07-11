@@ -6,7 +6,7 @@ import type {
   ScopeDescriptor,
   ScopeRef,
   SigilShape,
-} from "#/contracts";
+} from "#/contracts/index.js";
 
 /**
  * Creates a sigil that opens a child scope with one structural entry process.

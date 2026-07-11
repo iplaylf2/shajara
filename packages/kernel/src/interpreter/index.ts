@@ -1,3 +1,3 @@
-export * from "./interpreter";
-export type * from "./process-step";
-export * from "./scope-zone";
+export * from "./interpreter.js";
+export type * from "./process-step.js";
+export * from "./scope-zone.js";

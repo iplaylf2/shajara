@@ -1,2 +1,2 @@
-export * from "./channel";
-export * from "./scope";
+export * from "./channel.js";
+export * from "./scope.js";

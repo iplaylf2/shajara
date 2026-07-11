@@ -1,16 +1,16 @@
-import type { CanceledFailure } from "./canceled";
-import type { ChannelFailure } from "./channel";
-import type { ExternalFailure } from "./external";
-import type { InterruptedFailure } from "./interrupted";
-import type { ScopeFailure } from "./scope";
-import type { UnfulfilledFailure } from "./unfulfilled";
+import type { CanceledFailure } from "./canceled.js";
+import type { ChannelFailure } from "./channel.js";
+import type { ExternalFailure } from "./external.js";
+import type { InterruptedFailure } from "./interrupted.js";
+import type { ScopeFailure } from "./scope.js";
+import type { UnfulfilledFailure } from "./unfulfilled.js";
 
-export * from "./canceled";
-export * from "./channel";
-export * from "./external";
-export * from "./interrupted";
-export * from "./scope";
-export * from "./unfulfilled";
+export * from "./canceled.js";
+export * from "./channel.js";
+export * from "./external.js";
+export * from "./interrupted.js";
+export * from "./scope.js";
+export * from "./unfulfilled.js";
 
 /** Failure variants that can appear in future results. */
 export type Failure =

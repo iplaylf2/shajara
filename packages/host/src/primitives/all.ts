@@ -1,7 +1,6 @@
-import type { RiteCoroutine, RiteFuture } from "#/contracts";
-import { decodeRituals, encodeRitual } from "#/boundary/index";
-import type { RiteRoutineTuple } from "#/boundary/index";
-import type { UnknownArray } from "type-fest";
+import type { RiteCoroutine, RiteFuture } from "#/contracts/index.js";
+import { decodeRituals, encodeRitual } from "#/boundary/index.js";
+import type { RiteRoutineTuple } from "#/boundary/index.js";
 import { all as kernelAll } from "@shajara/kernel";
 
 /**
@@ -9,7 +8,7 @@ import { all as kernelAll } from "@shajara/kernel";
  *
  * @returns Future that settles successfully with values in routine order.
  */
-export function all<const Returns extends UnknownArray>(
+export function all<const Returns extends readonly unknown[]>(
   routines: RiteRoutineTuple<Returns>,
 ): RiteCoroutine<RiteFuture<Returns>> {
   return encodeRitual(() => kernelAll(decodeRituals(routines)))();

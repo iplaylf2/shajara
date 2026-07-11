@@ -1,6 +1,6 @@
-import type { Processor, ProcessorTask } from "./processor";
-import { FaultSink } from "./fault-sink";
-import type { Pacer } from "./pacer";
+import type { Processor, ProcessorTask } from "./processor.js";
+import { FaultSink } from "./fault-sink.js";
+import type { Pacer } from "./pacer.js";
 import { readonlyArray } from "fp-ts";
 
 export class ExecutorDriver {

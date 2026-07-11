@@ -1,7 +1,7 @@
-import type { FutureKey, Ritual, ScopeDescriptor, ScopeRef, Wisp } from "#/contracts";
-import type { BranchHandle } from "#/sigils/index";
-import { branch as branchSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { FutureKey, Ritual, ScopeDescriptor, ScopeRef, Wisp } from "#/contracts/index.js";
+import type { BranchHandle } from "#/sigils/index.js";
+import { branch as branchSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Opens a child scope with one structural entry process.
@@ -19,4 +19,4 @@ export function branch<Relic, Descriptor extends ScopeDescriptor = ScopeDescript
 /** Scope reference paired with an outcome future exposed by a composed primitive. */
 export type ScopedOutcome<Result> = readonly [scope: ScopeRef<unknown>, outcome: FutureKey<Result>];
 
-export type { BranchHandle } from "#/sigils/index";
+export type { BranchHandle } from "#/sigils/index.js";

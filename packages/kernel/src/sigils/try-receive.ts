@@ -1,7 +1,7 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { ChannelReceiver } from "./channel";
-import type { Option } from "#/utils/index";
-import type { ReceiveResult } from "./receive";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
+import type { ChannelReceiver } from "./channel.js";
+import type { Option } from "#/utils/index.js";
+import type { ReceiveResult } from "./receive.js";
 
 /**
  * Creates a sigil that attempts one channel receive without blocking.

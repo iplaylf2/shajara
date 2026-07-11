@@ -1,5 +1,5 @@
 import type { Executor } from "@shajara/kernel";
-import { ShajaraPacer } from "./shajara-pacer";
+import { ShajaraPacer } from "./shajara-pacer.js";
 import { createExecutor } from "@shajara/kernel";
 
 export function ensureExecutor(): Executor {

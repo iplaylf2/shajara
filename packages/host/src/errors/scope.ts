@@ -1,5 +1,5 @@
 import type { FailureShape, ScopeFailure } from "@shajara/kernel";
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 
 /** Error thrown when a scope closes with a failure. */
 export class ScopeError extends ShajaraError implements ScopeFailure {

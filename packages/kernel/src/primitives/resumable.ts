@@ -1,15 +1,15 @@
-import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts";
-import type { ScopeExitFailure } from "#/failures";
-import type { ScopedOutcome } from "./branch";
-import { branch } from "./branch";
+import type { FutureKey, FutureSettleKey, Ritual, Wisp } from "#/contracts/index.js";
+import type { ScopeExitFailure } from "#/failures/index.js";
+import type { ScopedOutcome } from "./branch.js";
+import { branch } from "./branch.js";
 import { either } from "fp-ts";
-import { future } from "./future";
+import { future } from "./future.js";
 import { pipe } from "fp-ts/function";
-import { requestRecovery } from "#/primitives-kit";
-import { settle } from "./settle";
-import { spawn } from "./spawn";
-import { wait } from "./wait";
-import { wisp } from "#/internal/fp";
+import { requestRecovery } from "#/primitives-kit/index.js";
+import { settle } from "./settle.js";
+import { spawn } from "./spawn.js";
+import { wait } from "./wait.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Opens a child scope whose scope-exit failure is offered to recovery routes.

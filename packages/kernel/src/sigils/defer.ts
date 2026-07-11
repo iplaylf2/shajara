@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, Ritual, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, Ritual, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that registers cleanup for the current process exit path.

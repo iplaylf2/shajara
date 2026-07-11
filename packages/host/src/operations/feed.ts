@@ -1,8 +1,8 @@
-import type { ChannelReceiver, OverloadRewrite } from "#/primitives/index";
-import type { RiteCoroutine } from "#/contracts";
-import { channel } from "#/primitives/index";
-import { channelErrorOf } from "#/primitives-kit";
-import { currentExecutor } from "#/operations-kit";
+import type { ChannelReceiver, OverloadRewrite } from "#/primitives/index.js";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import { channel } from "#/primitives/index.js";
+import { channelErrorOf } from "#/primitives-kit/index.js";
+import { currentExecutor } from "#/operations-kit/index.js";
 import { isNone } from "@shajara/kernel/utils";
 
 /**

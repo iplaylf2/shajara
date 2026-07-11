@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, ProcessRef, ScopeRef, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, ProcessRef, ScopeRef, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that reads the current scope and process identity.

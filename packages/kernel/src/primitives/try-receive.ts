@@ -1,9 +1,9 @@
-import type { ChannelReceiver } from "./channel";
-import type { Option } from "#/utils/index";
-import type { ReceiveResult } from "./receive";
-import type { Wisp } from "#/contracts";
-import { tryReceive as tryReceiveSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { ChannelReceiver } from "./channel.js";
+import type { Option } from "#/utils/index.js";
+import type { ReceiveResult } from "./receive.js";
+import type { Wisp } from "#/contracts/index.js";
+import { tryReceive as tryReceiveSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Attempts one channel receive without blocking the current process.

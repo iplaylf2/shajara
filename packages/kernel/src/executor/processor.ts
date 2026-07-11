@@ -1,4 +1,4 @@
-import type { Suppressor } from "#/contracts";
+import type { Suppressor } from "#/contracts/index.js";
 
 /** Scheduler target that progresses runnable process tasks. */
 export interface Processor {

@@ -1,4 +1,4 @@
-import type { FailureShape, FutureKey } from "./kernel";
+import type { FailureShape, FutureKey } from "./kernel.js";
 import type { FutureHandle, FutureSettleKey } from "@shajara/kernel";
 import type { Sigil } from "@shajara/kernel/sigils";
 

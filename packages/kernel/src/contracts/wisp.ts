@@ -1,5 +1,4 @@
-import type { Echo, SigilShape } from "./sigil";
-import type { UnknownArray } from "type-fest";
+import type { Echo, SigilShape } from "./sigil.js";
 
 /**
  * Creates a computation node that waits for a sigil echo.
@@ -45,7 +44,7 @@ export type Ritual<Relic> = Incantation<[], Relic>;
  *
  * @returns Initial computation node.
  */
-export type Incantation<Args extends UnknownArray, Relic> = (...args: Args) => Wisp<Relic>;
+export type Incantation<Args extends readonly unknown[], Relic> = (...args: Args) => Wisp<Relic>;
 
 /** Computation node, either waiting on a sigil or carrying its final relic. */
 export type Wisp<Relic> = StirringWisp<SigilShape, Relic> | RestingWisp<Relic>;

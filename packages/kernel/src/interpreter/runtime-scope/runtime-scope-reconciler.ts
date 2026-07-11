@@ -1,5 +1,5 @@
 // oxlint-disable no-magic-numbers
-import type { ScopeRef, Suppressor } from "#/contracts";
+import type { ScopeRef, Suppressor } from "#/contracts/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export class RuntimeScopeReconciler {

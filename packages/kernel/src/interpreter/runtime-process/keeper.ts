@@ -1,6 +1,6 @@
-import type { ProcessDescriptor, ProcessRef, ScopeRef } from "#/contracts";
-import type { Failure } from "#/failures";
-import type { FutureSettlement } from "#/interpreter/runtime-future";
+import type { ProcessDescriptor, ProcessRef, ScopeRef } from "#/contracts/index.js";
+import type { Failure } from "#/failures/index.js";
+import type { FutureSettlement } from "#/interpreter/runtime-future/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessKeeper extends ProcessRef<unknown> {

@@ -164,9 +164,6 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.73.0
-      type-fest:
-        specifier: 'catalog:'
-        version: 5.8.0
       typedoc:
         specifier: 'catalog:'
         version: 0.28.20(typescript@6.0.3)
@@ -184,6 +181,10 @@ importers:
         version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
 
   packages/kernel:
+    dependencies:
+      fp-ts:
+        specifier: ^2.16.11
+        version: 2.16.11
     devDependencies:
       '@shajara/presets':
         specifier: workspace:^
@@ -194,9 +195,6 @@ importers:
       core-js:
         specifier: 'catalog:'
         version: 3.49.0
-      fp-ts:
-        specifier: ^2.16.11
-        version: 2.16.11
       oxlint:
         specifier: 'catalog:'
         version: 1.73.0

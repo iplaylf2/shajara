@@ -1,6 +1,6 @@
 import type { ChannelEndpoint } from "@shajara/kernel";
-import type { RiteCoroutine } from "#/contracts";
-import { encodeRitual } from "#/boundary/index";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import { encodeRitual } from "#/boundary/index.js";
 import { close as kernelClose } from "@shajara/kernel";
 
 /** Closes a channel endpoint and resumes blocked operations with the close outcome. */

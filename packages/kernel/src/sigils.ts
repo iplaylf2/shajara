@@ -1,1 +1,1 @@
-export * from "./sigils/index";
+export * from "./sigils/index.js";

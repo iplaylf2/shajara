@@ -1,7 +1,7 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { ChannelSender } from "./channel";
-import type { Option } from "#/utils/index";
-import type { SendResult } from "./send";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
+import type { ChannelSender } from "./channel.js";
+import type { Option } from "#/utils/index.js";
+import type { SendResult } from "./send.js";
 
 /**
  * Creates a sigil that attempts one channel send without blocking.

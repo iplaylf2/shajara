@@ -1,4 +1,4 @@
-import type { ScopeRef } from "#/contracts";
+import type { ScopeRef } from "#/contracts/index.js";
 
 /** Scope reference accepted by executor controls. */
 export interface ExecutionScopeRef<Relic> extends ScopeRef<Relic> {

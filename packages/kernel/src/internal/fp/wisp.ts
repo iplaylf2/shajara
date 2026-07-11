@@ -1,10 +1,10 @@
 // oxlint-disable id-length
-import type { SigilShape, Wisp } from "#/contracts";
+import type { SigilShape, Wisp } from "#/contracts/index.js";
 import type { applicative, apply, functor, monad, pointed } from "fp-ts";
-import { evoke, restingWisp, stirringWisp } from "#/contracts";
+import { evoke, restingWisp, stirringWisp } from "#/contracts/index.js";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
-import { lifting } from "./lifting";
-import type { sigil } from "./sigil";
+import { lifting } from "./lifting.js";
+import type { sigil } from "./sigil.js";
 
 declare module "fp-ts/HKT" {
   interface URItoKind<A> {

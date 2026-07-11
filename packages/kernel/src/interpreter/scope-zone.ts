@@ -1,4 +1,4 @@
-import type { ProcessRef, ScopeRef, Suppressor } from "#/contracts";
+import type { ProcessRef, ScopeRef, Suppressor } from "#/contracts/index.js";
 
 export interface ScopeZone {
   trackProcess(process: ProcessRef<unknown>, suppressor: Suppressor): void;

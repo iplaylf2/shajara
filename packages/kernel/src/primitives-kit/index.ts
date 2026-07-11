@@ -1,1 +1,1 @@
-export * from "./recovery";
+export * from "./recovery.js";

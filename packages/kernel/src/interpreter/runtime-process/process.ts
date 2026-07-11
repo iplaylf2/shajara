@@ -1,4 +1,4 @@
-import type { CleanupTask, ProcessClosure, RuntimeProcessKeeper } from "./keeper";
+import type { CleanupTask, ProcessClosure, RuntimeProcessKeeper } from "./keeper.js";
 import type {
   FutureKey,
   FutureResult,
@@ -7,19 +7,19 @@ import type {
   REF_TOKEN,
   Ritual,
   ScopeRef,
-} from "#/contracts";
+} from "#/contracts/index.js";
 import type {
   RuntimeProcessNextEcho,
   RuntimeProcessRunner,
   RuntimeProcessRunnerNext,
-} from "./runner";
-import type { SelfHandle, Sigil } from "#/sigils/index";
-import type { Failure } from "#/failures";
-import { RuntimeFuture } from "#/interpreter/runtime-future";
-import type { RuntimeProcessHandle } from "./handle";
-import { Stepper } from "./stepper";
+} from "./runner.js";
+import type { SelfHandle, Sigil } from "#/sigils/index.js";
+import type { Failure } from "#/failures/index.js";
+import { RuntimeFuture } from "#/interpreter/runtime-future/index.js";
+import type { RuntimeProcessHandle } from "./handle.js";
+import { Stepper } from "./stepper.js";
 import type { TaggedUnion } from "type-fest";
-import { canceledFailure } from "#/failures";
+import { canceledFailure } from "#/failures/index.js";
 import { either } from "fp-ts";
 
 export class RuntimeProcess<Relic>

@@ -1,4 +1,4 @@
-import type { FutureResult } from "#/contracts";
+import type { FutureResult } from "#/contracts/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export type ProcessStep<Relic> = TaggedUnion<

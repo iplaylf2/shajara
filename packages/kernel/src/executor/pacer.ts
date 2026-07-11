@@ -1,4 +1,4 @@
-import type { Disposer } from "#/utils/index";
+import type { Disposer } from "#/utils/index.js";
 
 /** Embedding-environment contract for executor slice control and deferred continuation. */
 export interface Pacer {
