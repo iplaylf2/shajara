@@ -27,6 +27,6 @@ export interface SendSigil<Value, Outcome> extends SigilShape {
 
 /** Send echo: accepted value, explicit close, or revoked terminal state. */
 export type SendResult<Outcome> =
-  | { readonly kind: "sent" }
-  | { readonly kind: "closed"; readonly outcome: Outcome }
-  | { readonly kind: "revoked" };
+  | { kind: "sent" }
+  | { kind: "closed"; readonly outcome: Outcome }
+  | { kind: "revoked" };

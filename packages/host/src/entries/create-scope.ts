@@ -1,23 +1,23 @@
-import type { ExecutionScopeRef, Executor } from "@shajara/kernel";
 import type { LaunchStatus, RiteRoutine } from "#/contracts/index.js";
 // oxlint-disable-next-line unicorn/prefer-export-from -- These types are also used locally.
-import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit/index.js";
+import type { RunOptions, StatefulPromise, TopLevelEntry } from "#/entry-kit/index.js";
 import { CanceledError } from "#/errors/index.js";
 import { encodeRitual } from "#/boundary/index.js";
-import { ensureExecutor } from "#/executor/index.js";
 import { isLeft } from "@shajara/kernel/utils";
-import { launchEntry } from "#/entry-kit/index.js";
+import { launchEntry, launchTopLevelEntry } from "#/entry-kit/index.js";
 import { park } from "@shajara/kernel";
 
 /**
  * Creates a long-lived scope for launching related routines.
  *
+ * An open managed scope keeps a Node.js process from exiting naturally. Cancel or
+ * asynchronously dispose the scope during application shutdown.
+ *
  * @returns Scope that owns routines launched through it.
  */
 export function createScope(): Scope {
-  const executor = ensureExecutor();
-
-  return new ManagedScope(executor, executor.scope);
+  const entry = launchTopLevelEntry(encodeRitual(park));
+  return new ManagedScope(entry);
 }
 
 /** Long-lived scope for launching and canceling related routines. */
@@ -57,11 +57,9 @@ export type ScopeStatus = LaunchStatus;
 export type { RunOptions, StatefulPromise };
 
 class ManagedScope implements Scope {
-  public constructor(
-    private readonly executor: Executor,
-    scope: ExecutionScopeRef<unknown>,
-  ) {
-    this.#entry = launchEntry(this.executor, scope, encodeRitual(park));
+  public constructor(entry: TopLevelEntry<never>) {
+    this.executor = entry.executor;
+    this.#entry = entry;
     this.#closed = Promise.resolve(this.#entry.settled);
   }
 
@@ -111,6 +109,7 @@ class ManagedScope implements Scope {
     return this.#entry.settled.status;
   }
 
-  readonly #entry: LaunchedEntry<never>;
+  readonly #entry: TopLevelEntry<never>;
   readonly #closed: Promise<void>;
+  private readonly executor: TopLevelEntry<never>["executor"];
 }

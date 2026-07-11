@@ -137,14 +137,13 @@ deliberate recovery boundary for routine code.
 
 ## Host Entries
 
-Host entries start work from the executor root and expose host-facing promises for
-observing launched work or managed scope convergence.
+Top-level host entries start work from the executor root and expose promises for observing
+launched work or managed scope convergence.
 
 ### `run`
 
-`run` connects a routine to the long-lived executor and exposes the resulting launch as a
-Promise with `status`. An optional abort signal converges that launched work according to
-its abort reason.
+`run` launches a routine as a top-level entry and exposes the result as a Promise with
+`status`. An optional abort signal converges that work according to its abort reason.
 
 Result semantics:
 
@@ -155,7 +154,7 @@ Result semantics:
 
 ### `createScope`
 
-`createScope` creates a long-lived managed scope from the executor root entry and exposes:
+`createScope` creates a long-lived top-level scope and exposes:
 
 - `run(...)`
 - `cancel()`
@@ -174,6 +173,24 @@ Expected cancellation resolves the `cancel()` Promise; non-cancellation close fa
 reject through the corresponding host error mapping. `closed` remains the direct
 observation point for scope convergence, so cancellation and failure settle there as
 rejections through the same mapping.
+
+### Node.js Process Liveness
+
+Scheduler resources participate in Node.js process liveness. A top-level `run(...)` keeps
+them active until its scope settles. A managed scope keeps them active until it closes,
+even when it has no currently runnable child, because it remains available to later
+callbacks. Applications must cancel or asynchronously dispose managed scopes during
+shutdown.
+
+The host shares one executor among concurrently active top-level entries. The first entry
+creates the executor and its scheduler resources; when the final entry settles, the host
+releases those resources. A later top-level entry starts with a new executor.
+
+This lifecycle lets a completed one-shot command exit naturally without calling
+`process.exit()`, while work that is still waiting on promises, timers, or external events
+continues to keep the process alive. Browser environments have no process-exit contract;
+the same ownership rule still bounds scheduler resources without imposing Node.js
+lifecycle semantics on the host API.
 
 ## Host Operations
 

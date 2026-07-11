@@ -1,6 +1,7 @@
 // oxlint-disable no-magic-numbers
 import type { Disposer } from "@shajara/kernel/utils";
 
+/** Coordinates deferred executor turns with periodic flush turns. */
 export class TurnCoordinator implements Disposable {
   public constructor(
     flushTurn: () => void,
@@ -38,10 +39,17 @@ export class TurnCoordinator implements Disposable {
     this.#flush.pendingAlignmentAt = 0;
     this.#disarmTaskTurn();
     this.#disarmFlushTurn();
+    this.#channel.port1.onmessage = null;
+    this.#channel.port1.close();
+    this.#channel.port2.close();
     this.#tasks.clear();
   }
 
   #handleTaskTurn(): void {
+    if (this.#isDisposed) {
+      return;
+    }
+
     const turnAt = now();
     this.#disarmTaskTurn();
     if (!this.#isTaskTurnDue(turnAt)) {
@@ -49,7 +57,10 @@ export class TurnCoordinator implements Disposable {
       return;
     }
 
-    const errors = [...this.#runTaskTurn(turnAt), ...this.#alignFlushTurn(turnAt)];
+    const errors = this.#runTaskTurn(turnAt);
+    if (!this.#isDisposed) {
+      errors.push(...this.#alignFlushTurn(turnAt));
+    }
 
     if (errors.length > 0) {
       throw new AggregateError(errors, "Errors occurred while posting executor turn work");
@@ -193,8 +204,8 @@ export class TurnCoordinator implements Disposable {
   };
   readonly #flush: FlushTurnState;
   readonly #channel = new globalThis.MessageChannel();
-  readonly #tasks = new Set<readonly [() => void]>();
   readonly #flushTurn: () => void;
+  readonly #tasks = new Set<readonly [() => void]>();
 }
 
 interface ScheduledTurnState {

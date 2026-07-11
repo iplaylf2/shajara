@@ -24,6 +24,6 @@ export interface ReceiveSigil<Value, Outcome> extends SigilShape {
 
 /** Receive echo: delivered value, explicit close, or revoked terminal state. */
 export type ReceiveResult<Value, Outcome> =
-  | { readonly kind: "value"; readonly value: Value }
-  | { readonly kind: "closed"; readonly outcome: Outcome }
-  | { readonly kind: "revoked" };
+  | { kind: "value"; readonly value: Value }
+  | { kind: "closed"; readonly outcome: Outcome }
+  | { kind: "revoked" };
