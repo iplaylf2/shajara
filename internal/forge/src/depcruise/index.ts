@@ -52,9 +52,11 @@ function renderCycleReport(reports: Violation[]) {
   const lines = ["Directory-level circular dependencies found:", ""];
 
   for (const violation of reports) {
-    lines.push(`[${violation.scope}] ${violation.directories.join(" <-> ")}`);
-    lines.push(violation.examples.join("\n"));
-    lines.push("");
+    lines.push(
+      `[${violation.scope}] ${violation.directories.join(" <-> ")}`,
+      violation.examples.join("\n"),
+      "",
+    );
   }
 
   return {

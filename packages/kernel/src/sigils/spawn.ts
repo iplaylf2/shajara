@@ -1,3 +1,4 @@
+// oxlint-disable-next-line unicorn/prefer-export-from -- Exported types are also used locally.
 import type {
   CompletionMode,
   ECHO_TOKEN,

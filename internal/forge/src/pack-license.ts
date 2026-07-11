@@ -1,7 +1,7 @@
 import { copyFile, rm } from "node:fs/promises";
 import { parseArgs } from "node:util";
+import path from "node:path";
 import { requireEnvPath } from "./support/environment.ts";
-import { resolve } from "node:path";
 
 const licensePaths = resolveLicensePaths();
 const mode = parseMode();
@@ -25,8 +25,8 @@ function resolveLicensePaths() {
   const packageRoot = requireEnvPath("INIT_CWD");
 
   return {
-    packageLicensePath: resolve(packageRoot, "LICENSE"),
-    rootLicensePath: resolve(repoRoot, "LICENSE"),
+    packageLicensePath: path.resolve(packageRoot, "LICENSE"),
+    rootLicensePath: path.resolve(repoRoot, "LICENSE"),
   };
 }
 

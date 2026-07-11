@@ -1,5 +1,6 @@
 import type { Ritual, Wisp } from "#/contracts";
 import type { BranchHandle } from "./branch";
+// oxlint-disable-next-line unicorn/prefer-export-from -- The exported type is also used locally.
 import type { RecoveryHandler } from "#/primitives-kit";
 import { branch } from "./branch";
 import { withRecoveryPoint } from "#/primitives-kit";

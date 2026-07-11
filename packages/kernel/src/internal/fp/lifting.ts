@@ -1,4 +1,4 @@
-// oxlint-disable id-length
+// oxlint-disable id-length, import/namespace
 import type { Kind, Kind2, URIS, URIS2 } from "fp-ts/HKT";
 import { chain, pipeable } from "fp-ts";
 import { flow } from "fp-ts/function";

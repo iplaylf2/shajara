@@ -1,5 +1,6 @@
 import type { ExecutionScopeRef, Executor } from "@shajara/kernel";
 import type { LaunchStatus, RiteRoutine } from "#/contracts";
+// oxlint-disable-next-line unicorn/prefer-export-from -- These types are also used locally.
 import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit";
 import { CanceledError } from "#/errors";
 import { encodeRitual } from "#/boundary/index";

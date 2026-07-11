@@ -419,7 +419,8 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "poll": {
-        accept(option.fromNullable(poll(this.#resolve(sigil.future))));
+        const futureRef = this.#resolve(sigil.future);
+        accept(option.fromNullable(poll(futureRef)));
         return processInterpretedStep();
       }
       case "receive": {

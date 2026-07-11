@@ -30,9 +30,9 @@
     "@shajara/forge": "workspace:^",
     "@shajara/presets": "workspace:^",
     "@types/node": "catalog:",
-    "cspell-cli": "^10.0.0",
-    "knip": "^6.14.2",
-    "oxfmt": "^0.51.0",
+    "cspell-cli": "^10.0.1",
+    "knip": "^6.26.0",
+    "oxfmt": "^0.58.0",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   },
@@ -46,9 +46,6 @@
     "tinypool": {
       "unplugged": true
     }
-  },
-  "resolutions": {
-    "yaml@npm:2.7.1": "npm:2.9.0"
   },
   "engines": {
     "node": ">=26.1.0"

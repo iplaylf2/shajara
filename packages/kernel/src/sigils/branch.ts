@@ -1,3 +1,4 @@
+// oxlint-disable-next-line unicorn/prefer-export-from -- Exported type is also used locally.
 import type {
   ECHO_TOKEN,
   ProcessRef,
