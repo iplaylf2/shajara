@@ -6,6 +6,13 @@
     "name": "iplaylf2",
     "url": "https://github.com/iplaylf2"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^26.1.0",
+      "onFail": "download"
+    }
+  },
   "type": "module",
   "scripts": {
     "build": "pnpm -r build",
