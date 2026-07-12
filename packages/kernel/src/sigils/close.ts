@@ -1,5 +1,5 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { ChannelEndpoint } from "./channel";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
+import type { ChannelEndpoint } from "./channel.js";
 
 /**
  * Creates a sigil that explicitly closes a channel endpoint.

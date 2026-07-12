@@ -1,7 +1,11 @@
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 import site from "./site/meta.json" with { type: "json" };
 
-const workspaceRoot = process.env["PROJECT_CWD"];
+const workspaceRoot = path.dirname(
+  execFileSync("pnpm", ["root", "--workspace-root"], { encoding: "utf8" }).trim(),
+);
 const faviconPath = fileURLToPath(import.meta.resolve("@shajara/brand/favicon.svg"));
 
 const config = {

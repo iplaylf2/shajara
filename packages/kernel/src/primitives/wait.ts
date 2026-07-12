@@ -1,6 +1,6 @@
-import type { FutureKey, FutureResult, Wisp } from "#/contracts";
-import { wait as waitSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { FutureKey, FutureResult, Wisp } from "#/contracts/index.js";
+import { wait as waitSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Waits for a future to settle.

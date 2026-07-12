@@ -1,8 +1,8 @@
-import type { ChannelSender } from "./channel";
-import type { SendResult } from "#/sigils/index";
-import type { Wisp } from "#/contracts";
-import { send as sendSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { ChannelSender } from "./channel.js";
+import type { SendResult } from "#/sigils/index.js";
+import type { Wisp } from "#/contracts/index.js";
+import { send as sendSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Waits until a channel sender accepts the value or reaches a terminal state.
@@ -16,4 +16,4 @@ export function send<Value, Outcome>(
   return wisp.liftF(sendSigil(sender, value));
 }
 
-export type { SendResult } from "#/sigils/index";
+export type { SendResult } from "#/sigils/index.js";

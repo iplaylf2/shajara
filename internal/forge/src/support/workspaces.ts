@@ -22,13 +22,22 @@ export interface WorkspaceSpec {
 }
 
 function listWorkspaces(repoRoot: string): WorkspaceListItem[] {
-  return execFileSync("yarn", ["workspaces", "list", "--json"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-  })
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as WorkspaceListItem);
+  const workspaces = JSON.parse(
+    execFileSync("pnpm", ["list", "--recursive", "--depth", "-1", "--json"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    }),
+  ) as PnpmWorkspaceListItem[];
+
+  return workspaces.map(({ name, path: workspacePath }) => ({
+    location: path.relative(repoRoot, workspacePath) || ".",
+    name,
+  }));
+}
+
+interface PnpmWorkspaceListItem {
+  name: string;
+  path: string;
 }
 
 function collectWorkspace(

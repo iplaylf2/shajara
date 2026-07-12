@@ -1,5 +1,5 @@
 import type { ChannelFailure, ReceiveResult, SendResult } from "@shajara/kernel";
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 
 /** Error thrown for terminal channel states and channel input validation failures. */
 export class ChannelError extends ShajaraError implements ChannelFailure {

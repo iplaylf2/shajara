@@ -112,6 +112,12 @@ try {
 block, the HTTP server stops accepting new requests, and `serviceScope` starts closing;
 request work still owned by it converges with that scope.
 
+An open scope keeps the host scheduler active, so a Node.js process cannot exit naturally
+even when no request is currently runnable. The scope remains available to later callbacks.
+Cancel or asynchronously dispose it during shutdown instead of forcing the process to exit.
+A standalone `run(...)` stops retaining scheduler resources when its scope settles, allowing
+a completed one-shot command to exit naturally.
+
 ## Wait for the Scope's Close Result
 
 `createScope()` exposes a `closed` Promise so application code can observe the long-lived
@@ -140,4 +146,6 @@ uncaught request failure or another failure that belongs to this long-lived boun
 }
 ```
 
-Expected cancellation reaches the `catch` as `CanceledError`; other errors still surface.
+Cancellation initiated by `await using` completes as successful cleanup, so normal shutdown
+does not enter the `catch`. If `serviceScope.closed` rejects first, the `catch` ignores an
+expected `CanceledError` and reports other failures.

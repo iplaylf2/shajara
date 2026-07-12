@@ -1,11 +1,11 @@
-import type { FutureKey, Ritual, Wisp } from "#/contracts";
-import { narrowArrayAs, narrowAs } from "#/utils/index";
-import type { either } from "fp-ts";
+import type { FutureKey, Ritual, Wisp } from "#/contracts/index.js";
+import { narrowArrayAs, narrowAs } from "#/utils/index.js";
+import type { Right } from "#/utils/index.js";
 import { pipe } from "fp-ts/function";
 import { readonlyArray } from "fp-ts";
-import { spawn } from "./spawn";
-import { wait } from "./wait";
-import { wisp } from "#/internal/fp";
+import { spawn } from "./spawn.js";
+import { wait } from "./wait.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Starts ritual entries concurrently in the current scope and returns without waiting.
@@ -38,7 +38,7 @@ function allAggregator<EntryReturns extends readonly unknown[]>(entries: AllEntr
 function awaitFutureInBand<Relic>(future: FutureKey<Relic>): Wisp<Relic> {
   return pipe(
     wait(future),
-    wisp.map(narrowAs<either.Right<Relic>>()),
+    wisp.map(narrowAs<Right<Relic>>()),
     wisp.map(({ right }) => right),
   );
 }

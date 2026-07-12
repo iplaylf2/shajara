@@ -1,6 +1,6 @@
-import type { FutureHandle, Wisp } from "#/contracts";
-import { future as futureSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { FutureHandle, Wisp } from "#/contracts/index.js";
+import { future as futureSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Allocates a future owned by the current scope.

@@ -5,10 +5,11 @@ import type {
   OverloadRewrite,
   ReceiveResult,
   SendResult,
-} from "#/sigils/index";
-import type { KEY_TOKEN, ScopeRef } from "#/contracts";
-import type { Disposer } from "#/utils";
-import type { RuntimeChannelHandle } from "./handle";
+} from "#/sigils/index.js";
+import type { KEY_TOKEN, ScopeRef } from "#/contracts/index.js";
+import type { Disposer } from "#/utils.js";
+import type { RuntimeChannelHandle } from "./handle.js";
+import type { Either } from "#/utils/index.js";
 import { either } from "fp-ts";
 import { identity } from "fp-ts/function";
 
@@ -100,7 +101,7 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
     };
   }
 
-  public tryOverloadRewrite(value: Value): either.Either<unknown, boolean> {
+  public tryOverloadRewrite(value: Value): Either<unknown, boolean> {
     const rewriting = either.tryCatch(() => this.overloadRewrite(this.#buffer, value), identity);
     if (either.isLeft(rewriting)) {
       return rewriting;

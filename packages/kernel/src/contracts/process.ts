@@ -1,6 +1,6 @@
-import type { FutureKey } from "./future-key";
-import type { ProcessDescriptor } from "./descriptor";
-import type { REF_TOKEN } from "./token";
+import type { FutureKey } from "./future-key.js";
+import type { ProcessDescriptor } from "./descriptor.js";
+import type { REF_TOKEN } from "./token.js";
 
 /** Reference to one process and its exit future. */
 export interface ProcessRef<Value, Descriptor extends ProcessDescriptor = ProcessDescriptor> {

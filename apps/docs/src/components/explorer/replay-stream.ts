@@ -73,7 +73,7 @@ function applyReplayCursorAction<TEvent extends ExplorerEventId>(
       for (const cursor of action.cursors) {
         cursorsByTarget.set(cursor.targetId, cursor);
       }
-      return;
+      break;
     }
     case "complete-events": {
       break;

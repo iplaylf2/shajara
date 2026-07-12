@@ -1,33 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   "exclude": ["namespaceMembers"],
-  "ignoreBinaries": [
-    "astro-check",
-    "astro",
-    "changeset",
-    "cspell-cli",
-    "knip",
-    "oxfmt",
-    "oxlint",
-    "shajara-forge",
-    "typedoc",
-    "tsc",
-    "vite",
-    "vitest",
-  ],
-  "ignoreDependencies": [
-    "@astrojs/check",
-    "@changesets/cli",
-    "@shajara/forge",
-    "cspell-cli",
-    "oxfmt",
-    "typedoc",
-    "vite",
-  ],
   "ignoreExportsUsedInFile": {
     "interface": true,
     "type": true,
   },
-  "ignoreFiles": [".yarn/**", ".dependency-cruiser.mjs"],
+  // Referenced by .dependency-cruiser.json's `extends`, which Knip does not resolve.
+  "ignoreDependencies": ["dependency-cruiser"],
   "tags": ["-preserveSurface"],
 }

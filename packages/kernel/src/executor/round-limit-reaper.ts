@@ -1,10 +1,10 @@
-import type { ScopeRef, Wisp } from "#/contracts";
-import type { Failure } from "#/failures";
-import type { Option } from "#/utils/index";
-import type { Reaper } from "./autonomy";
-import { externalFailure } from "#/failures";
+import type { ScopeRef, Wisp } from "#/contracts/index.js";
+import type { Failure } from "#/failures/index.js";
+import type { Option } from "#/utils/index.js";
+import type { Reaper } from "./autonomy.js";
+import { externalFailure } from "#/failures/index.js";
 import { option } from "fp-ts";
-import { wisp } from "#/internal/fp";
+import { wisp } from "#/internal/fp/index.js";
 
 export class RoundLimitReaper implements Reaper {
   public constructor(private readonly roundLimit: number) {}

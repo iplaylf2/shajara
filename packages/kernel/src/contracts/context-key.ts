@@ -1,4 +1,4 @@
-import type { KEY_TOKEN } from "./token";
+import type { KEY_TOKEN } from "./token.js";
 
 /** Extracts the value type associated with a context key. */
 // oxlint-disable-next-line id-length

@@ -1,9 +1,9 @@
-import type { ChannelSender } from "./channel";
-import type { Option } from "#/utils/index";
-import type { SendResult } from "./send";
-import type { Wisp } from "#/contracts";
-import { trySend as trySendSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { ChannelSender } from "./channel.js";
+import type { Option } from "#/utils/index.js";
+import type { SendResult } from "./send.js";
+import type { Wisp } from "#/contracts/index.js";
+import { trySend as trySendSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Attempts one channel send without blocking the current process.

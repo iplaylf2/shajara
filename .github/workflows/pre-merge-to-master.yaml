@@ -24,34 +24,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - name: Set up Node.js and Yarn
-        uses: ./.github/actions/setup-yarn
+      - name: Set up Node.js and pnpm
+        uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: pnpm install --frozen-lockfile
 
       - name: Format
-        run: yarn run oxfmt --check .
-
-      - name: Spellcheck
-        run: yarn spellcheck
-
-      - name: Unused check
-        run: yarn knip
-
-      - name: Dependency cruise
-        run: yarn depcruise
+        run: pnpm oxfmt --check .
 
       - name: Lint
-        run: yarn lint
+        run: pnpm lint
+
+      - name: Spellcheck
+        run: pnpm spellcheck
+
+      - name: Unused check
+        run: pnpm knip
 
       - name: Build
-        run: yarn build
+        run: pnpm build
+
+      - name: Dependency cruise
+        run: pnpm depcruise
 
       - name: Typecheck
-        run: yarn typecheck
+        run: pnpm typecheck
 
       - name: Test with coverage
-        run: yarn workspaces foreach -Ap run test:coverage -- --coverage.reporter=text-summary
+        run: pnpm -r test:coverage -- --coverage.reporter=text-summary

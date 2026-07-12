@@ -1,5 +1,5 @@
-import type { Failure, Presence, RiteCoroutine, RiteFuture } from "#/contracts";
-import { encodeRitual, unwrapEither, unwrapOption } from "#/boundary/index";
+import type { Failure, Presence, RiteCoroutine, RiteFuture } from "#/contracts/index.js";
+import { encodeRitual, unwrapEither, unwrapOption } from "#/boundary/index.js";
 import type { Either } from "@shajara/kernel/utils";
 import { poll as kernelPoll } from "@shajara/kernel";
 

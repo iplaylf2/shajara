@@ -1,5 +1,5 @@
-import type { ContextKey, RiteCoroutine } from "#/contracts";
-import { encodeRitual } from "#/boundary/index";
+import type { ContextKey, RiteCoroutine } from "#/contracts/index.js";
+import { encodeRitual } from "#/boundary/index.js";
 import { bind as kernelBind } from "@shajara/kernel";
 
 /** Adds or shadows a context binding on the current scope. */

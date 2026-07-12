@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that cedes the current turn before continuing.

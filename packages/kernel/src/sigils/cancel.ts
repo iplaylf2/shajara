@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that moves the current scope onto the cancellation path.

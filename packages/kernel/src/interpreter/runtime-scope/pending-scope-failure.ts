@@ -1,5 +1,5 @@
-import type { Failure, ScopeFailure } from "#/failures";
-import { scopeFailure } from "#/failures";
+import type { Failure, ScopeFailure } from "#/failures/index.js";
+import { scopeFailure } from "#/failures/index.js";
 
 export class PendingScopeFailure {
   public constructor(private readonly failure: Failure) {}

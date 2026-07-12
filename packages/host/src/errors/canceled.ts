@@ -1,5 +1,5 @@
 import type { CanceledFailure } from "@shajara/kernel";
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 
 /** Error thrown when work is canceled before completion. */
 export class CanceledError extends ShajaraError implements CanceledFailure {

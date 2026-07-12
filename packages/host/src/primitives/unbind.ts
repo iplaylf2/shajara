@@ -1,5 +1,5 @@
-import type { ContextKey, RiteCoroutine } from "#/contracts";
-import { encodeRitual } from "#/boundary/index";
+import type { ContextKey, RiteCoroutine } from "#/contracts/index.js";
+import { encodeRitual } from "#/boundary/index.js";
 import { unbind as kernelUnbind } from "@shajara/kernel";
 
 /** Removes the current scope's binding for a context key. */

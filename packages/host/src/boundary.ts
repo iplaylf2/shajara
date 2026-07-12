@@ -1,1 +1,1 @@
-export * from "./boundary/index";
+export * from "./boundary/index.js";

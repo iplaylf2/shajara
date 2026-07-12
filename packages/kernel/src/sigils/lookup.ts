@@ -1,5 +1,5 @@
-import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts";
-import type { Option } from "#/utils/index";
+import type { ContextKey, ECHO_TOKEN, SigilShape } from "#/contracts/index.js";
+import type { Option } from "#/utils/index.js";
 
 /**
  * Creates a sigil that resolves the nearest visible context binding.

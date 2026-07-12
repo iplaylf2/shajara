@@ -1,7 +1,7 @@
-import type { RiteCoroutine, RiteRoutine } from "#/contracts";
-import { decodeRitual, encodeRitual } from "#/boundary/index";
+import type { RiteCoroutine, RiteRoutine } from "#/contracts/index.js";
+import { decodeRitual, encodeRitual } from "#/boundary/index.js";
 import { resumable as kernelResumable } from "@shajara/kernel";
-import { wait } from "./wait";
+import { wait } from "./wait.js";
 
 /**
  * Runs a child routine whose scope exit failure can be recovered by an ancestor `guard(...)`.

@@ -1,5 +1,5 @@
-import type { RiteCoroutine } from "#/contracts";
-import { encodeRitual } from "#/boundary/index";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import { encodeRitual } from "#/boundary/index.js";
 import { cede as kernelCede } from "@shajara/kernel";
 
 /** Cedes the current turn before the routine continues. */

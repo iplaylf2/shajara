@@ -1,4 +1,4 @@
-import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index";
+import type { ChannelEndpoint, ChannelSender, SendResult } from "#/sigils/index.js";
 import type {
   ContextKey,
   FutureKey,
@@ -7,21 +7,21 @@ import type {
   Ritual,
   ScopeRef,
   Suppressor,
-} from "#/contracts";
-import type { Disposer, Option } from "#/utils/index";
-import type { LaunchHandle, LaunchStatus } from "./launch-handle";
+} from "#/contracts/index.js";
+import type { Disposer, Option } from "#/utils/index.js";
+import type { LaunchHandle, LaunchStatus } from "./launch-handle.js";
 import { either, option } from "fp-ts";
-import { halt, park } from "#/primitives/index";
-import { DomainInterpreter } from "./domain-interpreter";
-import type { ExecutionScopeRef } from "./execution-scope";
-import { ExecutorDriver } from "./executor-driver";
-import type { Failure } from "#/failures";
-import { FaultSink } from "./fault-sink";
-import type { Pacer } from "./pacer";
-import { RoundLimitReaper } from "./round-limit-reaper";
-import { contextKey } from "#/contracts";
-import { noop } from "#/utils/index";
-import { withRecoveryAnchor } from "#/primitives-kit";
+import { halt, park } from "#/primitives/index.js";
+import { DomainInterpreter } from "./domain-interpreter.js";
+import type { ExecutionScopeRef } from "./execution-scope.js";
+import { ExecutorDriver } from "./executor-driver.js";
+import type { Failure } from "#/failures/index.js";
+import { FaultSink } from "./fault-sink.js";
+import type { Pacer } from "./pacer.js";
+import { RoundLimitReaper } from "./round-limit-reaper.js";
+import { contextKey } from "#/contracts/index.js";
+import { noop } from "#/utils/index.js";
+import { withRecoveryAnchor } from "#/primitives-kit/index.js";
 
 /**
  * Attaches executor turn requests to the embedding environment.
@@ -47,10 +47,10 @@ export interface Executor extends LaunchHandle<never> {
    *
    * @returns Launch handle for the new entry, or `none` when the target scope cannot accept it.
    */
-  launch<Result>(
+  launch: <Result>(
     scope: ExecutionScopeRef<unknown>,
     ritual: Ritual<Result>,
-  ): Option<LaunchHandle<Result>>;
+  ) => Option<LaunchHandle<Result>>;
 
   /**
    * Subscribes to one future settlement.
@@ -59,39 +59,39 @@ export interface Executor extends LaunchHandle<never> {
    * futures notify synchronously.
    * @returns Disposer that removes a pending listener before settlement.
    */
-  onSettled<Result>(
+  onSettled: <Result>(
     future: FutureKey<Result>,
     listener: (result: FutureResult<Result>) => void,
-  ): Disposer;
+  ) => Disposer;
 
   /**
    * Attempts to settle a future through its settlement authority from outside computation code.
    *
    * @returns `true` when the settlement is accepted, or `false` after prior convergence.
    */
-  settle<Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>): boolean;
+  settle: <Result>(futureSettle: FutureSettleKey<Result>, result: FutureResult<Result>) => boolean;
 
   /**
    * Attempts one channel send through a sender endpoint without blocking the caller.
    *
    * @returns Immediate send result, or `none` when the send would block.
    */
-  trySend<Value, Outcome>(
+  trySend: <Value, Outcome>(
     sender: ChannelSender<Value, Outcome>,
     value: Value,
-  ): Option<SendResult<Outcome>>;
+  ) => Option<SendResult<Outcome>>;
 
   /** Closes a channel through either endpoint and wakes blocked channel operations. */
-  close<Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome): void;
+  close: <Outcome>(endpoint: ChannelEndpoint<unknown, Outcome>, outcome: Outcome) => void;
 
   /** Requests cancellation for a registered execution scope; unknown scopes are ignored. */
-  cancel(scope: ExecutionScopeRef<unknown>): void;
+  cancel: (scope: ExecutionScopeRef<unknown>) => void;
 
   /**
    * Halts a registered open execution scope with an in-band failure.
    * Unknown, closing, or closed scopes are ignored.
    */
-  halt(scope: ExecutionScopeRef<unknown>, failure: Failure): void;
+  halt: (scope: ExecutionScopeRef<unknown>, failure: Failure) => void;
 }
 
 /** Context key for accessing the current executor from launched work. */

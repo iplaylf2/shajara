@@ -1,5 +1,5 @@
 // oxlint-disable no-magic-numbers
-import type { ScopeRef, Suppressor } from "#/contracts";
+import type { ScopeRef, Suppressor } from "#/contracts/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export class RuntimeScopeReconciler {
@@ -189,7 +189,7 @@ interface ScopeSyncCall {
   deferredTasks: ScopeReleaseTask[];
   result: unknown | null;
   readonly scope: ScopeRef<unknown>;
-  next(): IteratorResult<ScopeSyncEffect, unknown>;
+  next: () => IteratorResult<ScopeSyncEffect, unknown>;
   readonly suppressor: Suppressor;
 }
 

@@ -5,8 +5,8 @@ import type {
   FutureSettleKey,
   KEY_TOKEN,
   Suppressor,
-} from "#/contracts";
-import type { Disposer } from "#/utils/index";
+} from "#/contracts/index.js";
+import type { Disposer } from "#/utils/index.js";
 
 export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey<Result> {
   public poll(): FutureResult<Result> | null {

@@ -9,10 +9,10 @@ export default defineConfig({
         sigils: "src/sigils.ts",
         utils: "src/utils.ts",
       },
-      fileName: (format, entryName) => (format === "es" ? `${entryName}.js` : `${entryName}.cjs`),
-      formats: ["es", "cjs"],
+      fileName: (_format, entryName) => `${entryName}.js`,
+      formats: ["es"],
     },
-    license: true,
+    license: { fileName: "THIRD_PARTY_NOTICES.md" },
     target: "esnext",
   },
   plugins: [

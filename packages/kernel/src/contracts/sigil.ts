@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN } from "./token";
+import type { ECHO_TOKEN } from "./token.js";
 
 /** Echo value returned to a sigil after interpretation. */
 export type Echo<Sigil extends SigilShape> =

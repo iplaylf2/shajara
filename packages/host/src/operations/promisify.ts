@@ -1,6 +1,6 @@
-import type { RiteCoroutine, RiteFuture } from "#/contracts";
-import { currentExecutor } from "#/operations-kit";
-import { fromFailure } from "#/boundary/index";
+import type { RiteCoroutine, RiteFuture } from "#/contracts/index.js";
+import { currentExecutor } from "#/operations-kit/index.js";
+import { fromFailure } from "#/boundary/index.js";
 import { isLeft } from "@shajara/kernel/utils";
 
 /**

@@ -1,5 +1,6 @@
 // oxlint-disable no-magic-numbers
-import type { Suppressor } from "#/contracts";
+import type { Suppressor } from "#/contracts/index.js";
+import type { Option } from "#/utils/index.js";
 import { option } from "fp-ts";
 
 export class FaultSink implements Disposable, Suppressor {
@@ -9,7 +10,7 @@ export class FaultSink implements Disposable, Suppressor {
     this.#errors.push(error);
   }
 
-  public drain(): option.Option<unknown> {
+  public drain(): Option<unknown> {
     const errors = this.#errors;
     this.#errors = [];
 

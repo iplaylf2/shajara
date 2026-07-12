@@ -1,9 +1,9 @@
-import type { Suppressor } from "#/contracts";
+import type { Suppressor } from "#/contracts/index.js";
 
 /** Scheduler target that progresses runnable process tasks. */
 export interface Processor {
   /** Accepts a runnable process task for progression. */
-  admit(task: ProcessorTask): void;
+  admit: (task: ProcessorTask) => void;
 }
 
 /** Runnable process task submitted to a processor. */
@@ -13,7 +13,7 @@ export interface ProcessorTask {
    *
    * @returns Task state after the step.
    */
-  step(suppressor: Suppressor): ProcessorTaskStatus;
+  step: (suppressor: Suppressor) => ProcessorTaskStatus;
 }
 
 /** Process-task state after one step. */

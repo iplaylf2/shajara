@@ -1,11 +1,11 @@
-import type { Failure, RiteCoroutine, RiteRoutine } from "#/contracts";
+import type { Failure, RiteCoroutine, RiteRoutine } from "#/contracts/index.js";
 import type { Ritual, Wisp } from "@shajara/kernel";
 import { cancel, halt, restingWisp, stirringWisp } from "@shajara/kernel";
 import { isLeft, tryCatch } from "@shajara/kernel/utils";
-import { CanceledError } from "#/errors";
+import { CanceledError } from "#/errors/index.js";
 import type { Sigil } from "@shajara/kernel/sigils";
 import { defer } from "@shajara/kernel/sigils";
-import { toFailureUnknown } from "./failure-mapping";
+import { toFailureUnknown } from "./failure-mapping.js";
 
 /**
  * Converts a host `RiteRoutine` into a kernel `Ritual`.

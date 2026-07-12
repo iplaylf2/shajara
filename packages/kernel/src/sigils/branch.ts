@@ -1,3 +1,4 @@
+// oxlint-disable-next-line unicorn/prefer-export-from -- Exported type is also used locally.
 import type {
   ECHO_TOKEN,
   ProcessRef,
@@ -5,7 +6,7 @@ import type {
   ScopeDescriptor,
   ScopeRef,
   SigilShape,
-} from "#/contracts";
+} from "#/contracts/index.js";
 
 /**
  * Creates a sigil that opens a child scope with one structural entry process.

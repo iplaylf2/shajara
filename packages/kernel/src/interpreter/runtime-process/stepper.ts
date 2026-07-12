@@ -1,8 +1,8 @@
-import type { Echo, Ritual, StirringWisp, Wisp } from "#/contracts";
-import type { RuntimeProcessRunnerNext } from "./runner";
-import type { Sigil } from "#/sigils/index";
+import type { Echo, Ritual, StirringWisp, Wisp } from "#/contracts/index.js";
+import type { RuntimeProcessRunnerNext } from "./runner.js";
+import type { Sigil } from "#/sigils/index.js";
 import type { TaggedUnion } from "type-fest";
-import { unreachable } from "#/utils/index";
+import { unreachable } from "#/utils/index.js";
 
 export class Stepper<Relic> {
   public current(): RuntimeProcessRunnerNext<Relic> {

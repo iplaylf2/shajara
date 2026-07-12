@@ -1,3 +1,4 @@
+// oxlint-disable-next-line unicorn/prefer-export-from -- Exported types are also used locally.
 import type {
   CompletionMode,
   ECHO_TOKEN,
@@ -5,7 +6,7 @@ import type {
   ProcessRef,
   Ritual,
   SigilShape,
-} from "#/contracts";
+} from "#/contracts/index.js";
 
 /**
  * Creates a sigil that starts a process in the current scope.

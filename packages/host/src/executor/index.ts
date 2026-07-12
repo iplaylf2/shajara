@@ -1,1 +1,1 @@
-export * from "./ensure-executor";
+export { acquireExecutorLease } from "./executor-session-manager.js";

@@ -1,8 +1,8 @@
-import type { RiteCoroutine, RiteFuture } from "#/contracts";
+import type { RiteCoroutine, RiteFuture } from "#/contracts/index.js";
 import { left, right } from "@shajara/kernel/utils";
-import { currentExecutor } from "#/operations-kit";
-import { future } from "#/primitives/index";
-import { toFailure } from "#/boundary/index";
+import { currentExecutor } from "#/operations-kit/index.js";
+import { future } from "#/primitives/index.js";
+import { toFailure } from "#/boundary/index.js";
 
 /**
  * Creates a future owned by the current scope with settlement callbacks.
@@ -34,12 +34,12 @@ export interface Completer<Return> {
    *
    * @param value - Completion value.
    */
-  resolve(value: Return): void;
+  resolve: (value: Return) => void;
 
   /**
    * Settles the future as rejected if it is still pending.
    *
    * @param reason - Error observed by callers waiting on the future.
    */
-  reject(reason: Error): void;
+  reject: (reason: Error) => void;
 }

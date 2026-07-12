@@ -1,4 +1,4 @@
-import type { ExecutionScopeRef } from "./execution-scope";
+import type { ExecutionScopeRef } from "./execution-scope.js";
 
 /** Handle for launched work and its live lifecycle state. */
 export interface LaunchHandle<Result> {

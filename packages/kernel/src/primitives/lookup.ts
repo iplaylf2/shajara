@@ -1,7 +1,7 @@
-import type { ContextKey, Wisp } from "#/contracts";
-import type { Option } from "#/utils/index";
-import { lookup as lookupSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { ContextKey, Wisp } from "#/contracts/index.js";
+import type { Option } from "#/utils/index.js";
+import { lookup as lookupSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Resolves the nearest visible binding for a context key.

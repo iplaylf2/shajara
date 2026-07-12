@@ -1,5 +1,3 @@
-import type { IsEqual, UnknownArray } from "type-fest";
-
 /**
  * Provides an unchecked value cast constrained by assignability.
  *
@@ -17,8 +15,8 @@ export function narrowAs<Narrow>() {
  */
 // oxlint-disable-next-line explicit-module-boundary-types
 export function narrowArrayAs<Narrow>() {
-  return <Wide extends UnknownArray>(value: Wide) =>
-    value as IsEqual<Wide, UnknownArray> extends true
+  return <Wide extends readonly unknown[]>(value: Wide) =>
+    value as [Wide, readonly unknown[]] extends [readonly unknown[], Wide]
       ? Narrow
       : Narrow extends Wide
         ? Narrow

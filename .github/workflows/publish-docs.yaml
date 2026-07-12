@@ -20,17 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - name: Set up Node.js and Yarn
-        id: setup-yarn
-        uses: ./.github/actions/setup-yarn
+      - name: Set up Node.js and pnpm
+        id: setup-pnpm
+        uses: ./.github/actions/setup-pnpm
 
       - name: Build and upload
         uses: withastro/action@v6
         with:
-          node-version: ${{ steps.setup-yarn.outputs.node-version }}
-          build-cmd: yarn workspaces foreach -Rt --from @shajara/docs run build
+          node-version: ${{ steps.setup-pnpm.outputs.node-version }}
+          build-cmd: pnpm --filter @shajara/docs... build
           cache-dir: apps/docs/node_modules/.astro
           out-dir: apps/docs/dist
 

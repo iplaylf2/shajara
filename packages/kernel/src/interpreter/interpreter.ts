@@ -9,7 +9,7 @@ import type {
   SelfHandle,
   SendResult,
   Sigil,
-} from "#/sigils/index";
+} from "#/sigils/index.js";
 import type {
   CleanupTask,
   ProvideRuntimeProcess,
@@ -17,7 +17,7 @@ import type {
   RuntimeProcessKeeper,
   RuntimeProcessNextEcho,
   RuntimeProcessRunner,
-} from "./runtime-process";
+} from "./runtime-process/index.js";
 import type {
   ContextKey,
   Echo,
@@ -30,10 +30,10 @@ import type {
   ScopeDescriptor,
   ScopeRef,
   Suppressor,
-} from "#/contracts";
-import type { FutureSettler, RuntimeFuture } from "./runtime-future";
-import { RuntimeScope, RuntimeScopeReconciler } from "./runtime-scope";
-import { canceledFailure, interruptedFailure } from "#/failures";
+} from "#/contracts/index.js";
+import type { FutureSettler, RuntimeFuture } from "./runtime-future/index.js";
+import { RuntimeScope, RuntimeScopeReconciler } from "./runtime-scope/index.js";
+import { canceledFailure, interruptedFailure } from "#/failures/index.js";
 import { either, option } from "fp-ts";
 import {
   processCededStep,
@@ -41,17 +41,17 @@ import {
   processInterpretedStep,
   processResonatedStep,
   processWaitingStep,
-} from "./process-step";
-import type { Disposer } from "#/utils/index";
-import type { Failure } from "#/failures";
-import type { ProcessStep } from "./process-step";
-import type { RuntimeChannelHandle } from "./runtime-channel";
-import { RuntimeProcess } from "./runtime-process";
-import type { ScopeSync } from "./runtime-scope";
-import type { ScopeZone } from "./scope-zone";
+} from "./process-step.js";
+import type { Disposer, Option } from "#/utils/index.js";
+import type { Failure } from "#/failures/index.js";
+import type { ProcessStep } from "./process-step.js";
+import type { RuntimeChannelHandle } from "./runtime-channel/index.js";
+import { RuntimeProcess } from "./runtime-process/index.js";
+import type { ScopeSync } from "./runtime-scope/index.js";
+import type { ScopeZone } from "./scope-zone.js";
 import type { TaggedUnion } from "type-fest";
 import { identity } from "fp-ts/function";
-import { unreachable } from "#/utils/index";
+import { unreachable } from "#/utils/index.js";
 
 export class Interpreter {
   public static create(entry: Ritual<unknown>, zone: ScopeZone): Interpreter {
@@ -128,16 +128,13 @@ export class Interpreter {
     unbind(this.#resolve(scope), contextKey);
   }
 
-  public lookup<Value>(
-    scope: ScopeRef<unknown>,
-    contextKey: ContextKey<Value>,
-  ): option.Option<Value> {
+  public lookup<Value>(scope: ScopeRef<unknown>, contextKey: ContextKey<Value>): Option<Value> {
     return lookup(this.#resolve(scope), contextKey);
   }
 
   public poll<Result>(
     futureKey: FutureKey<Result> | FutureSettleKey<Result>,
-  ): option.Option<FutureResult<Result>> {
+  ): Option<FutureResult<Result>> {
     return option.fromNullable(poll(this.#resolve(futureKey)));
   }
 
@@ -152,7 +149,7 @@ export class Interpreter {
   public tryReceive<Value, Outcome>(
     receiver: ChannelReceiver<Value, Outcome>,
     suppressor: Suppressor,
-  ): option.Option<ReceiveResult<Value, Outcome>> {
+  ): Option<ReceiveResult<Value, Outcome>> {
     const channelHandle = this.#resolve(receiver);
     const channelScope = this.#resolve(channelHandle.scope);
     this.#reconcile(channelScope);
@@ -165,7 +162,7 @@ export class Interpreter {
     sender: ChannelSender<Value, Outcome>,
     value: Value,
     suppressor: Suppressor,
-  ): option.Option<SendResult<Outcome>> {
+  ): Option<SendResult<Outcome>> {
     const channelHandle = this.#resolve(sender);
     const channelScope = this.#resolve(channelHandle.scope);
     this.#reconcile(channelScope);
@@ -419,7 +416,8 @@ export class Interpreter {
         return processInterpretedStep();
       }
       case "poll": {
-        accept(option.fromNullable(poll(this.#resolve(sigil.future))));
+        const futureRef = this.#resolve(sigil.future);
+        accept(option.fromNullable(poll(futureRef)));
         return processInterpretedStep();
       }
       case "receive": {
@@ -725,7 +723,7 @@ function spawn<Relic, Descriptor extends ProcessDescriptor>(
   return scope.spawn(provideProcess, descriptor);
 }
 
-function lookup<Value>(scope: RuntimeScope, key: ContextKey<Value>): option.Option<Value> {
+function lookup<Value>(scope: RuntimeScope, key: ContextKey<Value>): Option<Value> {
   return scope.lookup(key);
 }
 

@@ -1,9 +1,9 @@
-import type { Ritual, ScopeRef } from "#/contracts";
-import { Domain } from "./domain";
-import type { Failure } from "#/failures";
-import type { Option } from "#/utils/index";
-import type { Reaper } from "#/executor/autonomy";
-import type { ScopeState } from "#/interpreter/index";
+import type { Ritual, ScopeRef } from "#/contracts/index.js";
+import { Domain } from "./domain.js";
+import type { Failure } from "#/failures/index.js";
+import type { Option } from "#/utils/index.js";
+import type { Reaper } from "#/executor/autonomy.js";
+import type { ScopeState } from "#/interpreter/index.js";
 import { readonlySet } from "fp-ts";
 
 export class ReaperDomain extends Domain<ReaperDomain> {

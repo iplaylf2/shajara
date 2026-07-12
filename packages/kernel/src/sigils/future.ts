@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureHandle, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, FutureHandle, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that allocates a future owned by the current scope.

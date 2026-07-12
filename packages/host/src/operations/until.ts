@@ -1,7 +1,7 @@
-import { fromFailure, toFailureUnknown } from "#/boundary/index";
-import type { RiteCoroutine } from "#/contracts";
-import { completer } from "./completer";
-import { wait } from "#/primitives/index";
+import { fromFailure, toFailureUnknown } from "#/boundary/index.js";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import { completer } from "./completer.js";
+import { wait } from "#/primitives/index.js";
 
 /**
  * Invokes `thunk` and waits for its promise-like result inside the current routine.

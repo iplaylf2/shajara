@@ -20,23 +20,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js and Yarn
-        uses: ./.github/actions/setup-yarn
+      - name: Set up Node.js and pnpm
+        uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: yarn build
+        run: pnpm build
 
       - name: Create release pull request
         uses: changesets/action@v1
         with:
-          version: yarn version-packages
-          publish: yarn release
+          version: pnpm version-packages
+          publish: pnpm release
           commit: "chore: version packages"
           title: "chore: version packages"
+        env:
+          PNPM_CONFIG_PROVENANCE: true

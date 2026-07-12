@@ -1,9 +1,9 @@
-import { DEFAULT_QUANTUM_MS, TimeSlice } from "./time-slice";
+import { DEFAULT_QUANTUM_MS, TimeSlice } from "./time-slice.js";
 import type { Pacer, Slice } from "@shajara/kernel";
 import type { Disposer } from "@shajara/kernel/utils";
-import { TurnCoordinator } from "./turn-coordinator";
+import { TurnCoordinator } from "./turn-coordinator.js";
 
-export class ShajaraPacer implements Pacer, Disposable {
+export class EventLoopPacer implements Pacer, Disposable {
   public constructor(flushTurn: () => void) {
     this.#turnCoordinator = new TurnCoordinator(flushTurn, this.#turnIntervalMs);
   }

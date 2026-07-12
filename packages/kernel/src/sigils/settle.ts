@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureResult, FutureSettleKey, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, FutureResult, FutureSettleKey, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that requests in-band future settlement.

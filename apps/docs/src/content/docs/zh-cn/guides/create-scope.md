@@ -105,6 +105,11 @@ try {
 `await using` 让 scope 的释放跟随入口生命周期。服务离开 block 时，HTTP server 停止接收
 新请求，`serviceScope` 也开始关闭；仍属于它的请求工作会跟着这个 scope 收敛。
 
+打开的 scope 会让 host scheduler 保持活跃，因此即使当前没有可运行的请求，Node.js 进程
+也无法自然退出。这个 scope 仍可供后续回调启动工作。关闭应用入口时，应取消或异步释放
+它，而不是强制退出进程。独立的 `run(...)` 在其 scope settled 后不再持有 scheduler
+资源，让已经完成的一次性命令可以自然退出。
+
 ## 等待 scope 的关闭结果
 
 `createScope()` 暴露 `closed` Promise，让应用代码可以观察长期 scope 的收敛结果。服务
@@ -131,4 +136,5 @@ await Promise.race([shutdown.promise, serviceScope.closed]);
 }
 ```
 
-预期的取消会以 `CanceledError` 进入 `catch`；除此之外的错误仍然应该暴露。
+`await using` 发起的取消会作为成功清理完成，因此正常 shutdown 不会进入 `catch`。如果
+`serviceScope.closed` 先 reject，`catch` 会忽略预期的 `CanceledError`，并报告其他失败。

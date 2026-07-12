@@ -1,8 +1,50 @@
 import { CanceledError, ScopeError, run, until } from "#/index";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { createPendingPromise } from "#test/harness";
 
 describe("/ entries: run", () => {
+  test.for([
+    {
+      given: ["first", "second", "next"] as const,
+      outcome: {
+        closeCalls: [0, PORT_COUNT, PORT_COUNT * 2],
+        results: ["first", "second", "next"],
+      },
+    },
+  ])(
+    "retains scheduler resources until all top-level runs settle",
+    async ({ given: [firstValue, secondValue, nextValue], outcome }) => {
+      const channel = new globalThis.MessageChannel();
+      const portPrototype = Object.getPrototypeOf(channel.port1) as MessagePort;
+      const closeSpy = vi.spyOn(portPrototype, "close");
+      channel.port1.close();
+      channel.port2.close();
+      closeSpy.mockClear();
+
+      try {
+        const first = Promise.withResolvers<string>();
+        const second = Promise.withResolvers<string>();
+        const firstRun = run(() => until(() => first.promise));
+        const secondRun = run(() => until(() => second.promise));
+
+        first.resolve(firstValue);
+        const firstResult = await firstRun;
+        const closeCalls = [closeSpy.mock.calls.length];
+
+        second.resolve(secondValue);
+        const secondResult = await secondRun;
+        closeCalls.push(closeSpy.mock.calls.length);
+
+        const nextResult = await run(() => until(() => Promise.resolve(nextValue)));
+        closeCalls.push(closeSpy.mock.calls.length);
+
+        expect({ closeCalls, results: [firstResult, secondResult, nextResult] }).toEqual(outcome);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
   test.for([
     {
       given: ["settled"] as const,
@@ -175,3 +217,5 @@ describe("/ entries: run", () => {
     },
   );
 });
+
+const PORT_COUNT = 2;

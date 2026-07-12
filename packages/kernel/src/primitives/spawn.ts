@@ -1,7 +1,7 @@
-import type { FutureKey, ProcessDescriptor, Ritual, Wisp } from "#/contracts";
+import type { FutureKey, ProcessDescriptor, Ritual, Wisp } from "#/contracts/index.js";
 import { pipe } from "fp-ts/function";
-import { spawn as spawnSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import { spawn as spawnSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Starts a process in the current scope without waiting for convergence.

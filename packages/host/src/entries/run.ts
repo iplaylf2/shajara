@@ -1,10 +1,9 @@
-import type { RunOptions, StatefulPromise } from "#/entry-kit";
-import type { RiteRoutine } from "#/contracts";
-import { ensureExecutor } from "#/executor";
-import { launchEntry } from "#/entry-kit";
+import type { RunOptions, StatefulPromise } from "#/entry-kit/index.js";
+import type { RiteRoutine } from "#/contracts/index.js";
+import { launchTopLevelEntry } from "#/entry-kit/index.js";
 
 /**
- * Starts a routine in a root scope.
+ * Starts a routine in a new top-level scope.
  *
  * @returns Stateful promise for the routine result and lifecycle state.
  */
@@ -12,7 +11,5 @@ export function run<Return>(
   routine: RiteRoutine<Return>,
   options?: RunOptions,
 ): StatefulPromise<Return> {
-  const executor = ensureExecutor();
-
-  return launchEntry(executor, executor.scope, routine, options).settled;
+  return launchTopLevelEntry(routine, options).settled;
 }

@@ -1,4 +1,4 @@
-import type { FailureShape } from "#/contracts";
+import type { FailureShape } from "#/contracts/index.js";
 
 /**
  * Creates a failure for a value that originated outside the computation.

@@ -1,6 +1,6 @@
-import type { RiteCoroutine } from "#/contracts";
-import { completer } from "./completer";
-import { wait } from "#/primitives/index";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import { completer } from "./completer.js";
+import { wait } from "#/primitives/index.js";
 
 /**
  * Suspends the current routine until a JavaScript timer fires.

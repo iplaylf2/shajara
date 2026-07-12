@@ -5,11 +5,11 @@ import {
   InterruptedError,
   ScopeError,
   UnfulfilledError,
-} from "#/errors";
-import type { Failure } from "#/contracts";
-import type { ScopeExitError } from "#/errors";
+} from "#/errors/index.js";
+import type { Failure } from "#/contracts/index.js";
+import type { ScopeExitError } from "#/errors/index.js";
 import type { ScopeExitFailure } from "@shajara/kernel";
-import { ShajaraError } from "#/contracts";
+import { ShajaraError } from "#/contracts/index.js";
 import { externalFailure } from "@shajara/kernel";
 
 /**

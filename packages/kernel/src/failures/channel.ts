@@ -1,4 +1,4 @@
-import type { FailureShape } from "#/contracts";
+import type { FailureShape } from "#/contracts/index.js";
 
 /**
  * Creates a channel failure for invalid input or channel operation failure.

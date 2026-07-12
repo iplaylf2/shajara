@@ -1,6 +1,6 @@
-import type { Either } from "#/utils/index";
-import type { Failure } from "#/failures";
-import type { KEY_TOKEN } from "./token";
+import type { Either } from "#/utils/index.js";
+import type { Failure } from "#/failures/index.js";
+import type { KEY_TOKEN } from "./token.js";
 
 /** Observation authority for a future's in-band settlement result. */
 export interface FutureKey<Result> {

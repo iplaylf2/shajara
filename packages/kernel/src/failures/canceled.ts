@@ -1,4 +1,4 @@
-import type { FailureShape } from "#/contracts";
+import type { FailureShape } from "#/contracts/index.js";
 
 /**
  * Creates the failure value for cancellation convergence.

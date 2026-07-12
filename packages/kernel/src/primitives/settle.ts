@@ -1,6 +1,6 @@
-import type { FutureResult, FutureSettleKey, Wisp } from "#/contracts";
-import { settle as settleSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { FutureResult, FutureSettleKey, Wisp } from "#/contracts/index.js";
+import { settle as settleSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /** Requests in-band settlement for a future through its settlement authority. */
 export function settle<Result>(

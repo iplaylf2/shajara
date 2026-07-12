@@ -54,7 +54,9 @@ unless there is a clear reason not to.
 
 - Use `./`-based relative imports, not the `#/` alias, for files in the same directory or
   a child directory.
-- Omit `.ts` and `.js` suffixes in internal TypeScript imports.
+- Follow the workspace's module-resolution contract for file extensions. NodeNext sources
+  use `.js` in relative imports, directly executed TypeScript tooling uses `.ts`, and
+  bundler-managed sources may omit extensions.
 - Prefer the import form that makes the dependency target unambiguous when multiple path
   shapes are available.
 - Prefer directory entry points over leaf files when both are available.
@@ -62,9 +64,16 @@ unless there is a clear reason not to.
 
 ## Dependency Analysis
 
-Use `yarn depcruise` to enforce directory-level dependency discipline across all
-directories under the target source tree.
+Use `pnpm depcruise` to analyze every workspace's configured source roots. The command
+applies dependency-cruiser's `recommended-strict` rules for file-level cycles, unresolved
+imports, deprecated dependencies, and package declaration problems. It also checks for
+cycles between directories, treating each directory as an architectural boundary.
 
-Treat the result as a structural check on the boundaries expressed by the code. When it
-reveals a problem, fix the import path or the module structure so the dependency is stated
-at the correct boundary, rather than weakening the rule or working around the check.
+Dependency-cruiser cannot resolve every TypeScript `#` alias or Astro virtual module in this
+per-workspace analysis, so `pnpm typecheck` owns those checks. Orphan detection is disabled
+here and owned by Knip, which accounts for type-only and cross-workspace consumers. Both
+checks run alongside `pnpm depcruise` in continuous integration.
+
+Treat cycle reports as evidence that an import path or module boundary needs correction.
+Resolve other violations at their owning boundary—for example, fix an unresolved import or
+correct the relevant package declaration—rather than weakening the rule.

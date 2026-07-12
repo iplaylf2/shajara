@@ -8,4 +8,5 @@ export default {
   "eslint/no-magic-numbers": "off",
   "eslint/no-undefined": "off",
   "eslint/require-await": "off",
+  "unicorn/max-nested-calls": "off",
 } satisfies DummyRuleMap;

@@ -1,5 +1,4 @@
-import type { ECHO_TOKEN, KEY_TOKEN, SigilShape } from "#/contracts";
-import type { ArrayValues } from "type-fest";
+import type { ECHO_TOKEN, KEY_TOKEN, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that allocates a channel in the current scope.
@@ -57,7 +56,7 @@ export type ChannelHandle<Value, Outcome> = readonly [
 ];
 
 /** Either read or write endpoint for one channel. */
-export type ChannelEndpoint<Value, Outcome> = ArrayValues<ChannelHandle<Value, Outcome>>;
+export type ChannelEndpoint<Value, Outcome> = ChannelHandle<Value, Outcome>[number];
 
 /** Read authority for channel receive operations. */
 export interface ChannelReceiver<Value, Outcome> {

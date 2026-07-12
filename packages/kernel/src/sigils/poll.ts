@@ -1,5 +1,5 @@
-import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts";
-import type { Option } from "#/utils/index";
+import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts/index.js";
+import type { Option } from "#/utils/index.js";
 
 /**
  * Creates a sigil that observes a future without blocking.

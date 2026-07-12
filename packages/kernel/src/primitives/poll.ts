@@ -1,7 +1,7 @@
-import type { FutureKey, FutureResult, Wisp } from "#/contracts";
-import type { Option } from "#/utils/index";
-import { poll as pollSigil } from "#/sigils/index";
-import { wisp } from "#/internal/fp";
+import type { FutureKey, FutureResult, Wisp } from "#/contracts/index.js";
+import type { Option } from "#/utils/index.js";
+import { poll as pollSigil } from "#/sigils/index.js";
+import { wisp } from "#/internal/fp/index.js";
 
 /**
  * Observes a future's current settlement state without blocking the current process.

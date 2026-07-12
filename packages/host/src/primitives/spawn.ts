@@ -1,5 +1,5 @@
-import type { RiteCoroutine, RiteFuture, RiteRoutine } from "#/contracts";
-import { decodeRitual, encodeRitual } from "#/boundary/index";
+import type { RiteCoroutine, RiteFuture, RiteRoutine } from "#/contracts/index.js";
+import { decodeRitual, encodeRitual } from "#/boundary/index.js";
 import { spawn as kernelSpawn } from "@shajara/kernel";
 
 /**

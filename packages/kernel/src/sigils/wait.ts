@@ -1,4 +1,4 @@
-import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts";
+import type { ECHO_TOKEN, FutureKey, FutureResult, SigilShape } from "#/contracts/index.js";
 
 /**
  * Creates a sigil that waits for future settlement.

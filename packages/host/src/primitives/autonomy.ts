@@ -3,11 +3,11 @@ import type {
   Reaper as KernelReaper,
   Scheduler,
 } from "@shajara/kernel";
-import type { RiteCoroutine, RiteRoutine, ScopeRef } from "#/contracts";
-import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index";
+import type { RiteCoroutine, RiteRoutine, ScopeRef } from "#/contracts/index.js";
+import { decodeRitual, encodeRitual, toFailureUnknown } from "#/boundary/index.js";
 import { none, some } from "@shajara/kernel/utils";
 import { autonomy as kernelAutonomy } from "@shajara/kernel";
-import { waitChild } from "#/primitives-kit";
+import { waitChild } from "#/primitives-kit/index.js";
 
 /**
  * Runs a child routine with a scheduler or reaper policy and waits for scope convergence.

@@ -1,6 +1,6 @@
-import type { FutureKey } from "./future-key";
-import type { REF_TOKEN } from "./token";
-import type { ScopeDescriptor } from "./descriptor";
+import type { FutureKey } from "./future-key.js";
+import type { REF_TOKEN } from "./token.js";
+import type { ScopeDescriptor } from "./descriptor.js";
 
 /** Reference to one scope and its exit future. */
 export interface ScopeRef<Value, Descriptor extends ScopeDescriptor = ScopeDescriptor> {

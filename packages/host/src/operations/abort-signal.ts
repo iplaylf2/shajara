@@ -1,8 +1,8 @@
-import type { RiteCoroutine } from "#/contracts";
-import { currentExecutor } from "#/operations-kit";
-import { fromFailure } from "#/boundary/index";
+import type { RiteCoroutine } from "#/contracts/index.js";
+import { currentExecutor } from "#/operations-kit/index.js";
+import { fromFailure } from "#/boundary/index.js";
 import { isLeft } from "@shajara/kernel/utils";
-import { self } from "#/primitives/index";
+import { self } from "#/primitives/index.js";
 
 /**
  * Creates an `AbortSignal` that aborts with the current scope.

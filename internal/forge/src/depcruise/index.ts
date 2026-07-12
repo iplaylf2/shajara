@@ -1,31 +1,27 @@
-import type { ICruiseOptions } from "dependency-cruiser";
-import type { Violation } from "./violations.ts";
+import type { ICruiseOptions, IViolation } from "dependency-cruiser";
+import type { DirectoryViolation, WorkspaceViolations } from "./violations.ts";
 import { allExtensions } from "dependency-cruiser";
 import { collectWorkspaceViolations } from "./violations.ts";
 import { collectWorkspaces } from "#src/support/workspaces.ts";
+import extractDepcruiseOptions from "dependency-cruiser/config-utl/extract-depcruise-options";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { requireEnvPath } from "#src/support/environment.ts";
+import { resolveWorkspaceRoot } from "#src/support/environment.ts";
 
-const repoRoot = requireEnvPath("PROJECT_CWD");
+const repoRoot = resolveWorkspaceRoot();
 const depcruiseOptions = await loadDepcruiseOptions(repoRoot);
 const workspaces = collectWorkspaces(repoRoot, getCruiseEntryExtensions(depcruiseOptions));
-const cycleReports = await Promise.all(
+const workspaceReports = await Promise.all(
   workspaces.map((workspace) => collectWorkspaceViolations(repoRoot, workspace, depcruiseOptions)),
 );
-const violations = cycleReports.flat();
-const { exitCode, output, stream } = renderCycleReport(violations);
+const { exitCode, output, stream } = renderReport(workspaceReports);
 
 stream.write(output);
 process.exitCode = exitCode;
 
-async function loadDepcruiseOptions(projectRoot: string) {
-  const cruiseConfigPath = path.join(projectRoot, ".dependency-cruiser.mjs");
-  const { default: configuration } = (await import(
-    pathToFileURL(cruiseConfigPath).href
-  )) as CruiseConfigurationModule;
+function loadDepcruiseOptions(projectRoot: string) {
+  const cruiseConfigPath = path.join(projectRoot, ".dependency-cruiser.json");
 
-  return configuration.options;
+  return extractDepcruiseOptions(cruiseConfigPath);
 }
 
 function getCruiseEntryExtensions(options: ICruiseOptions) {
@@ -40,33 +36,61 @@ function getCruiseEntryExtensions(options: ICruiseOptions) {
     .map(({ extension }) => extension);
 }
 
-function renderCycleReport(reports: Violation[]) {
-  if (reports.length === 0) {
+function renderReport(reports: WorkspaceViolations[]) {
+  const strictViolations = reports.flatMap(({ scope, strict }) =>
+    strict.map((violation) => ({ scope, violation })),
+  );
+  const directoryViolations = reports.flatMap(({ scope, directory }) =>
+    directory.map((violation) => ({ scope, violation })),
+  );
+  const hasErrors =
+    strictViolations.some(({ violation }) => violation.rule.severity === "error") ||
+    directoryViolations.length > 0;
+
+  if (strictViolations.length === 0 && directoryViolations.length === 0) {
     return {
       exitCode: 0,
-      output: "No directory-level circular dependencies found.\n",
+      output: "No dependency rule violations or directory cycles found.\n",
       stream: process.stdout,
     };
   }
 
-  const lines = ["Directory-level circular dependencies found:", ""];
+  const lines: string[] = [];
 
-  for (const violation of reports) {
-    lines.push(`[${violation.scope}] ${violation.directories.join(" <-> ")}`);
-    lines.push(violation.examples.join("\n"));
-    lines.push("");
+  if (strictViolations.length > 0) {
+    lines.push("Dependency rule violations:", "");
+
+    for (const { scope, violation } of strictViolations) {
+      lines.push(formatStrictViolation(scope, violation));
+    }
+  }
+
+  if (directoryViolations.length > 0) {
+    lines.push("Directory-level circular dependencies:", "");
+
+    for (const { scope, violation } of directoryViolations) {
+      lines.push(formatDirectoryViolation(scope, violation));
+    }
   }
 
   return {
-    exitCode: 1,
+    exitCode: hasErrors ? 1 : 0,
     output: `${lines.join("\n")}\n`,
     stream: process.stderr,
   };
 }
-interface CruiseConfiguration {
-  options: ICruiseOptions;
+
+function formatStrictViolation(scope: string, violation: IViolation) {
+  const target = violation.unresolvedTo ?? violation.to;
+  const dependency = target ? `${violation.from} -> ${target}` : violation.from;
+
+  return `[${scope}] [${violation.rule.severity}] ${violation.rule.name}: ${dependency}\n`;
 }
 
-interface CruiseConfigurationModule {
-  default: CruiseConfiguration;
+function formatDirectoryViolation(scope: string, violation: DirectoryViolation) {
+  return [
+    `[${scope}] ${violation.directories.join(" <-> ")}`,
+    violation.examples.join("\n"),
+    "",
+  ].join("\n");
 }

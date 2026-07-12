@@ -3,7 +3,7 @@ import type {
   CleanupTask,
   ProvideRuntimeProcess,
   RuntimeProcessKeeper,
-} from "#/interpreter/runtime-process";
+} from "#/interpreter/runtime-process/index.js";
 import type {
   ContextKey,
   FutureKey,
@@ -14,19 +14,20 @@ import type {
   ScopeDescriptor,
   ScopeRef,
   Suppressor,
-} from "#/contracts";
-import type { OverloadRewrite, ReceiveResult, SendResult } from "#/sigils/index";
-import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-scope-reconciler";
-import { canceledFailure, channelFailure, unfulfilledFailure } from "#/failures";
+} from "#/contracts/index.js";
+import type { OverloadRewrite, ReceiveResult, SendResult } from "#/sigils/index.js";
+import type { ScopeReleaseTask, ScopeSync, ScopeSyncEffect } from "./runtime-scope-reconciler.js";
+import { canceledFailure, channelFailure, unfulfilledFailure } from "#/failures/index.js";
+import type { Option } from "#/utils/index.js";
 import { either, option, readonlySet } from "fp-ts";
-import type { Failure } from "#/failures";
-import { PendingScopeFailure } from "./pending-scope-failure";
-import { RuntimeChannel } from "#/interpreter/runtime-channel";
-import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel";
-import { RuntimeFuture } from "#/interpreter/runtime-future";
-import type { ScopeZone } from "#/interpreter/scope-zone";
+import type { Failure } from "#/failures/index.js";
+import { PendingScopeFailure } from "./pending-scope-failure.js";
+import { RuntimeChannel } from "#/interpreter/runtime-channel/index.js";
+import type { RuntimeChannelHandle } from "#/interpreter/runtime-channel/index.js";
+import { RuntimeFuture } from "#/interpreter/runtime-future/index.js";
+import type { ScopeZone } from "#/interpreter/scope-zone.js";
 import type { TaggedUnion } from "type-fest";
-import { unreachable } from "#/utils/index";
+import { unreachable } from "#/utils/index.js";
 
 export class RuntimeScope implements ScopeRef<unknown> {
   public static *root(
@@ -243,7 +244,7 @@ export class RuntimeScope implements ScopeRef<unknown> {
     return channel;
   }
 
-  public lookup<Value>(contextKey: ContextKey<Value>): option.Option<Value> {
+  public lookup<Value>(contextKey: ContextKey<Value>): Option<Value> {
     if (this.#bindings.has(contextKey)) {
       return option.some(this.#bindings.get(contextKey) as Value);
     }

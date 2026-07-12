@@ -1,22 +1,23 @@
-import type { ExecutionScopeRef, Executor } from "@shajara/kernel";
-import type { LaunchStatus, RiteRoutine } from "#/contracts";
-import type { LaunchedEntry, RunOptions, StatefulPromise } from "#/entry-kit";
-import { CanceledError } from "#/errors";
-import { encodeRitual } from "#/boundary/index";
-import { ensureExecutor } from "#/executor";
+import type { LaunchStatus, RiteRoutine } from "#/contracts/index.js";
+// oxlint-disable-next-line unicorn/prefer-export-from -- These types are also used locally.
+import type { RunOptions, StatefulPromise, TopLevelEntry } from "#/entry-kit/index.js";
+import { CanceledError } from "#/errors/index.js";
+import { encodeRitual } from "#/boundary/index.js";
 import { isLeft } from "@shajara/kernel/utils";
-import { launchEntry } from "#/entry-kit";
+import { launchEntry, launchTopLevelEntry } from "#/entry-kit/index.js";
 import { park } from "@shajara/kernel";
 
 /**
  * Creates a long-lived scope for launching related routines.
  *
+ * An open managed scope keeps a Node.js process from exiting naturally. Cancel or
+ * asynchronously dispose the scope during application shutdown.
+ *
  * @returns Scope that owns routines launched through it.
  */
 export function createScope(): Scope {
-  const executor = ensureExecutor();
-
-  return new ManagedScope(executor, executor.scope);
+  const entry = launchTopLevelEntry(encodeRitual(park));
+  return new ManagedScope(entry);
 }
 
 /** Long-lived scope for launching and canceling related routines. */
@@ -29,7 +30,7 @@ export interface Scope {
    * @returns Stateful promise for the launched routine result and lifecycle state.
    * @throws Error when this scope is already closed.
    */
-  run<Return>(routine: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
+  run: <Return>(routine: RiteRoutine<Return>, options?: RunOptions) => StatefulPromise<Return>;
 
   /**
    * Requests cancellation and waits for this scope to close.
@@ -38,7 +39,7 @@ export interface Scope {
    * @returns Promise that resolves after expected cancellation or rejects when the scope
    * closes with a non-cancellation failure.
    */
-  cancel(): Promise<void>;
+  cancel: () => Promise<void>;
 
   /** Current lifecycle state for this scope. */
   readonly status: ScopeStatus;
@@ -47,7 +48,7 @@ export interface Scope {
   readonly closed: Promise<void>;
 
   /** Cancels the scope when used with explicit resource management. */
-  [Symbol.asyncDispose](): Promise<void>;
+  [Symbol.asyncDispose]: () => Promise<void>;
 }
 
 /** Lifecycle state reported by a scope. */
@@ -56,11 +57,9 @@ export type ScopeStatus = LaunchStatus;
 export type { RunOptions, StatefulPromise };
 
 class ManagedScope implements Scope {
-  public constructor(
-    private readonly executor: Executor,
-    scope: ExecutionScopeRef<unknown>,
-  ) {
-    this.#entry = launchEntry(this.executor, scope, encodeRitual(park));
+  public constructor(entry: TopLevelEntry<never>) {
+    this.executor = entry.executor;
+    this.#entry = entry;
     this.#closed = Promise.resolve(this.#entry.settled);
   }
 
@@ -110,6 +109,7 @@ class ManagedScope implements Scope {
     return this.#entry.settled.status;
   }
 
-  readonly #entry: LaunchedEntry<never>;
+  readonly #entry: TopLevelEntry<never>;
   readonly #closed: Promise<void>;
+  private readonly executor: TopLevelEntry<never>["executor"];
 }
