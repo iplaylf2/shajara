@@ -38,7 +38,6 @@ export default defineConfig({
     "oxc/no-rest-spread-properties": "off",
     "typescript/ban-types": "off",
     "typescript/explicit-function-return-type": "off",
-    "typescript/method-signature-style": "off",
     "typescript/no-empty-object-type": ["error", { allowObjectTypes: "always" }],
     "typescript/no-non-null-assertion": "off",
     "typescript/parameter-properties": ["error", { prefer: "parameter-property" }],

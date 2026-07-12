@@ -5,7 +5,7 @@ import type { RiteCoroutine } from "@shajara/host";
 import { nextAnimationFrame } from "./animation-frame";
 
 export interface FrameScheduler {
-  schedule(task: FrameTask): void;
+  schedule: (task: FrameTask) => void;
 }
 
 type FrameTask = () => void;

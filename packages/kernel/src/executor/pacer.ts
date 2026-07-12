@@ -7,14 +7,14 @@ export interface Pacer {
    *
    * @returns Slice controller for the current turn.
    */
-  beginSlice(): Slice;
+  beginSlice: () => Slice;
 
   /**
    * Schedules executor work to continue after the current slice.
    *
    * @returns Disposer that cancels the scheduled continuation.
    */
-  continueLater(work: () => void): Disposer;
+  continueLater: (work: () => void) => Disposer;
 }
 
 /** Controller for the current executor slice. */
@@ -24,5 +24,5 @@ export interface Slice {
    *
    * @returns `true` when the executor should defer remaining work.
    */
-  shouldYield(): boolean;
+  shouldYield: () => boolean;
 }

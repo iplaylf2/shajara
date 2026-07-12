@@ -5,11 +5,11 @@ import type { Failure } from "#/failures/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessRunner<Relic> extends ProcessRef<Relic> {
-  defer(cleanup: CleanupTask): void;
-  selfHandle(): SelfHandle;
-  stateAs<Status extends RuntimeProcessRunnerStatus>(
+  defer: (cleanup: CleanupTask) => void;
+  selfHandle: () => SelfHandle;
+  stateAs: <Status extends RuntimeProcessRunnerStatus>(
     status: Status,
-  ): RuntimeProcessRunnerStateOf<Relic, Status>;
+  ) => RuntimeProcessRunnerStateOf<Relic, Status>;
   readonly isClosed: boolean;
   readonly status: RuntimeProcessRunnerStatus;
 }
@@ -27,7 +27,7 @@ export type RuntimeProcessRunnerState<Relic> = TaggedUnion<
     canceled: {};
     completed: { readonly result: Relic };
     failed: { readonly failure: Failure };
-    running: { next(): RuntimeProcessRunnerNext<Relic> };
+    running: { next: () => RuntimeProcessRunnerNext<Relic> };
     waiting: {};
   }
 >;
@@ -36,7 +36,7 @@ export type RuntimeProcessRunnerNext<Relic, SigilItem extends Sigil = Sigil> = T
   "kind",
   {
     echo: {
-      accept(echo: Echo<SigilItem>): void;
+      accept: (echo: Echo<SigilItem>) => void;
       readonly sigil: SigilItem;
     };
     relic: { readonly relic: Relic };

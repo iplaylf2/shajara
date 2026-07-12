@@ -34,12 +34,12 @@ export interface Completer<Return> {
    *
    * @param value - Completion value.
    */
-  resolve(value: Return): void;
+  resolve: (value: Return) => void;
 
   /**
    * Settles the future as rejected if it is still pending.
    *
    * @param reason - Error observed by callers waiting on the future.
    */
-  reject(reason: Error): void;
+  reject: (reason: Error) => void;
 }

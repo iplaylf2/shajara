@@ -15,12 +15,12 @@ export function interpretWithRecovery<Relic>(
 }
 
 export interface RitualInterpreterHandle<Relic> extends AsyncDisposable {
-  driveSync(): ProcessStep<Relic>;
-  waitForClosed(options?: WaitOptions): Promise<ProcessStep<Relic>>;
-  waitForFuture<Result>(
+  driveSync: () => ProcessStep<Relic>;
+  waitForClosed: (options?: WaitOptions) => Promise<ProcessStep<Relic>>;
+  waitForFuture: <Result>(
     futureKey: FutureKey<Result>,
     options?: WaitOptions,
-  ): Promise<FutureResult<Result>>;
+  ) => Promise<FutureResult<Result>>;
   readonly suppressorErrors: readonly unknown[];
 }
 

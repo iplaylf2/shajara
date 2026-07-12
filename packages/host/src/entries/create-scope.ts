@@ -30,7 +30,7 @@ export interface Scope {
    * @returns Stateful promise for the launched routine result and lifecycle state.
    * @throws Error when this scope is already closed.
    */
-  run<Return>(routine: RiteRoutine<Return>, options?: RunOptions): StatefulPromise<Return>;
+  run: <Return>(routine: RiteRoutine<Return>, options?: RunOptions) => StatefulPromise<Return>;
 
   /**
    * Requests cancellation and waits for this scope to close.
@@ -39,7 +39,7 @@ export interface Scope {
    * @returns Promise that resolves after expected cancellation or rejects when the scope
    * closes with a non-cancellation failure.
    */
-  cancel(): Promise<void>;
+  cancel: () => Promise<void>;
 
   /** Current lifecycle state for this scope. */
   readonly status: ScopeStatus;
@@ -48,7 +48,7 @@ export interface Scope {
   readonly closed: Promise<void>;
 
   /** Cancels the scope when used with explicit resource management. */
-  [Symbol.asyncDispose](): Promise<void>;
+  [Symbol.asyncDispose]: () => Promise<void>;
 }
 
 /** Lifecycle state reported by a scope. */

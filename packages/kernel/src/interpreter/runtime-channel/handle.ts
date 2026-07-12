@@ -6,5 +6,5 @@ export interface RuntimeChannelHandle<Value, Outcome> {
     ChannelSender<Value, Outcome>[typeof KEY_TOKEN];
   readonly scope: ScopeRef<unknown>;
 
-  handle(): ChannelHandle<Value, Outcome>;
+  handle: () => ChannelHandle<Value, Outcome>;
 }

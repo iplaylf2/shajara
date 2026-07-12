@@ -179,11 +179,11 @@ type RuntimeProcessState<Relic> = TaggedUnion<
     completed: { readonly result: Relic };
     failed: { readonly failure: Failure };
     running: {
-      next(): RuntimeProcessRunnerNext<Relic>;
+      next: () => RuntimeProcessRunnerNext<Relic>;
       readonly stepper: Stepper<Relic>;
     };
     waiting: {
-      dispose(): void;
+      dispose: () => void;
       readonly stepper: Stepper<Relic>;
     };
   }

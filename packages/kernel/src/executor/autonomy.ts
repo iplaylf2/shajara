@@ -35,7 +35,7 @@ export interface Scheduler {
    *
    * @returns Processor selected for the runnable process.
    */
-  assign(process: ProcessRef<unknown>): Processor;
+  assign: (process: ProcessRef<unknown>) => Processor;
 }
 
 /** Decides whether a stalled closing scope should keep waiting or fail. */
@@ -45,7 +45,7 @@ export interface Reaper {
    *
    * @returns `none` to keep waiting, or a failure to force failure convergence.
    */
-  adjudicate(scope: ScopeRef<unknown>): Wisp<Option<Failure>>;
+  adjudicate: (scope: ScopeRef<unknown>) => Wisp<Option<Failure>>;
 }
 
 /** Scheduler, reaper, or both for an autonomous scope. */

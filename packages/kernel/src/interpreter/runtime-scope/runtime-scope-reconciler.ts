@@ -189,7 +189,7 @@ interface ScopeSyncCall {
   deferredTasks: ScopeReleaseTask[];
   result: unknown | null;
   readonly scope: ScopeRef<unknown>;
-  next(): IteratorResult<ScopeSyncEffect, unknown>;
+  next: () => IteratorResult<ScopeSyncEffect, unknown>;
   readonly suppressor: Suppressor;
 }
 

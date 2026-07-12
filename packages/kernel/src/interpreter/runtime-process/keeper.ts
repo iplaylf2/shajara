@@ -4,14 +4,14 @@ import type { FutureSettlement } from "#/interpreter/runtime-future/index.js";
 import type { TaggedUnion } from "type-fest";
 
 export interface RuntimeProcessKeeper extends ProcessRef<unknown> {
-  stateAs<Status extends RuntimeProcessKeeperStatus>(
+  stateAs: <Status extends RuntimeProcessKeeperStatus>(
     status: Status,
-  ): RuntimeProcessKeeperStateOf<Status>;
-  resume(input: unknown): void;
-  wait(dispose: () => void): void;
-  complete(result: unknown): ProcessClosure;
-  fail(failure: Failure): ProcessClosure;
-  cancel(): ProcessClosure;
+  ) => RuntimeProcessKeeperStateOf<Status>;
+  resume: (input: unknown) => void;
+  wait: (dispose: () => void) => void;
+  complete: (result: unknown) => ProcessClosure;
+  fail: (failure: Failure) => ProcessClosure;
+  cancel: () => ProcessClosure;
   readonly descriptor: ProcessDescriptor;
   readonly isClosed: boolean;
   readonly status: RuntimeProcessKeeperStatus;
