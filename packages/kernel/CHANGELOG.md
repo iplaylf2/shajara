@@ -1,5 +1,18 @@
 # @shajara/kernel
 
+## 0.11.0
+
+### Minor Changes
+
+- [#55](https://github.com/iplaylf2/shajara/pull/55) [`dd100df`](https://github.com/iplaylf2/shajara/commit/dd100dfca9883c9cfd90c2679395ba033cb3eb39) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Publish the host and kernel packages as ESM only.
+
+  Both packages now publish ESM builds only and no longer provide CommonJS entry points.
+  Their declarations use explicit `.js` specifiers so TypeScript can resolve them with the
+  `NodeNext` module mode.
+
+  Consumers must load these packages through ESM. Replace `require(...)` calls with
+  `import` syntax and configure the consuming package for ESM before upgrading.
+
 ## 0.10.2
 
 ### Patch Changes

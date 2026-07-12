@@ -1,5 +1,18 @@
 # @shajara/docs
 
+## 0.6.2
+
+### Patch Changes
+
+- [#55](https://github.com/iplaylf2/shajara/pull/55) [`dd100df`](https://github.com/iplaylf2/shajara/commit/dd100dfca9883c9cfd90c2679395ba033cb3eb39) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Document managed-scope shutdown and scheduler lifetime.
+
+  The `createScope()` guide now explains that an open managed scope keeps a Node.js process
+  active, while a settled `run(...)` releases scheduler resources. Readers can also see how
+  asynchronous disposal completes normal shutdown without surfacing expected cancellation.
+
+- Updated dependencies [[`dd100df`](https://github.com/iplaylf2/shajara/commit/dd100dfca9883c9cfd90c2679395ba033cb3eb39), [`dd100df`](https://github.com/iplaylf2/shajara/commit/dd100dfca9883c9cfd90c2679395ba033cb3eb39)]:
+  - @shajara/host@0.11.0
+
 ## 0.6.1
 
 ### Patch Changes
