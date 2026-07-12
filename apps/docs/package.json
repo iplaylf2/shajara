@@ -22,7 +22,7 @@
     "dev": "astro dev --host",
     "preview": "astro preview --host",
     "test": "node -e \"console.log('No tests for @shajara/docs')\"",
-    "typecheck": "astro-check"
+    "typecheck": "astro check"
   },
   "dependencies": {
     "@shajara/host": "workspace:^",
