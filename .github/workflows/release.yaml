@@ -41,4 +41,4 @@ jobs:
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
-          NPM_CONFIG_PROVENANCE: true
+          PNPM_CONFIG_PROVENANCE: true

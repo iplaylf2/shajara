@@ -12,7 +12,6 @@
     "depcruise": "shajara-forge depcruise",
     "format": "oxfmt --write .",
     "lint": "pnpm -r exec oxlint --config oxlint.config.ts",
-    "pack:license": "shajara-forge pack:license",
     "release": "changeset publish",
     "spellcheck": "cspell-cli .",
     "test": "pnpm -r test",

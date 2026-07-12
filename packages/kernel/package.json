@@ -49,8 +49,7 @@
   "scripts": {
     "api-map": "typedoc",
     "build": "vite build",
-    "postpack": "pnpm --workspace-root exec shajara-forge pack:license clean",
-    "prepack": "pnpm build && pnpm --workspace-root exec shajara-forge pack:license stage",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit && tsc -p test/tsconfig.json --noEmit"

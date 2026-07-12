@@ -12,7 +12,7 @@ export default defineConfig({
       fileName: (_format, entryName) => `${entryName}.js`,
       formats: ["es"],
     },
-    license: true,
+    license: { fileName: "THIRD_PARTY_NOTICES.md" },
     target: "esnext",
   },
   plugins: [

@@ -1,19 +1,6 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
-/** @public */
-export function requireEnv(name: string): string {
-  if (!(name in process.env)) {
-    throw new Error(`Expected ${name} to be set.`);
-  }
-
-  return process.env[name]!;
-}
-
-export function requireEnvPath(name: string): string {
-  return path.resolve(requireEnv(name));
-}
-
 export function resolveWorkspaceRoot(): string {
   const modulesRoot = execFileSync("pnpm", ["root", "--workspace-root"], {
     encoding: "utf8",
