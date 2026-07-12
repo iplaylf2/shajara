@@ -5,6 +5,7 @@
     "interface": true,
     "type": true,
   },
-  "ignoreFiles": [".dependency-cruiser.mjs"],
+  // Referenced by .dependency-cruiser.json's `extends`, which Knip does not resolve.
+  "ignoreDependencies": ["dependency-cruiser"],
   "tags": ["-preserveSurface"],
 }

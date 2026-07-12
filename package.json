@@ -26,6 +26,7 @@
     "@shajara/presets": "workspace:^",
     "@types/node": "catalog:",
     "cspell-cli": "^10.0.1",
+    "dependency-cruiser": "catalog:",
     "knip": "^6.26.0",
     "oxfmt": "^0.58.0",
     "oxlint": "catalog:",

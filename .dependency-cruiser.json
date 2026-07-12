@@ -1,0 +1,23 @@
+{
+  "extends": "dependency-cruiser/configs/recommended-strict",
+  "forbidden": [
+    {
+      "name": "no-orphans",
+      "comment": "Knip owns orphan detection because this per-workspace graph omits type-only and cross-workspace consumers.",
+      "severity": "ignore"
+    },
+    {
+      "name": "not-to-unresolvable",
+      "comment": "pnpm typecheck validates TypeScript # aliases and Astro virtual modules; other unresolved imports remain errors.",
+      "to": { "couldNotResolve": true, "pathNot": "^(?:#|astro:)" }
+    }
+  ],
+  "options": {
+    "enhancedResolveOptions": {
+      "conditionNames": ["import", "require", "node", "default", "types"],
+      "exportsFields": ["exports"],
+      "extensions": [".ts", ".tsx", ".astro", ".mjs", ".js", ".d.ts"],
+      "mainFields": ["module", "main", "types", "typings"]
+    }
+  }
+}
