@@ -35,20 +35,20 @@ jobs:
       - name: Format
         run: pnpm oxfmt --check .
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Spellcheck
         run: pnpm spellcheck
 
       - name: Unused check
         run: pnpm knip
 
-      - name: Dependency cruise
-        run: pnpm depcruise
-
-      - name: Lint
-        run: pnpm lint
-
       - name: Build
         run: pnpm build
+
+      - name: Dependency cruise
+        run: pnpm depcruise
 
       - name: Typecheck
         run: pnpm typecheck
