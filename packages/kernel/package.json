@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@shajara/presets": "workspace:^",
+    "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "core-js": "catalog:",
     "oxlint": "catalog:",

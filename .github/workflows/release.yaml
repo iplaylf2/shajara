@@ -34,11 +34,11 @@ jobs:
         run: pnpm build
 
       - name: Create release pull request
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          version: pnpm version-packages
-          publish: pnpm release
-          commit: "chore: version packages"
-          title: "chore: version packages"
+          version-script: pnpm version-packages
+          publish-script: pnpm release
+          commit-message: "chore: version packages"
+          pr-title: "chore: version packages"
         env:
           PNPM_CONFIG_PROVENANCE: true
