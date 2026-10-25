@@ -4,7 +4,6 @@
     "declaration": true,
     "declarationMap": true,
     "exactOptionalPropertyTypes": true,
-    "isolatedModules": true,
     "moduleDetection": "force",
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,

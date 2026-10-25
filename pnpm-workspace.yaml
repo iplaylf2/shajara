@@ -4,7 +4,6 @@ packages:
   - apps/*
 
 allowBuilds:
-  core-js: false
   esbuild: false
   sharp: false
 
@@ -13,7 +12,6 @@ catalog:
   # Native tsc for package and tooling type checking.
   "@typescript/native": npm:typescript@^7.0.2
   "@vitest/coverage-v8": ^5.0.5
-  core-js: ^3.49.0
   dependency-cruiser: ^18.7.0
   oxlint: ^1.89.0
   type-fest: ^5.10.0

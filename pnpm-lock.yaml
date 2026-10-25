@@ -173,9 +173,6 @@ catalogs:
     '@vitest/coverage-v8':
       specifier: ^5.0.5
       version: 5.0.5
-    core-js:
-      specifier: ^3.49.0
-      version: 3.51.0
     dependency-cruiser:
       specifier: ^18.7.0
       version: 18.7.0
@@ -334,9 +331,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
-      core-js:
-        specifier: 'catalog:'
-        version: 3.51.0
       oxlint:
         specifier: 'catalog:'
         version: 1.89.0
@@ -371,9 +365,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
-      core-js:
-        specifier: 'catalog:'
-        version: 3.51.0
       oxlint:
         specifier: 'catalog:'
         version: 1.89.0
@@ -2430,9 +2421,6 @@ packages:
   cookie@2.0.1:
     resolution: {integrity: sha512-yuToqVvRrj6pfDXREyQAAv8SkAEk/8GS3jQRTiUMm66TVtBYmqQeoEjL2Lmq8Rpo6271vH76InTChTitEAm65w==}
     engines: {node: '>=22'}
-
-  core-js@3.51.0:
-    resolution: {integrity: sha512-7bDKx/5jm5MxzsXxc93g6Z2+4ZsuT/MddrfRmTDJNAkWsYWHU8EVNEsBiIEWnMAMCHMmRfUEjkuo3jeNBOIHRw==}
 
   crossws@0.3.5:
     resolution: {integrity: sha512-ojKiDvcmByhwa8YYqbQI/hg7MEU0NC03+pSdEq4ZUnZR9xXpwk7E43SMNGkn+JxJGPFtNvQ48+vV2p+P1ml5PA==}
@@ -6039,8 +6027,6 @@ snapshots:
   cookie-es@1.2.3: {}
 
   cookie@2.0.1: {}
-
-  core-js@3.51.0: {}
 
   crossws@0.3.5:
     dependencies:

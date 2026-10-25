@@ -12,18 +12,12 @@ export default defineConfig({
       fileName: (_format, entryName) => `${entryName}.js`,
       formats: ["es"],
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: (id) => id.startsWith("@shajara/"),
     },
     target: "esnext",
   },
-  plugins: [
-    dts({
-      entryRoot: "src",
-      outDir: "dist",
-      tsconfigPath: "./tsconfig.json",
-    }),
-  ],
+  plugins: [dts()],
   resolve: {
     alias: {
       "#test": new globalThis.URL("./test", import.meta.url).pathname,
@@ -31,8 +25,6 @@ export default defineConfig({
   },
   test: {
     coverage: { exclude: ["test/**"] },
-    environment: "node",
     include: ["test/**/*.test.ts"],
-    setupFiles: ["./test/setup/polyfills.ts"],
   },
 });

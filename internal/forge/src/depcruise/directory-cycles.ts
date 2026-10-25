@@ -128,21 +128,7 @@ function ensureEdgeExamples(
   fromNode: string,
   toNode: string,
 ) {
-  let outgoingEdges = edges.get(fromNode);
-
-  if (!outgoingEdges) {
-    outgoingEdges = new Map();
-    edges.set(fromNode, outgoingEdges);
-  }
-
-  let edgeExamples = outgoingEdges.get(toNode);
-
-  if (!edgeExamples) {
-    edgeExamples = [];
-    outgoingEdges.set(toNode, edgeExamples);
-  }
-
-  return edgeExamples;
+  return edges.getOrInsertComputed(fromNode, () => new Map()).getOrInsertComputed(toNode, () => []);
 }
 
 function addEdgeExample(edgeExamples: EdgeExample[], edgeExample: EdgeExample) {
