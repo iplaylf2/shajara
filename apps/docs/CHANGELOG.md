@@ -1,5 +1,13 @@
 # @shajara/docs
 
+## 0.6.3
+
+### Patch Changes
+
+- [#58](https://github.com/iplaylf2/shajara/pull/58) [`22443b9`](https://github.com/iplaylf2/shajara/commit/22443b971a61364beb835fd26fafc3b3db88bd76) Thanks [@iplaylf2](https://github.com/iplaylf2)! - Update the dependencies used by the documentation site and Flow Explorer.
+- Updated dependencies []:
+  - @shajara/host@0.11.1
+
 ## 0.6.2
 
 ### Patch Changes
