@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { Echo, SigilShape, Wisp } from "#/contracts/index.js";
+import type { SigilShape, Wisp } from "#/contracts/index.js";
 import type { applicative, apply, functor, monad, option, pointed } from "fp-ts";
 import { chain as fpChain, fromIO as fpFromIO, optionT, readonlyArray } from "fp-ts";
 import { flow } from "fp-ts/function";
@@ -84,9 +84,7 @@ export namespace wispOption {
 
   export const sequence = readonlyArray.sequence(Applicative);
 
-  export const liftF: <A extends SigilShape>(
-    fa: A,
-  ) => WispOption<A extends SigilShape ? Echo<A> : unknown> = Lifting.liftF;
+  export const { liftF } = Lifting;
   export const bindF = lifting.bindF(Lifting);
   export const chainF = lifting.chainF(Lifting);
   export const chainFirstF = lifting.chainFirstF(Lifting);
