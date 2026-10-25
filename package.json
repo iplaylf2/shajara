@@ -11,7 +11,7 @@
     "build": "pnpm -r build",
     "depcruise": "shajara-forge depcruise",
     "format": "oxfmt --write .",
-    "lint": "pnpm -r exec oxlint --config oxlint.config.ts",
+    "lint": "oxlint --report-unused-disable-directives-severity error",
     "release": "changeset publish",
     "spellcheck": "cspell-cli .",
     "test": "pnpm -r test",

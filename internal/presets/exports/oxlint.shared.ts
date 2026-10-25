@@ -10,6 +10,15 @@ export default defineConfig({
     style: "error",
     suspicious: "error",
   },
+  overrides: [
+    {
+      files: ["**/*.ts", "**/*.tsx"],
+      rules: {
+        // TypeScript checks redeclarations while allowing type/value pairs and overloads.
+        "eslint/no-redeclare": "off",
+      },
+    },
+  ],
   plugins: ["import"],
   rules: {
     "eslint/default-case": "off",
@@ -23,8 +32,10 @@ export default defineConfig({
       "error",
       { allowSeparateTypeImports: true, includeExports: true },
     ],
+    "eslint/no-inner-declarations": ["error", "functions", { namespaces: "allow" }],
     "eslint/no-ternary": "off",
     "eslint/no-use-before-define": "off",
+    "eslint/one-var": ["error", "never"],
     "eslint/sort-imports": "off",
     "import/exports-last": "off",
     "import/group-exports": "off",

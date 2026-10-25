@@ -1,7 +1,7 @@
 import { CanceledError, ScopeError, run, until } from "#/index";
 import { autonomy, future, spawn, wait } from "#/primitives";
 import { describe, expect, test } from "vitest";
-import type { RiteCoroutine } from "#/index";
+import type { RiteCoroutine, ScopeRef } from "#/index";
 import { findFailureByKind } from "#test/harness";
 
 describe("/ primitives: autonomy", () => {
@@ -36,9 +36,15 @@ describe("/ primitives: autonomy", () => {
   ])(
     "lets reaper adjudication continue waiting and preserves the autonomous close result",
     async ({ outcome }) => {
-      // oxlint-disable no-invalid-void-type
+      // oxlint-disable-next-line no-invalid-void-type
       const release = Promise.withResolvers<void>();
       const reaped = Promise.withResolvers<unknown>();
+
+      function* reaper(scope: ScopeRef<unknown>) {
+        reaped.resolve(scope);
+        release.resolve();
+      }
+
       const settled = run(function* awaitReapedAutonomy() {
         return yield* autonomy(
           function* runAutonomousEntry() {
@@ -50,10 +56,7 @@ describe("/ primitives: autonomy", () => {
             }
           },
           {
-            reaper: function* reaper(scope) {
-              reaped.resolve(scope);
-              release.resolve();
-            },
+            reaper,
           },
         );
       });
@@ -111,6 +114,10 @@ describe("/ primitives: autonomy", () => {
   ])(
     "rejects with a scope failure that preserves the reaper exception as an external cause",
     async ({ given: [cause], outcome }) => {
+      function* reaper() {
+        throw cause;
+      }
+
       const settled = run(function* awaitFailedAutonomy() {
         return yield* autonomy(
           function* runAutonomousEntry() {
@@ -122,9 +129,7 @@ describe("/ primitives: autonomy", () => {
             }
           },
           {
-            reaper: function* reaper() {
-              throw cause;
-            },
+            reaper,
           },
         );
       });

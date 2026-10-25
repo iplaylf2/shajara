@@ -140,7 +140,6 @@ export class RuntimeChannel<Waiter, Value, Outcome> implements RuntimeChannelHan
     return this.#state.status !== "open";
   }
 
-  // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: ChannelReceiver<Value, Outcome>[typeof KEY_TOKEN] &
     ChannelSender<Value, Outcome>[typeof KEY_TOKEN];
 

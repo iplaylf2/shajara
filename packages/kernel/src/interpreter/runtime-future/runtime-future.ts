@@ -46,7 +46,6 @@ export class RuntimeFuture<Result> implements FutureKey<Result>, FutureSettleKey
     return [this, this];
   }
 
-  // oxlint-disable-next-line no-undef
   declare public readonly [KEY_TOKEN]: FutureKey<Result>[typeof KEY_TOKEN] &
     FutureSettleKey<Result>[typeof KEY_TOKEN];
   #waiters = new Set<readonly [FutureSettler<Result>]>();

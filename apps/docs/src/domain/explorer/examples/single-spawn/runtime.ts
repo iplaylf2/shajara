@@ -1,4 +1,3 @@
-// oxlint-disable max-lines-per-function
 import { branch, spawn } from "@shajara/host/primitives";
 import {
   clearCursor,
