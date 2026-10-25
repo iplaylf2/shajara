@@ -38,16 +38,17 @@ describe("/ primitives: all, branch, race, spawn", () => {
       outcome: "fast",
     },
   ])("race returns the first routine result", async ({ given: [fast, slow], outcome }) => {
+    function* slowRoutine() {
+      yield* cede();
+      return slow;
+    }
+
+    function* fastRoutine() {
+      return fast;
+    }
+
     const settled = run(function* awaitRaceWinner() {
-      return yield* race([
-        function* slowRoutine() {
-          yield* cede();
-          return slow;
-        },
-        function* fastRoutine() {
-          return fast;
-        },
-      ] as const);
+      return yield* race([slowRoutine, fastRoutine] as const);
     });
 
     await expect(settled).resolves.toBe(outcome);
@@ -61,6 +62,10 @@ describe("/ primitives: all, branch, race, spawn", () => {
   ])(
     "race waits for losing routine cleanup before resuming the caller",
     async ({ given: [fast, slow, cleanupStart, cleanupEnd, afterRace], outcome }) => {
+      function* fastRoutine() {
+        return fast;
+      }
+
       const events: string[] = [];
       const settled = run(function* awaitRaceCleanup() {
         const winner = yield* race([
@@ -75,9 +80,7 @@ describe("/ primitives: all, branch, race, spawn", () => {
               events.push(cleanupEnd);
             }
           },
-          function* fastRoutine() {
-            return fast;
-          },
+          fastRoutine,
         ] as const);
 
         events.push(afterRace);

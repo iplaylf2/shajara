@@ -308,7 +308,6 @@ export class RuntimeScope implements ScopeRef<unknown> {
     }
   }
 
-  // oxlint-disable-next-line no-undef
   declare public readonly [REF_TOKEN]: ScopeRef<unknown>[typeof REF_TOKEN];
 
   private constructor(

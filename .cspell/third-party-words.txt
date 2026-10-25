@@ -21,3 +21,4 @@ vite
 vitest
 withastro
 esbuild
+zread

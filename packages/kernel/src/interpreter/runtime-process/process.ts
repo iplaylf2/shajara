@@ -133,7 +133,6 @@ export class RuntimeProcess<Relic>
     }
   }
 
-  // oxlint-disable-next-line no-undef
   declare public readonly [REF_TOKEN]: ProcessRef<Relic>[typeof REF_TOKEN];
 
   private constructor(

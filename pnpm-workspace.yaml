@@ -4,19 +4,20 @@ packages:
   - apps/*
 
 allowBuilds:
-  core-js: false
   esbuild: false
   sharp: false
 
 catalog:
-  "@types/node": ^26.1.1
-  "@vitest/coverage-v8": ^4.1.10
-  core-js: ^3.49.0
-  dependency-cruiser: ^18.0.0
-  oxlint: ^1.73.0
-  type-fest: ^5.8.0
+  "@types/node": ^26.6.5
+  # Native tsc for package and tooling type checking.
+  "@typescript/native": npm:typescript@^7.0.2
+  "@vitest/coverage-v8": ^5.0.5
+  dependency-cruiser: ^18.7.0
+  oxlint: ^1.89.0
+  type-fest: ^5.10.0
   typedoc: ^0.28.20
-  typescript: ^6.0.3
-  vite: ^8.1.4
-  vite-plugin-dts: ^5.0.3
-  vitest: ^4.1.10
+  # Astro, TypeDoc, and declaration tooling still require the JavaScript compiler API.
+  typescript: npm:@typescript/typescript6@^6.0.2
+  vite: ^8.3.5
+  vite-plugin-dts: ^5.1.2
+  vitest: ^5.0.5
