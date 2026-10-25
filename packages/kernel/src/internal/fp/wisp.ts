@@ -1,5 +1,5 @@
 // oxlint-disable id-length
-import type { SigilShape, Wisp } from "#/contracts/index.js";
+import type { Echo, RestingWisp, SigilShape, Wisp } from "#/contracts/index.js";
 import type { applicative, apply, functor, monad, pointed } from "fp-ts";
 import { evoke, restingWisp, stirringWisp } from "#/contracts/index.js";
 import { chain as fpChain, fromIO as fpFromIO, pipeable, readonlyArray } from "fp-ts";
@@ -65,7 +65,7 @@ export namespace wisp {
     of: Pointed.of,
   };
 
-  export const Do = restingWisp(null);
+  export const Do: RestingWisp<null> = restingWisp(null);
 
   export const Lifting: lifting.Lifting<URI, sigil.URI, SigilShape> = {
     URI,
@@ -90,7 +90,9 @@ export namespace wisp {
   export const chainFirst = fpChain.chainFirst(Chain);
 
   export const sequence = readonlyArray.sequence(Applicative);
-  export const { liftF } = Lifting;
+  export const liftF: <A extends SigilShape>(
+    fa: A,
+  ) => Wisp<A extends SigilShape ? Echo<A> : unknown> = Lifting.liftF;
   export const bindF = lifting.bindF(Lifting);
   export const chainF = lifting.chainF(Lifting);
   export const chainFirstF = lifting.chainFirstF(Lifting);
